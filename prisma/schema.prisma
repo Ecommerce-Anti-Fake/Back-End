@@ -7,10 +7,421 @@ datasource db {
 }
 
 model User {
+  id                  String            @id @default(uuid())
+  phone               String?           @unique
+  email               String?           @unique
+  displayName         String?           @map("display_name")
+  password            String?
+  role                String            @default("user")
+  accountStatus       String            @default("active") @map("account_status")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+  kyc                 UserKyc?
+  ownedShops          Shop[]            @relation("ShopOwner")
+  offers              Offer[]           @relation("OfferSeller")
+  orders              Order[]           @relation("OrderBuyer")
+  disputesOpened      Dispute[]         @relation("DisputeOpenedBy")
+  disputeEvidence     DisputeEvidence[] @relation("DisputeEvidenceUploadedBy")
+  reviewsGiven        Review[]          @relation("ReviewFromUser")
+  reviewsReceived     Review[]          @relation("ReviewToUser")
+  chatThreadsAsBuyer  ChatThread[]      @relation("ChatThreadBuyer")
+  chatThreadsAsSeller ChatThread[]      @relation("ChatThreadSeller")
+  chatMessages        ChatMessage[]     @relation("ChatMessageSender")
+  reports             Report[]          @relation("ReportReporter")
+  moderationCases     ModerationCase[]  @relation("ModerationCaseAssignee")
+  provenanceEvents    ProvenanceEvent[] @relation("ProvenanceEventActor")
+
+  @@map("user")
+}
+
+model UserKyc {
+  id                 String    @id @default(uuid())
+  userId             String    @unique @map("user_id")
+  kycLevel           String    @map("kyc_level")
+  idType             String    @map("id_type")
+  idNumberHash       String    @map("id_number_hash")
+  verificationStatus String    @map("verification_status")
+  verifiedAt         DateTime? @map("verified_at")
+  user               User      @relation(fields: [userId], references: [id])
+
+  @@map("user_kyc")
+}
+
+model Shop {
+  id                  String               @id @default(uuid())
+  ownerUserId         String               @map("owner_user_id")
+  shopName            String               @map("shop_name")
+  businessType        String               @map("business_type")
+  taxCode             String?              @map("tax_code")
+  shopStatus          String               @map("shop_status")
+  createdAt           DateTime             @default(now()) @map("created_at")
+  owner               User                 @relation("ShopOwner", fields: [ownerUserId], references: [id])
+  documents           ShopDocument[]
+  brandAuthorizations BrandAuthorization[]
+  offers              Offer[]
+  supplyBatches       SupplyBatch[]
+  orders              Order[]
+
+  @@map("shop")
+}
+
+model ShopDocument {
+  id           String   @id @default(uuid())
+  shopId       String   @map("shop_id")
+  docType      String   @map("doc_type")
+  fileUrl      String   @map("file_url")
+  reviewStatus String   @map("review_status")
+  uploadedAt   DateTime @default(now()) @map("uploaded_at")
+  shop         Shop     @relation(fields: [shopId], references: [id])
+
+  @@map("shop_document")
+}
+
+model Brand {
+  id                 String               @id @default(uuid())
+  name               String
+  registryStatus     String               @map("registry_status")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  productModels      ProductModel[]
+  authorizations     BrandAuthorization[]
+  verificationLabels VerificationLabel[]
+
+  @@map("brand")
+}
+
+model BrandAuthorization {
+  id                 String    @id @default(uuid())
+  shopId             String    @map("shop_id")
+  brandId            String    @map("brand_id")
+  authorizationType  String    @map("authorization_type")
+  verificationStatus String    @map("verification_status")
+  verifiedAt         DateTime? @map("verified_at")
+  shop               Shop      @relation(fields: [shopId], references: [id])
+  brand              Brand     @relation(fields: [brandId], references: [id])
+
+  @@map("brand_authorization")
+}
+
+model Category {
+  id       String     @id @default(uuid())
+  parentId String?    @map("parent_id")
+  name     String
+  riskTier String     @map("risk_tier")
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  offers   Offer[]
+
+  @@map("category")
+}
+
+model ProductModel {
+  id                 String        @id @default(uuid())
+  brandId            String        @map("brand_id")
+  modelName          String        @map("model_name")
+  gtin               String?
+  verificationPolicy String        @map("verification_policy")
+  approvalStatus     String        @map("approval_status")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  brand              Brand         @relation(fields: [brandId], references: [id])
+  offers             Offer[]
+  supplyBatches      SupplyBatch[]
+
+  @@map("product_model")
+}
+
+model Offer {
+  id                String           @id @default(uuid())
+  sellerUserId      String           @map("seller_user_id")
+  shopId            String           @map("shop_id")
+  categoryId        String           @map("category_id")
+  productModelId    String           @map("product_model_id")
+  title             String
+  description       String
+  price             Decimal          @db.Decimal(18, 2)
+  currency          String
+  itemCondition     String           @map("item_condition")
+  availableQuantity Int              @map("available_quantity")
+  verificationLevel String           @map("verification_level")
+  offerStatus       String           @map("offer_status")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  seller            User             @relation("OfferSeller", fields: [sellerUserId], references: [id])
+  shop              Shop             @relation(fields: [shopId], references: [id])
+  category          Category         @relation(fields: [categoryId], references: [id])
+  productModel      ProductModel     @relation(fields: [productModelId], references: [id])
+  media             OfferMedia[]
+  documents         OfferDocument[]
+  batchLinks        OfferBatchLink[]
+  orderItems        OrderItem[]
+  chatThreads       ChatThread[]
+
+  @@map("offer")
+}
+
+model OfferMedia {
   id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  fullName  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  offerId   String   @map("offer_id")
+  mediaType String   @map("media_type")
+  fileUrl   String   @map("file_url")
+  phash     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  offer     Offer    @relation(fields: [offerId], references: [id])
+
+  @@map("offer_media")
+}
+
+model OfferDocument {
+  id                 String   @id @default(uuid())
+  offerId            String   @map("offer_id")
+  docType            String   @map("doc_type")
+  fileUrl            String   @map("file_url")
+  issuerName         String?  @map("issuer_name")
+  documentNumberHash String?  @map("document_number_hash")
+  reviewStatus       String   @map("review_status")
+  uploadedAt         DateTime @default(now()) @map("uploaded_at")
+  offer              Offer    @relation(fields: [offerId], references: [id])
+
+  @@map("offer_document")
+}
+
+model SupplyBatch {
+  id              String           @id @default(uuid())
+  shopId          String           @map("shop_id")
+  productModelId  String           @map("product_model_id")
+  batchNumber     String           @map("batch_number")
+  sourceName      String           @map("source_name")
+  countryOfOrigin String           @map("country_of_origin")
+  sourceType      String           @map("source_type")
+  receivedAt      DateTime         @map("received_at")
+  shop            Shop             @relation(fields: [shopId], references: [id])
+  productModel    ProductModel     @relation(fields: [productModelId], references: [id])
+  documents       BatchDocument[]
+  offerLinks      OfferBatchLink[]
+
+  @@map("supply_batch")
+}
+
+model BatchDocument {
+  id                 String      @id @default(uuid())
+  batchId            String      @map("batch_id")
+  docType            String      @map("doc_type")
+  fileUrl            String      @map("file_url")
+  issuerName         String?     @map("issuer_name")
+  documentNumberHash String?     @map("document_number_hash")
+  reviewStatus       String      @map("review_status")
+  uploadedAt         DateTime    @default(now()) @map("uploaded_at")
+  batch              SupplyBatch @relation(fields: [batchId], references: [id])
+
+  @@map("batch_document")
+}
+
+model OfferBatchLink {
+  id                String      @id @default(uuid())
+  offerId           String      @map("offer_id")
+  batchId           String      @map("batch_id")
+  allocatedQuantity Int         @map("allocated_quantity")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  offer             Offer       @relation(fields: [offerId], references: [id])
+  batch             SupplyBatch @relation(fields: [batchId], references: [id])
+
+  @@map("offer_batch_link")
+}
+
+model VerificationLabel {
+  id          String            @id @default(uuid())
+  brandId     String            @map("brand_id")
+  labelType   String            @map("label_type")
+  codeHash    String            @map("code_hash")
+  issuerType  String            @map("issuer_type")
+  labelStatus String            @map("label_status")
+  scopeType   String            @map("scope_type")
+  scopeId     String            @map("scope_id")
+  issuedAt    DateTime          @map("issued_at")
+  brand       Brand             @relation(fields: [brandId], references: [id])
+  provenance  ProvenanceEvent[]
+
+  @@map("verification_label")
+}
+
+model ProvenanceEvent {
+  id          String            @id @default(uuid())
+  labelId     String            @map("label_id")
+  eventType   String            @map("event_type")
+  actorUserId String            @map("actor_user_id")
+  actorRole   String            @map("actor_role")
+  channel     String
+  contextType String            @map("context_type")
+  contextId   String            @map("context_id")
+  payloadHash String            @map("payload_hash")
+  occurredAt  DateTime          @map("occurred_at")
+  label       VerificationLabel @relation(fields: [labelId], references: [id])
+  actor       User              @relation("ProvenanceEventActor", fields: [actorUserId], references: [id])
+
+  @@map("provenance_event")
+}
+
+model RiskScore {
+  id            String   @id @default(uuid())
+  targetType    String   @map("target_type")
+  targetId      String   @map("target_id")
+  score         Decimal  @db.Decimal(5, 2)
+  riskLevel     String   @map("risk_level")
+  factorSummary String   @map("factor_summary")
+  calculatedAt  DateTime @map("calculated_at")
+
+  @@map("risk_score")
+}
+
+model Order {
+  id            String         @id @default(uuid())
+  buyerUserId   String         @map("buyer_user_id")
+  shopId        String         @map("shop_id")
+  orderType     String         @map("order_type")
+  orderStatus   String         @map("order_status")
+  totalAmount   Decimal        @map("total_amount") @db.Decimal(18, 2)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  buyer         User           @relation("OrderBuyer", fields: [buyerUserId], references: [id])
+  shop          Shop           @relation(fields: [shopId], references: [id])
+  items         OrderItem[]
+  paymentIntent PaymentIntent?
+  escrow        Escrow?
+  disputes      Dispute[]
+  reviews       Review[]
+
+  @@map("order")
+}
+
+model OrderItem {
+  id                        String  @id @default(uuid())
+  orderId                   String  @map("order_id")
+  offerId                   String  @map("offer_id")
+  offerTitleSnapshot        String  @map("offer_title_snapshot")
+  unitPrice                 Decimal @map("unit_price") @db.Decimal(18, 2)
+  quantity                  Int
+  verificationLevelSnapshot String  @map("verification_level_snapshot")
+  order                     Order   @relation(fields: [orderId], references: [id])
+  offer                     Offer   @relation(fields: [offerId], references: [id])
+
+  @@map("order_item")
+}
+
+model PaymentIntent {
+  id            String   @id @default(uuid())
+  orderId       String   @unique @map("order_id")
+  paymentMethod String   @map("payment_method")
+  paymentStatus String   @map("payment_status")
+  amount        Decimal  @db.Decimal(18, 2)
+  providerRef   String?  @map("provider_ref")
+  createdAt     DateTime @default(now()) @map("created_at")
+  order         Order    @relation(fields: [orderId], references: [id])
+
+  @@map("payment_intent")
+}
+
+model Escrow {
+  id           String    @id @default(uuid())
+  orderId      String    @unique @map("order_id")
+  escrowStatus String    @map("escrow_status")
+  heldAmount   Decimal   @map("held_amount") @db.Decimal(18, 2)
+  holdAt       DateTime? @map("hold_at")
+  releaseAt    DateTime? @map("release_at")
+  order        Order     @relation(fields: [orderId], references: [id])
+
+  @@map("escrow")
+}
+
+model Dispute {
+  id             String            @id @default(uuid())
+  orderId        String            @map("order_id")
+  openedByUserId String            @map("opened_by_user_id")
+  reason         String
+  disputeStatus  String            @map("dispute_status")
+  openedAt       DateTime          @default(now()) @map("opened_at")
+  resolvedAt     DateTime?         @map("resolved_at")
+  order          Order             @relation(fields: [orderId], references: [id])
+  openedBy       User              @relation("DisputeOpenedBy", fields: [openedByUserId], references: [id])
+  evidence       DisputeEvidence[]
+
+  @@map("dispute")
+}
+
+model DisputeEvidence {
+  id               String   @id @default(uuid())
+  disputeId        String   @map("dispute_id")
+  uploadedByUserId String   @map("uploaded_by_user_id")
+  fileType         String   @map("file_type")
+  fileUrl          String   @map("file_url")
+  uploadedAt       DateTime @default(now()) @map("uploaded_at")
+  dispute          Dispute  @relation(fields: [disputeId], references: [id])
+  uploadedBy       User     @relation("DisputeEvidenceUploadedBy", fields: [uploadedByUserId], references: [id])
+
+  @@map("dispute_evidence")
+}
+
+model Review {
+  id         String   @id @default(uuid())
+  orderId    String   @map("order_id")
+  fromUserId String   @map("from_user_id")
+  toUserId   String   @map("to_user_id")
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  order      Order    @relation(fields: [orderId], references: [id])
+  fromUser   User     @relation("ReviewFromUser", fields: [fromUserId], references: [id])
+  toUser     User     @relation("ReviewToUser", fields: [toUserId], references: [id])
+
+  @@map("review")
+}
+
+model ChatThread {
+  id           String        @id @default(uuid())
+  offerId      String        @map("offer_id")
+  buyerUserId  String        @map("buyer_user_id")
+  sellerUserId String        @map("seller_user_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  offer        Offer         @relation(fields: [offerId], references: [id])
+  buyer        User          @relation("ChatThreadBuyer", fields: [buyerUserId], references: [id])
+  seller       User          @relation("ChatThreadSeller", fields: [sellerUserId], references: [id])
+  messages     ChatMessage[]
+
+  @@map("chat_thread")
+}
+
+model ChatMessage {
+  id           String     @id @default(uuid())
+  threadId     String     @map("thread_id")
+  senderUserId String     @map("sender_user_id")
+  messageType  String     @map("message_type")
+  body         String
+  sentAt       DateTime   @default(now()) @map("sent_at")
+  thread       ChatThread @relation(fields: [threadId], references: [id])
+  sender       User       @relation("ChatMessageSender", fields: [senderUserId], references: [id])
+
+  @@map("chat_message")
+}
+
+model Report {
+  id             String   @id @default(uuid())
+  reporterUserId String   @map("reporter_user_id")
+  targetType     String   @map("target_type")
+  targetId       String   @map("target_id")
+  reason         String
+  reportStatus   String   @map("report_status")
+  createdAt      DateTime @default(now()) @map("created_at")
+  reporter       User     @relation("ReportReporter", fields: [reporterUserId], references: [id])
+
+  @@map("report")
+}
+
+model ModerationCase {
+  id                  String    @id @default(uuid())
+  targetType          String    @map("target_type")
+  targetId            String    @map("target_id")
+  reason              String
+  caseStatus          String    @map("case_status")
+  assignedAdminUserId String?   @map("assigned_admin_user_id")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  resolvedAt          DateTime? @map("resolved_at")
+  assignedAdmin       User?     @relation("ModerationCaseAssignee", fields: [assignedAdminUserId], references: [id])
+
+  @@map("moderation_case")
 }
