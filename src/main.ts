@@ -27,6 +27,15 @@ async function bootstrap() {
     .setTitle('Ecommerce-Anti-Fake API')
     .setDescription('API documentation for Ecommerce-Anti-Fake application')
     .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Paste access token here to test protected endpoints.',
+      },
+      'access-token',
+    )
     .build();
   const document = SwaggerModule.createDocument(app, config);
 

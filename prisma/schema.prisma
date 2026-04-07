@@ -16,6 +16,7 @@ model User {
   accountStatus       String            @default("active") @map("account_status")
   createdAt           DateTime          @default(now()) @map("created_at")
   updatedAt           DateTime          @updatedAt @map("updated_at")
+  authSessions        AuthSession[]
   kyc                 UserKyc?
   ownedShops          Shop[]            @relation("ShopOwner")
   offers              Offer[]           @relation("OfferSeller")
@@ -32,6 +33,25 @@ model User {
   provenanceEvents    ProvenanceEvent[] @relation("ProvenanceEventActor")
 
   @@map("user")
+}
+
+model AuthSession {
+  id                  String    @id @default(uuid())
+  userId              String    @map("user_id")
+  tokenFamily         String    @map("token_family")
+  currentTokenId      String    @unique @map("current_token_id")
+  currentTokenHash    String    @map("current_token_hash")
+  expiresAt           DateTime  @map("expires_at")
+  lastUsedAt          DateTime? @map("last_used_at")
+  revokedAt           DateTime? @map("revoked_at")
+  reuseDetectedAt     DateTime? @map("reuse_detected_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  user                User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([tokenFamily])
+  @@map("auth_session")
 }
 
 model UserKyc {
