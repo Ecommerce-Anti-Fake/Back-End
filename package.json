@@ -6,12 +6,12 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "build": "nest build api",
+    "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\" \"test/**/*.ts\"",
+    "start": "nest start api",
+    "start:dev": "nest start api --watch",
+    "start:debug": "nest start api --debug --watch",
+    "start:prod": "node dist/apps/api/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -67,15 +67,36 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
+    "moduleNameMapper": {
+      "^@app/api$": "<rootDir>/apps/api/src/index.ts",
+      "^@app/api/(.*)$": "<rootDir>/apps/api/src/$1",
+      "^@common$": "<rootDir>/libs/common/src/index.ts",
+      "^@common/(.*)$": "<rootDir>/libs/common/src/$1",
+      "^@security$": "<rootDir>/libs/security/src/index.ts",
+      "^@security/(.*)$": "<rootDir>/libs/security/src/$1",
+      "^@contracts$": "<rootDir>/libs/contracts/src/index.ts",
+      "^@contracts/(.*)$": "<rootDir>/libs/contracts/src/$1",
+      "^@database$": "<rootDir>/libs/database/src/index.ts",
+      "^@database/(.*)$": "<rootDir>/libs/database/src/$1",
+      "^@auth$": "<rootDir>/libs/auth/src/index.ts",
+      "^@auth/(.*)$": "<rootDir>/libs/auth/src/$1",
+      "^@users$": "<rootDir>/libs/users/src/index.ts",
+      "^@users/(.*)$": "<rootDir>/libs/users/src/$1",
+      "^@products$": "<rootDir>/libs/products/src/index.ts",
+      "^@products/(.*)$": "<rootDir>/libs/products/src/$1",
+      "^@orders$": "<rootDir>/libs/orders/src/index.ts",
+      "^@orders/(.*)$": "<rootDir>/libs/orders/src/$1"
+    },
     "collectCoverageFrom": [
-      "**/*.(t|j)s"
+      "apps/**/*.(t|j)s",
+      "libs/**/*.(t|j)s"
     ],
-    "coverageDirectory": "../coverage",
+    "coverageDirectory": "./coverage",
     "testEnvironment": "node"
   }
 }

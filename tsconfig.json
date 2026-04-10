@@ -20,6 +20,27 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "baseUrl": ".",
+    "paths": {
+      "@app/api": ["apps/api/src"],
+      "@app/api/*": ["apps/api/src/*"],
+      "@common": ["libs/common/src"],
+      "@common/*": ["libs/common/src/*"],
+      "@security": ["libs/security/src"],
+      "@security/*": ["libs/security/src/*"],
+      "@contracts": ["libs/contracts/src"],
+      "@contracts/*": ["libs/contracts/src/*"],
+      "@database": ["libs/database/src"],
+      "@database/*": ["libs/database/src/*"],
+      "@auth": ["libs/auth/src"],
+      "@auth/*": ["libs/auth/src/*"],
+      "@users": ["libs/users/src"],
+      "@users/*": ["libs/users/src/*"],
+      "@products": ["libs/products/src"],
+      "@products/*": ["libs/products/src/*"],
+      "@orders": ["libs/orders/src"],
+      "@orders/*": ["libs/orders/src/*"]
+    }
   }
 }
