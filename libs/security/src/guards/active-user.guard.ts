@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthenticatedUser, SafeUser, UserIdentityPort } from '@contracts';
+import { getAuthContext } from '../execution-context/auth-context';
 
 type AuthenticatedRequest = {
   user?: AuthenticatedUser;
@@ -20,7 +21,7 @@ export class ActiveUserGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+    const request = getAuthContext(context) as AuthenticatedRequest;
     const tokenPrincipal = request.user && 'sub' in request.user ? request.user.sub : undefined;
     const userId = request.user?.id ?? tokenPrincipal;
 

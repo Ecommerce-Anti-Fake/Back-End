@@ -13,31 +13,21 @@ import {
 import { ActiveUserGuard, CurrentUser, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import {
   AdminAccessResponseDto,
+  AuthUserResponseDto,
+  LoginDto,
   LoginResponseDto,
   LogoutResponseDto,
   RefreshResponseDto,
-  RegisterResponseDto,
-  AuthUserResponseDto,
-  LoginDto,
   RefreshTokenDto,
   RegisterDto,
-} from '../../application/dto';
-import {
-  LoginUseCase,
-  LogoutUseCase,
-  RefreshTokenUseCase,
-  RegisterUseCase,
-} from '../../application/use-cases';
+  RegisterResponseDto,
+} from '@auth';
+import { AuthRpcService } from './auth-rpc.service';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(
-    private readonly registerUseCase: RegisterUseCase,
-    private readonly loginUseCase: LoginUseCase,
-    private readonly refreshTokenUseCase: RefreshTokenUseCase,
-    private readonly logoutUseCase: LogoutUseCase,
-  ) {}
+  constructor(private readonly authRpcService: AuthRpcService) {}
 
   @ApiOperation({ summary: 'Dang ky tai khoan bang email hoac so dien thoai' })
   @ApiBody({ type: RegisterDto })
@@ -49,8 +39,8 @@ export class AuthController {
     description: 'Thieu email/phone, du lieu khong hop le hoac tai khoan da ton tai.',
   })
   @Post('register')
-  async register(@Body() dto: RegisterDto) {
-    return this.registerUseCase.execute(dto);
+  register(@Body() dto: RegisterDto) {
+    return this.authRpcService.register(dto);
   }
 
   @ApiOperation({ summary: 'Dang nhap va nhan access token cung refresh token' })
@@ -66,8 +56,8 @@ export class AuthController {
     description: 'Tai khoan khong o trang thai active.',
   })
   @Post('login')
-  async login(@Body() dto: LoginDto) {
-    return this.loginUseCase.execute(dto);
+  login(@Body() dto: LoginDto) {
+    return this.authRpcService.login(dto);
   }
 
   @ApiOperation({ summary: 'Dung refresh token hien tai de rotate sang cap token moi' })
@@ -83,8 +73,8 @@ export class AuthController {
     description: 'Tai khoan khong o trang thai active.',
   })
   @Post('refresh')
-  async refresh(@Body() dto: RefreshTokenDto) {
-    return this.refreshTokenUseCase.execute(dto);
+  refresh(@Body() dto: RefreshTokenDto) {
+    return this.authRpcService.refresh(dto);
   }
 
   @ApiOperation({ summary: 'Dang xuat va revoke session refresh token hien tai' })
@@ -97,8 +87,8 @@ export class AuthController {
     description: 'Refresh token khong hop le hoac da bi reuse.',
   })
   @Post('logout')
-  async logout(@Body() dto: RefreshTokenDto) {
-    return this.logoutUseCase.execute(dto);
+  logout(@Body() dto: RefreshTokenDto) {
+    return this.authRpcService.logout(dto);
   }
 
   @ApiOperation({ summary: 'Kiem tra route chi danh cho admin' })
@@ -116,7 +106,7 @@ export class AuthController {
   @Roles('admin')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
   @Get('admin-check')
-  async adminCheck(@CurrentUser() user: AuthUserResponseDto) {
+  adminCheck(@CurrentUser() user: AuthUserResponseDto) {
     return {
       message: 'Admin access granted',
       user,

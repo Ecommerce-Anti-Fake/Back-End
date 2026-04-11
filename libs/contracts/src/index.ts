@@ -3,3 +3,4 @@ export * from './auth/auth.types';
 export * from './auth/access-token-payload';
 export * from './auth/authenticated-user';
 export * from './auth/user-identity.port';
+export * from './microservice/patterns';

@@ -9,12 +9,10 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   app.setGlobalPrefix('api');
-
   app.enableCors({
     origin: true,
     credentials: true,
   });
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -24,8 +22,8 @@ async function bootstrap() {
   );
 
   const config = new DocumentBuilder()
-    .setTitle('Ecommerce-Anti-Fake API')
-    .setDescription('API documentation for Ecommerce-Anti-Fake application')
+    .setTitle('Ecommerce-Anti-Fake API Gateway')
+    .setDescription('HTTP gateway for Ecommerce-Anti-Fake microservices')
     .setVersion('1.0')
     .addBearerAuth(
       {
@@ -42,7 +40,6 @@ async function bootstrap() {
   SwaggerModule.setup('swagger', app, document);
 
   const port = configService.get<number>('PORT') ?? 3001;
-
   await app.listen(port);
 }
 

@@ -6,9 +6,10 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { AccessTokenPayload, AuthenticatedPrincipal } from '@contracts';
+import { getAuthContext } from '../execution-context/auth-context';
 
 type AuthenticatedRequest = {
-  headers: Record<string, string | string[] | undefined>;
+  headers?: Record<string, string | string[] | undefined>;
   user?: AuthenticatedPrincipal;
 };
 
@@ -17,8 +18,8 @@ export class JwtAuthGuard implements CanActivate {
   constructor(private readonly jwtService: JwtService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-    const token = this.extractBearerToken(request.headers.authorization);
+    const request = getAuthContext(context) as AuthenticatedRequest;
+    const token = this.extractBearerToken(request.headers?.authorization);
 
     if (!token) {
       throw new UnauthorizedException('Missing or invalid Authorization header');

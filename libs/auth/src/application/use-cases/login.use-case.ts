@@ -1,9 +1,10 @@
 import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { LoginDto } from '../dto';
-import { SafeUser, TokenPair, UserIdentityPort } from '../../domain/interfaces';
+import { TokenPair, UserIdentityPort } from '@contracts';
 import { JwtTokenAdapter } from '../../infrastructure/adapters';
 import { AuthSessionRepository } from '../../infrastructure/persistence';
 import { PasswordHasherService } from '../services';
+import { toSafeUser } from './user.mapper';
 
 @Injectable()
 export class LoginUseCase {
@@ -23,7 +24,7 @@ export class LoginUseCase {
     const tokenPair = await this.issueSessionTokens(user.id, user.role);
     return {
       ...tokenPair,
-      user: this.toSafeUser(user),
+      user: toSafeUser(user),
     };
   }
 
@@ -69,19 +70,6 @@ export class LoginUseCase {
     });
 
     return { accessToken, refreshToken };
-  }
-
-  private toSafeUser(user: SafeUser): SafeUser {
-    return {
-      id: user.id,
-      email: user.email,
-      phone: user.phone,
-      displayName: user.displayName,
-      role: user.role,
-      accountStatus: user.accountStatus,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
   }
 
   private normalizeEmail(email?: string): string | null {

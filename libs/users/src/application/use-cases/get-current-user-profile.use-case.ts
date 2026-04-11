@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
-import { UserSummary } from '../../domain/interfaces/user.types';
+import { toUserSummary} from './users.mapper';
 import { UsersRepository } from '../../infrastructure/persistence/users.repository';
 
 @Injectable()
@@ -15,19 +15,7 @@ export class GetCurrentUserProfileUseCase {
       throw new ForbiddenException('Account is not active');
     }
 
-    return this.toUserSummary(user);
+    return toUserSummary(user);
   }
 
-  private toUserSummary(user: UserSummary): UserSummary {
-    return {
-      id: user.id,
-      email: user.email,
-      phone: user.phone,
-      displayName: user.displayName,
-      role: user.role,
-      accountStatus: user.accountStatus,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
-  }
 }

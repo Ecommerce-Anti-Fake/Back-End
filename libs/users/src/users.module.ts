@@ -1,27 +1,41 @@
 import { Module } from '@nestjs/common';
 import { UserIdentityPort } from '@contracts';
 import { PrismaModule } from '@database/prisma/prisma.module';
-import { ActiveUserGuard, AuthGuardsModule } from '@security';
-import { GetCurrentUserProfileUseCase } from './application/use-cases/get-current-user-profile.use-case';
 import { UsersIdentityService } from './application/services/users-identity.service';
-import { UsersService } from './application/services/users.service';
+import {
+  DeleteUserUseCase,
+  GetCurrentUserProfileUseCase,
+  GetUserByIdUseCase,
+  ListUsersUseCase,
+  UpdateUserUseCase,
+} from './application/use-cases';
 import { UsersRepository } from './infrastructure/persistence/users.repository';
-import { UsersController } from './presentation/http/users.controller';
+import { UsersRpcController } from './presentation/rpc/users.rpc-controller';
 
 @Module({
-  imports: [PrismaModule, AuthGuardsModule],
-  controllers: [UsersController],
+  imports: [PrismaModule],
+  controllers: [UsersRpcController],
   providers: [
-    UsersService,
     UsersIdentityService,
     UsersRepository,
+    ListUsersUseCase,
+    GetUserByIdUseCase,
+    UpdateUserUseCase,
+    DeleteUserUseCase,
     GetCurrentUserProfileUseCase,
-    ActiveUserGuard,
     {
       provide: UserIdentityPort,
       useExisting: UsersIdentityService,
     },
   ],
-  exports: [UsersService, UsersIdentityService, GetCurrentUserProfileUseCase, UserIdentityPort],
+  exports: [
+    UsersIdentityService,
+    ListUsersUseCase,
+    GetUserByIdUseCase,
+    UpdateUserUseCase,
+    DeleteUserUseCase,
+    GetCurrentUserProfileUseCase,
+    UserIdentityPort,
+  ],
 })
 export class UsersModule {}

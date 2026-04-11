@@ -4,10 +4,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { RefreshTokenDto } from '../dto';
-import { SafeUser, TokenPair } from '../../domain/interfaces/auth.types';
+import { TokenPair } from '@contracts';
 import { JwtTokenAdapter } from '../../infrastructure/adapters';
 import { AuthSessionRepository } from '../../infrastructure/persistence';
 import { PasswordHasherService } from '../services';
+import { toSafeUser } from './user.mapper';
 
 @Injectable()
 export class RefreshTokenUseCase {
@@ -54,7 +55,7 @@ export class RefreshTokenUseCase {
     const tokens = await this.rotateRefreshToken(session.id, session.user.id, session.user.role);
     return {
       ...tokens,
-      user: this.toSafeUser(session.user),
+      user: toSafeUser(session.user),
     };
   }
 
@@ -87,16 +88,4 @@ export class RefreshTokenUseCase {
     });
   }
 
-  private toSafeUser(user: SafeUser): SafeUser {
-    return {
-      id: user.id,
-      email: user.email,
-      phone: user.phone,
-      displayName: user.displayName,
-      role: user.role,
-      accountStatus: user.accountStatus,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
-  }
 }

@@ -1,22 +1,56 @@
 import { Module } from '@nestjs/common';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
+import type { StringValue } from 'ms';
+import { UserIdentityPort, USERS_SERVICE_CLIENT } from '@contracts';
 import { PrismaModule } from '@database/prisma/prisma.module';
-import { ActiveUserGuard, AuthGuardsModule } from '@security';
-import { UsersModule } from '@users';
 import { PasswordHasherService } from './application/services';
 import { LoginUseCase, LogoutUseCase, RefreshTokenUseCase, RegisterUseCase } from './application/use-cases';
 import { JwtTokenAdapter } from './infrastructure/adapters';
 import { AuthSessionRepository } from './infrastructure/persistence';
-import { AuthController } from './presentation/http/auth.controller';
+import { UsersIdentityRpcAdapter } from './infrastructure/rpc/users-identity.rpc-adapter';
+import { AuthRpcController } from './presentation/rpc/auth.rpc-controller';
 
 @Module({
   imports: [
     ConfigModule,
     PrismaModule,
-    UsersModule,
-    AuthGuardsModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET')?.trim();
+        if (!secret) {
+          throw new Error('JWT_SECRET is not configured');
+        }
+
+        return {
+          secret,
+          signOptions: {
+            expiresIn:
+              (configService.get<string>('ACCESS_TOKEN_TTL')?.trim() as StringValue) || '15m',
+          },
+        };
+      },
+    }),
+    ClientsModule.registerAsync([
+      {
+        name: USERS_SERVICE_CLIENT,
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.TCP,
+          options: {
+            host: configService.get<string>('USERS_SERVICE_HOST')?.trim() || '127.0.0.1',
+            port: configService.get<number>('USERS_SERVICE_PORT') ?? 4002,
+          },
+        }),
+      },
+    ]),
   ],
-  controllers: [AuthController],
+  controllers: [AuthRpcController],
   providers: [
     PasswordHasherService,
     LoginUseCase,
@@ -25,7 +59,11 @@ import { AuthController } from './presentation/http/auth.controller';
     RefreshTokenUseCase,
     AuthSessionRepository,
     JwtTokenAdapter,
-    ActiveUserGuard,
+    UsersIdentityRpcAdapter,
+    {
+      provide: UserIdentityPort,
+      useExisting: UsersIdentityRpcAdapter,
+    },
   ],
 })
 export class AuthModule {}

@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { UsersRepository } from '../../infrastructure/persistence/users.repository';
+import { toUserSummary } from './users.mapper';
 
 @Injectable()
-export class UsersService {
+export class ListUsersUseCase {
   constructor(private readonly usersRepository: UsersRepository) {}
 
-  findAll() {
-    return this.usersRepository.findAll();
+  async execute(role?: 'user') {
+    const users = await this.usersRepository.findAll(role ?? 'user');
+    return users.map(toUserSummary);
   }
 }

@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { RegisterDto } from '../dto';
-import { SafeUser, UserIdentityPort } from '../../domain/interfaces';
+import { UserIdentityPort } from '@contracts';
 import { PasswordHasherService } from '../services';
+import { toSafeUser } from './user.mapper';
 
 @Injectable()
 export class RegisterUseCase {
@@ -33,21 +34,9 @@ export class RegisterUseCase {
       password: passwordHash,
     });
 
-    return this.toSafeUser(user);
+    return toSafeUser(user);
   }
 
-  private toSafeUser(user: SafeUser): SafeUser {
-    return {
-      id: user.id,
-      email: user.email,
-      phone: user.phone,
-      displayName: user.displayName,
-      role: user.role,
-      accountStatus: user.accountStatus,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-    };
-  }
 
   private normalizeEmail(email?: string): string | null {
     const normalized = email?.trim().toLowerCase();
