@@ -1,0 +1,66 @@
+import { Module } from '@nestjs/common';
+import { PrismaModule } from '@database/prisma/prisma.module';
+import {
+  ApproveAffiliateConversionUseCase,
+  CreateAffiliateCodeUseCase,
+  CreateAffiliatePayoutUseCase,
+  CreateAffiliateProgramUseCase,
+  GetAffiliateAccountSummaryUseCase,
+  JoinAffiliateProgramUseCase,
+  ListAffiliateCommissionsByAccountUseCase,
+  ListAffiliateConversionsByAccountUseCase,
+  ListAffiliateConversionsByProgramUseCase,
+  ListAffiliateCodesByAccountUseCase,
+  ListAffiliatePayoutsByAccountUseCase,
+  ListAffiliatePayoutsByProgramUseCase,
+  ListMyAffiliateAccountsUseCase,
+  ListMyAffiliateProgramsUseCase,
+  RejectAffiliateConversionUseCase,
+  UpdateAffiliatePayoutStatusUseCase,
+} from './application/use-cases';
+import { AffiliateRepository } from './infrastructure/persistence/affiliate.repository';
+import { AffiliateRpcController } from './presentation/rpc/affiliate.rpc-controller';
+
+@Module({
+  imports: [PrismaModule],
+  controllers: [AffiliateRpcController],
+  providers: [
+    AffiliateRepository,
+    ApproveAffiliateConversionUseCase,
+    CreateAffiliateProgramUseCase,
+    CreateAffiliatePayoutUseCase,
+    GetAffiliateAccountSummaryUseCase,
+    ListMyAffiliateProgramsUseCase,
+    JoinAffiliateProgramUseCase,
+    ListAffiliateCommissionsByAccountUseCase,
+    ListAffiliateConversionsByAccountUseCase,
+    ListAffiliateConversionsByProgramUseCase,
+    ListMyAffiliateAccountsUseCase,
+    CreateAffiliateCodeUseCase,
+    ListAffiliateCodesByAccountUseCase,
+    ListAffiliatePayoutsByAccountUseCase,
+    ListAffiliatePayoutsByProgramUseCase,
+    RejectAffiliateConversionUseCase,
+    UpdateAffiliatePayoutStatusUseCase,
+  ],
+  exports: [
+    AffiliateRepository,
+    ApproveAffiliateConversionUseCase,
+    CreateAffiliateProgramUseCase,
+    CreateAffiliatePayoutUseCase,
+    GetAffiliateAccountSummaryUseCase,
+    ListMyAffiliateProgramsUseCase,
+    JoinAffiliateProgramUseCase,
+    ListAffiliateCommissionsByAccountUseCase,
+    ListAffiliateConversionsByAccountUseCase,
+    ListAffiliateConversionsByProgramUseCase,
+    ListMyAffiliateAccountsUseCase,
+    CreateAffiliateCodeUseCase,
+    ListAffiliateCodesByAccountUseCase,
+    ListAffiliatePayoutsByAccountUseCase,
+    ListAffiliatePayoutsByProgramUseCase,
+    RejectAffiliateConversionUseCase,
+    UpdateAffiliatePayoutStatusUseCase,
+  ],
+})
+export class AffiliateModule {}

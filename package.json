@@ -95,6 +95,12 @@
       "^@users/(.*)$": "<rootDir>/libs/users/src/$1",
       "^@products$": "<rootDir>/libs/products/src/index.ts",
       "^@products/(.*)$": "<rootDir>/libs/products/src/$1",
+      "^@distribution$": "<rootDir>/libs/distribution/src/index.ts",
+      "^@distribution/(.*)$": "<rootDir>/libs/distribution/src/$1",
+      "^@affiliate$": "<rootDir>/libs/affiliate/src/index.ts",
+      "^@affiliate/(.*)$": "<rootDir>/libs/affiliate/src/$1",
+      "^@shops$": "<rootDir>/libs/shops/src/index.ts",
+      "^@shops/(.*)$": "<rootDir>/libs/shops/src/$1",
       "^@orders$": "<rootDir>/libs/orders/src/index.ts",
       "^@orders/(.*)$": "<rootDir>/libs/orders/src/$1"
     },

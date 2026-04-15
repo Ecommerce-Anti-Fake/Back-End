@@ -6,48 +6,155 @@ datasource db {
   provider = "postgresql"
 }
 
+enum DistributionNodeType {
+  MANUFACTURER
+  AGENT_LEVEL_1
+  AGENT_LEVEL_2
+  AGENT_LEVEL_3
+}
+
+enum DistributionRelationshipStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  TERMINATED
+  EXPIRED
+}
+
+enum DistributionShipmentStatus {
+  DRAFT
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum AffiliateScopeType {
+  PLATFORM
+  SHOP
+  BRAND
+  PRODUCT_MODEL
+  OFFER
+}
+
+enum AffiliateProgramStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  CLOSED
+}
+
+enum AffiliateAccountStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  BLOCKED
+}
+
+enum AffiliateConversionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum AffiliateCommissionStatus {
+  PENDING
+  APPROVED
+  LOCKED
+  PAID
+  CANCELLED
+}
+
+enum CommissionBeneficiaryType {
+  AFFILIATE_TIER_1
+  AFFILIATE_TIER_2
+  PLATFORM
+  SHOP
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum ShopRegistrationType {
+  NORMAL
+  HANDMADE
+  MANUFACTURER
+  DISTRIBUTOR
+}
+
+enum OfferSalesMode {
+  RETAIL
+  WHOLESALE
+  BOTH
+}
+
+enum DistributionDiscountType {
+  PERCENT
+  FIXED_AMOUNT
+  FIXED_PRICE
+}
+
+enum DistributionPricingScope {
+  NETWORK_DEFAULT
+  NODE_LEVEL
+  NODE_SPECIFIC
+}
+
+enum OrderMode {
+  RETAIL
+  WHOLESALE
+}
+
 model User {
-  id                  String            @id @default(uuid())
-  phone               String?           @unique
-  email               String?           @unique
-  displayName         String?           @map("display_name")
-  password            String?
-  role                String            @default("user")
-  accountStatus       String            @default("active") @map("account_status")
-  createdAt           DateTime          @default(now()) @map("created_at")
-  updatedAt           DateTime          @updatedAt @map("updated_at")
-  authSessions        AuthSession[]
-  kyc                 UserKyc?
-  ownedShops          Shop[]            @relation("ShopOwner")
-  offers              Offer[]           @relation("OfferSeller")
-  orders              Order[]           @relation("OrderBuyer")
-  disputesOpened      Dispute[]         @relation("DisputeOpenedBy")
-  disputeEvidence     DisputeEvidence[] @relation("DisputeEvidenceUploadedBy")
-  reviewsGiven        Review[]          @relation("ReviewFromUser")
-  reviewsReceived     Review[]          @relation("ReviewToUser")
-  chatThreadsAsBuyer  ChatThread[]      @relation("ChatThreadBuyer")
-  chatThreadsAsSeller ChatThread[]      @relation("ChatThreadSeller")
-  chatMessages        ChatMessage[]     @relation("ChatMessageSender")
-  reports             Report[]          @relation("ReportReporter")
-  moderationCases     ModerationCase[]  @relation("ModerationCaseAssignee")
-  provenanceEvents    ProvenanceEvent[] @relation("ProvenanceEventActor")
+  id                   String                @id @default(uuid())
+  phone                String?               @unique
+  email                String?               @unique
+  displayName          String?               @map("display_name")
+  password             String?
+  role                 String                @default("user")
+  accountStatus        String                @default("active") @map("account_status")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
+  authSessions         AuthSession[]
+  kyc                  UserKyc?
+  ownedShops           Shop[]                @relation("ShopOwner")
+  offers               Offer[]               @relation("OfferSeller")
+  orders               Order[]               @relation("OrderBuyer")
+  disputesOpened       Dispute[]             @relation("DisputeOpenedBy")
+  disputeEvidence      DisputeEvidence[]     @relation("DisputeEvidenceUploadedBy")
+  reviewsGiven         Review[]              @relation("ReviewFromUser")
+  reviewsReceived      Review[]              @relation("ReviewToUser")
+  chatThreadsAsBuyer   ChatThread[]          @relation("ChatThreadBuyer")
+  chatThreadsAsSeller  ChatThread[]          @relation("ChatThreadSeller")
+  chatMessages         ChatMessage[]         @relation("ChatMessageSender")
+  reports              Report[]              @relation("ReportReporter")
+  moderationCases      ModerationCase[]      @relation("ModerationCaseAssignee")
+  provenanceEvents     ProvenanceEvent[]     @relation("ProvenanceEventActor")
+  affiliateAccounts    AffiliateAccount[]
+  affiliateConversions AffiliateConversion[] @relation("AffiliateConversionCustomer")
 
   @@map("user")
 }
 
 model AuthSession {
-  id                  String    @id @default(uuid())
-  userId              String    @map("user_id")
-  tokenFamily         String    @map("token_family")
-  currentTokenId      String    @unique @map("current_token_id")
-  currentTokenHash    String    @map("current_token_hash")
-  expiresAt           DateTime  @map("expires_at")
-  lastUsedAt          DateTime? @map("last_used_at")
-  revokedAt           DateTime? @map("revoked_at")
-  reuseDetectedAt     DateTime? @map("reuse_detected_at")
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
-  user                User      @relation(fields: [userId], references: [id])
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  tokenFamily      String    @map("token_family")
+  currentTokenId   String    @unique @map("current_token_id")
+  currentTokenHash String    @map("current_token_hash")
+  expiresAt        DateTime  @map("expires_at")
+  lastUsedAt       DateTime? @map("last_used_at")
+  revokedAt        DateTime? @map("revoked_at")
+  reuseDetectedAt  DateTime? @map("reuse_detected_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  user             User      @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([tokenFamily])
@@ -68,21 +175,62 @@ model UserKyc {
 }
 
 model Shop {
-  id                  String               @id @default(uuid())
-  ownerUserId         String               @map("owner_user_id")
-  shopName            String               @map("shop_name")
-  businessType        String               @map("business_type")
-  taxCode             String?              @map("tax_code")
-  shopStatus          String               @map("shop_status")
-  createdAt           DateTime             @default(now()) @map("created_at")
-  owner               User                 @relation("ShopOwner", fields: [ownerUserId], references: [id])
-  documents           ShopDocument[]
-  brandAuthorizations BrandAuthorization[]
-  offers              Offer[]
-  supplyBatches       SupplyBatch[]
-  orders              Order[]
+  id                         String                @id @default(uuid())
+  ownerUserId                String                @map("owner_user_id")
+  shopName                   String                @map("shop_name")
+  registrationType           ShopRegistrationType  @map("registration_type")
+  businessType               String                @map("business_type")
+  taxCode                    String?               @map("tax_code")
+  shopStatus                 String                @map("shop_status")
+  createdAt                  DateTime              @default(now()) @map("created_at")
+  owner                      User                  @relation("ShopOwner", fields: [ownerUserId], references: [id])
+  documents                  ShopDocument[]
+  registeredCategories       ShopBusinessCategory[]
+  brandAuthorizations        BrandAuthorization[]
+  offers                     Offer[]
+  supplyBatches              SupplyBatch[]
+  orders                     Order[]
+  wholesaleOrders            Order[]               @relation("OrderBuyerShop")
+  distributionNetworksAsRoot DistributionNetwork[] @relation("DistributionManufacturerShop")
+  distributionNodes          DistributionNode[]
+  affiliatePrograms          AffiliateProgram[]
 
   @@map("shop")
+}
+
+model ShopBusinessCategory {
+  id                 String                 @id @default(uuid())
+  shopId             String                 @map("shop_id")
+  categoryId         String                 @map("category_id")
+  registrationStatus String                 @default("pending") @map("registration_status")
+  approvedAt         DateTime?              @map("approved_at")
+  createdAt          DateTime               @default(now()) @map("created_at")
+  shop               Shop                   @relation(fields: [shopId], references: [id])
+  category           Category               @relation(fields: [categoryId], references: [id])
+  documents          ShopCategoryDocument[]
+
+  @@unique([shopId, categoryId])
+  @@index([shopId])
+  @@index([categoryId])
+  @@map("shop_business_category")
+}
+
+model ShopCategoryDocument {
+  id                     String               @id @default(uuid())
+  shopBusinessCategoryId String               @map("shop_business_category_id")
+  documentType           String               @map("document_type")
+  fileUrl                String               @map("file_url")
+  documentNumber         String?              @map("document_number")
+  issuedBy               String?              @map("issued_by")
+  issuedAt               DateTime?            @map("issued_at")
+  expiresAt              DateTime?            @map("expires_at")
+  reviewStatus           String               @default("pending") @map("review_status")
+  reviewNote             String?              @map("review_note")
+  uploadedAt             DateTime             @default(now()) @map("uploaded_at")
+  shopBusinessCategory   ShopBusinessCategory @relation(fields: [shopBusinessCategoryId], references: [id])
+
+  @@index([shopBusinessCategoryId])
+  @@map("shop_category_document")
 }
 
 model ShopDocument {
@@ -98,13 +246,15 @@ model ShopDocument {
 }
 
 model Brand {
-  id                 String               @id @default(uuid())
-  name               String
-  registryStatus     String               @map("registry_status")
-  createdAt          DateTime             @default(now()) @map("created_at")
-  productModels      ProductModel[]
-  authorizations     BrandAuthorization[]
-  verificationLabels VerificationLabel[]
+  id                   String                @id @default(uuid())
+  name                 String
+  registryStatus       String                @map("registry_status")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  productModels        ProductModel[]
+  authorizations       BrandAuthorization[]
+  verificationLabels   VerificationLabel[]
+  distributionNetworks DistributionNetwork[]
+  affiliatePrograms    AffiliateProgram[]
 
   @@map("brand")
 }
@@ -123,57 +273,69 @@ model BrandAuthorization {
 }
 
 model Category {
-  id       String     @id @default(uuid())
-  parentId String?    @map("parent_id")
-  name     String
-  riskTier String     @map("risk_tier")
-  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children Category[] @relation("CategoryHierarchy")
-  offers   Offer[]
+  id                          String                      @id @default(uuid())
+  parentId                    String?                     @map("parent_id")
+  name                        String
+  riskTier                    String                      @map("risk_tier")
+  parent                      Category?                   @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children                    Category[]                  @relation("CategoryHierarchy")
+  offers                      Offer[]
+  shopBusinessCategories      ShopBusinessCategory[]
+  distributionPricingPolicies DistributionPricingPolicy[]
 
   @@map("category")
 }
 
 model ProductModel {
-  id                 String        @id @default(uuid())
-  brandId            String        @map("brand_id")
-  modelName          String        @map("model_name")
-  gtin               String?
-  verificationPolicy String        @map("verification_policy")
-  approvalStatus     String        @map("approval_status")
-  createdAt          DateTime      @default(now()) @map("created_at")
-  brand              Brand         @relation(fields: [brandId], references: [id])
-  offers             Offer[]
-  supplyBatches      SupplyBatch[]
+  id                          String                      @id @default(uuid())
+  brandId                     String                      @map("brand_id")
+  modelName                   String                      @map("model_name")
+  gtin                        String?
+  verificationPolicy          String                      @map("verification_policy")
+  approvalStatus              String                      @map("approval_status")
+  createdAt                   DateTime                    @default(now()) @map("created_at")
+  brand                       Brand                       @relation(fields: [brandId], references: [id])
+  offers                      Offer[]
+  supplyBatches               SupplyBatch[]
+  shipmentItems               DistributionShipmentItem[]
+  affiliatePrograms           AffiliateProgram[]
+  distributionPricingPolicies DistributionPricingPolicy[]
 
   @@map("product_model")
 }
 
 model Offer {
-  id                String           @id @default(uuid())
-  sellerUserId      String           @map("seller_user_id")
-  shopId            String           @map("shop_id")
-  categoryId        String           @map("category_id")
-  productModelId    String           @map("product_model_id")
-  title             String
-  description       String
-  price             Decimal          @db.Decimal(18, 2)
-  currency          String
-  itemCondition     String           @map("item_condition")
-  availableQuantity Int              @map("available_quantity")
-  verificationLevel String           @map("verification_level")
-  offerStatus       String           @map("offer_status")
-  createdAt         DateTime         @default(now()) @map("created_at")
-  seller            User             @relation("OfferSeller", fields: [sellerUserId], references: [id])
-  shop              Shop             @relation(fields: [shopId], references: [id])
-  category          Category         @relation(fields: [categoryId], references: [id])
-  productModel      ProductModel     @relation(fields: [productModelId], references: [id])
-  media             OfferMedia[]
-  documents         OfferDocument[]
-  batchLinks        OfferBatchLink[]
-  orderItems        OrderItem[]
-  chatThreads       ChatThread[]
+  id                   String                @id @default(uuid())
+  sellerUserId         String                @map("seller_user_id")
+  shopId               String                @map("shop_id")
+  categoryId           String                @map("category_id")
+  productModelId       String                @map("product_model_id")
+  distributionNodeId   String?               @map("distribution_node_id")
+  title                String
+  description          String
+  price                Decimal               @db.Decimal(18, 2)
+  currency             String
+  salesMode            OfferSalesMode        @default(RETAIL) @map("sales_mode")
+  minWholesaleQty      Int?                  @map("min_wholesale_qty")
+  itemCondition        String                @map("item_condition")
+  availableQuantity    Int                   @map("available_quantity")
+  verificationLevel    String                @map("verification_level")
+  offerStatus          String                @map("offer_status")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  seller               User                  @relation("OfferSeller", fields: [sellerUserId], references: [id])
+  shop                 Shop                  @relation(fields: [shopId], references: [id])
+  category             Category              @relation(fields: [categoryId], references: [id])
+  productModel         ProductModel          @relation(fields: [productModelId], references: [id])
+  distributionNode     DistributionNode?     @relation(fields: [distributionNodeId], references: [id])
+  media                OfferMedia[]
+  documents            OfferDocument[]
+  batchLinks           OfferBatchLink[]
+  orderItems           OrderItem[]
+  chatThreads          ChatThread[]
+  affiliatePrograms    AffiliateProgram[]
+  affiliateConversions AffiliateConversion[]
 
+  @@index([distributionNodeId])
   @@map("offer")
 }
 
@@ -204,19 +366,23 @@ model OfferDocument {
 }
 
 model SupplyBatch {
-  id              String           @id @default(uuid())
-  shopId          String           @map("shop_id")
-  productModelId  String           @map("product_model_id")
-  batchNumber     String           @map("batch_number")
-  sourceName      String           @map("source_name")
-  countryOfOrigin String           @map("country_of_origin")
-  sourceType      String           @map("source_type")
-  receivedAt      DateTime         @map("received_at")
-  shop            Shop             @relation(fields: [shopId], references: [id])
-  productModel    ProductModel     @relation(fields: [productModelId], references: [id])
-  documents       BatchDocument[]
-  offerLinks      OfferBatchLink[]
+  id                 String                     @id @default(uuid())
+  shopId             String                     @map("shop_id")
+  productModelId     String                     @map("product_model_id")
+  distributionNodeId String?                    @map("distribution_node_id")
+  batchNumber        String                     @map("batch_number")
+  sourceName         String                     @map("source_name")
+  countryOfOrigin    String                     @map("country_of_origin")
+  sourceType         String                     @map("source_type")
+  receivedAt         DateTime                   @map("received_at")
+  shop               Shop                       @relation(fields: [shopId], references: [id])
+  productModel       ProductModel               @relation(fields: [productModelId], references: [id])
+  distributionNode   DistributionNode?          @relation(fields: [distributionNodeId], references: [id])
+  documents          BatchDocument[]
+  offerLinks         OfferBatchLink[]
+  shipmentItems      DistributionShipmentItem[]
 
+  @@index([distributionNodeId])
   @@map("supply_batch")
 }
 
@@ -292,21 +458,35 @@ model RiskScore {
 }
 
 model Order {
-  id            String         @id @default(uuid())
-  buyerUserId   String         @map("buyer_user_id")
-  shopId        String         @map("shop_id")
-  orderType     String         @map("order_type")
-  orderStatus   String         @map("order_status")
-  totalAmount   Decimal        @map("total_amount") @db.Decimal(18, 2)
-  createdAt     DateTime       @default(now()) @map("created_at")
-  buyer         User           @relation("OrderBuyer", fields: [buyerUserId], references: [id])
-  shop          Shop           @relation(fields: [shopId], references: [id])
-  items         OrderItem[]
-  paymentIntent PaymentIntent?
-  escrow        Escrow?
-  disputes      Dispute[]
-  reviews       Review[]
+  id                      String               @id @default(uuid())
+  buyerUserId             String?              @map("buyer_user_id")
+  buyerShopId             String?              @map("buyer_shop_id")
+  buyerDistributionNodeId String?              @map("buyer_distribution_node_id")
+  shopId                  String               @map("shop_id")
+  orderMode               OrderMode            @default(RETAIL) @map("order_mode")
+  orderType               String               @map("order_type")
+  orderStatus             String               @map("order_status")
+  baseAmount              Decimal              @map("base_amount") @db.Decimal(18, 2)
+  discountAmount          Decimal              @default(0) @map("discount_amount") @db.Decimal(18, 2)
+  platformFeeAmount       Decimal              @default(0) @map("platform_fee_amount") @db.Decimal(18, 2)
+  buyerPayableAmount      Decimal              @map("buyer_payable_amount") @db.Decimal(18, 2)
+  sellerReceivableAmount  Decimal              @map("seller_receivable_amount") @db.Decimal(18, 2)
+  totalAmount             Decimal              @map("total_amount") @db.Decimal(18, 2)
+  createdAt               DateTime             @default(now()) @map("created_at")
+  buyer                   User?                @relation("OrderBuyer", fields: [buyerUserId], references: [id])
+  buyerShop               Shop?                @relation("OrderBuyerShop", fields: [buyerShopId], references: [id])
+  buyerDistributionNode   DistributionNode?    @relation("OrderBuyerDistributionNode", fields: [buyerDistributionNodeId], references: [id])
+  shop                    Shop                 @relation(fields: [shopId], references: [id])
+  items                   OrderItem[]
+  paymentIntent           PaymentIntent?
+  escrow                  Escrow?
+  disputes                Dispute[]
+  reviews                 Review[]
+  affiliateConversion     AffiliateConversion?
 
+  @@index([buyerUserId])
+  @@index([buyerShopId])
+  @@index([buyerDistributionNodeId])
   @@map("order")
 }
 
@@ -444,4 +624,283 @@ model ModerationCase {
   assignedAdmin       User?     @relation("ModerationCaseAssignee", fields: [assignedAdminUserId], references: [id])
 
   @@map("moderation_case")
+}
+
+model DistributionNetwork {
+  id                 String                      @id @default(uuid())
+  brandId            String                      @map("brand_id")
+  manufacturerShopId String                      @map("manufacturer_shop_id")
+  networkName        String                      @map("network_name")
+  networkStatus      String                      @default("active") @map("network_status")
+  maxAgentDepth      Int                         @default(3) @map("max_agent_depth")
+  rulesJson          Json?                       @map("rules_json")
+  createdAt          DateTime                    @default(now()) @map("created_at")
+  updatedAt          DateTime                    @updatedAt @map("updated_at")
+  brand              Brand                       @relation(fields: [brandId], references: [id])
+  manufacturerShop   Shop                        @relation("DistributionManufacturerShop", fields: [manufacturerShopId], references: [id])
+  nodes              DistributionNode[]
+  shipments          DistributionShipment[]
+  pricingPolicies    DistributionPricingPolicy[]
+
+  @@unique([brandId, manufacturerShopId])
+  @@map("distribution_network")
+}
+
+model DistributionNode {
+  id                 String                         @id @default(uuid())
+  networkId          String                         @map("network_id")
+  shopId             String                         @map("shop_id")
+  parentNodeId       String?                        @map("parent_node_id")
+  level              Int
+  nodeType           DistributionNodeType           @map("node_type")
+  relationshipStatus DistributionRelationshipStatus @default(ACTIVE) @map("relationship_status")
+  contractCode       String?                        @map("contract_code")
+  lineageCode        String?                        @map("lineage_code")
+  territoryCode      String?                        @map("territory_code")
+  activatedAt        DateTime?                      @map("activated_at")
+  terminatedAt       DateTime?                      @map("terminated_at")
+  createdAt          DateTime                       @default(now()) @map("created_at")
+  updatedAt          DateTime                       @updatedAt @map("updated_at")
+  network            DistributionNetwork            @relation(fields: [networkId], references: [id])
+  shop               Shop                           @relation(fields: [shopId], references: [id])
+  parent             DistributionNode?              @relation("DistributionNodeHierarchy", fields: [parentNodeId], references: [id])
+  children           DistributionNode[]             @relation("DistributionNodeHierarchy")
+  offers             Offer[]
+  supplyBatches      SupplyBatch[]
+  outboundShipments  DistributionShipment[]         @relation("DistributionShipmentFrom")
+  inboundShipments   DistributionShipment[]         @relation("DistributionShipmentTo")
+  pricingPolicies    DistributionPricingPolicy[]
+  wholesaleOrders    Order[]                        @relation("OrderBuyerDistributionNode")
+
+  @@unique([networkId, shopId])
+  @@index([parentNodeId])
+  @@index([networkId, level])
+  @@map("distribution_node")
+}
+
+model DistributionShipment {
+  id             String                     @id @default(uuid())
+  networkId      String                     @map("network_id")
+  fromNodeId     String                     @map("from_node_id")
+  toNodeId       String                     @map("to_node_id")
+  shipmentCode   String                     @map("shipment_code")
+  shipmentStatus DistributionShipmentStatus @default(DRAFT) @map("shipment_status")
+  note           String?
+  shippedAt      DateTime?                  @map("shipped_at")
+  receivedAt     DateTime?                  @map("received_at")
+  createdAt      DateTime                   @default(now()) @map("created_at")
+  updatedAt      DateTime                   @updatedAt @map("updated_at")
+  network        DistributionNetwork        @relation(fields: [networkId], references: [id])
+  fromNode       DistributionNode           @relation("DistributionShipmentFrom", fields: [fromNodeId], references: [id])
+  toNode         DistributionNode           @relation("DistributionShipmentTo", fields: [toNodeId], references: [id])
+  items          DistributionShipmentItem[]
+
+  @@unique([networkId, shipmentCode])
+  @@index([fromNodeId])
+  @@index([toNodeId])
+  @@map("distribution_shipment")
+}
+
+model DistributionShipmentItem {
+  id             String               @id @default(uuid())
+  shipmentId     String               @map("shipment_id")
+  batchId        String               @map("batch_id")
+  productModelId String               @map("product_model_id")
+  quantity       Int
+  unitCost       Decimal?             @map("unit_cost") @db.Decimal(18, 2)
+  createdAt      DateTime             @default(now()) @map("created_at")
+  shipment       DistributionShipment @relation(fields: [shipmentId], references: [id])
+  batch          SupplyBatch          @relation(fields: [batchId], references: [id])
+  productModel   ProductModel         @relation(fields: [productModelId], references: [id])
+
+  @@index([batchId])
+  @@index([productModelId])
+  @@map("distribution_shipment_item")
+}
+
+model DistributionPricingPolicy {
+  id             String                   @id @default(uuid())
+  networkId      String                   @map("network_id")
+  nodeId         String?                  @map("node_id")
+  appliesToLevel Int?                     @map("applies_to_level")
+  productModelId String?                  @map("product_model_id")
+  categoryId     String?                  @map("category_id")
+  scope          DistributionPricingScope @map("scope")
+  discountType   DistributionDiscountType @map("discount_type")
+  discountValue  Decimal                  @map("discount_value") @db.Decimal(18, 2)
+  minQuantity    Int?                     @map("min_quantity")
+  priority       Int                      @default(100)
+  isActive       Boolean                  @default(true) @map("is_active")
+  startsAt       DateTime?                @map("starts_at")
+  endsAt         DateTime?                @map("ends_at")
+  createdAt      DateTime                 @default(now()) @map("created_at")
+  updatedAt      DateTime                 @updatedAt @map("updated_at")
+  network        DistributionNetwork      @relation(fields: [networkId], references: [id])
+  node           DistributionNode?        @relation(fields: [nodeId], references: [id])
+  productModel   ProductModel?            @relation(fields: [productModelId], references: [id])
+  category       Category?                @relation(fields: [categoryId], references: [id])
+
+  @@index([networkId, isActive])
+  @@index([nodeId])
+  @@index([appliesToLevel])
+  @@index([productModelId])
+  @@index([categoryId])
+  @@map("distribution_pricing_policy")
+}
+
+model AffiliateProgram {
+  id                    String                 @id @default(uuid())
+  ownerShopId           String?                @map("owner_shop_id")
+  brandId               String?                @map("brand_id")
+  productModelId        String?                @map("product_model_id")
+  offerId               String?                @map("offer_id")
+  scopeType             AffiliateScopeType     @map("scope_type")
+  name                  String
+  slug                  String                 @unique
+  programStatus         AffiliateProgramStatus @default(DRAFT) @map("program_status")
+  attributionWindowDays Int                    @default(30) @map("attribution_window_days")
+  commissionModel       String                 @default("revenue_share") @map("commission_model")
+  tier1Rate             Decimal                @map("tier1_rate") @db.Decimal(5, 2)
+  tier2Rate             Decimal                @map("tier2_rate") @db.Decimal(5, 2)
+  rulesJson             Json?                  @map("rules_json")
+  startedAt             DateTime?              @map("started_at")
+  endedAt               DateTime?              @map("ended_at")
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @updatedAt @map("updated_at")
+  ownerShop             Shop?                  @relation(fields: [ownerShopId], references: [id])
+  brand                 Brand?                 @relation(fields: [brandId], references: [id])
+  productModel          ProductModel?          @relation(fields: [productModelId], references: [id])
+  offer                 Offer?                 @relation(fields: [offerId], references: [id])
+  accounts              AffiliateAccount[]
+  codes                 AffiliateCode[]
+  conversions           AffiliateConversion[]
+  payouts               AffiliatePayout[]
+
+  @@index([ownerShopId])
+  @@index([brandId])
+  @@index([productModelId])
+  @@index([offerId])
+  @@map("affiliate_program")
+}
+
+model AffiliateAccount {
+  id                String                      @id @default(uuid())
+  programId         String                      @map("program_id")
+  userId            String                      @map("user_id")
+  parentAccountId   String?                     @map("parent_account_id")
+  accountStatus     AffiliateAccountStatus      @default(PENDING) @map("account_status")
+  referralPath      String?                     @map("referral_path")
+  joinedAt          DateTime                    @default(now()) @map("joined_at")
+  approvedAt        DateTime?                   @map("approved_at")
+  createdAt         DateTime                    @default(now()) @map("created_at")
+  updatedAt         DateTime                    @updatedAt @map("updated_at")
+  program           AffiliateProgram            @relation(fields: [programId], references: [id])
+  user              User                        @relation(fields: [userId], references: [id])
+  parentAccount     AffiliateAccount?           @relation("AffiliateAccountHierarchy", fields: [parentAccountId], references: [id])
+  childAccounts     AffiliateAccount[]          @relation("AffiliateAccountHierarchy")
+  codes             AffiliateCode[]
+  tier1Conversions  AffiliateConversion[]       @relation("AffiliateConversionTier1")
+  tier2Conversions  AffiliateConversion[]       @relation("AffiliateConversionTier2")
+  commissionEntries AffiliateCommissionLedger[]
+  payouts           AffiliatePayout[]
+
+  @@unique([programId, userId])
+  @@index([parentAccountId])
+  @@map("affiliate_account")
+}
+
+model AffiliateCode {
+  id          String                @id @default(uuid())
+  programId   String                @map("program_id")
+  accountId   String                @map("account_id")
+  code        String                @unique
+  landingUrl  String?               @map("landing_url")
+  isDefault   Boolean               @default(false) @map("is_default")
+  expiresAt   DateTime?             @map("expires_at")
+  createdAt   DateTime              @default(now()) @map("created_at")
+  program     AffiliateProgram      @relation(fields: [programId], references: [id])
+  account     AffiliateAccount      @relation(fields: [accountId], references: [id])
+  conversions AffiliateConversion[]
+
+  @@index([programId])
+  @@index([accountId])
+  @@map("affiliate_code")
+}
+
+model AffiliateConversion {
+  id                String                      @id @default(uuid())
+  programId         String                      @map("program_id")
+  orderId           String?                     @unique @map("order_id")
+  offerId           String?                     @map("offer_id")
+  affiliateCodeId   String?                     @map("affiliate_code_id")
+  tier1AccountId    String                      @map("tier1_account_id")
+  tier2AccountId    String?                     @map("tier2_account_id")
+  customerUserId    String?                     @map("customer_user_id")
+  conversionStatus  AffiliateConversionStatus   @default(PENDING) @map("conversion_status")
+  orderAmount       Decimal?                    @map("order_amount") @db.Decimal(18, 2)
+  commissionBase    Decimal?                    @map("commission_base") @db.Decimal(18, 2)
+  metadata          Json?
+  recordedAt        DateTime                    @default(now()) @map("recorded_at")
+  approvedAt        DateTime?                   @map("approved_at")
+  program           AffiliateProgram            @relation(fields: [programId], references: [id])
+  order             Order?                      @relation(fields: [orderId], references: [id])
+  offer             Offer?                      @relation(fields: [offerId], references: [id])
+  affiliateCode     AffiliateCode?              @relation(fields: [affiliateCodeId], references: [id])
+  tier1Account      AffiliateAccount            @relation("AffiliateConversionTier1", fields: [tier1AccountId], references: [id])
+  tier2Account      AffiliateAccount?           @relation("AffiliateConversionTier2", fields: [tier2AccountId], references: [id])
+  customerUser      User?                       @relation("AffiliateConversionCustomer", fields: [customerUserId], references: [id])
+  commissionEntries AffiliateCommissionLedger[]
+
+  @@index([programId])
+  @@index([offerId])
+  @@index([affiliateCodeId])
+  @@index([tier1AccountId])
+  @@index([tier2AccountId])
+  @@index([customerUserId])
+  @@map("affiliate_conversion")
+}
+
+model AffiliateCommissionLedger {
+  id                   String                    @id @default(uuid())
+  conversionId         String                    @map("conversion_id")
+  beneficiaryAccountId String?                   @map("beneficiary_account_id")
+  beneficiaryType      CommissionBeneficiaryType @map("beneficiary_type")
+  tierLevel            Int?                      @map("tier_level")
+  amount               Decimal                   @db.Decimal(18, 2)
+  currency             String                    @default("VND")
+  commissionStatus     AffiliateCommissionStatus @default(PENDING) @map("commission_status")
+  lockedAt             DateTime?                 @map("locked_at")
+  paidAt               DateTime?                 @map("paid_at")
+  payoutId             String?                   @map("payout_id")
+  createdAt            DateTime                  @default(now()) @map("created_at")
+  conversion           AffiliateConversion       @relation(fields: [conversionId], references: [id])
+  beneficiaryAccount   AffiliateAccount?         @relation(fields: [beneficiaryAccountId], references: [id])
+  payout               AffiliatePayout?          @relation(fields: [payoutId], references: [id])
+
+  @@index([conversionId])
+  @@index([beneficiaryAccountId])
+  @@index([payoutId])
+  @@map("affiliate_commission_ledger")
+}
+
+model AffiliatePayout {
+  id                String                      @id @default(uuid())
+  programId         String                      @map("program_id")
+  accountId         String                      @map("account_id")
+  periodStart       DateTime                    @map("period_start")
+  periodEnd         DateTime                    @map("period_end")
+  totalAmount       Decimal                     @map("total_amount") @db.Decimal(18, 2)
+  currency          String                      @default("VND")
+  payoutStatus      PayoutStatus                @default(PENDING) @map("payout_status")
+  externalRef       String?                     @map("external_ref")
+  paidAt            DateTime?                   @map("paid_at")
+  createdAt         DateTime                    @default(now()) @map("created_at")
+  updatedAt         DateTime                    @updatedAt @map("updated_at")
+  program           AffiliateProgram            @relation(fields: [programId], references: [id])
+  account           AffiliateAccount            @relation(fields: [accountId], references: [id])
+  commissionEntries AffiliateCommissionLedger[]
+
+  @@index([programId])
+  @@index([accountId])
+  @@map("affiliate_payout")
 }

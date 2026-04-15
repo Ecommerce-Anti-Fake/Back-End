@@ -1,6 +1,6 @@
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserIdentityPort } from '../../domain/interfaces';
+import { UserIdentityPort } from '@contracts';
 import { JwtTokenAdapter } from '../../infrastructure/adapters/jwt-token.adapter';
 import { AuthSessionRepository } from '../../infrastructure/persistence/auth-session.repository';
 import { PasswordHasherService } from '../services/password-hasher.service';

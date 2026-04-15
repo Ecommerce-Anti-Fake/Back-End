@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserIdentityPort } from '../../domain/interfaces';
+import { UserIdentityPort } from '@contracts';
 import { PasswordHasherService } from '../services/password-hasher.service';
 import { RegisterUseCase } from './register.use-case';
 

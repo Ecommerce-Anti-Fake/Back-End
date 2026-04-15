@@ -39,6 +39,12 @@
       "@users/*": ["libs/users/src/*"],
       "@products": ["libs/products/src"],
       "@products/*": ["libs/products/src/*"],
+      "@distribution": ["libs/distribution/src"],
+      "@distribution/*": ["libs/distribution/src/*"],
+      "@affiliate": ["libs/affiliate/src"],
+      "@affiliate/*": ["libs/affiliate/src/*"],
+      "@shops": ["libs/shops/src"],
+      "@shops/*": ["libs/shops/src/*"],
       "@orders": ["libs/orders/src"],
       "@orders/*": ["libs/orders/src/*"]
     }
