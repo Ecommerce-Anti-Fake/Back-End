@@ -25,6 +25,10 @@ export class CreateDistributionShipmentUseCase {
       throw new NotFoundException('Distribution network not found or not owned by current user');
     }
 
+    if (network.manufacturerShop.shopStatus !== 'active') {
+      throw new BadRequestException('Only active manufacturer shops can manage distribution shipments');
+    }
+
     const fromNode = await this.repository.findNodeById(input.fromNodeId);
     const toNode = await this.repository.findNodeById(input.toNodeId);
     if (!fromNode || !toNode) {
@@ -37,6 +41,15 @@ export class CreateDistributionShipmentUseCase {
 
     if (fromNode.id === toNode.id) {
       throw new BadRequestException('fromNodeId and toNodeId must be different');
+    }
+
+    if (
+      fromNode.relationshipStatus !== 'ACTIVE' ||
+      toNode.relationshipStatus !== 'ACTIVE' ||
+      fromNode.shop.shopStatus !== 'active' ||
+      toNode.shop.shopStatus !== 'active'
+    ) {
+      throw new BadRequestException('Shipments require both source and destination nodes to be active');
     }
 
     const isParentChildRelation =

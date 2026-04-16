@@ -9,6 +9,7 @@ describe('CreateDistributionNodeUseCase', () => {
     findOwnedNetworkByUser: jest.fn(),
     findNodeById: jest.fn(),
     findAgentShopById: jest.fn(),
+    findNodeByNetworkAndShop: jest.fn(),
     createNode: jest.fn(),
   };
 
@@ -29,14 +30,24 @@ describe('CreateDistributionNodeUseCase', () => {
     repositoryMock.findOwnedNetworkByUser.mockResolvedValueOnce({
       id: 'network-1',
       manufacturerShopId: 'shop-mnf-1',
+      manufacturerShop: {
+        id: 'shop-mnf-1',
+        shopStatus: 'active',
+      },
     });
     repositoryMock.findNodeById.mockResolvedValueOnce({
       id: 'root-node-1',
       networkId: 'network-1',
       level: 0,
       shopId: 'shop-mnf-1',
+      relationshipStatus: 'ACTIVE',
+      shop: {
+        id: 'shop-mnf-1',
+        shopStatus: 'active',
+      },
     });
     repositoryMock.findAgentShopById.mockResolvedValueOnce({ id: 'shop-dist-1' });
+    repositoryMock.findNodeByNetworkAndShop.mockResolvedValueOnce(null);
     repositoryMock.createNode.mockResolvedValueOnce({
       id: 'node-1',
       networkId: 'network-1',
@@ -76,12 +87,21 @@ describe('CreateDistributionNodeUseCase', () => {
     repositoryMock.findOwnedNetworkByUser.mockResolvedValueOnce({
       id: 'network-1',
       manufacturerShopId: 'shop-mnf-1',
+      manufacturerShop: {
+        id: 'shop-mnf-1',
+        shopStatus: 'active',
+      },
     });
     repositoryMock.findNodeById.mockResolvedValueOnce({
       id: 'root-node-1',
       networkId: 'network-1',
       level: 0,
       shopId: 'shop-mnf-1',
+      relationshipStatus: 'ACTIVE',
+      shop: {
+        id: 'shop-mnf-1',
+        shopStatus: 'active',
+      },
     });
     repositoryMock.findAgentShopById.mockResolvedValueOnce(null);
 
@@ -99,14 +119,24 @@ describe('CreateDistributionNodeUseCase', () => {
     repositoryMock.findOwnedNetworkByUser.mockResolvedValueOnce({
       id: 'network-1',
       manufacturerShopId: 'shop-mnf-1',
+      manufacturerShop: {
+        id: 'shop-mnf-1',
+        shopStatus: 'active',
+      },
     });
     repositoryMock.findNodeById.mockResolvedValueOnce({
       id: 'node-level-3',
       networkId: 'network-1',
       level: 3,
       shopId: 'shop-dist-3',
+      relationshipStatus: 'ACTIVE',
+      shop: {
+        id: 'shop-dist-3',
+        shopStatus: 'active',
+      },
     });
     repositoryMock.findAgentShopById.mockResolvedValueOnce({ id: 'shop-dist-4' });
+    repositoryMock.findNodeByNetworkAndShop.mockResolvedValueOnce(null);
 
     await expect(
       useCase.execute({
@@ -116,5 +146,38 @@ describe('CreateDistributionNodeUseCase', () => {
         parentNodeId: 'node-level-3',
       }),
     ).rejects.toThrow('Distribution network only supports agent levels 1 to 3');
+  });
+
+  it('should reject duplicate shops in the same network', async () => {
+    repositoryMock.findOwnedNetworkByUser.mockResolvedValueOnce({
+      id: 'network-1',
+      manufacturerShopId: 'shop-mnf-1',
+      manufacturerShop: {
+        id: 'shop-mnf-1',
+        shopStatus: 'active',
+      },
+    });
+    repositoryMock.findNodeById.mockResolvedValueOnce({
+      id: 'root-node-1',
+      networkId: 'network-1',
+      level: 0,
+      shopId: 'shop-mnf-1',
+      relationshipStatus: 'ACTIVE',
+      shop: {
+        id: 'shop-mnf-1',
+        shopStatus: 'active',
+      },
+    });
+    repositoryMock.findAgentShopById.mockResolvedValueOnce({ id: 'shop-dist-1' });
+    repositoryMock.findNodeByNetworkAndShop.mockResolvedValueOnce({ id: 'existing-node-1' });
+
+    await expect(
+      useCase.execute({
+        requesterUserId: 'user-1',
+        networkId: 'network-1',
+        shopId: 'shop-dist-1',
+        parentNodeId: 'root-node-1',
+      }),
+    ).rejects.toThrow('Shop is already part of this distribution network');
   });
 });

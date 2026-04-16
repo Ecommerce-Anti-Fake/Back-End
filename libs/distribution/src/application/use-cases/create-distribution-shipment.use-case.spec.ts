@@ -26,10 +26,34 @@ describe('CreateDistributionShipmentUseCase', () => {
   });
 
   it('should create shipment between parent-child nodes', async () => {
-    repositoryMock.findOwnedNetworkByUser.mockResolvedValueOnce({ id: 'network-1' });
+    repositoryMock.findOwnedNetworkByUser.mockResolvedValueOnce({
+      id: 'network-1',
+      manufacturerShop: {
+        id: 'shop-mnf-1',
+        shopStatus: 'active',
+      },
+    });
     repositoryMock.findNodeById
-      .mockResolvedValueOnce({ id: 'node-parent', networkId: 'network-1', parentNodeId: null })
-      .mockResolvedValueOnce({ id: 'node-child', networkId: 'network-1', parentNodeId: 'node-parent' });
+      .mockResolvedValueOnce({
+        id: 'node-parent',
+        networkId: 'network-1',
+        parentNodeId: null,
+        relationshipStatus: 'ACTIVE',
+        shop: {
+          id: 'shop-parent',
+          shopStatus: 'active',
+        },
+      })
+      .mockResolvedValueOnce({
+        id: 'node-child',
+        networkId: 'network-1',
+        parentNodeId: 'node-parent',
+        relationshipStatus: 'ACTIVE',
+        shop: {
+          id: 'shop-child',
+          shopStatus: 'active',
+        },
+      });
     repositoryMock.findBatchesByIdsAndNode.mockResolvedValueOnce([
       { id: 'batch-1', productModelId: 'pm-1' },
     ]);
@@ -80,10 +104,34 @@ describe('CreateDistributionShipmentUseCase', () => {
   });
 
   it('should reject shipment between unrelated nodes', async () => {
-    repositoryMock.findOwnedNetworkByUser.mockResolvedValueOnce({ id: 'network-1' });
+    repositoryMock.findOwnedNetworkByUser.mockResolvedValueOnce({
+      id: 'network-1',
+      manufacturerShop: {
+        id: 'shop-mnf-1',
+        shopStatus: 'active',
+      },
+    });
     repositoryMock.findNodeById
-      .mockResolvedValueOnce({ id: 'node-a', networkId: 'network-1', parentNodeId: null })
-      .mockResolvedValueOnce({ id: 'node-b', networkId: 'network-1', parentNodeId: null });
+      .mockResolvedValueOnce({
+        id: 'node-a',
+        networkId: 'network-1',
+        parentNodeId: null,
+        relationshipStatus: 'ACTIVE',
+        shop: {
+          id: 'shop-a',
+          shopStatus: 'active',
+        },
+      })
+      .mockResolvedValueOnce({
+        id: 'node-b',
+        networkId: 'network-1',
+        parentNodeId: null,
+        relationshipStatus: 'ACTIVE',
+        shop: {
+          id: 'shop-b',
+          shopStatus: 'active',
+        },
+      });
 
     await expect(
       useCase.execute({

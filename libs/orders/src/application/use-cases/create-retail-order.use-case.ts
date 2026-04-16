@@ -12,6 +12,15 @@ export class CreateRetailOrderUseCase {
     quantity: number;
     affiliateCode?: string | null;
   }) {
+    const buyer = await this.ordersRepository.findUserById(input.buyerUserId);
+    if (!buyer) {
+      throw new NotFoundException('Buyer not found');
+    }
+
+    if (!buyer.phone) {
+      throw new BadRequestException('Please update your profile phone number before creating an order');
+    }
+
     const offer: OfferForOrdering | null = await this.ordersRepository.findOfferForOrdering(input.offerId);
     if (!offer) {
       throw new NotFoundException('Offer not found');

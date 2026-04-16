@@ -1,8 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
+  AddOfferDocumentsBatchMessage,
+  AddOfferMediaBatchMessage,
   CreateOfferMessage,
   ListOffersMessage,
+  OfferDocumentUploadSignaturesMessage,
+  OfferDocumentsLookupMessage,
+  OfferMediaLookupMessage,
+  OfferMediaUploadSignaturesMessage,
   PRODUCTS_MESSAGE_PATTERNS,
   ProductModelLookupMessage,
   USERS_SERVICE_CLIENT,
@@ -27,6 +33,30 @@ export class ProductsRpcService {
 
   createOffer(payload: CreateOfferMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.createOffer, payload);
+  }
+
+  getOfferMediaUploadSignatures(payload: OfferMediaUploadSignaturesMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.getOfferMediaUploadSignatures, payload);
+  }
+
+  addOfferMediaBatch(payload: AddOfferMediaBatchMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.addOfferMediaBatch, payload);
+  }
+
+  findOfferMedia(payload: OfferMediaLookupMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.findOfferMedia, payload);
+  }
+
+  getOfferDocumentUploadSignatures(payload: OfferDocumentUploadSignaturesMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.getOfferDocumentUploadSignatures, payload);
+  }
+
+  addOfferDocumentsBatch(payload: AddOfferDocumentsBatchMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.addOfferDocumentsBatch, payload);
+  }
+
+  findOfferDocuments(payload: OfferDocumentsLookupMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.findOfferDocuments, payload);
   }
 
   findOffers(payload: ListOffersMessage = {}) {

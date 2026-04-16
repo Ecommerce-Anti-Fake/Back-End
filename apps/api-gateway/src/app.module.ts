@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { GatewayAdminModule } from './modules/admin/admin.module';
 import { GatewayAffiliateModule } from './modules/affiliate/affiliate.module';
 import { GatewayAuthModule } from './modules/auth/auth.module';
 import { GatewayDistributionModule } from './modules/distribution/distribution.module';
@@ -13,6 +14,7 @@ import { GatewayUsersModule } from './modules/users/users.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    GatewayAdminModule,
     GatewayAffiliateModule,
     GatewayDistributionModule,
     GatewayOrdersModule,

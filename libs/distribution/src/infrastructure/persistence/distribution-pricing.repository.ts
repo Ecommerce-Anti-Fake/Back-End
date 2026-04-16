@@ -12,6 +12,7 @@ export class DistributionPricingRepository {
         id: shopId,
         ownerUserId: requesterUserId,
         registrationType: ShopRegistrationType.MANUFACTURER,
+        shopStatus: 'active',
       },
       select: {
         id: true,
@@ -39,6 +40,12 @@ export class DistributionPricingRepository {
       select: {
         id: true,
         manufacturerShopId: true,
+        manufacturerShop: {
+          select: {
+            id: true,
+            shopStatus: true,
+          },
+        },
       },
     });
   }
@@ -88,6 +95,13 @@ export class DistributionPricingRepository {
         level: true,
         shopId: true,
         parentNodeId: true,
+        relationshipStatus: true,
+        shop: {
+          select: {
+            id: true,
+            shopStatus: true,
+          },
+        },
       },
     });
   }
@@ -97,6 +111,19 @@ export class DistributionPricingRepository {
       where: {
         id,
         registrationType: ShopRegistrationType.DISTRIBUTOR,
+        shopStatus: 'active',
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  findNodeByNetworkAndShop(networkId: string, shopId: string) {
+    return this.prisma.distributionNode.findFirst({
+      where: {
+        networkId,
+        shopId,
       },
       select: {
         id: true,

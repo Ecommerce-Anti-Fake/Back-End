@@ -30,6 +30,10 @@ describe('CreatePricingPolicyUseCase', () => {
     pricingRepositoryMock.findOwnedNetworkByUser.mockResolvedValueOnce({
       id: 'network-1',
       manufacturerShopId: 'shop-1',
+      manufacturerShop: {
+        id: 'shop-1',
+        shopStatus: 'active',
+      },
     });
     pricingRepositoryMock.findComparablePolicies.mockResolvedValueOnce([
       createPolicyRecord({
@@ -86,6 +90,10 @@ describe('CreatePricingPolicyUseCase', () => {
     pricingRepositoryMock.findOwnedNetworkByUser.mockResolvedValueOnce({
       id: 'network-1',
       manufacturerShopId: 'shop-1',
+      manufacturerShop: {
+        id: 'shop-1',
+        shopStatus: 'active',
+      },
     });
     pricingRepositoryMock.findComparablePolicies.mockResolvedValueOnce([
       createPolicyRecord({
@@ -110,12 +118,21 @@ describe('CreatePricingPolicyUseCase', () => {
     pricingRepositoryMock.findOwnedNetworkByUser.mockResolvedValueOnce({
       id: 'network-1',
       manufacturerShopId: 'shop-1',
+      manufacturerShop: {
+        id: 'shop-1',
+        shopStatus: 'active',
+      },
     });
     pricingRepositoryMock.findNodeById.mockResolvedValueOnce({
       id: 'node-2',
       networkId: 'network-1',
       level: 2,
       shopId: 'shop-2',
+      relationshipStatus: 'ACTIVE',
+      shop: {
+        id: 'shop-2',
+        shopStatus: 'active',
+      },
     });
     pricingRepositoryMock.findComparablePolicies.mockResolvedValueOnce([]);
     pricingRepositoryMock.createPolicy.mockResolvedValueOnce(

@@ -26,6 +26,10 @@ export class CreateOfferUseCase {
       throw new BadRequestException('Shop does not belong to current user');
     }
 
+    if (ownedShop.shopStatus !== 'active') {
+      throw new BadRequestException('Shop must complete KYC approval before creating offers');
+    }
+
     const productModel = await this.productRepository.findModelById(input.productModelId);
     if (!productModel) {
       throw new NotFoundException('Product model not found');

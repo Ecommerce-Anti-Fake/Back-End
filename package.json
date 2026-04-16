@@ -102,7 +102,9 @@
       "^@shops$": "<rootDir>/libs/shops/src/index.ts",
       "^@shops/(.*)$": "<rootDir>/libs/shops/src/$1",
       "^@orders$": "<rootDir>/libs/orders/src/index.ts",
-      "^@orders/(.*)$": "<rootDir>/libs/orders/src/$1"
+      "^@orders/(.*)$": "<rootDir>/libs/orders/src/$1",
+      "^@media$": "<rootDir>/libs/media/src/index.ts",
+      "^@media/(.*)$": "<rootDir>/libs/media/src/$1"
     },
     "collectCoverageFrom": [
       "apps/**/*.(t|j)s",

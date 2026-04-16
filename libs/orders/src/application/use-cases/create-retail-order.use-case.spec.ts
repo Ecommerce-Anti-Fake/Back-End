@@ -7,6 +7,7 @@ describe('CreateRetailOrderUseCase', () => {
   let useCase: CreateRetailOrderUseCase;
 
   const ordersRepositoryMock = {
+    findUserById: jest.fn(),
     findOfferForOrdering: jest.fn(),
     createOrder: jest.fn(),
   };
@@ -25,6 +26,10 @@ describe('CreateRetailOrderUseCase', () => {
   });
 
   it('should pass affiliate attribution when affiliate code is provided', async () => {
+    ordersRepositoryMock.findUserById.mockResolvedValueOnce({
+      id: 'buyer-user-1',
+      phone: '0987654321',
+    });
     ordersRepositoryMock.findOfferForOrdering.mockResolvedValueOnce({
       id: 'offer-1',
       title: 'Offer 1',
@@ -106,5 +111,20 @@ describe('CreateRetailOrderUseCase', () => {
       totalAmount: 200,
       platformFeeAmount: 40,
     });
+  });
+
+  it('should require buyer phone before creating order', async () => {
+    ordersRepositoryMock.findUserById.mockResolvedValueOnce({
+      id: 'buyer-user-1',
+      phone: null,
+    });
+
+    await expect(
+      useCase.execute({
+        buyerUserId: 'buyer-user-1',
+        offerId: 'offer-1',
+        quantity: 1,
+      }),
+    ).rejects.toThrow('Please update your profile phone number before creating an order');
   });
 });

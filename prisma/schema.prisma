@@ -111,6 +111,30 @@ enum OrderMode {
   WHOLESALE
 }
 
+enum MediaProvider {
+  CLOUDINARY
+}
+
+enum MediaAssetType {
+  IMAGE
+  VIDEO
+  RAW
+}
+
+enum MediaResourceType {
+  DISPUTE_EVIDENCE
+  KYC_DOCUMENT
+  SHOP_DOCUMENT
+  PRODUCT_IMAGE
+  OFFER_DOCUMENT
+  BATCH_DOCUMENT
+}
+
+enum KycDocumentSide {
+  FRONT
+  BACK
+}
+
 model User {
   id                   String                @id @default(uuid())
   phone                String?               @unique
@@ -128,6 +152,8 @@ model User {
   orders               Order[]               @relation("OrderBuyer")
   disputesOpened       Dispute[]             @relation("DisputeOpenedBy")
   disputeEvidence      DisputeEvidence[]     @relation("DisputeEvidenceUploadedBy")
+  mediaAssets          MediaAsset[]          @relation("MediaAssetOwner")
+  auditLogs            AuditLog[]            @relation("AuditLogActor")
   reviewsGiven         Review[]              @relation("ReviewFromUser")
   reviewsReceived      Review[]              @relation("ReviewToUser")
   chatThreadsAsBuyer   ChatThread[]          @relation("ChatThreadBuyer")
@@ -140,6 +166,49 @@ model User {
   affiliateConversions AffiliateConversion[] @relation("AffiliateConversionCustomer")
 
   @@map("user")
+}
+
+model MediaAsset {
+  id                        String                     @id @default(uuid())
+  ownerUserId               String                     @map("owner_user_id")
+  provider                  MediaProvider
+  assetType                 MediaAssetType             @map("asset_type")
+  resourceType              MediaResourceType          @map("resource_type")
+  publicId                  String?                    @map("public_id")
+  secureUrl                 String                     @map("secure_url")
+  mimeType                  String?                    @map("mime_type")
+  folder                    String?                    @map("folder")
+  uploadedAt                DateTime                   @default(now()) @map("uploaded_at")
+  owner                     User                       @relation("MediaAssetOwner", fields: [ownerUserId], references: [id])
+  disputeEvidence           DisputeEvidence[]
+  userKycDocument           UserKycDocument?
+  shopDocument              ShopDocument?
+  shopCategoryDocument      ShopCategoryDocument?
+  userKycSubmissionDocument UserKycSubmissionDocument?
+  offerMedia                OfferMedia?
+  offerDocument             OfferDocument?
+
+  @@index([ownerUserId])
+  @@index([resourceType])
+  @@map("media_asset")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  targetType  String   @map("target_type")
+  targetId    String   @map("target_id")
+  actorUserId String   @map("actor_user_id")
+  action      String
+  fromStatus  String?  @map("from_status")
+  toStatus    String?  @map("to_status")
+  note        String?
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  actor       User     @relation("AuditLogActor", fields: [actorUserId], references: [id])
+
+  @@index([targetType, targetId, createdAt])
+  @@index([actorUserId])
+  @@map("audit_log")
 }
 
 model AuthSession {
@@ -162,36 +231,86 @@ model AuthSession {
 }
 
 model UserKyc {
-  id                 String    @id @default(uuid())
-  userId             String    @unique @map("user_id")
-  kycLevel           String    @map("kyc_level")
-  idType             String    @map("id_type")
-  idNumberHash       String    @map("id_number_hash")
-  verificationStatus String    @map("verification_status")
-  verifiedAt         DateTime? @map("verified_at")
-  user               User      @relation(fields: [userId], references: [id])
+  id                 String              @id @default(uuid())
+  userId             String              @unique @map("user_id")
+  fullName           String              @map("full_name")
+  dateOfBirth        DateTime            @map("date_of_birth")
+  kycLevel           String              @map("kyc_level")
+  idType             String              @map("id_type")
+  idNumberHash       String              @map("id_number_hash")
+  verificationStatus String              @map("verification_status")
+  verifiedAt         DateTime?           @map("verified_at")
+  reviewNote         String?             @map("review_note")
+  user               User                @relation(fields: [userId], references: [id])
+  documents          UserKycDocument[]
+  submissions        UserKycSubmission[]
 
   @@map("user_kyc")
 }
 
+model UserKycDocument {
+  id           String          @id @default(uuid())
+  userKycId    String          @map("user_kyc_id")
+  mediaAssetId String          @map("media_asset_id")
+  side         KycDocumentSide
+  uploadedAt   DateTime        @default(now()) @map("uploaded_at")
+  userKyc      UserKyc         @relation(fields: [userKycId], references: [id])
+  mediaAsset   MediaAsset      @relation(fields: [mediaAssetId], references: [id])
+
+  @@unique([userKycId, side])
+  @@unique([mediaAssetId])
+  @@index([userKycId])
+  @@map("user_kyc_document")
+}
+
+model UserKycSubmission {
+  id                 String                      @id @default(uuid())
+  userKycId          String                      @map("user_kyc_id")
+  submissionNumber   Int                         @map("submission_number")
+  verificationStatus String                      @default("pending") @map("verification_status")
+  reviewNote         String?                     @map("review_note")
+  reviewedAt         DateTime?                   @map("reviewed_at")
+  submittedAt        DateTime                    @default(now()) @map("submitted_at")
+  userKyc            UserKyc                     @relation(fields: [userKycId], references: [id])
+  documents          UserKycSubmissionDocument[]
+
+  @@unique([userKycId, submissionNumber])
+  @@index([userKycId, submittedAt])
+  @@map("user_kyc_submission")
+}
+
+model UserKycSubmissionDocument {
+  id           String            @id @default(uuid())
+  submissionId String            @map("submission_id")
+  mediaAssetId String            @unique @map("media_asset_id")
+  side         KycDocumentSide
+  uploadedAt   DateTime          @default(now()) @map("uploaded_at")
+  submission   UserKycSubmission @relation(fields: [submissionId], references: [id])
+  mediaAsset   MediaAsset        @relation(fields: [mediaAssetId], references: [id])
+
+  @@unique([submissionId, side])
+  @@index([submissionId])
+  @@map("user_kyc_submission_document")
+}
+
 model Shop {
-  id                         String                @id @default(uuid())
-  ownerUserId                String                @map("owner_user_id")
-  shopName                   String                @map("shop_name")
-  registrationType           ShopRegistrationType  @map("registration_type")
-  businessType               String                @map("business_type")
-  taxCode                    String?               @map("tax_code")
-  shopStatus                 String                @map("shop_status")
-  createdAt                  DateTime              @default(now()) @map("created_at")
-  owner                      User                  @relation("ShopOwner", fields: [ownerUserId], references: [id])
+  id                         String                 @id @default(uuid())
+  ownerUserId                String                 @map("owner_user_id")
+  shopName                   String                 @map("shop_name")
+  registrationType           ShopRegistrationType   @map("registration_type")
+  businessType               String                 @map("business_type")
+  taxCode                    String?                @map("tax_code")
+  shopStatus                 String                 @map("shop_status")
+  createdAt                  DateTime               @default(now()) @map("created_at")
+  owner                      User                   @relation("ShopOwner", fields: [ownerUserId], references: [id])
   documents                  ShopDocument[]
   registeredCategories       ShopBusinessCategory[]
   brandAuthorizations        BrandAuthorization[]
   offers                     Offer[]
   supplyBatches              SupplyBatch[]
   orders                     Order[]
-  wholesaleOrders            Order[]               @relation("OrderBuyerShop")
-  distributionNetworksAsRoot DistributionNetwork[] @relation("DistributionManufacturerShop")
+  wholesaleOrders            Order[]                @relation("OrderBuyerShop")
+  distributionNetworksAsRoot DistributionNetwork[]  @relation("DistributionManufacturerShop")
   distributionNodes          DistributionNode[]
   affiliatePrograms          AffiliateProgram[]
 
@@ -204,6 +323,7 @@ model ShopBusinessCategory {
   categoryId         String                 @map("category_id")
   registrationStatus String                 @default("pending") @map("registration_status")
   approvedAt         DateTime?              @map("approved_at")
+  reviewNote         String?                @map("review_note")
   createdAt          DateTime               @default(now()) @map("created_at")
   shop               Shop                   @relation(fields: [shopId], references: [id])
   category           Category               @relation(fields: [categoryId], references: [id])
@@ -218,6 +338,7 @@ model ShopBusinessCategory {
 model ShopCategoryDocument {
   id                     String               @id @default(uuid())
   shopBusinessCategoryId String               @map("shop_business_category_id")
+  mediaAssetId           String?              @unique @map("media_asset_id")
   documentType           String               @map("document_type")
   fileUrl                String               @map("file_url")
   documentNumber         String?              @map("document_number")
@@ -226,21 +347,27 @@ model ShopCategoryDocument {
   expiresAt              DateTime?            @map("expires_at")
   reviewStatus           String               @default("pending") @map("review_status")
   reviewNote             String?              @map("review_note")
+  reviewedAt             DateTime?            @map("reviewed_at")
   uploadedAt             DateTime             @default(now()) @map("uploaded_at")
   shopBusinessCategory   ShopBusinessCategory @relation(fields: [shopBusinessCategoryId], references: [id])
+  mediaAsset             MediaAsset?          @relation(fields: [mediaAssetId], references: [id])
 
   @@index([shopBusinessCategoryId])
   @@map("shop_category_document")
 }
 
 model ShopDocument {
-  id           String   @id @default(uuid())
-  shopId       String   @map("shop_id")
-  docType      String   @map("doc_type")
-  fileUrl      String   @map("file_url")
-  reviewStatus String   @map("review_status")
-  uploadedAt   DateTime @default(now()) @map("uploaded_at")
-  shop         Shop     @relation(fields: [shopId], references: [id])
+  id           String      @id @default(uuid())
+  shopId       String      @map("shop_id")
+  mediaAssetId String?     @unique @map("media_asset_id")
+  docType      String      @map("doc_type")
+  fileUrl      String      @map("file_url")
+  reviewStatus String      @map("review_status")
+  reviewNote   String?     @map("review_note")
+  reviewedAt   DateTime?   @map("reviewed_at")
+  uploadedAt   DateTime    @default(now()) @map("uploaded_at")
+  shop         Shop        @relation(fields: [shopId], references: [id])
+  mediaAsset   MediaAsset? @relation(fields: [mediaAssetId], references: [id])
 
   @@map("shop_document")
 }
@@ -340,28 +467,34 @@ model Offer {
 }
 
 model OfferMedia {
-  id        String   @id @default(uuid())
-  offerId   String   @map("offer_id")
-  mediaType String   @map("media_type")
-  fileUrl   String   @map("file_url")
-  phash     String?
-  createdAt DateTime @default(now()) @map("created_at")
-  offer     Offer    @relation(fields: [offerId], references: [id])
+  id           String      @id @default(uuid())
+  offerId      String      @map("offer_id")
+  mediaAssetId String?     @unique @map("media_asset_id")
+  mediaType    String      @map("media_type")
+  fileUrl      String      @map("file_url")
+  phash        String?
+  createdAt    DateTime    @default(now()) @map("created_at")
+  offer        Offer       @relation(fields: [offerId], references: [id])
+  mediaAsset   MediaAsset? @relation(fields: [mediaAssetId], references: [id])
 
+  @@index([mediaAssetId])
   @@map("offer_media")
 }
 
 model OfferDocument {
-  id                 String   @id @default(uuid())
-  offerId            String   @map("offer_id")
-  docType            String   @map("doc_type")
-  fileUrl            String   @map("file_url")
-  issuerName         String?  @map("issuer_name")
-  documentNumberHash String?  @map("document_number_hash")
-  reviewStatus       String   @map("review_status")
-  uploadedAt         DateTime @default(now()) @map("uploaded_at")
-  offer              Offer    @relation(fields: [offerId], references: [id])
+  id                 String      @id @default(uuid())
+  offerId            String      @map("offer_id")
+  mediaAssetId       String?     @unique @map("media_asset_id")
+  docType            String      @map("doc_type")
+  fileUrl            String      @map("file_url")
+  issuerName         String?     @map("issuer_name")
+  documentNumberHash String?     @map("document_number_hash")
+  reviewStatus       String      @map("review_status")
+  uploadedAt         DateTime    @default(now()) @map("uploaded_at")
+  offer              Offer       @relation(fields: [offerId], references: [id])
+  mediaAsset         MediaAsset? @relation(fields: [mediaAssetId], references: [id])
 
+  @@index([mediaAssetId])
   @@map("offer_document")
 }
 
@@ -545,15 +678,18 @@ model Dispute {
 }
 
 model DisputeEvidence {
-  id               String   @id @default(uuid())
-  disputeId        String   @map("dispute_id")
-  uploadedByUserId String   @map("uploaded_by_user_id")
-  fileType         String   @map("file_type")
-  fileUrl          String   @map("file_url")
-  uploadedAt       DateTime @default(now()) @map("uploaded_at")
-  dispute          Dispute  @relation(fields: [disputeId], references: [id])
-  uploadedBy       User     @relation("DisputeEvidenceUploadedBy", fields: [uploadedByUserId], references: [id])
+  id               String      @id @default(uuid())
+  disputeId        String      @map("dispute_id")
+  uploadedByUserId String      @map("uploaded_by_user_id")
+  mediaAssetId     String?     @map("media_asset_id")
+  fileType         String      @map("file_type")
+  fileUrl          String      @map("file_url")
+  uploadedAt       DateTime    @default(now()) @map("uploaded_at")
+  dispute          Dispute     @relation(fields: [disputeId], references: [id])
+  uploadedBy       User        @relation("DisputeEvidenceUploadedBy", fields: [uploadedByUserId], references: [id])
+  mediaAsset       MediaAsset? @relation(fields: [mediaAssetId], references: [id])
 
+  @@index([mediaAssetId])
   @@map("dispute_evidence")
 }
 
@@ -618,6 +754,7 @@ model ModerationCase {
   targetId            String    @map("target_id")
   reason              String
   caseStatus          String    @map("case_status")
+  internalNote        String?   @map("internal_note")
   assignedAdminUserId String?   @map("assigned_admin_user_id")
   createdAt           DateTime  @default(now()) @map("created_at")
   resolvedAt          DateTime? @map("resolved_at")

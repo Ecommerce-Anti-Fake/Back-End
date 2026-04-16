@@ -46,7 +46,9 @@
       "@shops": ["libs/shops/src"],
       "@shops/*": ["libs/shops/src/*"],
       "@orders": ["libs/orders/src"],
-      "@orders/*": ["libs/orders/src/*"]
+      "@orders/*": ["libs/orders/src/*"],
+      "@media": ["libs/media/src"],
+      "@media/*": ["libs/media/src/*"]
     }
   }
 }

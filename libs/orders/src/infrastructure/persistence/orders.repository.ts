@@ -44,8 +44,67 @@ const orderWithRelationsArgs = Prisma.validator<Prisma.OrderDefaultArgs>()({
   },
 });
 
+const disputeWithOrderArgs = Prisma.validator<Prisma.DisputeDefaultArgs>()({
+  include: {
+    order: {
+      include: {
+        shop: {
+          select: {
+            ownerUserId: true,
+            shopName: true,
+          },
+        },
+        buyerShop: {
+          select: {
+            ownerUserId: true,
+          },
+        },
+        paymentIntent: true,
+        items: true,
+      },
+    },
+  },
+});
+
+const openDisputesForAdminArgs = Prisma.validator<Prisma.DisputeDefaultArgs>()({
+  include: {
+    order: {
+      include: {
+        shop: {
+          select: {
+            shopName: true,
+          },
+        },
+      },
+    },
+  },
+});
+
+const disputeEvidenceArgs = Prisma.validator<Prisma.DisputeEvidenceDefaultArgs>()({
+  include: {
+    mediaAsset: true,
+  },
+});
+
 export type OfferForOrdering = Prisma.OfferGetPayload<typeof offerForOrderingArgs>;
 export type OrderWithRelations = Prisma.OrderGetPayload<typeof orderWithRelationsArgs>;
+export type DisputeWithOrder = Prisma.DisputeGetPayload<typeof disputeWithOrderArgs>;
+export type DisputeEvidenceRecord = Prisma.DisputeEvidenceGetPayload<typeof disputeEvidenceArgs>;
+export type AdminOpenDisputeRecord = Prisma.DisputeGetPayload<typeof openDisputesForAdminArgs>;
+export type OrderAuditLogRecord = {
+  id: string;
+  action: string;
+  fromStatus: string | null;
+  toStatus: string | null;
+  note: string | null;
+  actorUserId: string;
+  createdAt: Date;
+  actor: {
+    id: string;
+    displayName: string | null;
+    email: string | null;
+  };
+};
 
 @Injectable()
 export class OrdersRepository {
@@ -55,6 +114,16 @@ export class OrdersRepository {
     return this.prisma.offer.findUnique({
       where: { id: offerId },
       ...offerForOrderingArgs,
+    });
+  }
+
+  findUserById(id: string) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        phone: true,
+      },
     });
   }
 
@@ -217,6 +286,193 @@ export class OrdersRepository {
     });
   }
 
+  countOpenDisputes() {
+    return this.prisma.dispute.count({
+      where: {
+        disputeStatus: 'OPEN',
+      },
+    });
+  }
+
+  findOpenDisputesForAdmin(): Promise<AdminOpenDisputeRecord[]> {
+    return this.prisma.dispute.findMany({
+      where: {
+        disputeStatus: 'OPEN',
+      },
+      orderBy: {
+        openedAt: 'desc',
+      },
+      ...openDisputesForAdminArgs,
+    });
+  }
+
+  findOpenDisputeByOrder(orderId: string) {
+    return this.prisma.dispute.findFirst({
+      where: {
+        orderId,
+        disputeStatus: 'OPEN',
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  findDisputeById(id: string): Promise<DisputeWithOrder | null> {
+    return this.prisma.dispute.findUnique({
+      where: { id },
+      ...disputeWithOrderArgs,
+    });
+  }
+
+  findModerationCaseByTarget(targetType: string, targetId: string) {
+    return this.prisma.moderationCase.findFirst({
+      where: {
+        targetType,
+        targetId,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  createAuditLog(input: {
+    targetType: string;
+    targetId: string;
+    actorUserId: string;
+    action: string;
+    fromStatus?: string | null;
+    toStatus?: string | null;
+    note?: string | null;
+    metadata?: Record<string, unknown> | null;
+  }) {
+    const metadataSql = input.metadata
+      ? Prisma.sql`CAST(${JSON.stringify(input.metadata)} AS JSONB)`
+      : Prisma.sql`NULL`;
+
+    return this.prisma.$executeRaw(Prisma.sql`
+      INSERT INTO "audit_log" (
+        "target_type",
+        "target_id",
+        "actor_user_id",
+        "action",
+        "from_status",
+        "to_status",
+        "note",
+        "metadata"
+      )
+      VALUES (
+        ${input.targetType},
+        ${input.targetId},
+        ${input.actorUserId},
+        ${input.action},
+        ${input.fromStatus ?? null},
+        ${input.toStatus ?? null},
+        ${input.note ?? null},
+        ${metadataSql}
+      )
+    `);
+  }
+
+  findAuditLogsByTarget(targetType: string, targetId: string): Promise<OrderAuditLogRecord[]> {
+    return this.prisma
+      .$queryRaw<
+        Array<{
+          id: string;
+          action: string;
+          fromStatus: string | null;
+          toStatus: string | null;
+          note: string | null;
+          actorUserId: string;
+          createdAt: Date;
+          actorId: string;
+          actorDisplayName: string | null;
+          actorEmail: string | null;
+        }>
+      >(Prisma.sql`
+        SELECT
+          al.id,
+          al.action,
+          al.from_status AS "fromStatus",
+          al.to_status AS "toStatus",
+          al.note,
+          al.actor_user_id AS "actorUserId",
+          al.created_at AS "createdAt",
+          u.id AS "actorId",
+          u.display_name AS "actorDisplayName",
+          u.email AS "actorEmail"
+        FROM "audit_log" al
+        INNER JOIN "user" u ON u.id = al.actor_user_id
+        WHERE al.target_type = ${targetType}
+          AND al.target_id = ${targetId}
+        ORDER BY al.created_at DESC
+      `)
+      .then((rows) =>
+        rows.map((row) => ({
+          id: row.id,
+          action: row.action,
+          fromStatus: row.fromStatus,
+          toStatus: row.toStatus,
+          note: row.note,
+          actorUserId: row.actorUserId,
+          createdAt: row.createdAt,
+          actor: {
+            id: row.actorId,
+            displayName: row.actorDisplayName,
+            email: row.actorEmail,
+          },
+        })),
+      );
+  }
+
+  async upsertDisputeModerationCase(input: {
+    disputeId: string;
+    assignedAdminUserId?: string | null;
+    caseStatus: string;
+    internalNote?: string | null;
+    reason: string;
+    resolvedAt?: Date | null;
+  }) {
+    const existing = await this.findModerationCaseByTarget('DISPUTE', input.disputeId);
+
+    if (!existing) {
+      return this.prisma.moderationCase.create({
+        data: {
+          targetType: 'DISPUTE',
+          targetId: input.disputeId,
+          reason: input.reason,
+          caseStatus: input.caseStatus,
+          internalNote: input.internalNote ?? null,
+          assignedAdminUserId: input.assignedAdminUserId ?? null,
+          resolvedAt: input.resolvedAt ?? null,
+        },
+      });
+    }
+
+    return this.prisma.moderationCase.update({
+      where: {
+        id: existing.id,
+      },
+      data: {
+        caseStatus: input.caseStatus,
+        internalNote: input.internalNote ?? existing.internalNote,
+        assignedAdminUserId: input.assignedAdminUserId ?? existing.assignedAdminUserId,
+        resolvedAt: input.resolvedAt ?? existing.resolvedAt,
+      },
+    });
+  }
+
+  findEvidenceByDisputeId(disputeId: string): Promise<DisputeEvidenceRecord[]> {
+    return this.prisma.disputeEvidence.findMany({
+      where: { disputeId },
+      orderBy: {
+        uploadedAt: 'asc',
+      },
+      ...disputeEvidenceArgs,
+    });
+  }
+
   async markOrderPaid(input: { id: string; providerRef: string | null }): Promise<OrderWithRelations> {
     return this.prisma.$transaction(async (tx) => {
       await tx.paymentIntent.update({
@@ -304,6 +560,189 @@ export class OrdersRepository {
         where: { id },
         data: {
           orderStatus: 'cancelled',
+        },
+        ...orderWithRelationsArgs,
+      });
+    });
+  }
+
+  createDispute(input: {
+    orderId: string;
+    openedByUserId: string;
+    reason: string;
+  }) {
+    return this.prisma.dispute.create({
+      data: {
+        orderId: input.orderId,
+        openedByUserId: input.openedByUserId,
+        reason: input.reason,
+        disputeStatus: 'OPEN',
+      },
+    });
+  }
+
+  createDisputeEvidence(input: {
+    disputeId: string;
+    uploadedByUserId: string;
+    mediaAssetId: string | null;
+    fileType: string;
+    fileUrl: string;
+  }): Promise<DisputeEvidenceRecord> {
+    return this.prisma.disputeEvidence.create({
+      data: {
+        disputeId: input.disputeId,
+        uploadedByUserId: input.uploadedByUserId,
+        mediaAssetId: input.mediaAssetId,
+        fileType: input.fileType,
+        fileUrl: input.fileUrl,
+      },
+      ...disputeEvidenceArgs,
+    });
+  }
+
+  async resolveDispute(input: {
+    disputeId: string;
+    resolution: 'RESOLVED' | 'REFUNDED';
+  }): Promise<DisputeWithOrder> {
+    return this.prisma.$transaction(async (tx) => {
+      const dispute = await tx.dispute.findUnique({
+        where: { id: input.disputeId },
+        ...disputeWithOrderArgs,
+      });
+
+      if (!dispute) {
+        throw new BadRequestException('Dispute not found');
+      }
+
+      if (input.resolution === 'REFUNDED' && dispute.order.orderStatus === 'paid') {
+        for (const item of dispute.order.items) {
+          await tx.offer.update({
+            where: { id: item.offerId },
+            data: {
+              availableQuantity: {
+                increment: item.quantity,
+              },
+            },
+          });
+        }
+
+        await tx.paymentIntent.update({
+          where: { orderId: dispute.orderId },
+          data: {
+            paymentStatus: 'REFUNDED',
+          },
+        });
+
+        await tx.affiliateCommissionLedger.updateMany({
+          where: {
+            conversion: {
+              orderId: dispute.orderId,
+            },
+            commissionStatus: {
+              in: ['PENDING', 'APPROVED', 'LOCKED'],
+            },
+          },
+          data: {
+            commissionStatus: 'CANCELLED',
+            payoutId: null,
+            lockedAt: null,
+          },
+        });
+
+        await tx.affiliateConversion.updateMany({
+          where: {
+            orderId: dispute.orderId,
+            conversionStatus: {
+              in: ['PENDING', 'APPROVED'],
+            },
+          },
+          data: {
+            conversionStatus: 'CANCELLED',
+          },
+        });
+
+        await tx.order.update({
+          where: { id: dispute.orderId },
+          data: {
+            orderStatus: 'refunded',
+          },
+        });
+      }
+
+      return tx.dispute.update({
+        where: { id: input.disputeId },
+        data: {
+          disputeStatus: input.resolution,
+          resolvedAt: new Date(),
+        },
+        ...disputeWithOrderArgs,
+      });
+    });
+  }
+
+  async refundPaidOrder(id: string): Promise<OrderWithRelations> {
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id },
+        include: {
+          items: true,
+        },
+      });
+
+      if (!order) {
+        throw new BadRequestException('Order not found');
+      }
+
+      for (const item of order.items) {
+        await tx.offer.update({
+          where: { id: item.offerId },
+          data: {
+            availableQuantity: {
+              increment: item.quantity,
+            },
+          },
+        });
+      }
+
+      await tx.paymentIntent.update({
+        where: { orderId: id },
+        data: {
+          paymentStatus: 'REFUNDED',
+        },
+      });
+
+      await tx.affiliateCommissionLedger.updateMany({
+        where: {
+          conversion: {
+            orderId: id,
+          },
+          commissionStatus: {
+            in: ['PENDING', 'APPROVED', 'LOCKED'],
+          },
+        },
+        data: {
+          commissionStatus: 'CANCELLED',
+          payoutId: null,
+          lockedAt: null,
+        },
+      });
+
+      await tx.affiliateConversion.updateMany({
+        where: {
+          orderId: id,
+          conversionStatus: {
+            in: ['PENDING', 'APPROVED'],
+          },
+        },
+        data: {
+          conversionStatus: 'CANCELLED',
+        },
+      });
+
+      return tx.order.update({
+        where: { id },
+        data: {
+          orderStatus: 'refunded',
         },
         ...orderWithRelationsArgs,
       });

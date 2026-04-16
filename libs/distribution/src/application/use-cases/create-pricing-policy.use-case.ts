@@ -26,6 +26,10 @@ export class CreatePricingPolicyUseCase {
       throw new NotFoundException('Distribution network not found or not owned by current user');
     }
 
+    if (network.manufacturerShop.shopStatus !== 'active') {
+      throw new BadRequestException('Only active manufacturer shops can manage distribution pricing');
+    }
+
     const startsAt = this.parseOptionalDate(input.startsAt);
     const endsAt = this.parseOptionalDate(input.endsAt);
     if (startsAt && endsAt && startsAt > endsAt) {
@@ -47,6 +51,10 @@ export class CreatePricingPolicyUseCase {
       const node = await this.pricingRepository.findNodeById(input.nodeId);
       if (!node || node.networkId !== input.networkId) {
         throw new BadRequestException('Distribution node is invalid for this network');
+      }
+
+      if (node.relationshipStatus !== 'ACTIVE' || node.shop.shopStatus !== 'active') {
+        throw new BadRequestException('Pricing policy can only target active distribution nodes');
       }
 
       nodeId = node.id;

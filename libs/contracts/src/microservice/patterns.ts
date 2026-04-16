@@ -12,6 +12,13 @@ export const AUTH_MESSAGE_PATTERNS = {
 export const USERS_MESSAGE_PATTERNS = {
   findAll: 'users.find-all',
   getCurrentProfile: 'users.get-current-profile',
+  getProfileCompletion: 'users.get-profile-completion',
+  getMyKyc: 'users.get-my-kyc',
+  findPendingKycs: 'users.find-pending-kycs',
+  getAdminKycDetail: 'users.get-admin-kyc-detail',
+  getKycUploadSignatures: 'users.get-kyc-upload-signatures',
+  submitKyc: 'users.submit-kyc',
+  reviewKyc: 'users.review-kyc',
   findById: 'users.find-by-id',
   findByIdentifier: 'users.find-by-identifier',
   create: 'users.create',
@@ -24,6 +31,17 @@ export const SHOPS_MESSAGE_PATTERNS = {
   create: 'shops.create',
   findById: 'shops.find-by-id',
   findMine: 'shops.find-mine',
+  getVerificationSummary: 'shops.get-verification-summary',
+  findPendingVerification: 'shops.find-pending-verification',
+  getAdminVerificationDetail: 'shops.get-admin-verification-detail',
+  findShopDocuments: 'shops.find-shop-documents',
+  findCategoryDocuments: 'shops.find-category-documents',
+  getShopDocumentUploadSignatures: 'shops.get-shop-document-upload-signatures',
+  submitShopDocuments: 'shops.submit-shop-documents',
+  getCategoryDocumentUploadSignatures: 'shops.get-category-document-upload-signatures',
+  submitCategoryDocuments: 'shops.submit-category-documents',
+  reviewShopDocument: 'shops.review-shop-document',
+  reviewShopCategory: 'shops.review-shop-category',
 } as const;
 
 export const PRODUCTS_MESSAGE_PATTERNS = {
@@ -32,15 +50,33 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   createOffer: 'products.create-offer',
   findOffers: 'products.find-offers',
   findOfferById: 'products.find-offer-by-id',
+  getOfferMediaUploadSignatures: 'products.get-offer-media-upload-signatures',
+  addOfferMediaBatch: 'products.add-offer-media-batch',
+  findOfferMedia: 'products.find-offer-media',
+  getOfferDocumentUploadSignatures: 'products.get-offer-document-upload-signatures',
+  addOfferDocumentsBatch: 'products.add-offer-documents-batch',
+  findOfferDocuments: 'products.find-offer-documents',
 } as const;
 
 export const ORDERS_MESSAGE_PATTERNS = {
   createRetail: 'orders.create-retail',
   createWholesale: 'orders.create-wholesale',
   findById: 'orders.find-by-id',
+  getAdminOpenDisputeCount: 'orders.get-admin-open-dispute-count',
+  findAdminOpenDisputes: 'orders.find-admin-open-disputes',
+  getAdminDisputeDetail: 'orders.get-admin-dispute-detail',
+  assignAdminDispute: 'orders.assign-admin-dispute',
+  updateAdminDisputeCase: 'orders.update-admin-dispute-case',
+  resolveAdminDispute: 'orders.resolve-admin-dispute',
   markPaid: 'orders.mark-paid',
   complete: 'orders.complete',
   cancel: 'orders.cancel',
+  openDispute: 'orders.open-dispute',
+  resolveDispute: 'orders.resolve-dispute',
+  getDisputeEvidenceUploadSignatures: 'orders.get-dispute-evidence-upload-signatures',
+  addDisputeEvidenceBatch: 'orders.add-dispute-evidence-batch',
+  findDisputeEvidence: 'orders.find-dispute-evidence',
+  refund: 'orders.refund',
 } as const;
 
 export const DISTRIBUTION_MESSAGE_PATTERNS = {
@@ -78,6 +114,52 @@ export const AFFILIATE_MESSAGE_PATTERNS = {
 
 export type CurrentUserProfileMessage = {
   userId: string;
+};
+
+export type CurrentUserProfileCompletionMessage = {
+  userId: string;
+};
+
+export type CurrentUserKycMessage = {
+  userId: string;
+};
+
+export type PendingKycsLookupMessage = {
+  verificationStatus?: 'pending';
+};
+
+export type AdminKycDetailMessage = {
+  userId: string;
+};
+
+export type KycUploadSignaturesMessage = {
+  userId: string;
+  items: Array<{
+    side: 'FRONT' | 'BACK';
+  }>;
+};
+
+export type SubmitKycMessage = {
+  userId: string;
+  fullName: string;
+  dateOfBirth: string;
+  phone?: string;
+  idType: string;
+  idNumber: string;
+  documents: Array<{
+    side: 'FRONT' | 'BACK';
+    assetType: 'IMAGE';
+    mimeType: string;
+    fileUrl: string;
+    publicId: string;
+  }>;
+};
+
+export type ReviewKycMessage = {
+  reviewerUserId: string;
+  userId: string;
+  verificationStatus: 'approved' | 'rejected';
+  reviewNote?: string | null;
 };
 
 export type UserIdentityLookupMessage = {
@@ -126,6 +208,90 @@ export type MyShopsLookupMessage = {
   ownerUserId: string;
 };
 
+export type PendingVerificationShopsLookupMessage = {
+  shopStatus?: 'pending_verification';
+};
+
+export type AdminShopVerificationDetailMessage = {
+  shopId: string;
+};
+
+export type ShopVerificationSummaryMessage = {
+  shopId: string;
+  requesterUserId: string;
+};
+
+export type ShopDocumentsLookupMessage = {
+  shopId: string;
+  requesterUserId: string;
+};
+
+export type CategoryDocumentsLookupMessage = {
+  shopId: string;
+  categoryId: string;
+  requesterUserId: string;
+};
+
+export type ShopDocumentUploadSignaturesMessage = {
+  shopId: string;
+  requesterUserId: string;
+  items: Array<{
+    docType: string;
+  }>;
+};
+
+export type SubmitShopDocumentsMessage = {
+  shopId: string;
+  requesterUserId: string;
+  items: Array<{
+    docType: string;
+    mimeType: string;
+    fileUrl: string;
+    publicId: string;
+  }>;
+};
+
+export type CategoryDocumentUploadSignaturesMessage = {
+  shopId: string;
+  categoryId: string;
+  requesterUserId: string;
+  items: Array<{
+    documentType: string;
+  }>;
+};
+
+export type SubmitCategoryDocumentsMessage = {
+  shopId: string;
+  categoryId: string;
+  requesterUserId: string;
+  items: Array<{
+    documentType: string;
+    mimeType: string;
+    fileUrl: string;
+    publicId: string;
+    documentNumber?: string | null;
+    issuedBy?: string | null;
+    issuedAt?: string | null;
+    expiresAt?: string | null;
+  }>;
+};
+
+export type ReviewShopDocumentMessage = {
+  shopId: string;
+  documentId: string;
+  reviewerUserId: string;
+  reviewStatus: 'approved' | 'rejected';
+  reviewNote?: string | null;
+};
+
+export type ReviewShopCategoryMessage = {
+  shopId: string;
+  categoryId: string;
+  reviewerUserId: string;
+  registrationStatus: 'approved' | 'rejected';
+  reviewNote?: string | null;
+};
+
 export type ProductModelLookupMessage = {
   id: string;
 };
@@ -150,6 +316,56 @@ export type CreateOfferMessage = {
   verificationLevel?: string;
 };
 
+export type OfferMediaUploadSignaturesMessage = {
+  offerId: string;
+  requesterUserId: string;
+  items: Array<{
+    assetType: 'IMAGE' | 'VIDEO';
+  }>;
+};
+
+export type AddOfferMediaBatchMessage = {
+  offerId: string;
+  requesterUserId: string;
+  items: Array<{
+    assetType: 'IMAGE' | 'VIDEO';
+    mimeType: string;
+    fileUrl: string;
+    publicId: string;
+    mediaType?: string | null;
+    phash?: string | null;
+  }>;
+};
+
+export type OfferMediaLookupMessage = {
+  offerId: string;
+};
+
+export type OfferDocumentUploadSignaturesMessage = {
+  offerId: string;
+  requesterUserId: string;
+  items: Array<{
+    docType: string;
+  }>;
+};
+
+export type AddOfferDocumentsBatchMessage = {
+  offerId: string;
+  requesterUserId: string;
+  items: Array<{
+    docType: string;
+    mimeType: string;
+    fileUrl: string;
+    publicId: string;
+    issuerName?: string | null;
+    documentNumber?: string | null;
+  }>;
+};
+
+export type OfferDocumentsLookupMessage = {
+  offerId: string;
+};
+
 export type CreateRetailOrderMessage = {
   buyerUserId: string;
   offerId: string;
@@ -171,6 +387,34 @@ export type OrderLookupMessage = {
   requesterUserId: string;
 };
 
+export type AdminOpenDisputeCountMessage = Record<string, never>;
+
+export type AdminOpenDisputesLookupMessage = Record<string, never>;
+
+export type AdminDisputeDetailMessage = {
+  disputeId: string;
+};
+
+export type AssignAdminDisputeMessage = {
+  disputeId: string;
+  requesterUserId: string;
+  internalNote?: string | null;
+};
+
+export type UpdateAdminDisputeCaseMessage = {
+  disputeId: string;
+  requesterUserId: string;
+  caseStatus: 'ASSIGNED' | 'IN_REVIEW' | 'ESCALATED' | 'RESOLVED' | 'CLOSED';
+  internalNote?: string | null;
+};
+
+export type ResolveAdminDisputeMessage = {
+  disputeId: string;
+  requesterUserId: string;
+  resolution: 'RESOLVED' | 'REFUNDED';
+  internalNote?: string | null;
+};
+
 export type MarkOrderPaidMessage = {
   id: string;
   requesterUserId: string;
@@ -183,6 +427,47 @@ export type CompleteOrderMessage = {
 };
 
 export type CancelOrderMessage = {
+  id: string;
+  requesterUserId: string;
+};
+
+export type OpenOrderDisputeMessage = {
+  id: string;
+  requesterUserId: string;
+  reason: string;
+};
+
+export type ResolveOrderDisputeMessage = {
+  disputeId: string;
+  requesterUserId: string;
+  resolution: 'RESOLVED' | 'REFUNDED';
+};
+
+export type DisputeEvidenceUploadSignaturesMessage = {
+  disputeId: string;
+  requesterUserId: string;
+  items: Array<{
+    assetType: 'IMAGE' | 'VIDEO' | 'RAW';
+  }>;
+};
+
+export type AddDisputeEvidenceBatchMessage = {
+  disputeId: string;
+  requesterUserId: string;
+  items: Array<{
+    assetType: 'IMAGE' | 'VIDEO' | 'RAW';
+    mimeType: string;
+    fileUrl: string;
+    publicId: string;
+  }>;
+};
+
+export type DisputeEvidenceLookupMessage = {
+  disputeId: string;
+  requesterUserId: string;
+};
+
+export type RefundOrderMessage = {
   id: string;
   requesterUserId: string;
 };

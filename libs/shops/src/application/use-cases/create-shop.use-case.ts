@@ -36,16 +36,50 @@ export class CreateShopUseCase {
       throw new BadRequestException('One or more categories are invalid');
     }
 
+    const categories = await this.shopsRepository.findCategoriesByIds(categoryIds);
+    const approvedKyc = await this.shopsRepository.hasApprovedKycForOwner(input.ownerUserId);
+    const shopStatus = this.resolveInitialShopStatus({
+      registrationType: input.registrationType,
+      hasApprovedKyc: !!approvedKyc,
+      categoryRiskTiers: categories.map((category) => category.riskTier),
+    });
+
     const shop = await this.shopsRepository.create({
       ownerUserId: input.ownerUserId,
       shopName,
       registrationType: input.registrationType,
       businessType,
       taxCode,
-      shopStatus: 'active',
-      categoryIds,
+      shopStatus,
+      categoryRegistrations: categories.map((category) => ({
+        categoryId: category.id,
+        registrationStatus:
+          shopStatus === 'active' ? 'approved' : 'pending',
+        approvedAt: shopStatus === 'active' ? new Date() : null,
+      })),
     });
 
     return toShopResponse(shop);
+  }
+
+  private resolveInitialShopStatus(input: {
+    registrationType: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
+    hasApprovedKyc: boolean;
+    categoryRiskTiers: string[];
+  }) {
+    if (!input.hasApprovedKyc) {
+      return 'pending_kyc';
+    }
+
+    if (input.registrationType === 'MANUFACTURER' || input.registrationType === 'DISTRIBUTOR') {
+      return 'pending_verification';
+    }
+
+    const hasRegulatedCategory = input.categoryRiskTiers.some((riskTier) => riskTier.trim().toLowerCase() !== 'low');
+    if (hasRegulatedCategory) {
+      return 'pending_verification';
+    }
+
+    return 'active';
   }
 }

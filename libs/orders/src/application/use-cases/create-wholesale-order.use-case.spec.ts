@@ -7,6 +7,7 @@ describe('CreateWholesaleOrderUseCase', () => {
   let useCase: CreateWholesaleOrderUseCase;
 
   const ordersRepositoryMock = {
+    findUserById: jest.fn(),
     findOfferForOrdering: jest.fn(),
     findOwnedShop: jest.fn(),
     findDistributionNodeById: jest.fn(),
@@ -28,6 +29,10 @@ describe('CreateWholesaleOrderUseCase', () => {
   });
 
   it('should apply 20% platform fee outside network and keep buyer payable at offer price', async () => {
+    ordersRepositoryMock.findUserById.mockResolvedValueOnce({
+      id: 'user-1',
+      phone: '0987654321',
+    });
     ordersRepositoryMock.findOfferForOrdering.mockResolvedValueOnce(
       createOffer({
         price: 100,
@@ -78,6 +83,10 @@ describe('CreateWholesaleOrderUseCase', () => {
   });
 
   it('should prefer node specific policy over level and network defaults for in-network trade', async () => {
+    ordersRepositoryMock.findUserById.mockResolvedValueOnce({
+      id: 'user-1',
+      phone: '0987654321',
+    });
     ordersRepositoryMock.findOfferForOrdering.mockResolvedValueOnce(
       createOffer({
         price: 100,
@@ -147,6 +156,10 @@ describe('CreateWholesaleOrderUseCase', () => {
   });
 
   it('should reject non-percent policy for in-network trade', async () => {
+    ordersRepositoryMock.findUserById.mockResolvedValueOnce({
+      id: 'user-1',
+      phone: '0987654321',
+    });
     ordersRepositoryMock.findOfferForOrdering.mockResolvedValueOnce(
       createOffer({
         price: 100,

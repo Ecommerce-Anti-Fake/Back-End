@@ -1,7 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import type {
+  AdminKycDetailMessage,
+  CurrentUserKycMessage,
+  CurrentUserProfileCompletionMessage,
+  KycUploadSignaturesMessage,
   ListUsersMessage,
+  PendingKycsLookupMessage,
+  ReviewKycMessage,
+  SubmitKycMessage,
   UpdateUserMessage,
   UserIdentityRecord,
   UserLookupMessage,
@@ -27,6 +34,34 @@ export class UsersRpcService {
 
   getCurrentProfile(payload: CurrentUserProfileMessage) {
     return this.send(USERS_MESSAGE_PATTERNS.getCurrentProfile, payload);
+  }
+
+  getProfileCompletion(payload: CurrentUserProfileCompletionMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.getProfileCompletion, payload);
+  }
+
+  getMyKyc(payload: CurrentUserKycMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.getMyKyc, payload);
+  }
+
+  findPendingKycs(payload: PendingKycsLookupMessage = {}) {
+    return this.send(USERS_MESSAGE_PATTERNS.findPendingKycs, payload);
+  }
+
+  getAdminKycDetail(payload: AdminKycDetailMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.getAdminKycDetail, payload);
+  }
+
+  getKycUploadSignatures(payload: KycUploadSignaturesMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.getKycUploadSignatures, payload);
+  }
+
+  submitKyc(payload: SubmitKycMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.submitKyc, payload);
+  }
+
+  reviewKyc(payload: ReviewKycMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.reviewKyc, payload);
   }
 
   findById(id: string): Promise<UserIdentityRecord | null> {

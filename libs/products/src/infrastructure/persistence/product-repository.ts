@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { createHash } from 'crypto';
 import { PrismaService } from '@database/prisma/prisma.service';
 
 @Injectable()
@@ -46,6 +47,7 @@ export class ProductRepository {
       },
       select: {
         id: true,
+        shopStatus: true,
       },
     });
   }
@@ -115,5 +117,95 @@ export class ProductRepository {
         },
       },
     });
+  }
+
+  findOwnedOffer(offerId: string, sellerUserId: string) {
+    return this.prisma.offer.findFirst({
+      where: {
+        id: offerId,
+        sellerUserId,
+      },
+      include: {
+        shop: {
+          select: {
+            id: true,
+            shopStatus: true,
+          },
+        },
+      },
+    });
+  }
+
+  createOfferMedia(data: {
+    offerId: string;
+    mediaAssetId: string | null;
+    mediaType: string;
+    fileUrl: string;
+    phash: string | null;
+  }) {
+    return this.prisma.offerMedia.create({
+      data: {
+        offerId: data.offerId,
+        mediaAssetId: data.mediaAssetId,
+        mediaType: data.mediaType,
+        fileUrl: data.fileUrl,
+        phash: data.phash,
+      },
+      include: {
+        mediaAsset: true,
+      },
+    });
+  }
+
+  findOfferMedia(offerId: string) {
+    return this.prisma.offerMedia.findMany({
+      where: { offerId },
+      include: {
+        mediaAsset: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+  }
+
+  createOfferDocument(data: {
+    offerId: string;
+    mediaAssetId: string | null;
+    docType: string;
+    fileUrl: string;
+    issuerName: string | null;
+    documentNumber: string | null;
+  }) {
+    return this.prisma.offerDocument.create({
+      data: {
+        offerId: data.offerId,
+        mediaAssetId: data.mediaAssetId,
+        docType: data.docType,
+        fileUrl: data.fileUrl,
+        issuerName: data.issuerName,
+        documentNumberHash: data.documentNumber ? this.hashValue(data.documentNumber) : null,
+        reviewStatus: 'pending',
+      },
+      include: {
+        mediaAsset: true,
+      },
+    });
+  }
+
+  findOfferDocuments(offerId: string) {
+    return this.prisma.offerDocument.findMany({
+      where: { offerId },
+      include: {
+        mediaAsset: true,
+      },
+      orderBy: {
+        uploadedAt: 'asc',
+      },
+    });
+  }
+
+  private hashValue(value: string) {
+    return createHash('sha256').update(value).digest('hex');
   }
 }
