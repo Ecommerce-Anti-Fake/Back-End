@@ -2,11 +2,15 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   AdminShopVerificationDetailMessage,
+  AdminShopVerificationSummaryMessage,
+  BrandAuthorizationUploadSignaturesMessage,
+  BrandAuthorizationsLookupMessage,
   CategoryDocumentsLookupMessage,
   CategoryDocumentUploadSignaturesMessage,
   CreateShopMessage,
   MyShopsLookupMessage,
   PendingVerificationShopsLookupMessage,
+  ReviewBrandAuthorizationMessage,
   ReviewShopCategoryMessage,
   ReviewShopDocumentMessage,
   SHOPS_MESSAGE_PATTERNS,
@@ -14,6 +18,7 @@ import {
   ShopDocumentUploadSignaturesMessage,
   ShopLookupMessage,
   ShopVerificationSummaryMessage,
+  SubmitBrandAuthorizationMessage,
   SubmitCategoryDocumentsMessage,
   SubmitShopDocumentsMessage,
   USERS_SERVICE_CLIENT,
@@ -32,6 +37,22 @@ export class ShopsRpcService {
     return this.send(SHOPS_MESSAGE_PATTERNS.create, payload);
   }
 
+  getBrandAuthorizationUploadSignatures(payload: BrandAuthorizationUploadSignaturesMessage) {
+    return this.send(SHOPS_MESSAGE_PATTERNS.getBrandAuthorizationUploadSignatures, payload);
+  }
+
+  submitBrandAuthorization(payload: SubmitBrandAuthorizationMessage) {
+    return this.send(SHOPS_MESSAGE_PATTERNS.submitBrandAuthorization, payload);
+  }
+
+  findBrandAuthorizations(payload: BrandAuthorizationsLookupMessage) {
+    return this.send(SHOPS_MESSAGE_PATTERNS.findBrandAuthorizations, payload);
+  }
+
+  reviewBrandAuthorization(payload: ReviewBrandAuthorizationMessage) {
+    return this.send(SHOPS_MESSAGE_PATTERNS.reviewBrandAuthorization, payload);
+  }
+
   findById(payload: ShopLookupMessage) {
     return this.send(SHOPS_MESSAGE_PATTERNS.findById, payload);
   }
@@ -46,6 +67,10 @@ export class ShopsRpcService {
 
   getAdminVerificationDetail(payload: AdminShopVerificationDetailMessage) {
     return this.send(SHOPS_MESSAGE_PATTERNS.getAdminVerificationDetail, payload);
+  }
+
+  getAdminVerificationSummary(payload: AdminShopVerificationSummaryMessage = {}) {
+    return this.send(SHOPS_MESSAGE_PATTERNS.getAdminVerificationSummary, payload);
   }
 
   getVerificationSummary(payload: ShopVerificationSummaryMessage) {

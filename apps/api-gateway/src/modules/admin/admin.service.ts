@@ -6,6 +6,22 @@ import { UsersRpcService } from '../users/users-rpc.service';
 type PendingKycPreviewItem = { id: string };
 type PendingShopVerificationPreviewItem = { id: string };
 type AdminOpenDisputeCountResponse = { openDisputes: number };
+type PaginatedPendingKycsResponse = { total: number; items: PendingKycPreviewItem[] };
+type PaginatedPendingVerificationShopsResponse = { total: number; items: PendingShopVerificationPreviewItem[] };
+type AdminKycSummaryResponse = {
+  total: number;
+  byVerificationStatus: Record<string, number>;
+};
+type AdminShopVerificationSummaryResponse = {
+  total: number;
+  byShopStatus: Record<string, number>;
+  byRegistrationType: Record<string, number>;
+};
+type AdminDisputeSummaryResponse = {
+  total: number;
+  byDisputeStatus: Record<string, number>;
+  byCaseStatus: Record<string, number>;
+};
 
 @Injectable()
 export class AdminService {
@@ -21,21 +37,35 @@ export class AdminService {
       this.shopsRpcService.findPendingVerification({ shopStatus: 'pending_verification' }),
       this.ordersRpcService.getAdminOpenDisputeCount(),
     ])) as [
-      PendingKycPreviewItem[],
-      PendingShopVerificationPreviewItem[],
+      PaginatedPendingKycsResponse,
+      PaginatedPendingVerificationShopsResponse,
       AdminOpenDisputeCountResponse,
     ];
 
     return {
       counts: {
-        pendingKycs: pendingKycs.length,
-        pendingShopVerification: pendingVerificationShops.length,
+        pendingKycs: pendingKycs.total,
+        pendingShopVerification: pendingVerificationShops.total,
         openDisputes: disputeOverview.openDisputes,
       },
       previews: {
-        pendingKycs: pendingKycs.slice(0, 5),
-        pendingShopVerification: pendingVerificationShops.slice(0, 5),
+        pendingKycs: pendingKycs.items.slice(0, 5),
+        pendingShopVerification: pendingVerificationShops.items.slice(0, 5),
       },
+    };
+  }
+
+  async getModerationSummary() {
+    const [kyc, shops, disputes] = (await Promise.all([
+      this.usersRpcService.getAdminKycSummary(),
+      this.shopsRpcService.getAdminVerificationSummary(),
+      this.ordersRpcService.getAdminDisputeSummary(),
+    ])) as [AdminKycSummaryResponse, AdminShopVerificationSummaryResponse, AdminDisputeSummaryResponse];
+
+    return {
+      kyc,
+      shops,
+      disputes,
     };
   }
 }

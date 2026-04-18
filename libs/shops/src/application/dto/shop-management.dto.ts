@@ -4,9 +4,12 @@ import {
   IsArray,
   IsDateString,
   IsIn,
+  IsInt,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
   MinLength,
   ValidateNested,
 } from 'class-validator';
@@ -14,6 +17,9 @@ import { Type } from 'class-transformer';
 
 const SHOP_REGISTRATION_TYPES = ['NORMAL', 'HANDMADE', 'MANUFACTURER', 'DISTRIBUTOR'] as const;
 const REVIEW_STATUSES = ['approved', 'rejected'] as const;
+const SHOP_LOOKUP_STATUSES = ['pending_kyc', 'pending_verification', 'active'] as const;
+const SHOP_SORT_FIELDS = ['createdAt', 'shopName'] as const;
+const SORT_ORDERS = ['asc', 'desc'] as const;
 
 export class ShopRegisteredCategoryResponseDto {
   @ApiProperty({
@@ -181,6 +187,47 @@ export class ShopCategoryDocumentResponseDto {
   uploadedAt!: Date;
 }
 
+export class BrandAuthorizationResponseDto {
+  @ApiProperty({ example: 'brand-auth-1' })
+  id!: string;
+
+  @ApiProperty({ example: 'shop-1' })
+  shopId!: string;
+
+  @ApiProperty({ example: 'brand-1' })
+  brandId!: string;
+
+  @ApiPropertyOptional({ example: 'media-asset-1', nullable: true })
+  mediaAssetId!: string | null;
+
+  @ApiProperty({ example: 'DISTRIBUTOR_AUTHORIZATION' })
+  authorizationType!: string;
+
+  @ApiPropertyOptional({
+    example: 'https://res.cloudinary.com/example/raw/upload/v1/shops/shop-1/brands/brand-1/authorization.pdf',
+    nullable: true,
+  })
+  fileUrl!: string | null;
+
+  @ApiProperty({ example: 'pending' })
+  verificationStatus!: string;
+
+  @ApiPropertyOptional({ example: 'Can bo sung hop dong uy quyen', nullable: true })
+  reviewNote!: string | null;
+
+  @ApiPropertyOptional({ example: '2026-04-16T14:20:00.000Z', nullable: true })
+  verifiedAt!: Date | null;
+
+  @ApiProperty({ example: '2026-04-16T14:00:00.000Z' })
+  createdAt!: Date;
+
+  @ApiPropertyOptional({ example: 'application/pdf', nullable: true })
+  mimeType!: string | null;
+
+  @ApiPropertyOptional({ example: 'shops/shop-1/brands/brand-1/user-1-1776240000-1', nullable: true })
+  publicId!: string | null;
+}
+
 export class ShopVerificationCategoryResponseDto {
   @ApiProperty({ example: 'category-1' })
   categoryId!: string;
@@ -290,6 +337,101 @@ export class PendingVerificationShopResponseDto {
 
   @ApiProperty({ example: '2026-04-15T10:00:00.000Z' })
   createdAt!: Date;
+}
+
+export class PendingVerificationShopQueryDto {
+  @ApiPropertyOptional({
+    description: 'Loc theo trang thai shop.',
+    enum: SHOP_LOOKUP_STATUSES,
+    example: 'pending_verification',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(SHOP_LOOKUP_STATUSES)
+  shopStatus?: 'pending_kyc' | 'pending_verification' | 'active';
+
+  @ApiPropertyOptional({
+    description: 'Loc theo loai dang ky cua shop.',
+    enum: SHOP_REGISTRATION_TYPES,
+    example: 'MANUFACTURER',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(SHOP_REGISTRATION_TYPES)
+  registrationType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
+
+  @ApiPropertyOptional({
+    description: 'Loc theo category ma shop da dang ky.',
+    example: 'category-1',
+  })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Tu khoa tim theo ten shop, owner display name, email hoac phone.',
+    example: 'factory',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({
+    description: 'Trang hien tai.',
+    example: 1,
+    default: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({
+    description: 'So phan tu moi trang.',
+    example: 20,
+    default: 20,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize?: number;
+
+  @ApiPropertyOptional({
+    description: 'Truong sap xep danh sach shop moderation.',
+    enum: SHOP_SORT_FIELDS,
+    example: 'createdAt',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(SHOP_SORT_FIELDS)
+  sortBy?: 'createdAt' | 'shopName';
+
+  @ApiPropertyOptional({
+    description: 'Thu tu sap xep.',
+    enum: SORT_ORDERS,
+    example: 'desc',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(SORT_ORDERS)
+  sortOrder?: 'asc' | 'desc';
+}
+
+export class PaginatedPendingVerificationShopResponseDto {
+  @ApiProperty({ example: 1 })
+  page!: number;
+
+  @ApiProperty({ example: 20 })
+  pageSize!: number;
+
+  @ApiProperty({ example: 12 })
+  total!: number;
+
+  @ApiProperty({ type: PendingVerificationShopResponseDto, isArray: true })
+  items!: PendingVerificationShopResponseDto[];
 }
 
 export class AdminShopVerificationDetailResponseDto {
@@ -402,6 +544,26 @@ export class CategoryDocumentUploadSignaturesDto {
   items!: CategoryDocumentSignatureItemDto[];
 }
 
+export class SubmitBrandAuthorizationDto {
+  @ApiProperty({ example: 'DISTRIBUTOR_AUTHORIZATION' })
+  @IsString()
+  authorizationType!: string;
+
+  @ApiProperty({ example: 'application/pdf' })
+  @IsString()
+  mimeType!: string;
+
+  @ApiProperty({
+    example: 'https://res.cloudinary.com/example/raw/upload/v1/shops/shop-1/brands/brand-1/authorization.pdf',
+  })
+  @IsString()
+  fileUrl!: string;
+
+  @ApiProperty({ example: 'shops/shop-1/brands/brand-1/user-1-1776240000-1' })
+  @IsString()
+  publicId!: string;
+}
+
 export class SubmitCategoryDocumentItemDto {
   @ApiProperty({ example: 'CATEGORY_CERTIFICATE' })
   @IsString()
@@ -467,6 +629,18 @@ export class ReviewShopCategoryDto {
   registrationStatus!: 'approved' | 'rejected';
 
   @ApiPropertyOptional({ example: 'Da doi chieu giay to nganh hang' })
+  @IsOptional()
+  @IsString()
+  reviewNote?: string;
+}
+
+export class ReviewBrandAuthorizationDto {
+  @ApiProperty({ enum: REVIEW_STATUSES, example: 'approved' })
+  @IsString()
+  @IsIn(REVIEW_STATUSES)
+  verificationStatus!: 'approved' | 'rejected';
+
+  @ApiPropertyOptional({ example: 'Ho so uy quyen hop le' })
   @IsOptional()
   @IsString()
   reviewNote?: string;

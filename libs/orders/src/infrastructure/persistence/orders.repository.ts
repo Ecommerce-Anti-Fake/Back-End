@@ -40,7 +40,11 @@ const orderWithRelationsArgs = Prisma.validator<Prisma.OrderDefaultArgs>()({
       },
     },
     paymentIntent: true,
-    items: true,
+    items: {
+      include: {
+        batchAllocations: true,
+      },
+    },
   },
 });
 
@@ -60,7 +64,11 @@ const disputeWithOrderArgs = Prisma.validator<Prisma.DisputeDefaultArgs>()({
           },
         },
         paymentIntent: true,
-        items: true,
+        items: {
+          include: {
+            batchAllocations: true,
+          },
+        },
       },
     },
   },
@@ -88,6 +96,10 @@ const disputeEvidenceArgs = Prisma.validator<Prisma.DisputeEvidenceDefaultArgs>(
 
 export type OfferForOrdering = Prisma.OfferGetPayload<typeof offerForOrderingArgs>;
 export type OrderWithRelations = Prisma.OrderGetPayload<typeof orderWithRelationsArgs>;
+type OrderBatchAllocation = {
+  batchId: string;
+  quantity: number;
+};
 export type DisputeWithOrder = Prisma.DisputeGetPayload<typeof disputeWithOrderArgs>;
 export type DisputeEvidenceRecord = Prisma.DisputeEvidenceGetPayload<typeof disputeEvidenceArgs>;
 export type AdminOpenDisputeRecord = Prisma.DisputeGetPayload<typeof openDisputesForAdminArgs>;
@@ -224,6 +236,8 @@ export class OrdersRepository {
     };
   }): Promise<OrderWithRelations> {
     return this.prisma.$transaction(async (tx) => {
+      await this.lockOfferInventoryRows(tx, data.item.offerId);
+
       const stockUpdateResult = await tx.offer.updateMany({
         where: {
           id: data.item.offerId,
@@ -242,6 +256,8 @@ export class OrdersRepository {
         throw new BadRequestException('Quantity exceeds available stock');
       }
 
+      const batchAllocations = await this.consumeOfferBatchAllocations(tx, data.item.offerId, data.item.quantity);
+
       const order = await tx.order.create({
         data: {
           buyerUserId: data.buyerUserId,
@@ -258,7 +274,14 @@ export class OrdersRepository {
           sellerReceivableAmount: data.sellerReceivableAmount,
           totalAmount: data.totalAmount,
           items: {
-            create: data.item,
+            create: {
+              ...data.item,
+              batchAllocations: batchAllocations.length
+                ? {
+                    create: batchAllocations,
+                  }
+                : undefined,
+            },
           },
           paymentIntent: {
             create: {
@@ -294,16 +317,141 @@ export class OrdersRepository {
     });
   }
 
-  findOpenDisputesForAdmin(): Promise<AdminOpenDisputeRecord[]> {
-    return this.prisma.dispute.findMany({
-      where: {
-        disputeStatus: 'OPEN',
+  async countDisputesByStatusAndCaseStatus() {
+    const [
+      open,
+      resolved,
+      refunded,
+      assigned,
+      inReview,
+      escalated,
+      caseResolved,
+      closed,
+    ] = await this.prisma.$transaction([
+      this.prisma.dispute.count({ where: { disputeStatus: 'OPEN' } }),
+      this.prisma.dispute.count({ where: { disputeStatus: 'RESOLVED' } }),
+      this.prisma.dispute.count({ where: { disputeStatus: 'REFUNDED' } }),
+      this.prisma.moderationCase.count({ where: { targetType: 'DISPUTE', caseStatus: 'ASSIGNED' } }),
+      this.prisma.moderationCase.count({ where: { targetType: 'DISPUTE', caseStatus: 'IN_REVIEW' } }),
+      this.prisma.moderationCase.count({ where: { targetType: 'DISPUTE', caseStatus: 'ESCALATED' } }),
+      this.prisma.moderationCase.count({ where: { targetType: 'DISPUTE', caseStatus: 'RESOLVED' } }),
+      this.prisma.moderationCase.count({ where: { targetType: 'DISPUTE', caseStatus: 'CLOSED' } }),
+    ]);
+
+    return {
+      byDisputeStatus: {
+        OPEN: open,
+        RESOLVED: resolved,
+        REFUNDED: refunded,
       },
-      orderBy: {
-        openedAt: 'desc',
+      byCaseStatus: {
+        ASSIGNED: assigned,
+        IN_REVIEW: inReview,
+        ESCALATED: escalated,
+        RESOLVED: caseResolved,
+        CLOSED: closed,
       },
-      ...openDisputesForAdminArgs,
-    });
+    };
+  }
+
+  async findOpenDisputesForAdmin(filters?: {
+    disputeStatus?: 'OPEN' | 'RESOLVED' | 'REFUNDED';
+    assignedAdminUserId?: string;
+    reason?: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+    sortBy?: 'openedAt' | 'orderId' | 'disputeStatus';
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<{ total: number; items: AdminOpenDisputeRecord[] }> {
+    const page = filters?.page && filters.page > 0 ? filters.page : 1;
+    const pageSize = filters?.pageSize && filters.pageSize > 0 ? filters.pageSize : 20;
+    const sortBy = filters?.sortBy ?? 'openedAt';
+    const sortOrder = filters?.sortOrder ?? 'desc';
+    let disputeIdsByAssignee: string[] | null = null;
+
+    if (filters?.assignedAdminUserId) {
+      const moderationTargets = await this.prisma.moderationCase.findMany({
+        where: {
+          targetType: 'DISPUTE',
+          assignedAdminUserId: filters.assignedAdminUserId,
+        },
+        select: {
+          targetId: true,
+        },
+      });
+
+      disputeIdsByAssignee = moderationTargets.map((item) => item.targetId);
+      if (disputeIdsByAssignee.length === 0) {
+        return { total: 0, items: [] };
+      }
+    }
+
+    const where: Prisma.DisputeWhereInput = {
+      disputeStatus: filters?.disputeStatus ?? 'OPEN',
+      ...(disputeIdsByAssignee
+        ? {
+            id: {
+              in: disputeIdsByAssignee,
+            },
+          }
+        : {}),
+      ...(filters?.reason
+        ? {
+            reason: {
+              contains: filters.reason,
+              mode: 'insensitive',
+            },
+          }
+        : {}),
+      ...(filters?.search
+        ? {
+            OR: [
+              {
+                reason: {
+                  contains: filters.search,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                orderId: {
+                  contains: filters.search,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                order: {
+                  is: {
+                    shop: {
+                      is: {
+                        shopName: {
+                          contains: filters.search,
+                          mode: 'insensitive',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.dispute.count({ where }),
+      this.prisma.dispute.findMany({
+        where,
+        orderBy: {
+          [sortBy]: sortOrder,
+        },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        ...openDisputesForAdminArgs,
+      }),
+    ]);
+
+    return { total, items };
   }
 
   findOpenDisputeByOrder(orderId: string) {
@@ -508,7 +656,11 @@ export class OrdersRepository {
       const order = await tx.order.findUnique({
         where: { id },
         include: {
-          items: true,
+          items: {
+            include: {
+              batchAllocations: true,
+            },
+          },
         },
       });
 
@@ -525,6 +677,8 @@ export class OrdersRepository {
             },
           },
         });
+
+        await this.restoreOrderItemBatchAllocations(tx, item.offerId, item.batchAllocations);
       }
 
       await tx.paymentIntent.update({
@@ -624,6 +778,8 @@ export class OrdersRepository {
               },
             },
           });
+
+          await this.restoreOrderItemBatchAllocations(tx, item.offerId, item.batchAllocations ?? []);
         }
 
         await tx.paymentIntent.update({
@@ -685,7 +841,11 @@ export class OrdersRepository {
       const order = await tx.order.findUnique({
         where: { id },
         include: {
-          items: true,
+          items: {
+            include: {
+              batchAllocations: true,
+            },
+          },
         },
       });
 
@@ -702,6 +862,8 @@ export class OrdersRepository {
             },
           },
         });
+
+        await this.restoreOrderItemBatchAllocations(tx, item.offerId, item.batchAllocations);
       }
 
       await tx.paymentIntent.update({
@@ -929,5 +1091,147 @@ export class OrdersRepository {
 
   private roundMoney(value: number) {
     return Math.round(value * 100) / 100;
+  }
+
+  private async consumeOfferBatchAllocations(
+    tx: Prisma.TransactionClient,
+    offerId: string,
+    quantity: number,
+  ): Promise<OrderBatchAllocation[]> {
+    const links = await tx.offerBatchLink.findMany({
+      where: {
+        offerId,
+        allocatedQuantity: {
+          gt: 0,
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    if (links.length === 0) {
+      return [];
+    }
+
+    const totalAllocatedQuantity = links.reduce((sum, link) => sum + link.allocatedQuantity, 0);
+    if (totalAllocatedQuantity < quantity) {
+      throw new BadRequestException('Quantity exceeds allocated batch stock');
+    }
+
+    let remainingQuantity = quantity;
+    const allocations: OrderBatchAllocation[] = [];
+    for (const link of links) {
+      if (remainingQuantity === 0) {
+        break;
+      }
+
+      const consumedQuantity = Math.min(link.allocatedQuantity, remainingQuantity);
+      if (consumedQuantity <= 0) {
+        continue;
+      }
+
+      await tx.offerBatchLink.update({
+        where: {
+          offerId_batchId: {
+            offerId,
+            batchId: link.batchId,
+          },
+        },
+        data: {
+          allocatedQuantity: {
+            decrement: consumedQuantity,
+          },
+        },
+      });
+
+      await tx.supplyBatch.update({
+        where: {
+          id: link.batchId,
+        },
+        data: {
+          quantity: {
+            decrement: consumedQuantity,
+          },
+        },
+      });
+
+      allocations.push({
+        batchId: link.batchId,
+        quantity: consumedQuantity,
+      });
+      remainingQuantity -= consumedQuantity;
+    }
+
+    if (remainingQuantity > 0) {
+      throw new BadRequestException('Quantity exceeds allocated batch stock');
+    }
+
+    return allocations;
+  }
+
+  private async lockOfferInventoryRows(tx: Prisma.TransactionClient, offerId: string) {
+    await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+      SELECT "id"
+      FROM "offer"
+      WHERE "id" = ${offerId}
+      FOR UPDATE
+    `);
+
+    await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+      SELECT "id"
+      FROM "offer_batch_link"
+      WHERE "offer_id" = ${offerId}
+      ORDER BY "batch_id"
+      FOR UPDATE
+    `);
+
+    await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+      SELECT sb."id"
+      FROM "supply_batch" sb
+      INNER JOIN "offer_batch_link" obl
+        ON obl."batch_id" = sb."id"
+      WHERE obl."offer_id" = ${offerId}
+      ORDER BY sb."id"
+      FOR UPDATE
+    `);
+  }
+
+  private async restoreOrderItemBatchAllocations(
+    tx: Prisma.TransactionClient,
+    offerId: string,
+    allocations: OrderBatchAllocation[],
+  ) {
+    for (const allocation of allocations) {
+      await tx.supplyBatch.update({
+        where: {
+          id: allocation.batchId,
+        },
+        data: {
+          quantity: {
+            increment: allocation.quantity,
+          },
+        },
+      });
+
+      await tx.offerBatchLink.upsert({
+        where: {
+          offerId_batchId: {
+            offerId,
+            batchId: allocation.batchId,
+          },
+        },
+        update: {
+          allocatedQuantity: {
+            increment: allocation.quantity,
+          },
+        },
+        create: {
+          offerId,
+          batchId: allocation.batchId,
+          allocatedQuantity: allocation.quantity,
+        },
+      });
+    }
   }
 }

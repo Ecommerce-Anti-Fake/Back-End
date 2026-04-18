@@ -15,6 +15,7 @@ import {
   AdminUserKycDetailResponseDto,
   GetKycUploadSignaturesDto,
   PendingKycQueryDto,
+  PaginatedAdminUserKycResponseDto,
   KycUploadSignatureResponseDto,
   AdminUserKycItemResponseDto,
   ListUsersQueryDto,
@@ -56,8 +57,7 @@ export class UsersController {
   @ApiBearerAuth('access-token')
   @ApiOkResponse({
     description: 'Danh sach ho so KYC dang cho duyet.',
-    type: AdminUserKycItemResponseDto,
-    isArray: true,
+    type: PaginatedAdminUserKycResponseDto,
   })
   @ApiForbiddenResponse({
     description: 'Chi admin moi co quyen truy cap.',
@@ -68,6 +68,11 @@ export class UsersController {
   findPendingKycs(@Query() query: PendingKycQueryDto) {
     return this.usersRpcService.findPendingKycs({
       verificationStatus: query.verificationStatus ?? 'pending',
+      search: query.search,
+      page: query.page,
+      pageSize: query.pageSize,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
     });
   }
 

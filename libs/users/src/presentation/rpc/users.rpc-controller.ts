@@ -4,6 +4,7 @@ import { USERS_MESSAGE_PATTERNS } from '@contracts';
 import { throwRpcException } from '@common';
 import type {
   AdminKycDetailMessage,
+  AdminKycSummaryMessage,
   CreateUserIdentityMessage,
   CurrentUserProfileMessage,
   CurrentUserProfileCompletionMessage,
@@ -21,6 +22,7 @@ import { UsersIdentityService } from '../../application/services/users-identity.
 import {
   DeleteUserUseCase,
   GetAdminKycDetailUseCase,
+  GetAdminKycSummaryUseCase,
   GetCurrentUserKycUseCase,
   GetCurrentUserProfileCompletionUseCase,
   GetCurrentUserProfileUseCase,
@@ -42,6 +44,7 @@ export class UsersRpcController {
     private readonly updateUserUseCase: UpdateUserUseCase,
     private readonly deleteUserUseCase: DeleteUserUseCase,
     private readonly getAdminKycDetailUseCase: GetAdminKycDetailUseCase,
+    private readonly getAdminKycSummaryUseCase: GetAdminKycSummaryUseCase,
     private readonly getCurrentUserProfileUseCase: GetCurrentUserProfileUseCase,
     private readonly getCurrentUserProfileCompletionUseCase: GetCurrentUserProfileCompletionUseCase,
     private readonly getCurrentUserKycUseCase: GetCurrentUserKycUseCase,
@@ -90,7 +93,16 @@ export class UsersRpcController {
   @MessagePattern(USERS_MESSAGE_PATTERNS.findPendingKycs)
   async findPendingKycs(@Payload() payload?: PendingKycsLookupMessage) {
     try {
-      return await this.listPendingKycsUseCase.execute(payload?.verificationStatus);
+      return await this.listPendingKycsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(USERS_MESSAGE_PATTERNS.getAdminKycSummary)
+  async getAdminKycSummary(@Payload() _payload?: AdminKycSummaryMessage) {
+    try {
+      return await this.getAdminKycSummaryUseCase.execute();
     } catch (error) {
       throwRpcException(error);
     }

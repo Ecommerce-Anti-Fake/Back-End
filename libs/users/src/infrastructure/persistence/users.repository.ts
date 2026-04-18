@@ -153,16 +153,82 @@ export class UsersRepository {
     });
   }
 
-  findPendingKycs(verificationStatus: 'pending' = 'pending'): Promise<PendingUserKycRecord[]> {
-    return this.prisma.userKyc.findMany({
-      where: {
-        verificationStatus,
-      },
-      ...pendingUserKycsArgs,
-      orderBy: {
-        id: 'desc',
-      },
-    });
+  async findPendingKycs(input?: {
+    verificationStatus?: 'pending' | 'approved' | 'rejected';
+    search?: string;
+    page?: number;
+    pageSize?: number;
+    sortBy?: 'id' | 'fullName' | 'verifiedAt';
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<{ total: number; items: PendingUserKycRecord[] }> {
+    const page = input?.page && input.page > 0 ? input.page : 1;
+    const pageSize = input?.pageSize && input.pageSize > 0 ? input.pageSize : 20;
+    const sortBy = input?.sortBy ?? 'id';
+    const sortOrder = input?.sortOrder ?? 'desc';
+    const where: Prisma.UserKycWhereInput = {
+      verificationStatus: input?.verificationStatus ?? 'pending',
+      ...(input?.search
+        ? {
+            OR: [
+              {
+                fullName: {
+                  contains: input.search,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                user: {
+                  is: {
+                    email: {
+                      contains: input.search,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              },
+              {
+                user: {
+                  is: {
+                    phone: {
+                      contains: input.search,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.userKyc.count({ where }),
+      this.prisma.userKyc.findMany({
+        where,
+        ...pendingUserKycsArgs,
+        orderBy: {
+          [sortBy]: sortOrder,
+        },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    return { total, items };
+  }
+
+  async countKycsByVerificationStatus() {
+    const [pending, approved, rejected] = await this.prisma.$transaction([
+      this.prisma.userKyc.count({ where: { verificationStatus: 'pending' } }),
+      this.prisma.userKyc.count({ where: { verificationStatus: 'approved' } }),
+      this.prisma.userKyc.count({ where: { verificationStatus: 'rejected' } }),
+    ]);
+
+    return {
+      pending,
+      approved,
+      rejected,
+    };
   }
 
   createAuditLog(input: {

@@ -10,6 +10,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
+  AllocateOfferBatchesDto,
   AddOfferDocumentsBatchDto,
   AddOfferMediaBatchDto,
   CreateOfferDto,
@@ -17,6 +18,7 @@ import {
   GetOfferMediaUploadSignaturesDto,
   ListOffersQueryDto,
   OfferDocumentResponseDto,
+  OfferBatchLinkResponseDto,
   OfferMediaResponseDto,
   OfferMediaUploadSignatureResponseDto,
   OfferResponseDto,
@@ -106,6 +108,38 @@ export class ProductsController {
   @Get('offers/:id')
   findOfferById(@Param('id') id: string) {
     return this.productsRpcService.findOfferById({ id });
+  }
+
+  @ApiOperation({ summary: 'Gan supply batch vao offer va dong bo available quantity' })
+  @ApiBearerAuth('access-token')
+  @ApiCreatedResponse({
+    description: 'Danh sach batch allocation cua offer.',
+    type: OfferBatchLinkResponseDto,
+    isArray: true,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('offers/:offerId/batch-links')
+  allocateOfferBatches(
+    @Param('offerId') offerId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: AllocateOfferBatchesDto,
+  ) {
+    return this.productsRpcService.allocateOfferBatches({
+      offerId,
+      requesterUserId,
+      items: dto.items,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach batch allocation cua offer' })
+  @ApiOkResponse({
+    description: 'Danh sach batch allocation cua offer.',
+    type: OfferBatchLinkResponseDto,
+    isArray: true,
+  })
+  @Get('offers/:offerId/batch-links')
+  findOfferBatchLinks(@Param('offerId') offerId: string) {
+    return this.productsRpcService.findOfferBatchLinks({ offerId });
   }
 
   @ApiOperation({ summary: 'Lay chu ky upload media cho offer' })

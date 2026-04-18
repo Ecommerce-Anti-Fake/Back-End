@@ -33,3 +33,36 @@ export function toShopResponse(shop: ShopWithCategories) {
     })),
   };
 }
+
+export function toBrandAuthorizationResponse(authorization: {
+  id: string;
+  shopId: string;
+  brandId: string;
+  mediaAssetId: string | null;
+  authorizationType: string;
+  fileUrl: string | null;
+  verificationStatus: string;
+  reviewNote: string | null;
+  verifiedAt: Date | null;
+  createdAt: Date;
+  mediaAsset?: {
+    mimeType: string | null;
+    publicId: string | null;
+    secureUrl: string;
+  } | null;
+}) {
+  return {
+    id: authorization.id,
+    shopId: authorization.shopId,
+    brandId: authorization.brandId,
+    mediaAssetId: authorization.mediaAssetId,
+    authorizationType: authorization.authorizationType,
+    fileUrl: authorization.mediaAsset?.secureUrl ?? authorization.fileUrl,
+    verificationStatus: authorization.verificationStatus,
+    reviewNote: authorization.reviewNote,
+    verifiedAt: authorization.verifiedAt,
+    createdAt: authorization.createdAt,
+    mimeType: authorization.mediaAsset?.mimeType ?? null,
+    publicId: authorization.mediaAsset?.publicId ?? null,
+  };
+}

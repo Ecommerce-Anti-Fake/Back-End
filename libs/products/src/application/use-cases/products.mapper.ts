@@ -50,6 +50,19 @@ type OfferDocumentWithAsset = {
   } | null;
 };
 
+type OfferBatchLinkWithBatch = {
+  id: string;
+  offerId: string;
+  batchId: string;
+  allocatedQuantity: number;
+  createdAt: Date;
+  batch: {
+    batchNumber: string;
+    productModelId: string;
+    quantity: number;
+  };
+};
+
 export function toProductModelResponse(model: ProductModelWithBrand) {
   return {
     id: model.id,
@@ -109,6 +122,19 @@ export function toOfferDocumentResponse(document: OfferDocumentWithAsset) {
     mimeType: document.mediaAsset?.mimeType ?? null,
     publicId: document.mediaAsset?.publicId ?? null,
     uploadedAt: document.uploadedAt,
+  };
+}
+
+export function toOfferBatchLinkResponse(link: OfferBatchLinkWithBatch) {
+  return {
+    id: link.id,
+    offerId: link.offerId,
+    batchId: link.batchId,
+    allocatedQuantity: link.allocatedQuantity,
+    batchNumber: link.batch.batchNumber,
+    productModelId: link.batch.productModelId,
+    batchQuantity: link.batch.quantity,
+    createdAt: link.createdAt,
   };
 }
 

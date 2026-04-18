@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -13,7 +13,8 @@ import {
 import {
   AddDisputeEvidenceBatchDto,
   AdminDisputeDetailResponseDto,
-  AdminOpenDisputeResponseDto,
+  AdminOpenDisputeQueryDto,
+  PaginatedAdminOpenDisputeResponseDto,
   AssignAdminDisputeDto,
   CreateRetailOrderDto,
   CreateWholesaleOrderDto,
@@ -106,8 +107,7 @@ export class OrdersController {
   @ApiBearerAuth('access-token')
   @ApiOkResponse({
     description: 'Danh sach dispute dang mo.',
-    type: AdminOpenDisputeResponseDto,
-    isArray: true,
+    type: PaginatedAdminOpenDisputeResponseDto,
   })
   @ApiForbiddenResponse({
     description: 'Chi admin moi co quyen truy cap.',
@@ -115,8 +115,17 @@ export class OrdersController {
   @Roles('admin')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
   @Get('admin/disputes/open')
-  findAdminOpenDisputes() {
-    return this.ordersRpcService.findAdminOpenDisputes();
+  findAdminOpenDisputes(@Query() query: AdminOpenDisputeQueryDto) {
+    return this.ordersRpcService.findAdminOpenDisputes({
+      disputeStatus: query.disputeStatus ?? 'OPEN',
+      assignedAdminUserId: query.assignedAdminUserId,
+      reason: query.reason,
+      search: query.search,
+      page: query.page,
+      pageSize: query.pageSize,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+    });
   }
 
   @ApiOperation({ summary: 'Admin lay chi tiet dispute va evidence' })

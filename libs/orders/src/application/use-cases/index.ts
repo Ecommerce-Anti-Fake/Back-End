@@ -2,6 +2,7 @@ export * from './create-retail-order.use-case';
 export * from './create-wholesale-order.use-case';
 export * from './assign-admin-dispute.use-case';
 export * from './get-admin-open-dispute-count.use-case';
+export * from './get-admin-dispute-summary.use-case';
 export * from './get-admin-dispute-detail.use-case';
 export * from './list-admin-open-disputes.use-case';
 export * from './get-order-by-id.use-case';

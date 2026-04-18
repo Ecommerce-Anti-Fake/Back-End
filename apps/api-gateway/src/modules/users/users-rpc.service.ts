@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import type {
   AdminKycDetailMessage,
+  AdminKycSummaryMessage,
   CurrentUserKycMessage,
   CurrentUserProfileCompletionMessage,
   KycUploadSignaturesMessage,
@@ -50,6 +51,10 @@ export class UsersRpcService {
 
   getAdminKycDetail(payload: AdminKycDetailMessage) {
     return this.send(USERS_MESSAGE_PATTERNS.getAdminKycDetail, payload);
+  }
+
+  getAdminKycSummary(payload: AdminKycSummaryMessage = {}) {
+    return this.send(USERS_MESSAGE_PATTERNS.getAdminKycSummary, payload);
   }
 
   getKycUploadSignatures(payload: KycUploadSignaturesMessage) {

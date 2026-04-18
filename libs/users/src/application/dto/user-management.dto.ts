@@ -1,13 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsDateString, IsIn, IsOptional, IsString, IsUrl, ValidateNested } from 'class-validator';
+import { IsArray, IsDateString, IsIn, IsInt, IsOptional, IsString, IsUrl, Max, Min, ValidateNested } from 'class-validator';
 
 const USER_MANAGEMENT_ROLES = ['user'] as const;
 const USER_ACCOUNT_STATUSES = ['active', 'inactive', 'blocked'] as const;
 const KYC_DOCUMENT_SIDES = ['FRONT', 'BACK'] as const;
 const MEDIA_IMAGE_ASSET_TYPES = ['IMAGE'] as const;
 const KYC_REVIEW_STATUSES = ['approved', 'rejected'] as const;
-const KYC_LOOKUP_STATUSES = ['pending'] as const;
+const KYC_LOOKUP_STATUSES = ['pending', 'approved', 'rejected'] as const;
+const KYC_SORT_FIELDS = ['id', 'fullName', 'verifiedAt'] as const;
+const SORT_ORDERS = ['asc', 'desc'] as const;
 
 export class UserResponseDto {
   @ApiProperty({
@@ -322,7 +324,58 @@ export class PendingKycQueryDto {
   @IsOptional()
   @IsString()
   @IsIn(KYC_LOOKUP_STATUSES)
-  verificationStatus?: 'pending';
+  verificationStatus?: 'pending' | 'approved' | 'rejected';
+
+  @ApiPropertyOptional({
+    description: 'Tu khoa tim theo ho ten, email hoac so dien thoai.',
+    example: 'nguyen van a',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({
+    description: 'Trang hien tai.',
+    example: 1,
+    default: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({
+    description: 'So phan tu moi trang.',
+    example: 20,
+    default: 20,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize?: number;
+
+  @ApiPropertyOptional({
+    description: 'Truong sap xep danh sach KYC.',
+    enum: KYC_SORT_FIELDS,
+    example: 'id',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(KYC_SORT_FIELDS)
+  sortBy?: 'id' | 'fullName' | 'verifiedAt';
+
+  @ApiPropertyOptional({
+    description: 'Thu tu sap xep.',
+    enum: SORT_ORDERS,
+    example: 'desc',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(SORT_ORDERS)
+  sortOrder?: 'asc' | 'desc';
 }
 
 export class AdminUserKycItemResponseDto {
@@ -355,6 +408,20 @@ export class AdminUserKycItemResponseDto {
     isArray: true,
   })
   documents!: UserKycDocumentResponseDto[];
+}
+
+export class PaginatedAdminUserKycResponseDto {
+  @ApiProperty({ example: 1 })
+  page!: number;
+
+  @ApiProperty({ example: 20 })
+  pageSize!: number;
+
+  @ApiProperty({ example: 37 })
+  total!: number;
+
+  @ApiProperty({ type: AdminUserKycItemResponseDto, isArray: true })
+  items!: AdminUserKycItemResponseDto[];
 }
 
 export class UserKycSubmissionResponseDto {

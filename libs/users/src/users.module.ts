@@ -6,6 +6,7 @@ import { UsersIdentityService } from './application/services/users-identity.serv
 import {
   DeleteUserUseCase,
   GetAdminKycDetailUseCase,
+  GetAdminKycSummaryUseCase,
   GetCurrentUserKycUseCase,
   GetCurrentUserProfileUseCase,
   GetCurrentUserProfileCompletionUseCase,
@@ -31,6 +32,7 @@ import { UsersRpcController } from './presentation/rpc/users.rpc-controller';
     UpdateUserUseCase,
     DeleteUserUseCase,
     GetAdminKycDetailUseCase,
+    GetAdminKycSummaryUseCase,
     GetCurrentUserProfileUseCase,
     GetCurrentUserProfileCompletionUseCase,
     GetCurrentUserKycUseCase,
@@ -50,6 +52,7 @@ import { UsersRpcController } from './presentation/rpc/users.rpc-controller';
     UpdateUserUseCase,
     DeleteUserUseCase,
     GetAdminKycDetailUseCase,
+    GetAdminKycSummaryUseCase,
     GetCurrentUserProfileUseCase,
     GetCurrentUserProfileCompletionUseCase,
     GetCurrentUserKycUseCase,

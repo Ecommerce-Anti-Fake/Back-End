@@ -3,34 +3,44 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { SHOPS_MESSAGE_PATTERNS } from '@contracts';
 import type {
   AdminShopVerificationDetailMessage,
+  AdminShopVerificationSummaryMessage,
+  BrandAuthorizationUploadSignaturesMessage,
+  BrandAuthorizationsLookupMessage,
   CategoryDocumentsLookupMessage,
   CategoryDocumentUploadSignaturesMessage,
   CreateShopMessage,
   MyShopsLookupMessage,
   PendingVerificationShopsLookupMessage,
   ReviewShopCategoryMessage,
+  ReviewBrandAuthorizationMessage,
   ReviewShopDocumentMessage,
   ShopDocumentsLookupMessage,
   ShopDocumentUploadSignaturesMessage,
   ShopLookupMessage,
   ShopVerificationSummaryMessage,
+  SubmitBrandAuthorizationMessage,
   SubmitCategoryDocumentsMessage,
   SubmitShopDocumentsMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
 import {
   CreateShopUseCase,
+  GetBrandAuthorizationUploadSignaturesUseCase,
   GetAdminShopVerificationDetailUseCase,
+  GetAdminShopVerificationSummaryUseCase,
   GetCategoryDocumentUploadSignaturesUseCase,
   GetShopVerificationSummaryUseCase,
   GetShopDocumentUploadSignaturesUseCase,
   GetShopByIdUseCase,
+  ListBrandAuthorizationsUseCase,
   ListCategoryDocumentsUseCase,
   ListMyShopsUseCase,
   ListPendingVerificationShopsUseCase,
   ListShopDocumentsUseCase,
+  ReviewBrandAuthorizationUseCase,
   ReviewShopCategoryUseCase,
   ReviewShopDocumentUseCase,
+  SubmitBrandAuthorizationUseCase,
   SubmitCategoryDocumentsUseCase,
   SubmitShopDocumentsUseCase,
 } from '../../application/use-cases';
@@ -39,7 +49,9 @@ import {
 export class ShopsRpcController {
   constructor(
     private readonly createShopUseCase: CreateShopUseCase,
+    private readonly getBrandAuthorizationUploadSignaturesUseCase: GetBrandAuthorizationUploadSignaturesUseCase,
     private readonly getAdminShopVerificationDetailUseCase: GetAdminShopVerificationDetailUseCase,
+    private readonly getAdminShopVerificationSummaryUseCase: GetAdminShopVerificationSummaryUseCase,
     private readonly getShopVerificationSummaryUseCase: GetShopVerificationSummaryUseCase,
     private readonly listPendingVerificationShopsUseCase: ListPendingVerificationShopsUseCase,
     private readonly listShopDocumentsUseCase: ListShopDocumentsUseCase,
@@ -51,7 +63,10 @@ export class ShopsRpcController {
     private readonly reviewShopDocumentUseCase: ReviewShopDocumentUseCase,
     private readonly reviewShopCategoryUseCase: ReviewShopCategoryUseCase,
     private readonly getShopByIdUseCase: GetShopByIdUseCase,
+    private readonly listBrandAuthorizationsUseCase: ListBrandAuthorizationsUseCase,
     private readonly listMyShopsUseCase: ListMyShopsUseCase,
+    private readonly submitBrandAuthorizationUseCase: SubmitBrandAuthorizationUseCase,
+    private readonly reviewBrandAuthorizationUseCase: ReviewBrandAuthorizationUseCase,
   ) {}
 
   @MessagePattern(SHOPS_MESSAGE_PATTERNS.create)
@@ -63,10 +78,55 @@ export class ShopsRpcController {
     }
   }
 
-  @MessagePattern(SHOPS_MESSAGE_PATTERNS.findPendingVerification)
-  async findPendingVerification(@Payload() _payload?: PendingVerificationShopsLookupMessage) {
+  @MessagePattern(SHOPS_MESSAGE_PATTERNS.getBrandAuthorizationUploadSignatures)
+  async getBrandAuthorizationUploadSignatures(@Payload() payload: BrandAuthorizationUploadSignaturesMessage) {
     try {
-      return await this.listPendingVerificationShopsUseCase.execute();
+      return await this.getBrandAuthorizationUploadSignaturesUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(SHOPS_MESSAGE_PATTERNS.submitBrandAuthorization)
+  async submitBrandAuthorization(@Payload() payload: SubmitBrandAuthorizationMessage) {
+    try {
+      return await this.submitBrandAuthorizationUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(SHOPS_MESSAGE_PATTERNS.findBrandAuthorizations)
+  async findBrandAuthorizations(@Payload() payload: BrandAuthorizationsLookupMessage) {
+    try {
+      return await this.listBrandAuthorizationsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(SHOPS_MESSAGE_PATTERNS.reviewBrandAuthorization)
+  async reviewBrandAuthorization(@Payload() payload: ReviewBrandAuthorizationMessage) {
+    try {
+      return await this.reviewBrandAuthorizationUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(SHOPS_MESSAGE_PATTERNS.findPendingVerification)
+  async findPendingVerification(@Payload() payload?: PendingVerificationShopsLookupMessage) {
+    try {
+      return await this.listPendingVerificationShopsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(SHOPS_MESSAGE_PATTERNS.getAdminVerificationSummary)
+  async getAdminVerificationSummary(@Payload() _payload?: AdminShopVerificationSummaryMessage) {
+    try {
+      return await this.getAdminShopVerificationSummaryUseCase.execute();
     } catch (error) {
       throwRpcException(error);
     }

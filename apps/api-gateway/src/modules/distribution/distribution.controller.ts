@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -10,14 +10,26 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
+  AddBatchDocumentsBatchDto,
+  BatchDocumentUploadSignatureResponseDto,
+  BatchDocumentResponseDto,
+  CreateSupplyBatchDto,
+  GetBatchDocumentUploadSignaturesDto,
+  ListSupplyBatchesQueryDto,
   CreateDistributionNetworkDto,
   CreateDistributionNodeDto,
+  InviteDistributionNodeDto,
+  UpdateDistributionNodeStatusDto,
   CreateDistributionPricingPolicyDto,
   CreateDistributionShipmentDto,
   DistributionNetworkResponseDto,
+  DistributionMembershipResponseDto,
   DistributionNodeResponseDto,
   DistributionPricingPolicyResponseDto,
   DistributionShipmentResponseDto,
+  InventorySummaryResponseDto,
+  SupplyBatchDetailResponseDto,
+  SupplyBatchResponseDto,
 } from '@distribution';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import { DistributionRpcService } from './distribution-rpc.service';
@@ -91,6 +103,184 @@ export class DistributionController {
       networkId,
       shopId: dto.shopId,
       parentNodeId: dto.parentNodeId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Gui loi moi dai ly tham gia distribution network' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'networkId', description: 'ID distribution network.' })
+  @ApiCreatedResponse({
+    description: 'Tao loi moi dai ly thanh cong.',
+    type: DistributionNodeResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('networks/:networkId/invitations')
+  inviteNode(
+    @CurrentUserId() requesterUserId: string,
+    @Param('networkId') networkId: string,
+    @Body() dto: InviteDistributionNodeDto,
+  ) {
+    return this.distributionRpcService.inviteNode({
+      requesterUserId,
+      networkId,
+      shopId: dto.shopId,
+      parentNodeId: dto.parentNodeId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Chu dai ly chap nhan loi moi tham gia network' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'nodeId', description: 'ID distribution node invitation.' })
+  @ApiOkResponse({
+    description: 'Chap nhan loi moi thanh cong.',
+    type: DistributionNodeResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('nodes/:nodeId/accept-invitation')
+  acceptNodeInvitation(@CurrentUserId() requesterUserId: string, @Param('nodeId') nodeId: string) {
+    return this.distributionRpcService.acceptNodeInvitation({
+      requesterUserId,
+      nodeId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Chu dai ly tu choi loi moi tham gia network' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'nodeId', description: 'ID distribution node invitation.' })
+  @ApiOkResponse({
+    description: 'Tu choi loi moi thanh cong.',
+    type: DistributionNodeResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('nodes/:nodeId/decline-invitation')
+  declineNodeInvitation(@CurrentUserId() requesterUserId: string, @Param('nodeId') nodeId: string) {
+    return this.distributionRpcService.declineNodeInvitation({
+      requesterUserId,
+      nodeId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach loi moi distribution cua shop hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach loi moi dang cho chap nhan.',
+    type: DistributionNodeResponseDto,
+    isArray: true,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('my-invitations')
+  findMyInvitations(@CurrentUserId() requesterUserId: string) {
+    return this.distributionRpcService.findMyInvitations({
+      requesterUserId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach tham gia mang phan phoi cua dai ly hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach membership cua distributor hien tai.',
+    type: DistributionMembershipResponseDto,
+    isArray: true,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('my-memberships')
+  findMyMemberships(@CurrentUserId() requesterUserId: string) {
+    return this.distributionRpcService.findMyMemberships({
+      requesterUserId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Cap nhat trang thai quan he cua dai ly trong network' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'networkId', description: 'ID distribution network.' })
+  @ApiParam({ name: 'nodeId', description: 'ID distribution node.' })
+  @ApiOkResponse({
+    description: 'Cap nhat trang thai node thanh cong.',
+    type: DistributionNodeResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('networks/:networkId/nodes/:nodeId/status')
+  updateNodeStatus(
+    @CurrentUserId() requesterUserId: string,
+    @Param('networkId') networkId: string,
+    @Param('nodeId') nodeId: string,
+    @Body() dto: UpdateDistributionNodeStatusDto,
+  ) {
+    return this.distributionRpcService.updateNodeStatus({
+      requesterUserId,
+      networkId,
+      nodeId,
+      relationshipStatus: dto.relationshipStatus,
+    });
+  }
+
+  @ApiOperation({ summary: 'Tao supply batch cho shop hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiCreatedResponse({
+    description: 'Tao supply batch thanh cong.',
+    type: SupplyBatchResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('batches')
+  createBatch(@CurrentUserId() requesterUserId: string, @Body() dto: CreateSupplyBatchDto) {
+    return this.distributionRpcService.createBatch({
+      requesterUserId,
+      shopId: dto.shopId,
+      productModelId: dto.productModelId,
+      distributionNodeId: dto.distributionNodeId ?? null,
+      batchNumber: dto.batchNumber,
+      quantity: dto.quantity,
+      sourceName: dto.sourceName,
+      countryOfOrigin: dto.countryOfOrigin,
+      sourceType: dto.sourceType,
+      receivedAt: dto.receivedAt,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach supply batch cua user hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach supply batch.',
+    type: SupplyBatchResponseDto,
+    isArray: true,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('batches')
+  findBatches(@CurrentUserId() requesterUserId: string, @Query() query: ListSupplyBatchesQueryDto) {
+    return this.distributionRpcService.findBatches({
+      requesterUserId,
+      shopId: query.shopId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay chi tiet inventory cua supply batch' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'batchId', description: 'ID supply batch.' })
+  @ApiOkResponse({
+    description: 'Chi tiet batch, allocation, consumption va shipment history.',
+    type: SupplyBatchDetailResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('batches/:batchId')
+  getBatchDetail(@CurrentUserId() requesterUserId: string, @Param('batchId') batchId: string) {
+    return this.distributionRpcService.getBatchDetail({
+      requesterUserId,
+      batchId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay tong quan inventory theo shop' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Tong quan ton kho, allocation va consumption theo batch/offer.',
+    type: InventorySummaryResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('inventory-summary')
+  getInventorySummary(@CurrentUserId() requesterUserId: string, @Query() query: ListSupplyBatchesQueryDto) {
+    return this.distributionRpcService.getInventorySummary({
+      requesterUserId,
+      shopId: query.shopId,
     });
   }
 
@@ -233,6 +423,67 @@ export class DistributionController {
     return this.distributionRpcService.cancelShipment({
       requesterUserId,
       shipmentId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay chu ky upload tai lieu cho supply batch' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'batchId', description: 'ID supply batch.' })
+  @ApiCreatedResponse({
+    description: 'Danh sach chu ky upload batch documents.',
+    type: BatchDocumentUploadSignatureResponseDto,
+    isArray: true,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('batches/:batchId/documents/upload-signatures')
+  getBatchDocumentUploadSignatures(
+    @CurrentUserId() requesterUserId: string,
+    @Param('batchId') batchId: string,
+    @Body() dto: GetBatchDocumentUploadSignaturesDto,
+  ) {
+    return this.distributionRpcService.getBatchDocumentUploadSignatures({
+      batchId,
+      requesterUserId,
+      items: dto.items,
+    });
+  }
+
+  @ApiOperation({ summary: 'Luu metadata tai lieu da upload cho supply batch' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'batchId', description: 'ID supply batch.' })
+  @ApiCreatedResponse({
+    description: 'Danh sach batch documents da luu.',
+    type: BatchDocumentResponseDto,
+    isArray: true,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('batches/:batchId/documents')
+  addBatchDocumentsBatch(
+    @CurrentUserId() requesterUserId: string,
+    @Param('batchId') batchId: string,
+    @Body() dto: AddBatchDocumentsBatchDto,
+  ) {
+    return this.distributionRpcService.addBatchDocumentsBatch({
+      batchId,
+      requesterUserId,
+      items: dto.items,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach tai lieu cua supply batch' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'batchId', description: 'ID supply batch.' })
+  @ApiOkResponse({
+    description: 'Danh sach tai lieu cua supply batch.',
+    type: BatchDocumentResponseDto,
+    isArray: true,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('batches/:batchId/documents')
+  findBatchDocuments(@CurrentUserId() requesterUserId: string, @Param('batchId') batchId: string) {
+    return this.distributionRpcService.findBatchDocuments({
+      batchId,
+      requesterUserId,
     });
   }
 

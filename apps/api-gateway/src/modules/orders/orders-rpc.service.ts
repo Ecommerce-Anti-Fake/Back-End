@@ -5,6 +5,7 @@ import {
   UpdateAdminDisputeCaseMessage,
   ResolveAdminDisputeMessage,
   AdminDisputeDetailMessage,
+  AdminDisputeSummaryMessage,
   AdminOpenDisputesLookupMessage,
   AdminOpenDisputeCountMessage,
   CreateRetailOrderMessage,
@@ -50,6 +51,10 @@ export class OrdersRpcService {
 
   findAdminOpenDisputes(payload: AdminOpenDisputesLookupMessage = {}) {
     return this.send(ORDERS_MESSAGE_PATTERNS.findAdminOpenDisputes, payload);
+  }
+
+  getAdminDisputeSummary(payload: AdminDisputeSummaryMessage = {}) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.getAdminDisputeSummary, payload);
   }
 
   getAdminDisputeDetail(payload: AdminDisputeDetailMessage) {

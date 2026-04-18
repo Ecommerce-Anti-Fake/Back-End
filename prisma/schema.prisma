@@ -15,6 +15,7 @@ enum DistributionNodeType {
 
 enum DistributionRelationshipStatus {
   INVITED
+  DECLINED
   ACTIVE
   SUSPENDED
   TERMINATED
@@ -187,6 +188,8 @@ model MediaAsset {
   userKycSubmissionDocument UserKycSubmissionDocument?
   offerMedia                OfferMedia?
   offerDocument             OfferDocument?
+  batchDocument             BatchDocument?
+  brandAuthorization        BrandAuthorization?
 
   @@index([ownerUserId])
   @@index([resourceType])
@@ -387,15 +390,22 @@ model Brand {
 }
 
 model BrandAuthorization {
-  id                 String    @id @default(uuid())
-  shopId             String    @map("shop_id")
-  brandId            String    @map("brand_id")
-  authorizationType  String    @map("authorization_type")
-  verificationStatus String    @map("verification_status")
-  verifiedAt         DateTime? @map("verified_at")
-  shop               Shop      @relation(fields: [shopId], references: [id])
-  brand              Brand     @relation(fields: [brandId], references: [id])
+  id                 String      @id @default(uuid())
+  shopId             String      @map("shop_id")
+  brandId            String      @map("brand_id")
+  mediaAssetId       String?     @unique @map("media_asset_id")
+  authorizationType  String      @map("authorization_type")
+  fileUrl            String?     @map("file_url")
+  verificationStatus String      @map("verification_status")
+  reviewNote         String?     @map("review_note")
+  verifiedAt         DateTime?   @map("verified_at")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  shop               Shop        @relation(fields: [shopId], references: [id])
+  brand              Brand       @relation(fields: [brandId], references: [id])
+  mediaAsset         MediaAsset? @relation(fields: [mediaAssetId], references: [id])
 
+  @@unique([shopId, brandId])
+  @@index([mediaAssetId])
   @@map("brand_authorization")
 }
 
@@ -499,21 +509,23 @@ model OfferDocument {
 }
 
 model SupplyBatch {
-  id                 String                     @id @default(uuid())
-  shopId             String                     @map("shop_id")
-  productModelId     String                     @map("product_model_id")
-  distributionNodeId String?                    @map("distribution_node_id")
-  batchNumber        String                     @map("batch_number")
-  sourceName         String                     @map("source_name")
-  countryOfOrigin    String                     @map("country_of_origin")
-  sourceType         String                     @map("source_type")
-  receivedAt         DateTime                   @map("received_at")
-  shop               Shop                       @relation(fields: [shopId], references: [id])
-  productModel       ProductModel               @relation(fields: [productModelId], references: [id])
-  distributionNode   DistributionNode?          @relation(fields: [distributionNodeId], references: [id])
-  documents          BatchDocument[]
-  offerLinks         OfferBatchLink[]
-  shipmentItems      DistributionShipmentItem[]
+  id                   String                     @id @default(uuid())
+  shopId               String                     @map("shop_id")
+  productModelId       String                     @map("product_model_id")
+  distributionNodeId   String?                    @map("distribution_node_id")
+  batchNumber          String                     @map("batch_number")
+  quantity             Int                        @map("quantity")
+  sourceName           String                     @map("source_name")
+  countryOfOrigin      String                     @map("country_of_origin")
+  sourceType           String                     @map("source_type")
+  receivedAt           DateTime                   @map("received_at")
+  shop                 Shop                       @relation(fields: [shopId], references: [id])
+  productModel         ProductModel               @relation(fields: [productModelId], references: [id])
+  distributionNode     DistributionNode?          @relation(fields: [distributionNodeId], references: [id])
+  documents            BatchDocument[]
+  offerLinks           OfferBatchLink[]
+  orderItemAllocations OrderItemBatchAllocation[]
+  shipmentItems        DistributionShipmentItem[]
 
   @@index([distributionNodeId])
   @@map("supply_batch")
@@ -522,6 +534,7 @@ model SupplyBatch {
 model BatchDocument {
   id                 String      @id @default(uuid())
   batchId            String      @map("batch_id")
+  mediaAssetId       String?     @unique @map("media_asset_id")
   docType            String      @map("doc_type")
   fileUrl            String      @map("file_url")
   issuerName         String?     @map("issuer_name")
@@ -529,7 +542,9 @@ model BatchDocument {
   reviewStatus       String      @map("review_status")
   uploadedAt         DateTime    @default(now()) @map("uploaded_at")
   batch              SupplyBatch @relation(fields: [batchId], references: [id])
+  mediaAsset         MediaAsset? @relation(fields: [mediaAssetId], references: [id])
 
+  @@index([mediaAssetId])
   @@map("batch_document")
 }
 
@@ -542,6 +557,7 @@ model OfferBatchLink {
   offer             Offer       @relation(fields: [offerId], references: [id])
   batch             SupplyBatch @relation(fields: [batchId], references: [id])
 
+  @@unique([offerId, batchId])
   @@map("offer_batch_link")
 }
 
@@ -624,17 +640,31 @@ model Order {
 }
 
 model OrderItem {
-  id                        String  @id @default(uuid())
-  orderId                   String  @map("order_id")
-  offerId                   String  @map("offer_id")
-  offerTitleSnapshot        String  @map("offer_title_snapshot")
-  unitPrice                 Decimal @map("unit_price") @db.Decimal(18, 2)
+  id                        String                     @id @default(uuid())
+  orderId                   String                     @map("order_id")
+  offerId                   String                     @map("offer_id")
+  offerTitleSnapshot        String                     @map("offer_title_snapshot")
+  unitPrice                 Decimal                    @map("unit_price") @db.Decimal(18, 2)
   quantity                  Int
-  verificationLevelSnapshot String  @map("verification_level_snapshot")
-  order                     Order   @relation(fields: [orderId], references: [id])
-  offer                     Offer   @relation(fields: [offerId], references: [id])
+  verificationLevelSnapshot String                     @map("verification_level_snapshot")
+  order                     Order                      @relation(fields: [orderId], references: [id])
+  offer                     Offer                      @relation(fields: [offerId], references: [id])
+  batchAllocations          OrderItemBatchAllocation[]
 
   @@map("order_item")
+}
+
+model OrderItemBatchAllocation {
+  id          String      @id @default(uuid())
+  orderItemId String      @map("order_item_id")
+  batchId     String      @map("batch_id")
+  quantity    Int
+  createdAt   DateTime    @default(now()) @map("created_at")
+  orderItem   OrderItem   @relation(fields: [orderItemId], references: [id])
+  batch       SupplyBatch @relation(fields: [batchId], references: [id])
+
+  @@index([batchId])
+  @@map("order_item_batch_allocation")
 }
 
 model PaymentIntent {

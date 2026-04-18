@@ -3,6 +3,7 @@ export * from './get-current-user-profile.use-case';
 export * from './get-current-user-profile-completion.use-case';
 export * from './get-current-user-kyc.use-case';
 export * from './get-admin-kyc-detail.use-case';
+export * from './get-admin-kyc-summary.use-case';
 export * from './get-kyc-upload-signatures.use-case';
 export * from './get-user-by-id.use-case';
 export * from './list-pending-kycs.use-case';

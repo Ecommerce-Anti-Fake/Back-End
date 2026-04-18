@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ShopRegistrationType } from '@prisma/client';
 import { PrismaService } from '@database/prisma/prisma.service';
+import { createHash } from 'crypto';
 
 @Injectable()
 export class DistributionPricingRepository {
@@ -20,8 +21,31 @@ export class DistributionPricingRepository {
     });
   }
 
+  findOwnedActiveShop(shopId: string, requesterUserId: string) {
+    return this.prisma.shop.findFirst({
+      where: {
+        id: shopId,
+        ownerUserId: requesterUserId,
+        shopStatus: 'active',
+      },
+      select: {
+        id: true,
+        registrationType: true,
+      },
+    });
+  }
+
   findBrandById(id: string) {
     return this.prisma.brand.findUnique({
+      where: { id },
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  findProductModelById(id: string) {
+    return this.prisma.productModel.findUnique({
       where: { id },
       select: {
         id: true,
@@ -96,12 +120,26 @@ export class DistributionPricingRepository {
         shopId: true,
         parentNodeId: true,
         relationshipStatus: true,
+        nodeType: true,
         shop: {
           select: {
             id: true,
+            ownerUserId: true,
             shopStatus: true,
           },
         },
+      },
+    });
+  }
+
+  findActiveChildNodes(parentNodeId: string) {
+    return this.prisma.distributionNode.findMany({
+      where: {
+        parentNodeId,
+        relationshipStatus: 'ACTIVE',
+      },
+      select: {
+        id: true,
       },
     });
   }
@@ -151,12 +189,99 @@ export class DistributionPricingRepository {
     });
   }
 
+  createInvitedNode(data: {
+    networkId: string;
+    shopId: string;
+    parentNodeId: string;
+    level: number;
+    nodeType: 'AGENT_LEVEL_1' | 'AGENT_LEVEL_2' | 'AGENT_LEVEL_3';
+  }) {
+    return this.prisma.distributionNode.create({
+      data: {
+        networkId: data.networkId,
+        shopId: data.shopId,
+        parentNodeId: data.parentNodeId,
+        level: data.level,
+        nodeType: data.nodeType,
+        relationshipStatus: 'INVITED',
+      },
+    });
+  }
+
+  updateNodeRelationshipStatus(
+    nodeId: string,
+    relationshipStatus: 'ACTIVE' | 'SUSPENDED' | 'TERMINATED' | 'DECLINED',
+  ) {
+    return this.prisma.distributionNode.update({
+      where: { id: nodeId },
+      data: {
+        relationshipStatus,
+        activatedAt: relationshipStatus === 'ACTIVE' ? new Date() : undefined,
+      },
+    });
+  }
+
   findNodesByNetwork(networkId: string) {
     return this.prisma.distributionNode.findMany({
       where: { networkId },
       orderBy: [
         { level: 'asc' },
         { createdAt: 'asc' },
+      ],
+    });
+  }
+
+  findInvitedNodesByOwner(requesterUserId: string) {
+    return this.prisma.distributionNode.findMany({
+      where: {
+        relationshipStatus: 'INVITED',
+        shop: {
+          ownerUserId: requesterUserId,
+        },
+      },
+      orderBy: [
+        { createdAt: 'desc' },
+      ],
+    });
+  }
+
+  findMembershipsByOwner(requesterUserId: string) {
+    return this.prisma.distributionNode.findMany({
+      where: {
+        shop: {
+          ownerUserId: requesterUserId,
+        },
+        nodeType: {
+          not: 'MANUFACTURER',
+        },
+      },
+      include: {
+        shop: {
+          select: {
+            shopName: true,
+          },
+        },
+        network: {
+          select: {
+            id: true,
+            networkName: true,
+            brandId: true,
+            brand: {
+              select: {
+                name: true,
+              },
+            },
+            manufacturerShopId: true,
+            manufacturerShop: {
+              select: {
+                shopName: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: [
+        { createdAt: 'desc' },
       ],
     });
   }
@@ -236,8 +361,172 @@ export class DistributionPricingRepository {
       select: {
         id: true,
         productModelId: true,
+        quantity: true,
+        batchNumber: true,
+        offerLinks: {
+          select: {
+            allocatedQuantity: true,
+          },
+        },
       },
     });
+  }
+
+  createBatch(data: {
+    shopId: string;
+    productModelId: string;
+    distributionNodeId: string | null;
+    batchNumber: string;
+    quantity: number;
+    sourceName: string;
+    countryOfOrigin: string;
+    sourceType: string;
+    receivedAt: Date;
+  }) {
+    return this.prisma.supplyBatch.create({
+      data,
+    });
+  }
+
+  findBatchesByOwner(requesterUserId: string, shopId?: string) {
+    return this.prisma.supplyBatch.findMany({
+      where: {
+        shop: {
+          ownerUserId: requesterUserId,
+        },
+        ...(shopId
+          ? {
+              shopId,
+            }
+          : {}),
+      },
+      orderBy: [
+        { receivedAt: 'desc' },
+        { batchNumber: 'asc' },
+      ],
+    });
+  }
+
+  findOwnedBatchDetail(batchId: string, requesterUserId: string) {
+    return this.prisma.supplyBatch.findFirst({
+      where: {
+        id: batchId,
+        shop: {
+          ownerUserId: requesterUserId,
+        },
+      },
+      include: {
+        offerLinks: {
+          include: {
+            offer: {
+              select: {
+                id: true,
+                title: true,
+                availableQuantity: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+        orderItemAllocations: {
+          include: {
+            orderItem: {
+              select: {
+                id: true,
+                orderId: true,
+                offerId: true,
+                order: {
+                  select: {
+                    orderStatus: true,
+                    createdAt: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+        shipmentItems: {
+          include: {
+            shipment: {
+              select: {
+                id: true,
+                shipmentCode: true,
+                shipmentStatus: true,
+                createdAt: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+      },
+    });
+  }
+
+  async getInventorySummary(requesterUserId: string, shopId?: string) {
+    const shop = await this.prisma.shop.findFirst({
+      where: {
+        ...(shopId ? { id: shopId } : {}),
+        ownerUserId: requesterUserId,
+      },
+      select: {
+        id: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    if (!shop) {
+      return null;
+    }
+
+    const [batches, offers] = await this.prisma.$transaction([
+      this.prisma.supplyBatch.findMany({
+        where: {
+          shopId: shop.id,
+        },
+        include: {
+          offerLinks: true,
+          orderItemAllocations: {
+            include: {
+              orderItem: {
+                select: {
+                  offerId: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: [
+          { receivedAt: 'desc' },
+          { batchNumber: 'asc' },
+        ],
+      }),
+      this.prisma.offer.findMany({
+        where: {
+          shopId: shop.id,
+        },
+        include: {
+          batchLinks: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+    ]);
+
+    return {
+      shopId: shop.id,
+      batches,
+      offers,
+    };
   }
 
   createShipment(data: {
@@ -372,5 +661,64 @@ export class DistributionPricingRepository {
         items: true,
       },
     });
+  }
+
+  findOwnedBatch(batchId: string, requesterUserId: string) {
+    return this.prisma.supplyBatch.findFirst({
+      where: {
+        id: batchId,
+        shop: {
+          ownerUserId: requesterUserId,
+        },
+      },
+      include: {
+        shop: {
+          select: {
+            id: true,
+            shopStatus: true,
+          },
+        },
+      },
+    });
+  }
+
+  createBatchDocument(data: {
+    batchId: string;
+    mediaAssetId: string | null;
+    docType: string;
+    fileUrl: string;
+    issuerName: string | null;
+    documentNumber: string | null;
+  }) {
+    return this.prisma.batchDocument.create({
+      data: {
+        batchId: data.batchId,
+        mediaAssetId: data.mediaAssetId,
+        docType: data.docType,
+        fileUrl: data.fileUrl,
+        issuerName: data.issuerName,
+        documentNumberHash: data.documentNumber ? this.hashValue(data.documentNumber) : null,
+        reviewStatus: 'pending',
+      },
+      include: {
+        mediaAsset: true,
+      },
+    });
+  }
+
+  findBatchDocuments(batchId: string) {
+    return this.prisma.batchDocument.findMany({
+      where: { batchId },
+      include: {
+        mediaAsset: true,
+      },
+      orderBy: {
+        uploadedAt: 'asc',
+      },
+    });
+  }
+
+  private hashValue(value: string) {
+    return createHash('sha256').update(value).digest('hex');
   }
 }

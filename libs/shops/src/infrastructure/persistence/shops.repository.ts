@@ -228,41 +228,153 @@ export class ShopsRepository {
     });
   }
 
-  findPendingVerificationShops() {
-    return this.prisma.shop.findMany({
-      where: {
-        shopStatus: 'pending_verification',
-      },
-      include: {
-        owner: {
-          select: {
-            id: true,
-            displayName: true,
-            email: true,
-            phone: true,
-          },
-        },
-        registeredCategories: {
-          include: {
-            category: {
-              select: {
-                id: true,
-                name: true,
+  async findPendingVerificationShops(filters?: {
+    shopStatus?: 'pending_kyc' | 'pending_verification' | 'active';
+    registrationType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
+    categoryId?: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+    sortBy?: 'createdAt' | 'shopName';
+    sortOrder?: 'asc' | 'desc';
+  }) {
+    const page = filters?.page && filters.page > 0 ? filters.page : 1;
+    const pageSize = filters?.pageSize && filters.pageSize > 0 ? filters.pageSize : 20;
+    const sortBy = filters?.sortBy ?? 'createdAt';
+    const sortOrder = filters?.sortOrder ?? 'desc';
+    const where: Prisma.ShopWhereInput = {
+      shopStatus: filters?.shopStatus ?? 'pending_verification',
+      ...(filters?.registrationType
+        ? {
+            registrationType: filters.registrationType,
+          }
+        : {}),
+      ...(filters?.categoryId
+        ? {
+            registeredCategories: {
+              some: {
+                categoryId: filters.categoryId,
               },
             },
+          }
+        : {}),
+      ...(filters?.search
+        ? {
+            OR: [
+              {
+                shopName: {
+                  contains: filters.search,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                owner: {
+                  is: {
+                    displayName: {
+                      contains: filters.search,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              },
+              {
+                owner: {
+                  is: {
+                    email: {
+                      contains: filters.search,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              },
+              {
+                owner: {
+                  is: {
+                    phone: {
+                      contains: filters.search,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.shop.count({ where }),
+      this.prisma.shop.findMany({
+        where,
+        include: {
+          owner: {
+            select: {
+              id: true,
+              displayName: true,
+              email: true,
+              phone: true,
+            },
           },
-          orderBy: {
-            createdAt: 'asc',
+          registeredCategories: {
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+            orderBy: {
+              createdAt: 'asc',
+            },
+          },
+          documents: {
+            select: {
+              reviewStatus: true,
+            },
           },
         },
-        documents: {
-          select: {
-            reviewStatus: true,
-          },
-        },
+        orderBy: { [sortBy]: sortOrder },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    return { total, items };
+  }
+
+  async countShopsByStatusAndRegistrationType() {
+    const [
+      pendingKyc,
+      pendingVerification,
+      active,
+      normal,
+      handmade,
+      manufacturer,
+      distributor,
+    ] = await this.prisma.$transaction([
+      this.prisma.shop.count({ where: { shopStatus: 'pending_kyc' } }),
+      this.prisma.shop.count({ where: { shopStatus: 'pending_verification' } }),
+      this.prisma.shop.count({ where: { shopStatus: 'active' } }),
+      this.prisma.shop.count({ where: { registrationType: ShopRegistrationType.NORMAL } }),
+      this.prisma.shop.count({ where: { registrationType: ShopRegistrationType.HANDMADE } }),
+      this.prisma.shop.count({ where: { registrationType: ShopRegistrationType.MANUFACTURER } }),
+      this.prisma.shop.count({ where: { registrationType: ShopRegistrationType.DISTRIBUTOR } }),
+    ]);
+
+    return {
+      byShopStatus: {
+        pending_kyc: pendingKyc,
+        pending_verification: pendingVerification,
+        active,
       },
-      orderBy: { createdAt: 'desc' },
-    });
+      byRegistrationType: {
+        NORMAL: normal,
+        HANDMADE: handmade,
+        MANUFACTURER: manufacturer,
+        DISTRIBUTOR: distributor,
+      },
+    };
   }
 
   createAuditLog(input: {
@@ -436,6 +548,17 @@ export class ShopsRepository {
     });
   }
 
+  findBrandById(brandId: string) {
+    return this.prisma.brand.findUnique({
+      where: {
+        id: brandId,
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
+
   createShopDocument(data: {
     shopId: string;
     mediaAssetId: string;
@@ -474,6 +597,87 @@ export class ShopsRepository {
         issuedAt: data.issuedAt,
         expiresAt: data.expiresAt,
         reviewStatus: 'pending',
+      },
+    });
+  }
+
+  upsertBrandAuthorization(data: {
+    shopId: string;
+    brandId: string;
+    mediaAssetId: string | null;
+    authorizationType: string;
+    fileUrl: string;
+  }) {
+    return this.prisma.brandAuthorization.upsert({
+      where: {
+        shopId_brandId: {
+          shopId: data.shopId,
+          brandId: data.brandId,
+        },
+      },
+      update: {
+        mediaAssetId: data.mediaAssetId,
+        authorizationType: data.authorizationType,
+        fileUrl: data.fileUrl,
+        verificationStatus: 'pending',
+        reviewNote: null,
+        verifiedAt: null,
+      },
+      create: {
+        shopId: data.shopId,
+        brandId: data.brandId,
+        mediaAssetId: data.mediaAssetId,
+        authorizationType: data.authorizationType,
+        fileUrl: data.fileUrl,
+        verificationStatus: 'pending',
+      },
+      include: {
+        mediaAsset: true,
+      },
+    });
+  }
+
+  findBrandAuthorizationsByShopId(shopId: string) {
+    return this.prisma.brandAuthorization.findMany({
+      where: {
+        shopId,
+      },
+      include: {
+        mediaAsset: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+  }
+
+  findBrandAuthorizationById(authorizationId: string) {
+    return this.prisma.brandAuthorization.findUnique({
+      where: {
+        id: authorizationId,
+      },
+      include: {
+        mediaAsset: true,
+      },
+    });
+  }
+
+  reviewBrandAuthorization(input: {
+    authorizationId: string;
+    verificationStatus: 'approved' | 'rejected';
+    reviewNote: string | null;
+  }) {
+    return this.prisma.brandAuthorization.update({
+      where: {
+        id: input.authorizationId,
+      },
+      data: {
+        verificationStatus: input.verificationStatus,
+        reviewNote: input.reviewNote,
+        verifiedAt: input.verificationStatus === 'approved' ? new Date() : null,
+      },
+      include: {
+        mediaAsset: true,
       },
     });
   }

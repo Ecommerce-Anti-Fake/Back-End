@@ -1,11 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
+  AllocateOfferBatchesMessage,
   AddOfferDocumentsBatchMessage,
   AddOfferMediaBatchMessage,
   CreateOfferMessage,
   ListOffersMessage,
   OfferDocumentUploadSignaturesMessage,
+  OfferBatchLinksLookupMessage,
   OfferDocumentsLookupMessage,
   OfferMediaLookupMessage,
   OfferMediaUploadSignaturesMessage,
@@ -33,6 +35,14 @@ export class ProductsRpcService {
 
   createOffer(payload: CreateOfferMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.createOffer, payload);
+  }
+
+  allocateOfferBatches(payload: AllocateOfferBatchesMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.allocateOfferBatches, payload);
+  }
+
+  findOfferBatchLinks(payload: OfferBatchLinksLookupMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.findOfferBatchLinks, payload);
   }
 
   getOfferMediaUploadSignatures(payload: OfferMediaUploadSignaturesMessage) {

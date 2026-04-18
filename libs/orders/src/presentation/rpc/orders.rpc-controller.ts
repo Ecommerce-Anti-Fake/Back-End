@@ -3,6 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ORDERS_MESSAGE_PATTERNS } from '@contracts';
 import type {
   AdminDisputeDetailMessage,
+  AdminDisputeSummaryMessage,
   AdminOpenDisputeCountMessage,
   AdminOpenDisputesLookupMessage,
   AssignAdminDisputeMessage,
@@ -28,6 +29,7 @@ import {
   CreateRetailOrderUseCase,
   CreateWholesaleOrderUseCase,
   GetAdminDisputeDetailUseCase,
+  GetAdminDisputeSummaryUseCase,
   GetAdminOpenDisputeCountUseCase,
   GetOrderByIdUseCase,
   GetDisputeEvidenceUploadSignaturesUseCase,
@@ -49,6 +51,7 @@ export class OrdersRpcController {
     private readonly createRetailOrderUseCase: CreateRetailOrderUseCase,
     private readonly createWholesaleOrderUseCase: CreateWholesaleOrderUseCase,
     private readonly getAdminDisputeDetailUseCase: GetAdminDisputeDetailUseCase,
+    private readonly getAdminDisputeSummaryUseCase: GetAdminDisputeSummaryUseCase,
     private readonly getAdminOpenDisputeCountUseCase: GetAdminOpenDisputeCountUseCase,
     private readonly getOrderByIdUseCase: GetOrderByIdUseCase,
     private readonly getDisputeEvidenceUploadSignaturesUseCase: GetDisputeEvidenceUploadSignaturesUseCase,
@@ -103,9 +106,18 @@ export class OrdersRpcController {
   }
 
   @MessagePattern(ORDERS_MESSAGE_PATTERNS.findAdminOpenDisputes)
-  async findAdminOpenDisputes(@Payload() _payload?: AdminOpenDisputesLookupMessage) {
+  async findAdminOpenDisputes(@Payload() payload?: AdminOpenDisputesLookupMessage) {
     try {
-      return await this.listAdminOpenDisputesUseCase.execute();
+      return await this.listAdminOpenDisputesUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.getAdminDisputeSummary)
+  async getAdminDisputeSummary(@Payload() _payload?: AdminDisputeSummaryMessage) {
+    try {
+      return await this.getAdminDisputeSummaryUseCase.execute();
     } catch (error) {
       throwRpcException(error);
     }

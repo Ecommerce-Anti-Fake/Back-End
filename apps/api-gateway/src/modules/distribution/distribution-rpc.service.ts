@@ -1,15 +1,28 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
+  AddBatchDocumentsBatchMessage,
+  BatchDocumentUploadSignaturesMessage,
+  BatchDocumentsLookupMessage,
   CreateDistributionNetworkMessage,
   CreateDistributionNodeMessage,
+  InviteDistributionNodeMessage,
+  AcceptDistributionNodeInvitationMessage,
+  DeclineDistributionNodeInvitationMessage,
+  MyDistributionInvitationsLookupMessage,
+  MyDistributionMembershipsLookupMessage,
+  UpdateDistributionNodeStatusMessage,
   CreateDistributionPricingPolicyMessage,
+  CreateSupplyBatchMessage,
   CreateDistributionShipmentMessage,
   DispatchDistributionShipmentMessage,
   DISTRIBUTION_MESSAGE_PATTERNS,
   DistributionNetworksLookupMessage,
   DistributionNodesLookupMessage,
   DistributionPricingPolicyLookupMessage,
+  SupplyBatchesLookupMessage,
+  SupplyBatchDetailMessage,
+  InventorySummaryMessage,
   DistributionShipmentsLookupMessage,
   CancelDistributionShipmentMessage,
   ReceiveDistributionShipmentMessage,
@@ -29,12 +42,64 @@ export class DistributionRpcService {
     return this.send(DISTRIBUTION_MESSAGE_PATTERNS.createNetwork, payload);
   }
 
+  getBatchDocumentUploadSignatures(payload: BatchDocumentUploadSignaturesMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.getBatchDocumentUploadSignatures, payload);
+  }
+
+  addBatchDocumentsBatch(payload: AddBatchDocumentsBatchMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.addBatchDocumentsBatch, payload);
+  }
+
+  findBatchDocuments(payload: BatchDocumentsLookupMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.findBatchDocuments, payload);
+  }
+
   findNetworks(payload: DistributionNetworksLookupMessage) {
     return this.send(DISTRIBUTION_MESSAGE_PATTERNS.findNetworks, payload);
   }
 
   createNode(payload: CreateDistributionNodeMessage) {
     return this.send(DISTRIBUTION_MESSAGE_PATTERNS.createNode, payload);
+  }
+
+  inviteNode(payload: InviteDistributionNodeMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.inviteNode, payload);
+  }
+
+  acceptNodeInvitation(payload: AcceptDistributionNodeInvitationMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.acceptNodeInvitation, payload);
+  }
+
+  declineNodeInvitation(payload: DeclineDistributionNodeInvitationMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.declineNodeInvitation, payload);
+  }
+
+  findMyInvitations(payload: MyDistributionInvitationsLookupMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.findMyInvitations, payload);
+  }
+
+  findMyMemberships(payload: MyDistributionMembershipsLookupMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.findMyMemberships, payload);
+  }
+
+  updateNodeStatus(payload: UpdateDistributionNodeStatusMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.updateNodeStatus, payload);
+  }
+
+  createBatch(payload: CreateSupplyBatchMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.createBatch, payload);
+  }
+
+  findBatches(payload: SupplyBatchesLookupMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.findBatches, payload);
+  }
+
+  getBatchDetail(payload: SupplyBatchDetailMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.getBatchDetail, payload);
+  }
+
+  getInventorySummary(payload: InventorySummaryMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.getInventorySummary, payload);
   }
 
   findNodesByNetwork(payload: DistributionNodesLookupMessage) {

@@ -279,6 +279,52 @@ export class OfferDocumentResponseDto {
   uploadedAt!: Date;
 }
 
+export class OfferBatchLinkItemDto {
+  @ApiProperty({ example: 'batch-id' })
+  @IsString()
+  batchId!: string;
+
+  @ApiProperty({ example: 200 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  allocatedQuantity!: number;
+}
+
+export class AllocateOfferBatchesDto {
+  @ApiProperty({ type: OfferBatchLinkItemDto, isArray: true })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OfferBatchLinkItemDto)
+  items!: OfferBatchLinkItemDto[];
+}
+
+export class OfferBatchLinkResponseDto {
+  @ApiProperty({ example: 'offer-batch-link-id' })
+  id!: string;
+
+  @ApiProperty({ example: 'offer-id' })
+  offerId!: string;
+
+  @ApiProperty({ example: 'batch-id' })
+  batchId!: string;
+
+  @ApiProperty({ example: 200 })
+  allocatedQuantity!: number;
+
+  @ApiProperty({ example: 'BATCH-2026-0001' })
+  batchNumber!: string;
+
+  @ApiProperty({ example: 'product-model-id' })
+  productModelId!: string;
+
+  @ApiProperty({ example: 500 })
+  batchQuantity!: number;
+
+  @ApiProperty({ example: '2026-04-16T15:00:00.000Z' })
+  createdAt!: Date;
+}
+
 export class CreateOfferDto {
   @ApiProperty({ example: 'shop-id' })
   @IsString()

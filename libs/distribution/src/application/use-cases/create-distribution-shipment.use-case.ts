@@ -97,6 +97,17 @@ export class CreateDistributionShipmentUseCase {
       if (!batch || batch.productModelId !== item.productModelId) {
         throw new BadRequestException('Shipment item product model does not match its batch');
       }
+
+      const allocatedQuantity = (batch.offerLinks ?? []).reduce((sum, link) => sum + link.allocatedQuantity, 0);
+      if (allocatedQuantity > 0) {
+        throw new BadRequestException(`Batch ${batch.batchNumber} is allocated to an offer and cannot be shipped`);
+      }
+
+      if (typeof batch.quantity === 'number' && item.quantity !== batch.quantity) {
+        throw new BadRequestException(
+          `Shipment item quantity for batch ${batch.batchNumber} must match the full remaining batch quantity`,
+        );
+      }
     }
 
     const shipment = await this.repository.createShipment({

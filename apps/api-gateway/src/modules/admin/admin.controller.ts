@@ -23,6 +23,52 @@ class AdminDashboardResponseDto {
   };
 }
 
+class AdminKycSummaryDto {
+  total!: number;
+  byVerificationStatus!: {
+    pending: number;
+    approved: number;
+    rejected: number;
+  };
+}
+
+class AdminShopVerificationSummaryDto {
+  total!: number;
+  byShopStatus!: {
+    pending_kyc: number;
+    pending_verification: number;
+    active: number;
+  };
+  byRegistrationType!: {
+    NORMAL: number;
+    HANDMADE: number;
+    MANUFACTURER: number;
+    DISTRIBUTOR: number;
+  };
+}
+
+class AdminDisputeSummaryDto {
+  total!: number;
+  byDisputeStatus!: {
+    OPEN: number;
+    RESOLVED: number;
+    REFUNDED: number;
+  };
+  byCaseStatus!: {
+    ASSIGNED: number;
+    IN_REVIEW: number;
+    ESCALATED: number;
+    RESOLVED: number;
+    CLOSED: number;
+  };
+}
+
+class AdminModerationSummaryResponseDto {
+  kyc!: AdminKycSummaryDto;
+  shops!: AdminShopVerificationSummaryDto;
+  disputes!: AdminDisputeSummaryDto;
+}
+
 @ApiTags('Admin')
 @Controller('admin')
 export class AdminController {
@@ -42,5 +88,21 @@ export class AdminController {
   @Get('dashboard')
   getDashboard() {
     return this.adminService.getDashboard();
+  }
+
+  @ApiOperation({ summary: 'Admin lay summary counts cho moderation console' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Tong hop so luong theo status/type cho KYC, shop verification va dispute.',
+    type: AdminModerationSummaryResponseDto,
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi admin moi co quyen truy cap.',
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Get('moderation-summary')
+  getModerationSummary() {
+    return this.adminService.getModerationSummary();
   }
 }

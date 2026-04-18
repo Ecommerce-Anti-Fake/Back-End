@@ -55,7 +55,7 @@ describe('CreateDistributionShipmentUseCase', () => {
         },
       });
     repositoryMock.findBatchesByIdsAndNode.mockResolvedValueOnce([
-      { id: 'batch-1', productModelId: 'pm-1' },
+      { id: 'batch-1', productModelId: 'pm-1', quantity: 100, batchNumber: 'BATCH-1', offerLinks: [] },
     ]);
     repositoryMock.createShipment.mockResolvedValueOnce({
       id: 'shipment-1',

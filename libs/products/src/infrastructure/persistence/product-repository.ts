@@ -132,6 +132,112 @@ export class ProductRepository {
             shopStatus: true,
           },
         },
+        batchLinks: {
+          select: {
+            allocatedQuantity: true,
+          },
+        },
+      },
+    });
+  }
+
+  findAllocatableBatches(batchIds: string[], shopId: string, productModelId: string) {
+    return this.prisma.supplyBatch.findMany({
+      where: {
+        id: {
+          in: batchIds,
+        },
+        shopId,
+        productModelId,
+      },
+      select: {
+        id: true,
+        batchNumber: true,
+        quantity: true,
+        productModelId: true,
+        offerLinks: {
+          select: {
+            offerId: true,
+            allocatedQuantity: true,
+          },
+        },
+      },
+    });
+  }
+
+  async replaceOfferBatchLinks(input: {
+    offerId: string;
+    soldQuantity: number;
+    items: Array<{
+      batchId: string;
+      allocatedQuantity: number;
+    }>;
+  }) {
+    const totalAllocatedQuantity = input.items.reduce((sum, item) => sum + item.allocatedQuantity, 0);
+    const newAvailableQuantity = Math.max(totalAllocatedQuantity - input.soldQuantity, 0);
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.offerBatchLink.deleteMany({
+        where: {
+          offerId: input.offerId,
+        },
+      });
+
+      if (input.items.length > 0) {
+        await tx.offerBatchLink.createMany({
+          data: input.items.map((item) => ({
+            offerId: input.offerId,
+            batchId: item.batchId,
+            allocatedQuantity: item.allocatedQuantity,
+          })),
+        });
+      }
+
+      await tx.offer.update({
+        where: {
+          id: input.offerId,
+        },
+        data: {
+          availableQuantity: newAvailableQuantity,
+        },
+      });
+
+      return tx.offerBatchLink.findMany({
+        where: {
+          offerId: input.offerId,
+        },
+        include: {
+          batch: {
+            select: {
+              batchNumber: true,
+              productModelId: true,
+              quantity: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      });
+    });
+  }
+
+  findOfferBatchLinks(offerId: string) {
+    return this.prisma.offerBatchLink.findMany({
+      where: {
+        offerId,
+      },
+      include: {
+        batch: {
+          select: {
+            batchNumber: true,
+            productModelId: true,
+            quantity: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
       },
     });
   }

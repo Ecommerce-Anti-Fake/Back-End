@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -11,12 +11,15 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
+  BrandAuthorizationResponseDto,
   CategoryDocumentUploadSignaturesDto,
   CreateShopDto,
   AdminShopVerificationDetailResponseDto,
   MediaUploadSignatureResponseDto,
-  PendingVerificationShopResponseDto,
+  PaginatedPendingVerificationShopResponseDto,
+  PendingVerificationShopQueryDto,
   ReviewShopCategoryDto,
+  ReviewBrandAuthorizationDto,
   ReviewShopDocumentDto,
   ShopCategoryDocumentResponseDto,
   ShopDocumentUploadSignaturesDto,
@@ -24,6 +27,7 @@ import {
   ShopResponseDto,
   ShopVerificationSummaryResponseDto,
   SubmitCategoryDocumentsDto,
+  SubmitBrandAuthorizationDto,
   SubmitShopDocumentsDto,
 } from '@shops';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
@@ -79,15 +83,23 @@ export class ShopsController {
   @ApiBearerAuth('access-token')
   @ApiOkResponse({
     description: 'Danh sach shop dang pending_verification.',
-    type: PendingVerificationShopResponseDto,
-    isArray: true,
+    type: PaginatedPendingVerificationShopResponseDto,
   })
   @ApiForbiddenResponse({ description: 'Chi admin moi co quyen truy cap.' })
   @Roles('admin')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
   @Get('admin/pending-verification')
-  findPendingVerification() {
-    return this.shopsRpcService.findPendingVerification({ shopStatus: 'pending_verification' });
+  findPendingVerification(@Query() query: PendingVerificationShopQueryDto) {
+    return this.shopsRpcService.findPendingVerification({
+      shopStatus: query.shopStatus ?? 'pending_verification',
+      registrationType: query.registrationType,
+      categoryId: query.categoryId,
+      search: query.search,
+      page: query.page,
+      pageSize: query.pageSize,
+      sortBy: query.sortBy,
+      sortOrder: query.sortOrder,
+    });
   }
 
   @ApiOperation({ summary: 'Admin lay chi tiet verification cua mot shop' })
@@ -228,6 +240,57 @@ export class ShopsController {
     });
   }
 
+  @ApiOperation({ summary: 'Lay chu ky upload ho so uy quyen brand cua shop' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: MediaUploadSignatureResponseDto, isArray: true })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post(':shopId/brands/:brandId/authorization/upload-signatures')
+  getBrandAuthorizationUploadSignatures(
+    @Param('shopId') shopId: string,
+    @Param('brandId') brandId: string,
+    @CurrentUserId() requesterUserId: string,
+  ) {
+    return this.shopsRpcService.getBrandAuthorizationUploadSignatures({
+      shopId,
+      brandId,
+      requesterUserId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Nop ho so uy quyen brand cua shop' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: BrandAuthorizationResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post(':shopId/brands/:brandId/authorization')
+  submitBrandAuthorization(
+    @Param('shopId') shopId: string,
+    @Param('brandId') brandId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: SubmitBrandAuthorizationDto,
+  ) {
+    return this.shopsRpcService.submitBrandAuthorization({
+      shopId,
+      brandId,
+      requesterUserId,
+      authorizationType: dto.authorizationType,
+      mimeType: dto.mimeType,
+      fileUrl: dto.fileUrl,
+      publicId: dto.publicId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach ho so uy quyen brand cua shop' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: BrandAuthorizationResponseDto, isArray: true })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get(':shopId/brand-authorizations')
+  findBrandAuthorizations(@Param('shopId') shopId: string, @CurrentUserId() requesterUserId: string) {
+    return this.shopsRpcService.findBrandAuthorizations({
+      shopId,
+      requesterUserId,
+    });
+  }
+
   @ApiOperation({ summary: 'Admin duyet ho so phap ly cua shop' })
   @ApiBearerAuth('access-token')
   @ApiOkResponse({ type: ShopResponseDto })
@@ -268,6 +331,26 @@ export class ShopsController {
       categoryId,
       reviewerUserId,
       registrationStatus: dto.registrationStatus,
+      reviewNote: dto.reviewNote ?? null,
+    });
+  }
+
+  @ApiOperation({ summary: 'Admin duyet ho so uy quyen brand cua shop' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: BrandAuthorizationResponseDto })
+  @ApiForbiddenResponse({ description: 'Chi admin moi co quyen duyet.' })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Post('brand-authorizations/:authorizationId/review')
+  reviewBrandAuthorization(
+    @Param('authorizationId') authorizationId: string,
+    @CurrentUserId() reviewerUserId: string,
+    @Body() dto: ReviewBrandAuthorizationDto,
+  ) {
+    return this.shopsRpcService.reviewBrandAuthorization({
+      authorizationId,
+      reviewerUserId,
+      verificationStatus: dto.verificationStatus,
       reviewNote: dto.reviewNote ?? null,
     });
   }

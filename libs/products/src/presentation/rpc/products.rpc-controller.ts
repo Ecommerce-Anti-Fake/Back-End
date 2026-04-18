@@ -4,11 +4,13 @@ import {
   PRODUCTS_MESSAGE_PATTERNS,
 } from '@contracts';
 import type {
+  AllocateOfferBatchesMessage,
   AddOfferDocumentsBatchMessage,
   AddOfferMediaBatchMessage,
   CreateOfferMessage,
   ListOffersMessage,
   OfferDocumentUploadSignaturesMessage,
+  OfferBatchLinksLookupMessage,
   OfferDocumentsLookupMessage,
   OfferMediaLookupMessage,
   OfferMediaUploadSignaturesMessage,
@@ -16,6 +18,7 @@ import type {
 } from '@contracts';
 import { throwRpcException } from '@common';
 import {
+  AllocateOfferBatchesUseCase,
   AddOfferDocumentsBatchUseCase,
   AddOfferMediaBatchUseCase,
   CreateOfferUseCase,
@@ -23,6 +26,7 @@ import {
   GetOfferByIdUseCase,
   GetOfferMediaUploadSignaturesUseCase,
   GetProductModelByIdUseCase,
+  ListOfferBatchLinksUseCase,
   ListOfferDocumentsUseCase,
   ListOfferMediaUseCase,
   ListOffersUseCase,
@@ -35,9 +39,11 @@ export class ProductsRpcController {
     private readonly listProductModelsUseCase: ListProductModelsUseCase,
     private readonly getProductModelByIdUseCase: GetProductModelByIdUseCase,
     private readonly createOfferUseCase: CreateOfferUseCase,
+    private readonly allocateOfferBatchesUseCase: AllocateOfferBatchesUseCase,
     private readonly getOfferMediaUploadSignaturesUseCase: GetOfferMediaUploadSignaturesUseCase,
     private readonly addOfferMediaBatchUseCase: AddOfferMediaBatchUseCase,
     private readonly listOfferMediaUseCase: ListOfferMediaUseCase,
+    private readonly listOfferBatchLinksUseCase: ListOfferBatchLinksUseCase,
     private readonly getOfferDocumentUploadSignaturesUseCase: GetOfferDocumentUploadSignaturesUseCase,
     private readonly addOfferDocumentsBatchUseCase: AddOfferDocumentsBatchUseCase,
     private readonly listOfferDocumentsUseCase: ListOfferDocumentsUseCase,
@@ -67,6 +73,24 @@ export class ProductsRpcController {
   async createOffer(@Payload() payload: CreateOfferMessage) {
     try {
       return await this.createOfferUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.allocateOfferBatches)
+  async allocateOfferBatches(@Payload() payload: AllocateOfferBatchesMessage) {
+    try {
+      return await this.allocateOfferBatchesUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findOfferBatchLinks)
+  async findOfferBatchLinks(@Payload() payload: OfferBatchLinksLookupMessage) {
+    try {
+      return await this.listOfferBatchLinksUseCase.execute(payload.offerId);
     } catch (error) {
       throwRpcException(error);
     }

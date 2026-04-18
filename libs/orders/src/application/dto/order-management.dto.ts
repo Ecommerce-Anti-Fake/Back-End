@@ -1,6 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsIn, IsInt, IsOptional, IsString, IsUrl, Min, ValidateNested } from 'class-validator';
+import { IsArray, IsIn, IsInt, IsOptional, IsString, IsUrl, Max, Min, ValidateNested } from 'class-validator';
+
+const ADMIN_DISPUTE_STATUSES = ['OPEN', 'RESOLVED', 'REFUNDED'] as const;
+const ADMIN_DISPUTE_SORT_FIELDS = ['openedAt', 'orderId', 'disputeStatus'] as const;
+const SORT_ORDERS = ['asc', 'desc'] as const;
 
 export class OrderItemResponseDto {
   @ApiProperty({ example: 'offer-id' })
@@ -230,6 +234,99 @@ export class AdminOpenDisputeResponseDto {
 
   @ApiProperty({ example: '2026-04-16T09:00:00.000Z' })
   openedAt!: Date;
+}
+
+export class AdminOpenDisputeQueryDto {
+  @ApiPropertyOptional({
+    description: 'Loc theo trang thai dispute. Route nay mac dinh la OPEN.',
+    enum: ADMIN_DISPUTE_STATUSES,
+    example: 'OPEN',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(ADMIN_DISPUTE_STATUSES)
+  disputeStatus?: 'OPEN' | 'RESOLVED' | 'REFUNDED';
+
+  @ApiPropertyOptional({
+    description: 'Loc theo admin dang duoc assign moderation case.',
+    example: 'admin-user-id',
+  })
+  @IsOptional()
+  @IsString()
+  assignedAdminUserId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Loc theo noi dung ly do dispute.',
+    example: 'hang sai',
+  })
+  @IsOptional()
+  @IsString()
+  reason?: string;
+
+  @ApiPropertyOptional({
+    description: 'Tu khoa tim theo ly do, ma order hoac ten shop.',
+    example: 'factory shop',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({
+    description: 'Trang hien tai.',
+    example: 1,
+    default: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({
+    description: 'So phan tu moi trang.',
+    example: 20,
+    default: 20,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize?: number;
+
+  @ApiPropertyOptional({
+    description: 'Truong sap xep danh sach dispute moderation.',
+    enum: ADMIN_DISPUTE_SORT_FIELDS,
+    example: 'openedAt',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(ADMIN_DISPUTE_SORT_FIELDS)
+  sortBy?: 'openedAt' | 'orderId' | 'disputeStatus';
+
+  @ApiPropertyOptional({
+    description: 'Thu tu sap xep.',
+    enum: SORT_ORDERS,
+    example: 'desc',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(SORT_ORDERS)
+  sortOrder?: 'asc' | 'desc';
+}
+
+export class PaginatedAdminOpenDisputeResponseDto {
+  @ApiProperty({ example: 1 })
+  page!: number;
+
+  @ApiProperty({ example: 20 })
+  pageSize!: number;
+
+  @ApiProperty({ example: 14 })
+  total!: number;
+
+  @ApiProperty({ type: AdminOpenDisputeResponseDto, isArray: true })
+  items!: AdminOpenDisputeResponseDto[];
 }
 
 export class AdminDisputeDetailResponseDto {
