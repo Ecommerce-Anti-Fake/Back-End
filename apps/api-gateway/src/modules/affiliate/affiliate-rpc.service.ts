@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
+  AFFILIATE_SERVICE_CLIENT,
   AFFILIATE_MESSAGE_PATTERNS,
   AffiliateAccountsLookupMessage,
   AffiliateAccountSummaryMessage,
@@ -18,7 +19,6 @@ import {
   JoinAffiliateProgramMessage,
   RejectAffiliateConversionMessage,
   UpdateAffiliatePayoutStatusMessage,
-  USERS_SERVICE_CLIENT,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
 import { lastValueFrom } from 'rxjs';
@@ -26,8 +26,8 @@ import { lastValueFrom } from 'rxjs';
 @Injectable()
 export class AffiliateRpcService {
   constructor(
-    @Inject(USERS_SERVICE_CLIENT)
-    private readonly usersClient: ClientProxy,
+    @Inject(AFFILIATE_SERVICE_CLIENT)
+    private readonly affiliateClient: ClientProxy,
   ) {}
 
   createProgram(payload: CreateAffiliateProgramMessage) {
@@ -96,7 +96,7 @@ export class AffiliateRpcService {
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {
     try {
-      return await lastValueFrom(this.usersClient.send<TResult, unknown>(pattern, payload));
+      return await lastValueFrom(this.affiliateClient.send<TResult, unknown>(pattern, payload));
     } catch (error) {
       throwHttpExceptionFromRpc(error);
     }

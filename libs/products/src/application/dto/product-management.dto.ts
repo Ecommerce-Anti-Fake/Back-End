@@ -338,6 +338,11 @@ export class CreateOfferDto {
   @IsString()
   productModelId!: string;
 
+  @ApiPropertyOptional({ example: 'distribution-node-id' })
+  @IsOptional()
+  @IsString()
+  distributionNodeId?: string;
+
   @ApiProperty({ example: 'Kem chong nang SPF50 - lo 2026' })
   @IsString()
   @MinLength(3)

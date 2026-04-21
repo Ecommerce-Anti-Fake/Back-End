@@ -40,6 +40,7 @@ const orderWithRelationsArgs = Prisma.validator<Prisma.OrderDefaultArgs>()({
       },
     },
     paymentIntent: true,
+    escrow: true,
     items: {
       include: {
         batchAllocations: true,
@@ -64,6 +65,7 @@ const disputeWithOrderArgs = Prisma.validator<Prisma.DisputeDefaultArgs>()({
           },
         },
         paymentIntent: true,
+        escrow: true,
         items: {
           include: {
             batchAllocations: true,
@@ -96,9 +98,41 @@ const disputeEvidenceArgs = Prisma.validator<Prisma.DisputeEvidenceDefaultArgs>(
 
 export type OfferForOrdering = Prisma.OfferGetPayload<typeof offerForOrderingArgs>;
 export type OrderWithRelations = Prisma.OrderGetPayload<typeof orderWithRelationsArgs>;
-type OrderBatchAllocation = {
+export type OrderBatchAllocation = {
   batchId: string;
   quantity: number;
+};
+export type CreateOrderRecordInput = {
+  buyerUserId: string | null;
+  buyerShopId: string | null;
+  buyerDistributionNodeId: string | null;
+  shopId: string;
+  orderMode: 'RETAIL' | 'WHOLESALE';
+  orderType: string;
+  orderStatus: string;
+  baseAmount: number;
+  discountAmount: number;
+  platformFeeAmount: number;
+  buyerPayableAmount: number;
+  sellerReceivableAmount: number;
+  totalAmount: number;
+  item: {
+    offerId: string;
+    offerTitleSnapshot: string;
+    unitPrice: number;
+    quantity: number;
+    verificationLevelSnapshot: string;
+  };
+};
+export type AffiliateAttributionInput = {
+  affiliateCode: string;
+  customerUserId: string;
+  offerId: string;
+  sellerShopId: string;
+  brandId: string;
+  productModelId: string;
+  orderAmount: number;
+  commissionBase: number;
 };
 export type DisputeWithOrder = Prisma.DisputeGetPayload<typeof disputeWithOrderArgs>;
 export type DisputeEvidenceRecord = Prisma.DisputeEvidenceGetPayload<typeof disputeEvidenceArgs>;
@@ -121,6 +155,23 @@ export type OrderAuditLogRecord = {
 @Injectable()
 export class OrdersRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  withTransaction<T>(callback: (tx: Prisma.TransactionClient) => Promise<T>) {
+    return this.prisma.$transaction((tx) => callback(tx));
+  }
+
+  findOrderForReversal(tx: Prisma.TransactionClient, id: string) {
+    return tx.order.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: {
+            batchAllocations: true,
+          },
+        },
+      },
+    });
+  }
 
   findOfferForOrdering(offerId: string): Promise<OfferForOrdering | null> {
     return this.prisma.offer.findUnique({
@@ -147,6 +198,8 @@ export class OrdersRepository {
       },
       select: {
         id: true,
+        shopStatus: true,
+        registrationType: true,
       },
     });
   }
@@ -159,6 +212,12 @@ export class OrdersRepository {
         shopId: true,
         networkId: true,
         level: true,
+        relationshipStatus: true,
+        shop: {
+          select: {
+            shopStatus: true,
+          },
+        },
       },
     });
   }
@@ -203,102 +262,167 @@ export class OrdersRepository {
     });
   }
 
-  createOrder(data: {
-    buyerUserId: string | null;
-    buyerShopId: string | null;
-    buyerDistributionNodeId: string | null;
-    shopId: string;
-    orderMode: 'RETAIL' | 'WHOLESALE';
-    orderType: string;
-    orderStatus: string;
-    baseAmount: number;
-    discountAmount: number;
-    platformFeeAmount: number;
-    buyerPayableAmount: number;
-    sellerReceivableAmount: number;
-    totalAmount: number;
-    item: {
-      offerId: string;
-      offerTitleSnapshot: string;
-      unitPrice: number;
-      quantity: number;
-      verificationLevelSnapshot: string;
-    };
-    affiliateAttribution?: {
-      affiliateCode: string;
-      customerUserId: string;
-      offerId: string;
-      sellerShopId: string;
-      brandId: string;
-      productModelId: string;
-      orderAmount: number;
-      commissionBase: number;
-    };
-  }): Promise<OrderWithRelations> {
-    return this.prisma.$transaction(async (tx) => {
-      await this.lockOfferInventoryRows(tx, data.item.offerId);
+  async createOrderRecord(
+    tx: Prisma.TransactionClient,
+    data: CreateOrderRecordInput,
+    batchAllocations: OrderBatchAllocation[],
+  ): Promise<OrderWithRelations> {
+    return tx.order.create({
+      data: {
+        buyerUserId: data.buyerUserId,
+        buyerShopId: data.buyerShopId,
+        buyerDistributionNodeId: data.buyerDistributionNodeId,
+        shopId: data.shopId,
+        orderMode: data.orderMode,
+        orderType: data.orderType,
+        orderStatus: data.orderStatus,
+        baseAmount: data.baseAmount,
+        discountAmount: data.discountAmount,
+        platformFeeAmount: data.platformFeeAmount,
+        buyerPayableAmount: data.buyerPayableAmount,
+        sellerReceivableAmount: data.sellerReceivableAmount,
+        totalAmount: data.totalAmount,
+        items: {
+          create: {
+            ...data.item,
+            batchAllocations: batchAllocations.length
+              ? {
+                  create: batchAllocations,
+                }
+              : undefined,
+          },
+        },
+        paymentIntent: {
+          create: {
+            paymentMethod: 'manual_confirmation',
+            paymentStatus: 'PENDING',
+            amount: data.buyerPayableAmount,
+          },
+        },
+        escrow: {
+          create: {
+            escrowStatus: 'PENDING',
+            heldAmount: 0,
+          },
+        },
+      },
+      ...orderWithRelationsArgs,
+    });
+  }
 
-      const stockUpdateResult = await tx.offer.updateMany({
+  async createAffiliateAttribution(
+    tx: Prisma.TransactionClient,
+    orderId: string,
+    input: AffiliateAttributionInput,
+  ) {
+    await this.tryCreateAffiliateAttribution(tx, orderId, input);
+  }
+
+  updatePaymentStatus(
+    tx: Prisma.TransactionClient,
+    orderId: string,
+    paymentStatus: 'CANCELLED' | 'REFUNDED',
+  ) {
+    return tx.paymentIntent.update({
+      where: { orderId },
+      data: {
+        paymentStatus,
+      },
+    });
+  }
+
+  updateEscrowStatus(
+    tx: Prisma.TransactionClient,
+    orderId: string,
+    escrowStatus: 'CANCELLED' | 'REFUNDED',
+  ) {
+    return tx.escrow.updateMany({
+      where: { orderId },
+      data: {
+        escrowStatus,
+        releaseAt: new Date(),
+      },
+    });
+  }
+
+  cancelPendingAffiliateArtifacts(tx: Prisma.TransactionClient, orderId: string) {
+    return Promise.all([
+      tx.affiliateCommissionLedger.updateMany({
         where: {
-          id: data.item.offerId,
-          availableQuantity: {
-            gte: data.item.quantity,
+          conversion: {
+            orderId,
+          },
+          commissionStatus: 'PENDING',
+        },
+        data: {
+          commissionStatus: 'CANCELLED',
+        },
+      }),
+      tx.affiliateConversion.updateMany({
+        where: {
+          orderId,
+          conversionStatus: 'PENDING',
+        },
+        data: {
+          conversionStatus: 'CANCELLED',
+        },
+      }),
+    ]);
+  }
+
+  cancelRefundableAffiliateArtifacts(tx: Prisma.TransactionClient, orderId: string) {
+    return Promise.all([
+      tx.affiliateCommissionLedger.updateMany({
+        where: {
+          conversion: {
+            orderId,
+          },
+          commissionStatus: {
+            in: ['PENDING', 'APPROVED', 'LOCKED'],
           },
         },
         data: {
-          availableQuantity: {
-            decrement: data.item.quantity,
+          commissionStatus: 'CANCELLED',
+          payoutId: null,
+          lockedAt: null,
+        },
+      }),
+      tx.affiliateConversion.updateMany({
+        where: {
+          orderId,
+          conversionStatus: {
+            in: ['PENDING', 'APPROVED'],
           },
         },
-      });
-
-      if (stockUpdateResult.count === 0) {
-        throw new BadRequestException('Quantity exceeds available stock');
-      }
-
-      const batchAllocations = await this.consumeOfferBatchAllocations(tx, data.item.offerId, data.item.quantity);
-
-      const order = await tx.order.create({
         data: {
-          buyerUserId: data.buyerUserId,
-          buyerShopId: data.buyerShopId,
-          buyerDistributionNodeId: data.buyerDistributionNodeId,
-          shopId: data.shopId,
-          orderMode: data.orderMode,
-          orderType: data.orderType,
-          orderStatus: data.orderStatus,
-          baseAmount: data.baseAmount,
-          discountAmount: data.discountAmount,
-          platformFeeAmount: data.platformFeeAmount,
-          buyerPayableAmount: data.buyerPayableAmount,
-          sellerReceivableAmount: data.sellerReceivableAmount,
-          totalAmount: data.totalAmount,
-          items: {
-            create: {
-              ...data.item,
-              batchAllocations: batchAllocations.length
-                ? {
-                    create: batchAllocations,
-                  }
-                : undefined,
-            },
-          },
-          paymentIntent: {
-            create: {
-              paymentMethod: 'manual_confirmation',
-              paymentStatus: 'PENDING',
-              amount: data.buyerPayableAmount,
-            },
-          },
+          conversionStatus: 'CANCELLED',
         },
-        ...orderWithRelationsArgs,
-      });
+      }),
+    ]);
+  }
 
-      if (data.affiliateAttribution) {
-        await this.tryCreateAffiliateAttribution(tx, order.id, data.affiliateAttribution);
-      }
+  updateOrderStatus(tx: Prisma.TransactionClient, id: string, orderStatus: string): Promise<OrderWithRelations> {
+    return tx.order.update({
+      where: { id },
+      data: {
+        orderStatus,
+      },
+      ...orderWithRelationsArgs,
+    });
+  }
 
-      return order;
+  updateDisputeStatus(
+    tx: Prisma.TransactionClient,
+    disputeId: string,
+    disputeStatus: 'RESOLVED' | 'REFUNDED',
+  ): Promise<DisputeWithOrder> {
+    return tx.dispute.update({
+      where: { id: disputeId },
+      data: {
+        disputeStatus,
+        resolvedAt: new Date(),
+      },
+      ...disputeWithOrderArgs,
     });
   }
 
@@ -473,6 +597,13 @@ export class OrdersRepository {
     });
   }
 
+  findDisputeForResolution(tx: Prisma.TransactionClient, id: string): Promise<DisputeWithOrder | null> {
+    return tx.dispute.findUnique({
+      where: { id },
+      ...disputeWithOrderArgs,
+    });
+  }
+
   findModerationCaseByTarget(targetType: string, targetId: string) {
     return this.prisma.moderationCase.findFirst({
       where: {
@@ -623,11 +754,30 @@ export class OrdersRepository {
 
   async markOrderPaid(input: { id: string; providerRef: string | null }): Promise<OrderWithRelations> {
     return this.prisma.$transaction(async (tx) => {
+      const now = new Date();
+      const heldAmount = await this.getOrderPayableAmount(tx, input.id);
+
       await tx.paymentIntent.update({
         where: { orderId: input.id },
         data: {
           paymentStatus: 'PAID',
           providerRef: input.providerRef,
+        },
+      });
+
+      await tx.escrow.upsert({
+        where: { orderId: input.id },
+        create: {
+          orderId: input.id,
+          escrowStatus: 'HELD',
+          heldAmount,
+          holdAt: now,
+        },
+        update: {
+          escrowStatus: 'HELD',
+          heldAmount,
+          holdAt: now,
+          releaseAt: null,
         },
       });
 
@@ -642,78 +792,19 @@ export class OrdersRepository {
   }
 
   async completeOrder(id: string): Promise<OrderWithRelations> {
-    return this.prisma.order.update({
-      where: { id },
-      data: {
-        orderStatus: 'completed',
-      },
-      ...orderWithRelationsArgs,
-    });
-  }
-
-  async cancelOrder(id: string): Promise<OrderWithRelations> {
     return this.prisma.$transaction(async (tx) => {
-      const order = await tx.order.findUnique({
-        where: { id },
-        include: {
-          items: {
-            include: {
-              batchAllocations: true,
-            },
-          },
-        },
-      });
-
-      if (!order) {
-        throw new BadRequestException('Order not found');
-      }
-
-      for (const item of order.items) {
-        await tx.offer.update({
-          where: { id: item.offerId },
-          data: {
-            availableQuantity: {
-              increment: item.quantity,
-            },
-          },
-        });
-
-        await this.restoreOrderItemBatchAllocations(tx, item.offerId, item.batchAllocations);
-      }
-
-      await tx.paymentIntent.update({
+      await tx.escrow.updateMany({
         where: { orderId: id },
         data: {
-          paymentStatus: 'CANCELLED',
-        },
-      });
-
-      await tx.affiliateCommissionLedger.updateMany({
-        where: {
-          conversion: {
-            orderId: id,
-          },
-          commissionStatus: 'PENDING',
-        },
-        data: {
-          commissionStatus: 'CANCELLED',
-        },
-      });
-
-      await tx.affiliateConversion.updateMany({
-        where: {
-          orderId: id,
-          conversionStatus: 'PENDING',
-        },
-        data: {
-          conversionStatus: 'CANCELLED',
+          escrowStatus: 'RELEASED',
+          releaseAt: new Date(),
         },
       });
 
       return tx.order.update({
         where: { id },
         data: {
-          orderStatus: 'cancelled',
+          orderStatus: 'completed',
         },
         ...orderWithRelationsArgs,
       });
@@ -751,163 +842,6 @@ export class OrdersRepository {
         fileUrl: input.fileUrl,
       },
       ...disputeEvidenceArgs,
-    });
-  }
-
-  async resolveDispute(input: {
-    disputeId: string;
-    resolution: 'RESOLVED' | 'REFUNDED';
-  }): Promise<DisputeWithOrder> {
-    return this.prisma.$transaction(async (tx) => {
-      const dispute = await tx.dispute.findUnique({
-        where: { id: input.disputeId },
-        ...disputeWithOrderArgs,
-      });
-
-      if (!dispute) {
-        throw new BadRequestException('Dispute not found');
-      }
-
-      if (input.resolution === 'REFUNDED' && dispute.order.orderStatus === 'paid') {
-        for (const item of dispute.order.items) {
-          await tx.offer.update({
-            where: { id: item.offerId },
-            data: {
-              availableQuantity: {
-                increment: item.quantity,
-              },
-            },
-          });
-
-          await this.restoreOrderItemBatchAllocations(tx, item.offerId, item.batchAllocations ?? []);
-        }
-
-        await tx.paymentIntent.update({
-          where: { orderId: dispute.orderId },
-          data: {
-            paymentStatus: 'REFUNDED',
-          },
-        });
-
-        await tx.affiliateCommissionLedger.updateMany({
-          where: {
-            conversion: {
-              orderId: dispute.orderId,
-            },
-            commissionStatus: {
-              in: ['PENDING', 'APPROVED', 'LOCKED'],
-            },
-          },
-          data: {
-            commissionStatus: 'CANCELLED',
-            payoutId: null,
-            lockedAt: null,
-          },
-        });
-
-        await tx.affiliateConversion.updateMany({
-          where: {
-            orderId: dispute.orderId,
-            conversionStatus: {
-              in: ['PENDING', 'APPROVED'],
-            },
-          },
-          data: {
-            conversionStatus: 'CANCELLED',
-          },
-        });
-
-        await tx.order.update({
-          where: { id: dispute.orderId },
-          data: {
-            orderStatus: 'refunded',
-          },
-        });
-      }
-
-      return tx.dispute.update({
-        where: { id: input.disputeId },
-        data: {
-          disputeStatus: input.resolution,
-          resolvedAt: new Date(),
-        },
-        ...disputeWithOrderArgs,
-      });
-    });
-  }
-
-  async refundPaidOrder(id: string): Promise<OrderWithRelations> {
-    return this.prisma.$transaction(async (tx) => {
-      const order = await tx.order.findUnique({
-        where: { id },
-        include: {
-          items: {
-            include: {
-              batchAllocations: true,
-            },
-          },
-        },
-      });
-
-      if (!order) {
-        throw new BadRequestException('Order not found');
-      }
-
-      for (const item of order.items) {
-        await tx.offer.update({
-          where: { id: item.offerId },
-          data: {
-            availableQuantity: {
-              increment: item.quantity,
-            },
-          },
-        });
-
-        await this.restoreOrderItemBatchAllocations(tx, item.offerId, item.batchAllocations);
-      }
-
-      await tx.paymentIntent.update({
-        where: { orderId: id },
-        data: {
-          paymentStatus: 'REFUNDED',
-        },
-      });
-
-      await tx.affiliateCommissionLedger.updateMany({
-        where: {
-          conversion: {
-            orderId: id,
-          },
-          commissionStatus: {
-            in: ['PENDING', 'APPROVED', 'LOCKED'],
-          },
-        },
-        data: {
-          commissionStatus: 'CANCELLED',
-          payoutId: null,
-          lockedAt: null,
-        },
-      });
-
-      await tx.affiliateConversion.updateMany({
-        where: {
-          orderId: id,
-          conversionStatus: {
-            in: ['PENDING', 'APPROVED'],
-          },
-        },
-        data: {
-          conversionStatus: 'CANCELLED',
-        },
-      });
-
-      return tx.order.update({
-        where: { id },
-        data: {
-          orderStatus: 'refunded',
-        },
-        ...orderWithRelationsArgs,
-      });
     });
   }
 
@@ -1018,6 +952,21 @@ export class OrdersRepository {
     });
   }
 
+  private async getOrderPayableAmount(tx: Prisma.TransactionClient, orderId: string) {
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      select: {
+        buyerPayableAmount: true,
+      },
+    });
+
+    if (!order) {
+      throw new BadRequestException('Order not found');
+    }
+
+    return order.buyerPayableAmount;
+  }
+
   private isReferralEligible(
     referral: {
       expiresAt: Date | null;
@@ -1093,7 +1042,56 @@ export class OrdersRepository {
     return Math.round(value * 100) / 100;
   }
 
-  private async consumeOfferBatchAllocations(
+  lockOfferInventoryRows(tx: Prisma.TransactionClient, offerId: string) {
+    return this.lockOfferInventoryRowsInternal(tx, offerId);
+  }
+
+  async decrementOfferAvailableQuantity(tx: Prisma.TransactionClient, offerId: string, quantity: number) {
+    const stockUpdateResult = await tx.offer.updateMany({
+      where: {
+        id: offerId,
+        availableQuantity: {
+          gte: quantity,
+        },
+      },
+      data: {
+        availableQuantity: {
+          decrement: quantity,
+        },
+      },
+    });
+
+    return stockUpdateResult.count > 0;
+  }
+
+  incrementOfferAvailableQuantity(tx: Prisma.TransactionClient, offerId: string, quantity: number) {
+    return tx.offer.update({
+      where: { id: offerId },
+      data: {
+        availableQuantity: {
+          increment: quantity,
+        },
+      },
+    });
+  }
+
+  consumeOfferBatchAllocations(
+    tx: Prisma.TransactionClient,
+    offerId: string,
+    quantity: number,
+  ): Promise<OrderBatchAllocation[]> {
+    return this.consumeOfferBatchAllocationsInternal(tx, offerId, quantity);
+  }
+
+  restoreOrderItemBatchAllocations(
+    tx: Prisma.TransactionClient,
+    offerId: string,
+    allocations: OrderBatchAllocation[],
+  ) {
+    return this.restoreOrderItemBatchAllocationsInternal(tx, offerId, allocations);
+  }
+
+  private async consumeOfferBatchAllocationsInternal(
     tx: Prisma.TransactionClient,
     offerId: string,
     quantity: number,
@@ -1170,7 +1168,7 @@ export class OrdersRepository {
     return allocations;
   }
 
-  private async lockOfferInventoryRows(tx: Prisma.TransactionClient, offerId: string) {
+  private async lockOfferInventoryRowsInternal(tx: Prisma.TransactionClient, offerId: string) {
     await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
       SELECT "id"
       FROM "offer"
@@ -1197,7 +1195,7 @@ export class OrdersRepository {
     `);
   }
 
-  private async restoreOrderItemBatchAllocations(
+  private async restoreOrderItemBatchAllocationsInternal(
     tx: Prisma.TransactionClient,
     offerId: string,
     allocations: OrderBatchAllocation[],

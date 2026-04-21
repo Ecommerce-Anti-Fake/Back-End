@@ -8,9 +8,8 @@ import { UserIdentityPort, USERS_SERVICE_CLIENT } from '@contracts';
 import { PrismaModule } from '@database/prisma/prisma.module';
 import { PasswordHasherService } from './application/services';
 import { LoginUseCase, LogoutUseCase, RefreshTokenUseCase, RegisterUseCase } from './application/use-cases';
-import { JwtTokenAdapter } from './infrastructure/adapters';
+import { JwtTokenAdapter, UsersIdentityAdapter } from './infrastructure/adapters';
 import { AuthSessionRepository } from './infrastructure/persistence';
-import { UsersIdentityRpcAdapter } from './infrastructure/rpc/users-identity.rpc-adapter';
 import { AuthRpcController } from './presentation/rpc/auth.rpc-controller';
 
 @Module({
@@ -59,10 +58,10 @@ import { AuthRpcController } from './presentation/rpc/auth.rpc-controller';
     RefreshTokenUseCase,
     AuthSessionRepository,
     JwtTokenAdapter,
-    UsersIdentityRpcAdapter,
+    UsersIdentityAdapter,
     {
       provide: UserIdentityPort,
-      useExisting: UsersIdentityRpcAdapter,
+      useExisting: UsersIdentityAdapter,
     },
   ],
 })

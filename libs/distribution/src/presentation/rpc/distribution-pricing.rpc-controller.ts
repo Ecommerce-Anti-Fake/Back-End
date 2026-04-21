@@ -26,6 +26,7 @@ import type {
   DistributionShipmentsLookupMessage,
   CancelDistributionShipmentMessage,
   ReceiveDistributionShipmentMessage,
+  ResolveWholesalePricingMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
 import {
@@ -53,6 +54,7 @@ import {
   CancelDistributionShipmentUseCase,
   ListBatchDocumentsUseCase,
   ReceiveDistributionShipmentUseCase,
+  ResolveWholesalePricingUseCase,
 } from '../../application/use-cases';
 
 @Controller()
@@ -82,6 +84,7 @@ export class DistributionPricingRpcController {
     private readonly receiveDistributionShipmentUseCase: ReceiveDistributionShipmentUseCase,
     private readonly createPricingPolicyUseCase: CreatePricingPolicyUseCase,
     private readonly listPricingPoliciesByNetworkUseCase: ListPricingPoliciesByNetworkUseCase,
+    private readonly resolveWholesalePricingUseCase: ResolveWholesalePricingUseCase,
   ) {}
 
   @MessagePattern(DISTRIBUTION_MESSAGE_PATTERNS.createNetwork)
@@ -295,6 +298,15 @@ export class DistributionPricingRpcController {
   async findByNetwork(@Payload() payload: DistributionPricingPolicyLookupMessage) {
     try {
       return await this.listPricingPoliciesByNetworkUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(DISTRIBUTION_MESSAGE_PATTERNS.resolveWholesalePricing)
+  async resolveWholesalePricing(@Payload() payload: ResolveWholesalePricingMessage) {
+    try {
+      return await this.resolveWholesalePricingUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

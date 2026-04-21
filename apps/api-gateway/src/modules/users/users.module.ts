@@ -4,7 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserIdentityPort, USERS_SERVICE_CLIENT } from '@contracts';
 import { AuthGuardsModule } from '@security';
 import { UsersController } from './users.controller';
-import { UsersIdentityRpcAdapter } from './users-identity.rpc-adapter';
+import { UsersIdentityAdapter } from './users-identity.adapter';
 import { UsersRpcService } from './users-rpc.service';
 
 @Module({
@@ -29,10 +29,10 @@ import { UsersRpcService } from './users-rpc.service';
   controllers: [UsersController],
   providers: [
     UsersRpcService,
-    UsersIdentityRpcAdapter,
+    UsersIdentityAdapter,
     {
       provide: UserIdentityPort,
-      useExisting: UsersIdentityRpcAdapter,
+      useExisting: UsersIdentityAdapter,
     },
   ],
   exports: [UsersRpcService, UserIdentityPort],

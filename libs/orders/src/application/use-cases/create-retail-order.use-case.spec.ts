@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { OrderPlacementService } from '../services';
 import { CreateRetailOrderUseCase } from './create-retail-order.use-case';
 
 describe('CreateRetailOrderUseCase', () => {
@@ -9,6 +10,8 @@ describe('CreateRetailOrderUseCase', () => {
   const ordersRepositoryMock = {
     findUserById: jest.fn(),
     findOfferForOrdering: jest.fn(),
+  };
+  const orderPlacementServiceMock = {
     createOrder: jest.fn(),
   };
 
@@ -19,6 +22,7 @@ describe('CreateRetailOrderUseCase', () => {
       providers: [
         CreateRetailOrderUseCase,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
+        { provide: OrderPlacementService, useValue: orderPlacementServiceMock },
       ],
     }).compile();
 
@@ -51,7 +55,7 @@ describe('CreateRetailOrderUseCase', () => {
       },
       distributionNode: null,
     });
-    ordersRepositoryMock.createOrder.mockResolvedValueOnce({
+    orderPlacementServiceMock.createOrder.mockResolvedValueOnce({
       id: 'order-1',
       orderMode: 'RETAIL',
       orderStatus: 'pending',
@@ -89,11 +93,13 @@ describe('CreateRetailOrderUseCase', () => {
       affiliateCode: 'spring-aff-001',
     });
 
-    expect(ordersRepositoryMock.createOrder).toHaveBeenCalledWith(
+    expect(orderPlacementServiceMock.createOrder).toHaveBeenCalledWith(
       expect.objectContaining({
-        buyerUserId: 'buyer-user-1',
-        baseAmount: 200,
-        platformFeeAmount: 40,
+        order: expect.objectContaining({
+          buyerUserId: 'buyer-user-1',
+          baseAmount: 200,
+          platformFeeAmount: 40,
+        }),
         affiliateAttribution: {
           affiliateCode: 'spring-aff-001',
           customerUserId: 'buyer-user-1',

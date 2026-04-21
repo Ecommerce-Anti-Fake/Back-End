@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { OrderReversalService } from '../services';
 import { CancelOrderUseCase } from './cancel-order.use-case';
 
 describe('CancelOrderUseCase', () => {
@@ -8,6 +9,8 @@ describe('CancelOrderUseCase', () => {
 
   const ordersRepositoryMock = {
     findOrderById: jest.fn(),
+  };
+  const orderReversalServiceMock = {
     cancelOrder: jest.fn(),
   };
 
@@ -18,6 +21,7 @@ describe('CancelOrderUseCase', () => {
       providers: [
         CancelOrderUseCase,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
+        { provide: OrderReversalService, useValue: orderReversalServiceMock },
       ],
     }).compile();
 
@@ -26,8 +30,8 @@ describe('CancelOrderUseCase', () => {
 
   it('should allow seller to cancel a pending order', async () => {
     ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord());
-    ordersRepositoryMock.cancelOrder.mockResolvedValueOnce(
-      createOrderRecord({ orderStatus: 'cancelled', paymentStatus: 'CANCELLED' }),
+    orderReversalServiceMock.cancelOrder.mockResolvedValueOnce(
+      createOrderRecord({ orderStatus: 'cancelled', paymentStatus: 'CANCELLED', escrowStatus: 'CANCELLED' }),
     );
 
     const result = await useCase.execute({
@@ -35,16 +39,17 @@ describe('CancelOrderUseCase', () => {
       requesterUserId: 'seller-user-1',
     });
 
-    expect(ordersRepositoryMock.cancelOrder).toHaveBeenCalledWith('order-1');
+    expect(orderReversalServiceMock.cancelOrder).toHaveBeenCalledWith('order-1');
     expect(result).toMatchObject({
       id: 'order-1',
       orderStatus: 'cancelled',
       paymentStatus: 'CANCELLED',
+      escrowStatus: 'CANCELLED',
     });
   });
 });
 
-function createOrderRecord(overrides?: { orderStatus?: string; paymentStatus?: string }) {
+function createOrderRecord(overrides?: { orderStatus?: string; paymentStatus?: string; escrowStatus?: string }) {
   return {
     id: 'order-1',
     orderMode: 'WHOLESALE',
@@ -75,6 +80,14 @@ function createOrderRecord(overrides?: { orderStatus?: string; paymentStatus?: s
       amount: new Prisma.Decimal(900),
       providerRef: null,
       createdAt: new Date('2026-04-15T10:00:00.000Z'),
+    },
+    escrow: {
+      id: 'escrow-1',
+      orderId: 'order-1',
+      escrowStatus: overrides?.escrowStatus ?? 'PENDING',
+      heldAmount: new Prisma.Decimal(0),
+      holdAt: null,
+      releaseAt: overrides?.escrowStatus === 'CANCELLED' ? new Date('2026-04-15T10:30:00.000Z') : null,
     },
     items: [
       {

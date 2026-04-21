@@ -11,6 +11,7 @@ export class CreateOfferUseCase {
     shopId: string;
     categoryId: string;
     productModelId: string;
+    distributionNodeId?: string | null;
     title: string;
     description: string;
     price: number;
@@ -40,6 +41,23 @@ export class CreateOfferUseCase {
       throw new NotFoundException('Category not found');
     }
 
+    const distributionNodeId = input.distributionNodeId?.trim() || null;
+    if (distributionNodeId) {
+      const distributionNode = await this.productRepository.findOwnedDistributionNode(
+        distributionNodeId,
+        input.shopId,
+        input.sellerUserId,
+      );
+
+      if (!distributionNode) {
+        throw new BadRequestException('Distribution node is invalid for the selected shop');
+      }
+
+      if (distributionNode.relationshipStatus !== 'ACTIVE') {
+        throw new BadRequestException('Distribution node must be active before creating offers');
+      }
+    }
+
     const title = input.title.trim();
     const description = input.description.trim();
     const currency = input.currency?.trim().toUpperCase() || 'VND';
@@ -61,6 +79,7 @@ export class CreateOfferUseCase {
       shopId: input.shopId,
       categoryId: input.categoryId,
       productModelId: input.productModelId,
+      distributionNodeId,
       title,
       description,
       price: input.price,

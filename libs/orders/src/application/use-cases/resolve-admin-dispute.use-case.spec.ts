@@ -1,17 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ResolveAdminDisputeUseCase } from './resolve-admin-dispute.use-case';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { OrderReversalService } from '../services';
 
 describe('ResolveAdminDisputeUseCase', () => {
   let useCase: ResolveAdminDisputeUseCase;
 
   const ordersRepositoryMock = {
     findDisputeById: jest.fn(),
-    resolveDispute: jest.fn(),
     upsertDisputeModerationCase: jest.fn(),
     findEvidenceByDisputeId: jest.fn(),
     createAuditLog: jest.fn(),
     findAuditLogsByTarget: jest.fn(),
+  };
+  const orderReversalServiceMock = {
+    resolveDispute: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -21,6 +24,7 @@ describe('ResolveAdminDisputeUseCase', () => {
       providers: [
         ResolveAdminDisputeUseCase,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
+        { provide: OrderReversalService, useValue: orderReversalServiceMock },
       ],
     }).compile();
 
@@ -61,7 +65,7 @@ describe('ResolveAdminDisputeUseCase', () => {
     };
 
     ordersRepositoryMock.findDisputeById.mockResolvedValueOnce(dispute);
-    ordersRepositoryMock.resolveDispute.mockResolvedValueOnce({
+    orderReversalServiceMock.resolveDispute.mockResolvedValueOnce({
       ...dispute,
       disputeStatus: 'RESOLVED',
       resolvedAt: new Date('2026-04-16T09:30:00.000Z'),
@@ -84,7 +88,7 @@ describe('ResolveAdminDisputeUseCase', () => {
       internalNote: 'Admin da xu ly',
     });
 
-    expect(ordersRepositoryMock.resolveDispute).toHaveBeenCalledWith({
+    expect(orderReversalServiceMock.resolveDispute).toHaveBeenCalledWith({
       disputeId: 'dispute-1',
       resolution: 'RESOLVED',
     });

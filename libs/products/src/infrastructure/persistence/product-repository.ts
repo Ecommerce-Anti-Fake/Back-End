@@ -52,11 +52,28 @@ export class ProductRepository {
     });
   }
 
+  findOwnedDistributionNode(nodeId: string, shopId: string, ownerUserId: string) {
+    return this.prisma.distributionNode.findFirst({
+      where: {
+        id: nodeId,
+        shopId,
+        shop: {
+          ownerUserId,
+        },
+      },
+      select: {
+        id: true,
+        relationshipStatus: true,
+      },
+    });
+  }
+
   createOffer(data: {
     sellerUserId: string;
     shopId: string;
     categoryId: string;
     productModelId: string;
+    distributionNodeId: string | null;
     title: string;
     description: string;
     price: number;
@@ -79,6 +96,9 @@ export class ProductRepository {
         },
         productModel: {
           select: { modelName: true },
+        },
+        distributionNode: {
+          select: { id: true },
         },
       },
     });
@@ -155,6 +175,7 @@ export class ProductRepository {
         batchNumber: true,
         quantity: true,
         productModelId: true,
+        distributionNodeId: true,
         offerLinks: {
           select: {
             offerId: true,

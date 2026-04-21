@@ -27,7 +27,7 @@ describe('CompleteOrderUseCase', () => {
   it('should allow seller to complete a paid order', async () => {
     ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord());
     ordersRepositoryMock.completeOrder.mockResolvedValueOnce(
-      createOrderRecord({ orderStatus: 'completed' }),
+      createOrderRecord({ orderStatus: 'completed', escrowStatus: 'RELEASED' }),
     );
 
     const result = await useCase.execute({
@@ -39,11 +39,12 @@ describe('CompleteOrderUseCase', () => {
     expect(result).toMatchObject({
       id: 'order-1',
       orderStatus: 'completed',
+      escrowStatus: 'RELEASED',
     });
   });
 });
 
-function createOrderRecord(overrides?: { orderStatus?: string }) {
+function createOrderRecord(overrides?: { orderStatus?: string; escrowStatus?: string }) {
   return {
     id: 'order-1',
     orderMode: 'RETAIL',
@@ -72,6 +73,14 @@ function createOrderRecord(overrides?: { orderStatus?: string }) {
       amount: new Prisma.Decimal(100),
       providerRef: null,
       createdAt: new Date('2026-04-15T10:00:00.000Z'),
+    },
+    escrow: {
+      id: 'escrow-1',
+      orderId: 'order-1',
+      escrowStatus: overrides?.escrowStatus ?? 'HELD',
+      heldAmount: new Prisma.Decimal(100),
+      holdAt: new Date('2026-04-15T10:05:00.000Z'),
+      releaseAt: overrides?.escrowStatus === 'RELEASED' ? new Date('2026-04-15T10:30:00.000Z') : null,
     },
     items: [
       {

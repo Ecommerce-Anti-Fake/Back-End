@@ -34,6 +34,33 @@
       "compilerOptions": {
         "tsConfigPath": "apps/users-service/tsconfig.app.json"
       }
+    },
+    "catalog-service": {
+      "type": "application",
+      "root": "apps/catalog-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/catalog-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/catalog-service/tsconfig.app.json"
+      }
+    },
+    "orders-service": {
+      "type": "application",
+      "root": "apps/orders-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/orders-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/orders-service/tsconfig.app.json"
+      }
+    },
+    "affiliate-service": {
+      "type": "application",
+      "root": "apps/affiliate-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/affiliate-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/affiliate-service/tsconfig.app.json"
+      }
     }
   }
 }

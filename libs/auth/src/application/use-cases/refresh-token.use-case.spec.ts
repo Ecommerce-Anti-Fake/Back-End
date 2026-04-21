@@ -3,7 +3,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtTokenAdapter } from '../../infrastructure/adapters/jwt-token.adapter';
+import { JwtTokenAdapter } from '../../infrastructure/adapters';
 import { AuthSessionRepository } from '../../infrastructure/persistence/auth-session.repository';
 import { PasswordHasherService } from '../services/password-hasher.service';
 import { RefreshTokenUseCase } from './refresh-token.use-case';

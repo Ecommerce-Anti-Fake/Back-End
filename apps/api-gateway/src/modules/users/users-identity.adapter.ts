@@ -4,7 +4,7 @@ import type { UserIdentityRecord } from '@contracts';
 import { UsersRpcService } from './users-rpc.service';
 
 @Injectable()
-export class UsersIdentityRpcAdapter implements UserIdentityPort {
+export class UsersIdentityAdapter implements UserIdentityPort {
   constructor(private readonly usersRpcService: UsersRpcService) {}
 
   findById(id: string): Promise<UserIdentityRecord | null> {

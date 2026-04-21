@@ -1,10 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { OrderReversalService } from '../services';
 import { toAdminDisputeDetailResponse } from './admin-disputes.mapper';
 
 @Injectable()
 export class ResolveAdminDisputeUseCase {
-  constructor(private readonly ordersRepository: OrdersRepository) {}
+  constructor(
+    private readonly ordersRepository: OrdersRepository,
+    private readonly orderReversalService: OrderReversalService,
+  ) {}
 
   async execute(input: {
     disputeId: string;
@@ -25,7 +29,7 @@ export class ResolveAdminDisputeUseCase {
       throw new BadRequestException('Only paid orders can be refunded through admin dispute resolution');
     }
 
-    const resolved = await this.ordersRepository.resolveDispute({
+    const resolved = await this.orderReversalService.resolveDispute({
       disputeId: dispute.id,
       resolution: input.resolution,
     });

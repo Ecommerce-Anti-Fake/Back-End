@@ -19,9 +19,9 @@ import {
   CompleteOrderMessage,
   CancelOrderMessage,
   OpenOrderDisputeMessage,
+  ORDERS_SERVICE_CLIENT,
   ResolveOrderDisputeMessage,
   RefundOrderMessage,
-  USERS_SERVICE_CLIENT,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
 import { lastValueFrom } from 'rxjs';
@@ -29,8 +29,8 @@ import { lastValueFrom } from 'rxjs';
 @Injectable()
 export class OrdersRpcService {
   constructor(
-    @Inject(USERS_SERVICE_CLIENT)
-    private readonly usersClient: ClientProxy,
+    @Inject(ORDERS_SERVICE_CLIENT)
+    private readonly ordersClient: ClientProxy,
   ) {}
 
   createRetail(payload: CreateRetailOrderMessage) {
@@ -111,7 +111,7 @@ export class OrdersRpcService {
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {
     try {
-      return await lastValueFrom(this.usersClient.send<TResult, unknown>(pattern, payload));
+      return await lastValueFrom(this.ordersClient.send<TResult, unknown>(pattern, payload));
     } catch (error) {
       throwHttpExceptionFromRpc(error);
     }

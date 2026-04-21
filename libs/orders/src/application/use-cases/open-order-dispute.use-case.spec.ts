@@ -10,6 +10,7 @@ describe('OpenOrderDisputeUseCase', () => {
     findOrderById: jest.fn(),
     findOpenDisputeByOrder: jest.fn(),
     createDispute: jest.fn(),
+    createAuditLog: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -47,6 +48,15 @@ describe('OpenOrderDisputeUseCase', () => {
       openedByUserId: 'buyer-user-1',
       reason: 'Wrong item delivered',
     });
+    expect(ordersRepositoryMock.createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetType: 'DISPUTE',
+        targetId: 'dispute-1',
+        actorUserId: 'buyer-user-1',
+        action: 'DISPUTE_OPENED',
+        toStatus: 'OPEN',
+      }),
+    );
     expect(result).toMatchObject({
       id: 'dispute-1',
       disputeStatus: 'OPEN',

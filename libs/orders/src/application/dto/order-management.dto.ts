@@ -36,6 +36,9 @@ export class OrderResponseDto {
   @ApiPropertyOptional({ example: 'PENDING', nullable: true })
   paymentStatus!: string | null;
 
+  @ApiPropertyOptional({ example: 'PENDING', nullable: true })
+  escrowStatus!: string | null;
+
   @ApiProperty({ example: 'shop-id' })
   sellerShopId!: string;
 

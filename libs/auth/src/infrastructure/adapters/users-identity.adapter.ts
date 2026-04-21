@@ -6,12 +6,12 @@ import {
   USERS_MESSAGE_PATTERNS,
   USERS_SERVICE_CLIENT,
 } from '@contracts';
-import { lastValueFrom } from 'rxjs';
 import type { UserIdentityRecord } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
-export class UsersIdentityRpcAdapter implements UserIdentityPort {
+export class UsersIdentityAdapter implements UserIdentityPort {
   constructor(
     @Inject(USERS_SERVICE_CLIENT)
     private readonly usersClient: ClientProxy,

@@ -7,6 +7,7 @@ import {
   BrandAuthorizationsLookupMessage,
   CategoryDocumentsLookupMessage,
   CategoryDocumentUploadSignaturesMessage,
+  CATALOG_SERVICE_CLIENT,
   CreateShopMessage,
   MyShopsLookupMessage,
   PendingVerificationShopsLookupMessage,
@@ -21,7 +22,6 @@ import {
   SubmitBrandAuthorizationMessage,
   SubmitCategoryDocumentsMessage,
   SubmitShopDocumentsMessage,
-  USERS_SERVICE_CLIENT,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
 import { lastValueFrom } from 'rxjs';
@@ -29,8 +29,8 @@ import { lastValueFrom } from 'rxjs';
 @Injectable()
 export class ShopsRpcService {
   constructor(
-    @Inject(USERS_SERVICE_CLIENT)
-    private readonly usersClient: ClientProxy,
+    @Inject(CATALOG_SERVICE_CLIENT)
+    private readonly catalogClient: ClientProxy,
   ) {}
 
   create(payload: CreateShopMessage) {
@@ -111,7 +111,7 @@ export class ShopsRpcService {
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {
     try {
-      return await lastValueFrom(this.usersClient.send<TResult, unknown>(pattern, payload));
+      return await lastValueFrom(this.catalogClient.send<TResult, unknown>(pattern, payload));
     } catch (error) {
       throwHttpExceptionFromRpc(error);
     }

@@ -74,6 +74,7 @@ export class ProductsController {
       shopId: dto.shopId,
       categoryId: dto.categoryId,
       productModelId: dto.productModelId,
+      distributionNodeId: dto.distributionNodeId ?? null,
       title: dto.title,
       description: dto.description,
       price: dto.price,

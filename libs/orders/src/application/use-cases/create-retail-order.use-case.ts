@@ -1,10 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { OfferForOrdering, OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { OrderPlacementService } from '../services';
 import { toOrderResponse } from './orders.mapper';
 
 @Injectable()
 export class CreateRetailOrderUseCase {
-  constructor(private readonly ordersRepository: OrdersRepository) {}
+  constructor(
+    private readonly ordersRepository: OrdersRepository,
+    private readonly orderPlacementService: OrderPlacementService,
+  ) {}
 
   async execute(input: {
     buyerUserId: string;
@@ -44,26 +48,28 @@ export class CreateRetailOrderUseCase {
     const buyerPayableAmount = baseAmount;
     const sellerReceivableAmount = this.roundMoney(baseAmount - platformFeeAmount);
 
-    const order = await this.ordersRepository.createOrder({
-      buyerUserId: input.buyerUserId,
-      buyerShopId: null,
-      buyerDistributionNodeId: null,
-      shopId: offer.shopId,
-      orderMode: 'RETAIL',
-      orderType: 'retail_purchase',
-      orderStatus: 'pending',
-      baseAmount,
-      discountAmount,
-      platformFeeAmount,
-      buyerPayableAmount,
-      sellerReceivableAmount,
-      totalAmount: buyerPayableAmount,
-      item: {
-        offerId: offer.id,
-        offerTitleSnapshot: offer.title,
-        unitPrice: Number(offer.price.toString()),
-        quantity: input.quantity,
-        verificationLevelSnapshot: offer.verificationLevel,
+    const order = await this.orderPlacementService.createOrder({
+      order: {
+        buyerUserId: input.buyerUserId,
+        buyerShopId: null,
+        buyerDistributionNodeId: null,
+        shopId: offer.shopId,
+        orderMode: 'RETAIL',
+        orderType: 'retail_purchase',
+        orderStatus: 'pending',
+        baseAmount,
+        discountAmount,
+        platformFeeAmount,
+        buyerPayableAmount,
+        sellerReceivableAmount,
+        totalAmount: buyerPayableAmount,
+        item: {
+          offerId: offer.id,
+          offerTitleSnapshot: offer.title,
+          unitPrice: Number(offer.price.toString()),
+          quantity: input.quantity,
+          verificationLevelSnapshot: offer.verificationLevel,
+        },
       },
       affiliateAttribution: input.affiliateCode
         ? {

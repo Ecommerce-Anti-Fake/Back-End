@@ -1,4 +1,5 @@
 export * from './create-pricing-policy.use-case';
+export * from './resolve-wholesale-pricing.use-case';
 export * from './list-pricing-policies-by-network.use-case';
 export * from './create-distribution-network.use-case';
 export * from './list-distribution-networks.use-case';

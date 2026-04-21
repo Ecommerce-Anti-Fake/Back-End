@@ -1,18 +1,25 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
+import { WholesalePricingPort } from '../ports';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { OrderPlacementService } from '../services';
 import { CreateWholesaleOrderUseCase } from './create-wholesale-order.use-case';
 
 describe('CreateWholesaleOrderUseCase', () => {
   let useCase: CreateWholesaleOrderUseCase;
+  let orderPlacementService: { createOrder: jest.Mock };
+  let wholesalePricingPort: { resolve: jest.Mock };
 
   const ordersRepositoryMock = {
     findUserById: jest.fn(),
     findOfferForOrdering: jest.fn(),
     findOwnedShop: jest.fn(),
-    findDistributionNodeById: jest.fn(),
-    findApplicablePricingPolicies: jest.fn(),
+  };
+  const orderPlacementServiceMock = {
     createOrder: jest.fn(),
+  };
+  const wholesalePricingPortMock = {
+    resolve: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -22,10 +29,14 @@ describe('CreateWholesaleOrderUseCase', () => {
       providers: [
         CreateWholesaleOrderUseCase,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
+        { provide: OrderPlacementService, useValue: orderPlacementServiceMock },
+        { provide: WholesalePricingPort, useValue: wholesalePricingPortMock },
       ],
     }).compile();
 
     useCase = module.get<CreateWholesaleOrderUseCase>(CreateWholesaleOrderUseCase);
+    orderPlacementService = module.get(OrderPlacementService);
+    wholesalePricingPort = module.get(WholesalePricingPort);
   });
 
   it('should apply 20% platform fee outside network and keep buyer payable at offer price', async () => {
@@ -39,8 +50,24 @@ describe('CreateWholesaleOrderUseCase', () => {
         salesMode: 'WHOLESALE',
       }),
     );
-    ordersRepositoryMock.findOwnedShop.mockResolvedValueOnce({ id: 'buyer-shop-1' });
-    ordersRepositoryMock.createOrder.mockResolvedValueOnce(
+    ordersRepositoryMock.findOwnedShop.mockResolvedValueOnce({
+      id: 'buyer-shop-1',
+      shopStatus: 'active',
+      registrationType: 'DISTRIBUTOR',
+    });
+    wholesalePricingPortMock.resolve.mockResolvedValueOnce({
+      buyerDistributionNodeId: null,
+      unitPrice: 100,
+      discountPercent: 0,
+      baseAmount: 200,
+      discountAmount: 0,
+      platformFeeAmount: 40,
+      buyerPayableAmount: 200,
+      sellerReceivableAmount: 160,
+      totalAmount: 200,
+      isInNetworkTrade: false,
+    });
+    orderPlacementServiceMock.createOrder.mockResolvedValueOnce(
       createOrderRecord({
         baseAmount: 200,
         discountAmount: 0,
@@ -60,18 +87,27 @@ describe('CreateWholesaleOrderUseCase', () => {
       quantity: 2,
     });
 
-    expect(ordersRepositoryMock.createOrder).toHaveBeenCalledWith(
+    expect(wholesalePricingPort.resolve).toHaveBeenCalledWith(
       expect.objectContaining({
-        buyerDistributionNodeId: null,
-        baseAmount: 200,
-        discountAmount: 0,
-        platformFeeAmount: 40,
-        buyerPayableAmount: 200,
-        sellerReceivableAmount: 160,
-        totalAmount: 200,
-        item: expect.objectContaining({
-          unitPrice: 100,
-          quantity: 2,
+        buyerShopId: 'buyer-shop-1',
+        buyerDistributionNodeId: undefined,
+        quantity: 2,
+      }),
+    );
+    expect(orderPlacementService.createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({
+        order: expect.objectContaining({
+          buyerDistributionNodeId: null,
+          baseAmount: 200,
+          discountAmount: 0,
+          platformFeeAmount: 40,
+          buyerPayableAmount: 200,
+          sellerReceivableAmount: 160,
+          totalAmount: 200,
+          item: expect.objectContaining({
+            unitPrice: 100,
+            quantity: 2,
+          }),
         }),
       }),
     );
@@ -97,19 +133,24 @@ describe('CreateWholesaleOrderUseCase', () => {
         },
       }),
     );
-    ordersRepositoryMock.findOwnedShop.mockResolvedValueOnce({ id: 'buyer-shop-1' });
-    ordersRepositoryMock.findDistributionNodeById.mockResolvedValueOnce({
-      id: 'buyer-node-1',
-      shopId: 'buyer-shop-1',
-      networkId: 'network-1',
-      level: 1,
+    ordersRepositoryMock.findOwnedShop.mockResolvedValueOnce({
+      id: 'buyer-shop-1',
+      shopStatus: 'active',
+      registrationType: 'DISTRIBUTOR',
     });
-    ordersRepositoryMock.findApplicablePricingPolicies.mockResolvedValueOnce([
-      createPolicy({ scope: 'NETWORK_DEFAULT', discountValue: 5 }),
-      createPolicy({ scope: 'NODE_LEVEL', appliesToLevel: 1, discountValue: 10 }),
-      createPolicy({ scope: 'NODE_SPECIFIC', nodeId: 'buyer-node-1', appliesToLevel: 1, discountValue: 15 }),
-    ]);
-    ordersRepositoryMock.createOrder.mockResolvedValueOnce(
+    wholesalePricingPortMock.resolve.mockResolvedValueOnce({
+      buyerDistributionNodeId: 'buyer-node-1',
+      unitPrice: 85,
+      discountPercent: 15,
+      baseAmount: 200,
+      discountAmount: 30,
+      platformFeeAmount: 25.5,
+      buyerPayableAmount: 195.5,
+      sellerReceivableAmount: 170,
+      totalAmount: 195.5,
+      isInNetworkTrade: true,
+    });
+    orderPlacementServiceMock.createOrder.mockResolvedValueOnce(
       createOrderRecord({
         buyerDistributionNodeId: 'buyer-node-1',
         baseAmount: 200,
@@ -131,18 +172,27 @@ describe('CreateWholesaleOrderUseCase', () => {
       quantity: 2,
     });
 
-    expect(ordersRepositoryMock.createOrder).toHaveBeenCalledWith(
+    expect(wholesalePricingPort.resolve).toHaveBeenCalledWith(
       expect.objectContaining({
+        buyerShopId: 'buyer-shop-1',
         buyerDistributionNodeId: 'buyer-node-1',
-        baseAmount: 200,
-        discountAmount: 30,
-        platformFeeAmount: 25.5,
-        buyerPayableAmount: 195.5,
-        sellerReceivableAmount: 170,
-        totalAmount: 195.5,
-        item: expect.objectContaining({
-          unitPrice: 85,
-          quantity: 2,
+        quantity: 2,
+      }),
+    );
+    expect(orderPlacementService.createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({
+        order: expect.objectContaining({
+          buyerDistributionNodeId: 'buyer-node-1',
+          baseAmount: 200,
+          discountAmount: 30,
+          platformFeeAmount: 25.5,
+          buyerPayableAmount: 195.5,
+          sellerReceivableAmount: 170,
+          totalAmount: 195.5,
+          item: expect.objectContaining({
+            unitPrice: 85,
+            quantity: 2,
+          }),
         }),
       }),
     );
@@ -170,22 +220,14 @@ describe('CreateWholesaleOrderUseCase', () => {
         },
       }),
     );
-    ordersRepositoryMock.findOwnedShop.mockResolvedValueOnce({ id: 'buyer-shop-1' });
-    ordersRepositoryMock.findDistributionNodeById.mockResolvedValueOnce({
-      id: 'buyer-node-1',
-      shopId: 'buyer-shop-1',
-      networkId: 'network-1',
-      level: 1,
+    ordersRepositoryMock.findOwnedShop.mockResolvedValueOnce({
+      id: 'buyer-shop-1',
+      shopStatus: 'active',
+      registrationType: 'DISTRIBUTOR',
     });
-    ordersRepositoryMock.findApplicablePricingPolicies.mockResolvedValueOnce([
-      createPolicy({
-        scope: 'NODE_SPECIFIC',
-        nodeId: 'buyer-node-1',
-        appliesToLevel: 1,
-        discountType: 'FIXED_AMOUNT',
-        discountValue: 10,
-      }),
-    ]);
+    wholesalePricingPortMock.resolve.mockRejectedValueOnce(
+      new Error('In-network pricing policy must use percent discount'),
+    );
 
     await expect(
       useCase.execute({
@@ -196,6 +238,38 @@ describe('CreateWholesaleOrderUseCase', () => {
         quantity: 1,
       }),
     ).rejects.toThrow('In-network pricing policy must use percent discount');
+  });
+
+  it('should reject in-network pricing when offer is not attached to a distribution node', async () => {
+    ordersRepositoryMock.findUserById.mockResolvedValueOnce({
+      id: 'user-1',
+      phone: '0987654321',
+    });
+    ordersRepositoryMock.findOfferForOrdering.mockResolvedValueOnce(
+      createOffer({
+        price: 100,
+        salesMode: 'WHOLESALE',
+        distributionNode: null,
+      }),
+    );
+    ordersRepositoryMock.findOwnedShop.mockResolvedValueOnce({
+      id: 'buyer-shop-1',
+      shopStatus: 'active',
+      registrationType: 'DISTRIBUTOR',
+    });
+    wholesalePricingPortMock.resolve.mockRejectedValueOnce(
+      new Error('Only offers attached to a distribution node can use in-network pricing'),
+    );
+
+    await expect(
+      useCase.execute({
+        buyerUserId: 'user-1',
+        buyerShopId: 'buyer-shop-1',
+        buyerDistributionNodeId: 'buyer-node-1',
+        offerId: 'offer-1',
+        quantity: 1,
+      }),
+    ).rejects.toThrow('Only offers attached to a distribution node can use in-network pricing');
   });
 });
 
@@ -217,28 +291,6 @@ function createOffer(overrides?: Partial<any>) {
       ownerUserId: 'seller-user-1',
     },
     distributionNode: null,
-    ...overrides,
-  };
-}
-
-function createPolicy(overrides?: Partial<any>) {
-  return {
-    id: 'policy-1',
-    networkId: 'network-1',
-    scope: 'NETWORK_DEFAULT',
-    nodeId: null,
-    appliesToLevel: null,
-    productModelId: null,
-    categoryId: null,
-    discountType: 'PERCENT',
-    discountValue: new Prisma.Decimal(overrides?.discountValue ?? 5),
-    minQuantity: null,
-    priority: 100,
-    isActive: true,
-    startsAt: null,
-    endsAt: null,
-    createdAt: new Date('2026-04-14T10:00:00.000Z'),
-    updatedAt: new Date('2026-04-14T10:00:00.000Z'),
     ...overrides,
   };
 }

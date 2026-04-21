@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { OrderReversalService } from '../services';
 import { ResolveOrderDisputeUseCase } from './resolve-order-dispute.use-case';
 
 describe('ResolveOrderDisputeUseCase', () => {
@@ -8,6 +9,9 @@ describe('ResolveOrderDisputeUseCase', () => {
 
   const ordersRepositoryMock = {
     findDisputeById: jest.fn(),
+    createAuditLog: jest.fn(),
+  };
+  const orderReversalServiceMock = {
     resolveDispute: jest.fn(),
   };
 
@@ -18,6 +22,7 @@ describe('ResolveOrderDisputeUseCase', () => {
       providers: [
         ResolveOrderDisputeUseCase,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
+        { provide: OrderReversalService, useValue: orderReversalServiceMock },
       ],
     }).compile();
 
@@ -26,7 +31,7 @@ describe('ResolveOrderDisputeUseCase', () => {
 
   it('should allow seller to resolve an open dispute without refund', async () => {
     ordersRepositoryMock.findDisputeById.mockResolvedValueOnce(createDisputeRecord());
-    ordersRepositoryMock.resolveDispute.mockResolvedValueOnce({
+    orderReversalServiceMock.resolveDispute.mockResolvedValueOnce({
       ...createDisputeRecord(),
       disputeStatus: 'RESOLVED',
       resolvedAt: new Date('2026-04-15T11:00:00.000Z'),
@@ -38,10 +43,23 @@ describe('ResolveOrderDisputeUseCase', () => {
       resolution: 'RESOLVED',
     });
 
-    expect(ordersRepositoryMock.resolveDispute).toHaveBeenCalledWith({
+    expect(orderReversalServiceMock.resolveDispute).toHaveBeenCalledWith({
       disputeId: 'dispute-1',
       resolution: 'RESOLVED',
     });
+    expect(ordersRepositoryMock.createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetType: 'DISPUTE',
+        targetId: 'dispute-1',
+        actorUserId: 'seller-user-1',
+        action: 'DISPUTE_RESOLVED_BY_SELLER',
+        fromStatus: 'OPEN',
+        toStatus: 'RESOLVED',
+        metadata: {
+          resolution: 'RESOLVED',
+        },
+      }),
+    );
     expect(result).toMatchObject({
       id: 'dispute-1',
       disputeStatus: 'RESOLVED',
@@ -50,7 +68,7 @@ describe('ResolveOrderDisputeUseCase', () => {
 
   it('should allow seller to refund an open dispute on paid order', async () => {
     ordersRepositoryMock.findDisputeById.mockResolvedValueOnce(createDisputeRecord({ orderStatus: 'paid' }));
-    ordersRepositoryMock.resolveDispute.mockResolvedValueOnce({
+    orderReversalServiceMock.resolveDispute.mockResolvedValueOnce({
       ...createDisputeRecord({ orderStatus: 'refunded', paymentStatus: 'REFUNDED' }),
       disputeStatus: 'REFUNDED',
       resolvedAt: new Date('2026-04-15T11:00:00.000Z'),
@@ -62,10 +80,23 @@ describe('ResolveOrderDisputeUseCase', () => {
       resolution: 'REFUNDED',
     });
 
-    expect(ordersRepositoryMock.resolveDispute).toHaveBeenCalledWith({
+    expect(orderReversalServiceMock.resolveDispute).toHaveBeenCalledWith({
       disputeId: 'dispute-1',
       resolution: 'REFUNDED',
     });
+    expect(ordersRepositoryMock.createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetType: 'DISPUTE',
+        targetId: 'dispute-1',
+        actorUserId: 'seller-user-1',
+        action: 'DISPUTE_RESOLVED_BY_SELLER',
+        fromStatus: 'OPEN',
+        toStatus: 'REFUNDED',
+        metadata: {
+          resolution: 'REFUNDED',
+        },
+      }),
+    );
     expect(result).toMatchObject({
       disputeStatus: 'REFUNDED',
       order: {

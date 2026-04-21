@@ -18,6 +18,7 @@ import {
   CreateDistributionShipmentUseCase,
   DispatchDistributionShipmentUseCase,
   CreatePricingPolicyUseCase,
+  ResolveWholesalePricingUseCase,
   ListSupplyBatchesUseCase,
   ListDistributionNetworksUseCase,
   ListDistributionNodesUseCase,
@@ -58,6 +59,7 @@ import { DistributionPricingRpcController } from './presentation/rpc/distributio
     CancelDistributionShipmentUseCase,
     ReceiveDistributionShipmentUseCase,
     CreatePricingPolicyUseCase,
+    ResolveWholesalePricingUseCase,
     ListPricingPoliciesByNetworkUseCase,
   ],
   exports: [
@@ -85,6 +87,7 @@ import { DistributionPricingRpcController } from './presentation/rpc/distributio
     CancelDistributionShipmentUseCase,
     ReceiveDistributionShipmentUseCase,
     CreatePricingPolicyUseCase,
+    ResolveWholesalePricingUseCase,
     ListPricingPoliciesByNetworkUseCase,
   ],
 })

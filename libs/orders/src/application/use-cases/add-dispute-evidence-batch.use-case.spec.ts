@@ -10,6 +10,7 @@ describe('AddDisputeEvidenceBatchUseCase', () => {
   const ordersRepositoryMock = {
     findDisputeById: jest.fn(),
     createDisputeEvidence: jest.fn(),
+    createAuditLog: jest.fn(),
   };
 
   const mediaServiceMock = {
@@ -123,6 +124,14 @@ describe('AddDisputeEvidenceBatchUseCase', () => {
     });
 
     expect(result).toHaveLength(2);
+    expect(ordersRepositoryMock.createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetType: 'DISPUTE',
+        targetId: 'dispute-1',
+        actorUserId: 'buyer-user-1',
+        action: 'DISPUTE_EVIDENCE_ADDED',
+      }),
+    );
     expect(result[0]).toMatchObject({ assetType: 'IMAGE' });
     expect(result[1]).toMatchObject({ assetType: 'VIDEO' });
   });

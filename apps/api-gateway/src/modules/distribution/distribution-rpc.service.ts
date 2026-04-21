@@ -26,7 +26,7 @@ import {
   DistributionShipmentsLookupMessage,
   CancelDistributionShipmentMessage,
   ReceiveDistributionShipmentMessage,
-  USERS_SERVICE_CLIENT,
+  CATALOG_SERVICE_CLIENT,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
 import { lastValueFrom } from 'rxjs';
@@ -34,8 +34,8 @@ import { lastValueFrom } from 'rxjs';
 @Injectable()
 export class DistributionRpcService {
   constructor(
-    @Inject(USERS_SERVICE_CLIENT)
-    private readonly usersClient: ClientProxy,
+    @Inject(CATALOG_SERVICE_CLIENT)
+    private readonly catalogClient: ClientProxy,
   ) {}
 
   createNetwork(payload: CreateDistributionNetworkMessage) {
@@ -136,7 +136,7 @@ export class DistributionRpcService {
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {
     try {
-      return await lastValueFrom(this.usersClient.send<TResult, unknown>(pattern, payload));
+      return await lastValueFrom(this.catalogClient.send<TResult, unknown>(pattern, payload));
     } catch (error) {
       throwHttpExceptionFromRpc(error);
     }

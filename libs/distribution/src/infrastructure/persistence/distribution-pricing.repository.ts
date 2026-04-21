@@ -309,6 +309,46 @@ export class DistributionPricingRepository {
     });
   }
 
+  findApplicablePricingPolicies(input: {
+    networkId: string;
+    nodeId: string;
+    appliesToLevel: number;
+    productModelId: string;
+    categoryId: string;
+    quantity: number;
+    now: Date;
+  }) {
+    return this.prisma.distributionPricingPolicy.findMany({
+      where: {
+        networkId: input.networkId,
+        isActive: true,
+        OR: [{ startsAt: null }, { startsAt: { lte: input.now } }],
+        AND: [
+          {
+            OR: [{ endsAt: null }, { endsAt: { gte: input.now } }],
+          },
+          {
+            OR: [{ minQuantity: null }, { minQuantity: { lte: input.quantity } }],
+          },
+          {
+            OR: [{ productModelId: null }, { productModelId: input.productModelId }],
+          },
+          {
+            OR: [{ categoryId: null }, { categoryId: input.categoryId }],
+          },
+          {
+            OR: [
+              { scope: 'NODE_SPECIFIC', nodeId: input.nodeId },
+              { scope: 'NODE_LEVEL', appliesToLevel: input.appliesToLevel },
+              { scope: 'NETWORK_DEFAULT' },
+            ],
+          },
+        ],
+      },
+      orderBy: [{ priority: 'asc' }, { createdAt: 'desc' }],
+    });
+  }
+
   createPolicy(data: {
     networkId: string;
     nodeId: string | null;

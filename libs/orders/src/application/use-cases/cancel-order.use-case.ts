@@ -1,10 +1,14 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { OrderReversalService } from '../services';
 import { toOrderResponse } from './orders.mapper';
 
 @Injectable()
 export class CancelOrderUseCase {
-  constructor(private readonly ordersRepository: OrdersRepository) {}
+  constructor(
+    private readonly ordersRepository: OrdersRepository,
+    private readonly orderReversalService: OrderReversalService,
+  ) {}
 
   async execute(input: { id: string; requesterUserId: string }) {
     const order = await this.ordersRepository.findOrderById(input.id);
@@ -24,7 +28,7 @@ export class CancelOrderUseCase {
       throw new BadRequestException('Only pending orders can be cancelled');
     }
 
-    const updatedOrder = await this.ordersRepository.cancelOrder(order.id);
+    const updatedOrder = await this.orderReversalService.cancelOrder(order.id);
     return toOrderResponse(updatedOrder);
   }
 }

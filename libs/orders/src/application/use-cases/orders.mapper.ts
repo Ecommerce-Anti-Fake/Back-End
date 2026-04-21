@@ -7,6 +7,7 @@ export function toOrderResponse(order: OrderWithRelations) {
     orderMode: order.orderMode,
     orderStatus: order.orderStatus,
     paymentStatus: order.paymentIntent?.paymentStatus ?? null,
+    escrowStatus: order.escrow?.escrowStatus ?? null,
     sellerShopId: order.shopId,
     sellerShopName: order.shop.shopName,
     buyerUserId: order.buyerUserId,

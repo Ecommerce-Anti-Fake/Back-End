@@ -27,7 +27,7 @@ describe('MarkOrderPaidUseCase', () => {
   it('should allow buyer to mark pending order as paid', async () => {
     ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord());
     ordersRepositoryMock.markOrderPaid.mockResolvedValueOnce(
-      createOrderRecord({ orderStatus: 'paid', paymentStatus: 'PAID' }),
+      createOrderRecord({ orderStatus: 'paid', paymentStatus: 'PAID', escrowStatus: 'HELD' }),
     );
 
     const result = await useCase.execute({
@@ -44,11 +44,12 @@ describe('MarkOrderPaidUseCase', () => {
       id: 'order-1',
       orderStatus: 'paid',
       paymentStatus: 'PAID',
+      escrowStatus: 'HELD',
     });
   });
 });
 
-function createOrderRecord(overrides?: { orderStatus?: string; paymentStatus?: string }) {
+function createOrderRecord(overrides?: { orderStatus?: string; paymentStatus?: string; escrowStatus?: string }) {
   return {
     id: 'order-1',
     orderMode: 'RETAIL',
@@ -77,6 +78,14 @@ function createOrderRecord(overrides?: { orderStatus?: string; paymentStatus?: s
       amount: new Prisma.Decimal(100),
       providerRef: null,
       createdAt: new Date('2026-04-15T10:00:00.000Z'),
+    },
+    escrow: {
+      id: 'escrow-1',
+      orderId: 'order-1',
+      escrowStatus: overrides?.escrowStatus ?? 'PENDING',
+      heldAmount: new Prisma.Decimal(overrides?.escrowStatus === 'HELD' ? 100 : 0),
+      holdAt: overrides?.escrowStatus === 'HELD' ? new Date('2026-04-15T10:05:00.000Z') : null,
+      releaseAt: null,
     },
     items: [
       {

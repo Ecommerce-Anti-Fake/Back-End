@@ -66,6 +66,14 @@ export class AllocateOfferBatchesUseCase {
         throw new BadRequestException('Batch allocation is invalid');
       }
 
+      if (!ownedOffer.distributionNodeId && batch.distributionNodeId) {
+        throw new BadRequestException('Offers without distribution node cannot allocate distributed batches');
+      }
+
+      if (ownedOffer.distributionNodeId && batch.distributionNodeId !== ownedOffer.distributionNodeId) {
+        throw new BadRequestException('Batches must belong to the same distribution node as the offer');
+      }
+
       const allocatedToOtherOffers = batch.offerLinks.reduce((sum, link) => {
         if (link.offerId === input.offerId) {
           return sum;

@@ -1,10 +1,14 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { OrderReversalService } from '../services';
 import { toOrderResponse } from './orders.mapper';
 
 @Injectable()
 export class RefundOrderUseCase {
-  constructor(private readonly ordersRepository: OrdersRepository) {}
+  constructor(
+    private readonly ordersRepository: OrdersRepository,
+    private readonly orderReversalService: OrderReversalService,
+  ) {}
 
   async execute(input: { id: string; requesterUserId: string }) {
     const order = await this.ordersRepository.findOrderById(input.id);
@@ -20,7 +24,7 @@ export class RefundOrderUseCase {
       throw new BadRequestException('Only paid orders can be refunded');
     }
 
-    const updatedOrder = await this.ordersRepository.refundPaidOrder(order.id);
+    const updatedOrder = await this.orderReversalService.refundPaidOrder(order.id);
     return toOrderResponse(updatedOrder);
   }
 }

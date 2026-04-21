@@ -1,5 +1,8 @@
 export const AUTH_SERVICE_CLIENT = 'AUTH_SERVICE_CLIENT';
 export const USERS_SERVICE_CLIENT = 'USERS_SERVICE_CLIENT';
+export const CATALOG_SERVICE_CLIENT = 'CATALOG_SERVICE_CLIENT';
+export const ORDERS_SERVICE_CLIENT = 'ORDERS_SERVICE_CLIENT';
+export const AFFILIATE_SERVICE_CLIENT = 'AFFILIATE_SERVICE_CLIENT';
 
 export const AUTH_MESSAGE_PATTERNS = {
   register: 'auth.register',
@@ -113,6 +116,7 @@ export const DISTRIBUTION_MESSAGE_PATTERNS = {
   findBatchDocuments: 'distribution.find-batch-documents',
   createPricingPolicy: 'distribution.create-pricing-policy',
   findPricingPoliciesByNetwork: 'distribution.find-pricing-policies-by-network',
+  resolveWholesalePricing: 'distribution.resolve-wholesale-pricing',
 } as const;
 
 export const AFFILIATE_MESSAGE_PATTERNS = {
@@ -371,6 +375,7 @@ export type CreateOfferMessage = {
   shopId: string;
   categoryId: string;
   productModelId: string;
+  distributionNodeId?: string | null;
   title: string;
   description: string;
   price: number;
@@ -580,6 +585,19 @@ export type CreateDistributionPricingPolicyMessage = {
 export type DistributionPricingPolicyLookupMessage = {
   requesterUserId: string;
   networkId: string;
+};
+
+export type ResolveWholesalePricingMessage = {
+  buyerShopId: string;
+  buyerDistributionNodeId?: string;
+  quantity: number;
+  offer: {
+    price: number;
+    productModelId: string;
+    categoryId: string;
+    distributionNodeId?: string | null;
+    distributionNetworkId?: string | null;
+  };
 };
 
 export type CreateDistributionNetworkMessage = {

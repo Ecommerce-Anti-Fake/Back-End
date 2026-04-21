@@ -13,7 +13,7 @@ import {
   OfferMediaUploadSignaturesMessage,
   PRODUCTS_MESSAGE_PATTERNS,
   ProductModelLookupMessage,
-  USERS_SERVICE_CLIENT,
+  CATALOG_SERVICE_CLIENT,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
 import { lastValueFrom } from 'rxjs';
@@ -21,8 +21,8 @@ import { lastValueFrom } from 'rxjs';
 @Injectable()
 export class ProductsRpcService {
   constructor(
-    @Inject(USERS_SERVICE_CLIENT)
-    private readonly usersClient: ClientProxy,
+    @Inject(CATALOG_SERVICE_CLIENT)
+    private readonly catalogClient: ClientProxy,
   ) {}
 
   findModels() {
@@ -79,7 +79,7 @@ export class ProductsRpcService {
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {
     try {
-      return await lastValueFrom(this.usersClient.send<TResult, unknown>(pattern, payload));
+      return await lastValueFrom(this.catalogClient.send<TResult, unknown>(pattern, payload));
     } catch (error) {
       throwHttpExceptionFromRpc(error);
     }
