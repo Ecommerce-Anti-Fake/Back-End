@@ -6,10 +6,46 @@ import { PrismaService } from '@database/prisma/prisma.service';
 export class ProductRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  findAllBrands() {
+    return this.prisma.brand.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  createBrand(data: {
+    name: string;
+    registryStatus: string;
+  }) {
+    return this.prisma.brand.create({
+      data,
+    });
+  }
+
+  findAllCategories() {
+    return this.prisma.category.findMany({
+      orderBy: [{ parentId: 'asc' }, { name: 'asc' }],
+    });
+  }
+
+  createCategory(data: {
+    name: string;
+    parentId: string | null;
+    riskTier: string;
+  }) {
+    return this.prisma.category.create({
+      data,
+    });
+  }
+
   findAllModels() {
     return this.prisma.productModel.findMany({
       include: {
         brand: {
+          select: {
+            name: true,
+          },
+        },
+        category: {
           select: {
             name: true,
           },
@@ -24,6 +60,45 @@ export class ProductRepository {
       where: { id },
       include: {
         brand: {
+          select: {
+            name: true,
+          },
+        },
+        category: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+  }
+
+  findBrandById(id: string) {
+    return this.prisma.brand.findUnique({
+      where: { id },
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  createProductModel(data: {
+    brandId: string;
+    categoryId: string;
+    modelName: string;
+    gtin: string | null;
+    verificationPolicy: string;
+    approvalStatus: string;
+  }) {
+    return this.prisma.productModel.create({
+      data,
+      include: {
+        brand: {
+          select: {
+            name: true,
+          },
+        },
+        category: {
           select: {
             name: true,
           },

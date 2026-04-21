@@ -41,6 +41,10 @@ export class CreateOfferUseCase {
       throw new NotFoundException('Category not found');
     }
 
+    if (productModel.categoryId !== input.categoryId) {
+      throw new BadRequestException('Category must match the selected product model');
+    }
+
     const distributionNodeId = input.distributionNodeId?.trim() || null;
     if (distributionNodeId) {
       const distributionNode = await this.productRepository.findOwnedDistributionNode(

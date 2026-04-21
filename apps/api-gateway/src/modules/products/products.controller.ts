@@ -3,6 +3,7 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiCreatedResponse,
+  ApiForbiddenResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -13,7 +14,12 @@ import {
   AllocateOfferBatchesDto,
   AddOfferDocumentsBatchDto,
   AddOfferMediaBatchDto,
+  BrandResponseDto,
+  CategoryResponseDto,
+  CreateBrandDto,
+  CreateCategoryDto,
   CreateOfferDto,
+  CreateProductModelDto,
   GetOfferDocumentUploadSignaturesDto,
   GetOfferMediaUploadSignaturesDto,
   ListOffersQueryDto,
@@ -24,7 +30,7 @@ import {
   OfferResponseDto,
   ProductModelResponseDto,
 } from '@products';
-import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
+import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import { ProductsRpcService } from './products-rpc.service';
 
 @ApiTags('Products')
@@ -43,6 +49,79 @@ export class ProductsController {
     return this.productsRpcService.findModels();
   }
 
+  @ApiOperation({ summary: 'Lay danh sach brand' })
+  @ApiOkResponse({
+    description: 'Danh sach brand.',
+    type: BrandResponseDto,
+    isArray: true,
+  })
+  @Get('brands')
+  findBrands() {
+    return this.productsRpcService.findBrands();
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach category' })
+  @ApiOkResponse({
+    description: 'Danh sach category.',
+    type: CategoryResponseDto,
+    isArray: true,
+  })
+  @Get('categories')
+  findCategories() {
+    return this.productsRpcService.findCategories();
+  }
+
+  @ApiOperation({ summary: 'Admin tao brand moi' })
+  @ApiBearerAuth('access-token')
+  @ApiCreatedResponse({
+    description: 'Tao brand thanh cong.',
+    type: BrandResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Du lieu brand khong hop le.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Thieu access token hoac token khong hop le.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi admin moi co quyen tao brand.',
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Post('brands')
+  createBrand(@Body() dto: CreateBrandDto) {
+    return this.productsRpcService.createBrand({
+      name: dto.name,
+      registryStatus: dto.registryStatus,
+    });
+  }
+
+  @ApiOperation({ summary: 'Admin tao category moi' })
+  @ApiBearerAuth('access-token')
+  @ApiCreatedResponse({
+    description: 'Tao category thanh cong.',
+    type: CategoryResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Du lieu category khong hop le hoac parent category khong ton tai.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Thieu access token hoac token khong hop le.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi admin moi co quyen tao category.',
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Post('categories')
+  createCategory(@Body() dto: CreateCategoryDto) {
+    return this.productsRpcService.createCategory({
+      name: dto.name,
+      parentId: dto.parentId ?? null,
+      riskTier: dto.riskTier,
+    });
+  }
+
   @ApiOperation({ summary: 'Lay chi tiet mot product model' })
   @ApiParam({ name: 'id', description: 'ID product model can xem.' })
   @ApiOkResponse({
@@ -52,6 +131,32 @@ export class ProductsController {
   @Get('models/:id')
   findModelById(@Param('id') id: string) {
     return this.productsRpcService.findModelById({ id });
+  }
+
+  @ApiOperation({ summary: 'Admin tao product model moi' })
+  @ApiBearerAuth('access-token')
+  @ApiCreatedResponse({
+    description: 'Tao product model thanh cong.',
+    type: ProductModelResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Brand khong ton tai hoac du lieu product model khong hop le.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Thieu access token hoac token khong hop le.',
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Post('models')
+  createModel(@Body() dto: CreateProductModelDto) {
+    return this.productsRpcService.createModel({
+      brandId: dto.brandId,
+      categoryId: dto.categoryId,
+      modelName: dto.modelName,
+      gtin: dto.gtin ?? null,
+      verificationPolicy: dto.verificationPolicy,
+      approvalStatus: dto.approvalStatus,
+    });
   }
 
   @ApiOperation({ summary: 'Tao offer moi cho shop hien tai' })

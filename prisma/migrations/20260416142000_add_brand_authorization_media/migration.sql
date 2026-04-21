@@ -1,5 +1,5 @@
 ALTER TABLE "brand_authorization"
-ADD COLUMN "media_asset_id" UUID,
+ADD COLUMN "media_asset_id" TEXT,
 ADD COLUMN "file_url" TEXT,
 ADD COLUMN "review_note" TEXT,
 ADD COLUMN "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;

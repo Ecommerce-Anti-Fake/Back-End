@@ -7,7 +7,10 @@ import type {
   AllocateOfferBatchesMessage,
   AddOfferDocumentsBatchMessage,
   AddOfferMediaBatchMessage,
+  CreateBrandMessage,
+  CreateCategoryMessage,
   CreateOfferMessage,
+  CreateProductModelMessage,
   ListOffersMessage,
   OfferDocumentUploadSignaturesMessage,
   OfferBatchLinksLookupMessage,
@@ -21,11 +24,16 @@ import {
   AllocateOfferBatchesUseCase,
   AddOfferDocumentsBatchUseCase,
   AddOfferMediaBatchUseCase,
+  CreateBrandUseCase,
+  CreateCategoryUseCase,
   CreateOfferUseCase,
+  CreateProductModelUseCase,
   GetOfferDocumentUploadSignaturesUseCase,
   GetOfferByIdUseCase,
   GetOfferMediaUploadSignaturesUseCase,
   GetProductModelByIdUseCase,
+  ListBrandsUseCase,
+  ListCategoriesUseCase,
   ListOfferBatchLinksUseCase,
   ListOfferDocumentsUseCase,
   ListOfferMediaUseCase,
@@ -37,7 +45,12 @@ import {
 export class ProductsRpcController {
   constructor(
     private readonly listProductModelsUseCase: ListProductModelsUseCase,
+    private readonly listBrandsUseCase: ListBrandsUseCase,
+    private readonly createBrandUseCase: CreateBrandUseCase,
+    private readonly listCategoriesUseCase: ListCategoriesUseCase,
+    private readonly createCategoryUseCase: CreateCategoryUseCase,
     private readonly getProductModelByIdUseCase: GetProductModelByIdUseCase,
+    private readonly createProductModelUseCase: CreateProductModelUseCase,
     private readonly createOfferUseCase: CreateOfferUseCase,
     private readonly allocateOfferBatchesUseCase: AllocateOfferBatchesUseCase,
     private readonly getOfferMediaUploadSignaturesUseCase: GetOfferMediaUploadSignaturesUseCase,
@@ -60,10 +73,55 @@ export class ProductsRpcController {
     }
   }
 
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findBrands)
+  async findBrands() {
+    try {
+      return await this.listBrandsUseCase.execute();
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.createBrand)
+  async createBrand(@Payload() payload: CreateBrandMessage) {
+    try {
+      return await this.createBrandUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findCategories)
+  async findCategories() {
+    try {
+      return await this.listCategoriesUseCase.execute();
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.createCategory)
+  async createCategory(@Payload() payload: CreateCategoryMessage) {
+    try {
+      return await this.createCategoryUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
   @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findModelById)
   async findModelById(@Payload() payload: ProductModelLookupMessage) {
     try {
       return await this.getProductModelByIdUseCase.execute(payload.id);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.createModel)
+  async createModel(@Payload() payload: CreateProductModelMessage) {
+    try {
+      return await this.createProductModelUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

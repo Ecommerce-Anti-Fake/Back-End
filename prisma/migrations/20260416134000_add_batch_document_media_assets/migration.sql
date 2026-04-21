@@ -1,5 +1,5 @@
 ALTER TABLE "batch_document"
-ADD COLUMN "media_asset_id" UUID;
+ADD COLUMN "media_asset_id" TEXT;
 
 CREATE UNIQUE INDEX "batch_document_media_asset_id_key" ON "batch_document"("media_asset_id");
 CREATE INDEX "batch_document_media_asset_id_idx" ON "batch_document"("media_asset_id");

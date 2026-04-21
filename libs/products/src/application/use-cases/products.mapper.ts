@@ -4,6 +4,23 @@ type ProductModelWithBrand = ProductModel & {
   brand: {
     name: string;
   };
+  category: {
+    name: string;
+  };
+};
+
+type BrandRecord = {
+  id: string;
+  name: string;
+  registryStatus: string;
+  createdAt: Date;
+};
+
+type CategoryRecord = {
+  id: string;
+  parentId: string | null;
+  name: string;
+  riskTier: string;
 };
 
 type OfferWithRelations = Offer & {
@@ -71,7 +88,27 @@ export function toProductModelResponse(model: ProductModelWithBrand) {
     verificationPolicy: model.verificationPolicy,
     approvalStatus: model.approvalStatus,
     brandName: model.brand.name,
+    categoryId: model.categoryId,
+    categoryName: model.category.name,
     createdAt: model.createdAt,
+  };
+}
+
+export function toBrandResponse(brand: BrandRecord) {
+  return {
+    id: brand.id,
+    name: brand.name,
+    registryStatus: brand.registryStatus,
+    createdAt: brand.createdAt,
+  };
+}
+
+export function toCategoryResponse(category: CategoryRecord) {
+  return {
+    id: category.id,
+    parentId: category.parentId,
+    name: category.name,
+    riskTier: category.riskTier,
   };
 }
 

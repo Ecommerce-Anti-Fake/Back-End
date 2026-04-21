@@ -18,6 +18,101 @@ import {
 const OFFER_SALES_MODES = ['RETAIL', 'WHOLESALE', 'BOTH'] as const;
 const OFFER_MEDIA_ASSET_TYPES = ['IMAGE', 'VIDEO'] as const;
 
+export class CreateBrandDto {
+  @ApiProperty({ example: 'Brand ABC' })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(255)
+  name!: string;
+
+  @ApiPropertyOptional({ example: 'verified' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  registryStatus?: string;
+}
+
+export class BrandResponseDto {
+  @ApiProperty({ example: 'brand-id' })
+  id!: string;
+
+  @ApiProperty({ example: 'Brand ABC' })
+  name!: string;
+
+  @ApiProperty({ example: 'verified' })
+  registryStatus!: string;
+
+  @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
+  createdAt!: Date;
+}
+
+export class CreateCategoryDto {
+  @ApiProperty({ example: 'My pham' })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(255)
+  name!: string;
+
+  @ApiPropertyOptional({ example: 'parent-category-id', nullable: true })
+  @IsOptional()
+  @IsString()
+  parentId?: string;
+
+  @ApiPropertyOptional({ example: 'medium' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  riskTier?: string;
+}
+
+export class CategoryResponseDto {
+  @ApiProperty({ example: 'category-id' })
+  id!: string;
+
+  @ApiPropertyOptional({ example: 'parent-category-id', nullable: true })
+  parentId!: string | null;
+
+  @ApiProperty({ example: 'My pham' })
+  name!: string;
+
+  @ApiProperty({ example: 'medium' })
+  riskTier!: string;
+}
+
+export class CreateProductModelDto {
+  @ApiProperty({ example: 'brand-id' })
+  @IsString()
+  brandId!: string;
+
+  @ApiProperty({ example: 'category-id' })
+  @IsString()
+  categoryId!: string;
+
+  @ApiProperty({ example: 'Kem chong nang SPF50' })
+  @IsString()
+  @MinLength(3)
+  @MaxLength(255)
+  modelName!: string;
+
+  @ApiPropertyOptional({ example: '8938505970012', nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  gtin?: string;
+
+  @ApiPropertyOptional({ example: 'manual_review' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  verificationPolicy?: string;
+
+  @ApiPropertyOptional({ example: 'approved' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  approvalStatus?: string;
+}
+
 export class ProductModelResponseDto {
   @ApiProperty({ example: '86a353f0-7a6f-4c75-a7e5-c26d6472a001' })
   id!: string;
@@ -36,6 +131,12 @@ export class ProductModelResponseDto {
 
   @ApiProperty({ example: 'Brand ABC' })
   brandName!: string;
+
+  @ApiProperty({ example: 'category-id' })
+  categoryId!: string;
+
+  @ApiProperty({ example: 'My pham' })
+  categoryName!: string;
 
   @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
   createdAt!: Date;

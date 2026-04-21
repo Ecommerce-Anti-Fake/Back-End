@@ -54,8 +54,13 @@ export const SHOPS_MESSAGE_PATTERNS = {
 } as const;
 
 export const PRODUCTS_MESSAGE_PATTERNS = {
+  findBrands: 'products.find-brands',
+  createBrand: 'products.create-brand',
+  findCategories: 'products.find-categories',
+  createCategory: 'products.create-category',
   findModels: 'products.find-models',
   findModelById: 'products.find-model-by-id',
+  createModel: 'products.create-model',
   createOffer: 'products.create-offer',
   findOffers: 'products.find-offers',
   findOfferById: 'products.find-offer-by-id',
@@ -364,6 +369,26 @@ export type ReviewBrandAuthorizationMessage = {
 
 export type ProductModelLookupMessage = {
   id: string;
+};
+
+export type CreateBrandMessage = {
+  name: string;
+  registryStatus?: string;
+};
+
+export type CreateCategoryMessage = {
+  name: string;
+  parentId?: string | null;
+  riskTier?: string;
+};
+
+export type CreateProductModelMessage = {
+  brandId: string;
+  categoryId: string;
+  modelName: string;
+  gtin?: string | null;
+  verificationPolicy?: string;
+  approvalStatus?: string;
 };
 
 export type ListOffersMessage = {

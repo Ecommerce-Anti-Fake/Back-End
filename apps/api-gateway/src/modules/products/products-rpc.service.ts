@@ -4,7 +4,10 @@ import {
   AllocateOfferBatchesMessage,
   AddOfferDocumentsBatchMessage,
   AddOfferMediaBatchMessage,
+  CreateBrandMessage,
+  CreateCategoryMessage,
   CreateOfferMessage,
+  CreateProductModelMessage,
   ListOffersMessage,
   OfferDocumentUploadSignaturesMessage,
   OfferBatchLinksLookupMessage,
@@ -29,8 +32,28 @@ export class ProductsRpcService {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.findModels, {});
   }
 
+  findBrands() {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.findBrands, {});
+  }
+
+  createBrand(payload: CreateBrandMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.createBrand, payload);
+  }
+
+  findCategories() {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.findCategories, {});
+  }
+
+  createCategory(payload: CreateCategoryMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.createCategory, payload);
+  }
+
   findModelById(payload: ProductModelLookupMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.findModelById, payload);
+  }
+
+  createModel(payload: CreateProductModelMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.createModel, payload);
   }
 
   createOffer(payload: CreateOfferMessage) {

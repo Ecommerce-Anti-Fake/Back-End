@@ -1,8 +1,8 @@
 ALTER TABLE "offer_media"
-ADD COLUMN "media_asset_id" UUID;
+ADD COLUMN "media_asset_id" TEXT;
 
 ALTER TABLE "offer_document"
-ADD COLUMN "media_asset_id" UUID;
+ADD COLUMN "media_asset_id" TEXT;
 
 CREATE UNIQUE INDEX "offer_media_media_asset_id_key" ON "offer_media"("media_asset_id");
 CREATE INDEX "offer_media_media_asset_id_idx" ON "offer_media"("media_asset_id");
