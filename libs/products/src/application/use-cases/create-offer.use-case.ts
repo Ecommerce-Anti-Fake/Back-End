@@ -41,6 +41,14 @@ export class CreateOfferUseCase {
       throw new NotFoundException('Category not found');
     }
 
+    const approvedCategoryRegistration = await this.productRepository.findApprovedShopCategoryRegistration(
+      input.shopId,
+      input.categoryId,
+    );
+    if (!approvedCategoryRegistration) {
+      throw new BadRequestException('Shop category must be approved before creating offers in this category');
+    }
+
     if (productModel.categoryId !== input.categoryId) {
       throw new BadRequestException('Category must match the selected product model');
     }

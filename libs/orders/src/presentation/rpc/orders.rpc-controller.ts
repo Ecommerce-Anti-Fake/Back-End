@@ -2,11 +2,14 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ORDERS_MESSAGE_PATTERNS } from '@contracts';
 import type {
+  ActiveCartMessage,
+  AddCartItemMessage,
   AdminDisputeDetailMessage,
   AdminDisputeSummaryMessage,
   AdminOpenDisputeCountMessage,
   AdminOpenDisputesLookupMessage,
   AssignAdminDisputeMessage,
+  CheckoutCartItemMessage,
   CreateRetailOrderMessage,
   CreateWholesaleOrderMessage,
   MarkOrderPaidMessage,
@@ -20,34 +23,46 @@ import type {
   ResolveAdminDisputeMessage,
   ResolveOrderDisputeMessage,
   RefundOrderMessage,
+  RemoveCartItemMessage,
+  UpdateCartItemMessage,
   UpdateAdminDisputeCaseMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
 import {
   AddDisputeEvidenceBatchUseCase,
+  AddCartItemUseCase,
   AssignAdminDisputeUseCase,
+  CheckoutCartItemUseCase,
   CreateRetailOrderUseCase,
   CreateWholesaleOrderUseCase,
   GetAdminDisputeDetailUseCase,
   GetAdminDisputeSummaryUseCase,
   GetAdminOpenDisputeCountUseCase,
+  GetActiveCartUseCase,
   GetOrderByIdUseCase,
   GetDisputeEvidenceUploadSignaturesUseCase,
   ListAdminOpenDisputesUseCase,
   ListDisputeEvidenceUseCase,
   MarkOrderPaidUseCase,
+  RemoveCartItemUseCase,
   CompleteOrderUseCase,
   CancelOrderUseCase,
   OpenOrderDisputeUseCase,
   ResolveAdminDisputeUseCase,
   ResolveOrderDisputeUseCase,
   RefundOrderUseCase,
+  UpdateCartItemUseCase,
   UpdateAdminDisputeCaseUseCase,
 } from '../../application/use-cases';
 
 @Controller()
 export class OrdersRpcController {
   constructor(
+    private readonly getActiveCartUseCase: GetActiveCartUseCase,
+    private readonly addCartItemUseCase: AddCartItemUseCase,
+    private readonly updateCartItemUseCase: UpdateCartItemUseCase,
+    private readonly removeCartItemUseCase: RemoveCartItemUseCase,
+    private readonly checkoutCartItemUseCase: CheckoutCartItemUseCase,
     private readonly createRetailOrderUseCase: CreateRetailOrderUseCase,
     private readonly createWholesaleOrderUseCase: CreateWholesaleOrderUseCase,
     private readonly getAdminDisputeDetailUseCase: GetAdminDisputeDetailUseCase,
@@ -68,6 +83,58 @@ export class OrdersRpcController {
     private readonly refundOrderUseCase: RefundOrderUseCase,
     private readonly updateAdminDisputeCaseUseCase: UpdateAdminDisputeCaseUseCase,
   ) {}
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.getActiveCart)
+  async getActiveCart(@Payload() payload: ActiveCartMessage) {
+    try {
+      return await this.getActiveCartUseCase.execute(payload.buyerUserId);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.addCartItem)
+  async addCartItem(@Payload() payload: AddCartItemMessage) {
+    try {
+      return await this.addCartItemUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.updateCartItem)
+  async updateCartItem(@Payload() payload: UpdateCartItemMessage) {
+    try {
+      return await this.updateCartItemUseCase.execute({
+        buyerUserId: payload.buyerUserId,
+        cartItemId: payload.cartItemId,
+        quantity: payload.quantity,
+      });
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.removeCartItem)
+  async removeCartItem(@Payload() payload: RemoveCartItemMessage) {
+    try {
+      return await this.removeCartItemUseCase.execute({
+        buyerUserId: payload.buyerUserId,
+        cartItemId: payload.cartItemId,
+      });
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.checkoutCartItem)
+  async checkoutCartItem(@Payload() payload: CheckoutCartItemMessage) {
+    try {
+      return await this.checkoutCartItemUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
 
   @MessagePattern(ORDERS_MESSAGE_PATTERNS.createRetail)
   async createRetail(@Payload() payload: CreateRetailOrderMessage) {

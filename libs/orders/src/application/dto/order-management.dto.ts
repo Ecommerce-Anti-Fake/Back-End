@@ -6,6 +6,55 @@ const ADMIN_DISPUTE_STATUSES = ['OPEN', 'RESOLVED', 'REFUNDED'] as const;
 const ADMIN_DISPUTE_SORT_FIELDS = ['openedAt', 'orderId', 'disputeStatus'] as const;
 const SORT_ORDERS = ['asc', 'desc'] as const;
 
+export class CartItemResponseDto {
+  @ApiProperty({ example: 'cart-item-id' })
+  id!: string;
+
+  @ApiProperty({ example: 'offer-id' })
+  offerId!: string;
+
+  @ApiProperty({ example: 'Kem chong nang SPF50 - lo 2026' })
+  offerTitleSnapshot!: string;
+
+  @ApiProperty({ example: 150000 })
+  unitPriceSnapshot!: number;
+
+  @ApiProperty({ example: 'VND' })
+  currencySnapshot!: string;
+
+  @ApiProperty({ example: 'Cong ty TNHH San Xuat ABC' })
+  shopNameSnapshot!: string;
+
+  @ApiProperty({ example: 2 })
+  quantity!: number;
+
+  @ApiProperty({ example: '2026-04-22T10:00:00.000Z' })
+  createdAt!: Date;
+
+  @ApiProperty({ example: '2026-04-22T10:05:00.000Z' })
+  updatedAt!: Date;
+}
+
+export class CartResponseDto {
+  @ApiProperty({ example: 'cart-id' })
+  id!: string;
+
+  @ApiProperty({ example: 'buyer-user-id' })
+  buyerUserId!: string;
+
+  @ApiProperty({ example: 'ACTIVE' })
+  cartStatus!: string;
+
+  @ApiProperty({ type: CartItemResponseDto, isArray: true })
+  items!: CartItemResponseDto[];
+
+  @ApiProperty({ example: '2026-04-22T10:00:00.000Z' })
+  createdAt!: Date;
+
+  @ApiProperty({ example: '2026-04-22T10:05:00.000Z' })
+  updatedAt!: Date;
+}
+
 export class OrderItemResponseDto {
   @ApiProperty({ example: 'offer-id' })
   offerId!: string;
@@ -414,6 +463,33 @@ export class CreateRetailOrderDto {
   @Min(1)
   quantity!: number;
 
+  @ApiPropertyOptional({ example: 'spring-aff-001' })
+  @IsOptional()
+  @IsString()
+  affiliateCode?: string;
+}
+
+export class AddCartItemDto {
+  @ApiProperty({ example: 'offer-id' })
+  @IsString()
+  offerId!: string;
+
+  @ApiProperty({ example: 2 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  quantity!: number;
+}
+
+export class UpdateCartItemDto {
+  @ApiProperty({ example: 3 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  quantity!: number;
+}
+
+export class CheckoutCartItemDto {
   @ApiPropertyOptional({ example: 'spring-aff-001' })
   @IsOptional()
   @IsString()

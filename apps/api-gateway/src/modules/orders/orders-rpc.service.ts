@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
+  ActiveCartMessage,
+  AddCartItemMessage,
   AssignAdminDisputeMessage,
   UpdateAdminDisputeCaseMessage,
   ResolveAdminDisputeMessage,
@@ -10,6 +12,7 @@ import {
   AdminOpenDisputeCountMessage,
   CreateRetailOrderMessage,
   CreateWholesaleOrderMessage,
+  CheckoutCartItemMessage,
   MarkOrderPaidMessage,
   ORDERS_MESSAGE_PATTERNS,
   OrderLookupMessage,
@@ -22,6 +25,8 @@ import {
   ORDERS_SERVICE_CLIENT,
   ResolveOrderDisputeMessage,
   RefundOrderMessage,
+  RemoveCartItemMessage,
+  UpdateCartItemMessage,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
 import { lastValueFrom } from 'rxjs';
@@ -32,6 +37,26 @@ export class OrdersRpcService {
     @Inject(ORDERS_SERVICE_CLIENT)
     private readonly ordersClient: ClientProxy,
   ) {}
+
+  getActiveCart(payload: ActiveCartMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.getActiveCart, payload);
+  }
+
+  addCartItem(payload: AddCartItemMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.addCartItem, payload);
+  }
+
+  updateCartItem(payload: UpdateCartItemMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.updateCartItem, payload);
+  }
+
+  removeCartItem(payload: RemoveCartItemMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.removeCartItem, payload);
+  }
+
+  checkoutCartItem(payload: CheckoutCartItemMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.checkoutCartItem, payload);
+  }
 
   createRetail(payload: CreateRetailOrderMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.createRetail, payload);

@@ -150,6 +150,7 @@ model User {
   kyc                  UserKyc?
   ownedShops           Shop[]                @relation("ShopOwner")
   offers               Offer[]               @relation("OfferSeller")
+  carts                Cart[]
   orders               Order[]               @relation("OrderBuyer")
   disputesOpened       Dispute[]             @relation("DisputeOpenedBy")
   disputeEvidence      DisputeEvidence[]     @relation("DisputeEvidenceUploadedBy")
@@ -472,6 +473,7 @@ model Offer {
   documents            OfferDocument[]
   batchLinks           OfferBatchLink[]
   orderItems           OrderItem[]
+  cartItems            CartItem[]
   chatThreads          ChatThread[]
   affiliatePrograms    AffiliateProgram[]
   affiliateConversions AffiliateConversion[]
@@ -608,6 +610,40 @@ model RiskScore {
   calculatedAt  DateTime @map("calculated_at")
 
   @@map("risk_score")
+}
+
+model Cart {
+  id           String     @id @default(uuid())
+  buyerUserId  String     @map("buyer_user_id")
+  cartStatus   String     @default("ACTIVE") @map("cart_status")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  buyer        User       @relation(fields: [buyerUserId], references: [id])
+  items        CartItem[]
+
+  @@unique([buyerUserId, cartStatus])
+  @@index([buyerUserId])
+  @@map("cart")
+}
+
+model CartItem {
+  id                 String   @id @default(uuid())
+  cartId             String   @map("cart_id")
+  offerId            String   @map("offer_id")
+  quantity           Int
+  offerTitleSnapshot String   @map("offer_title_snapshot")
+  unitPriceSnapshot  Decimal  @map("unit_price_snapshot") @db.Decimal(18, 2)
+  currencySnapshot   String   @map("currency_snapshot")
+  shopNameSnapshot   String   @map("shop_name_snapshot")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+  cart               Cart     @relation(fields: [cartId], references: [id])
+  offer              Offer    @relation(fields: [offerId], references: [id])
+
+  @@unique([cartId, offerId])
+  @@index([cartId])
+  @@index([offerId])
+  @@map("cart_item")
 }
 
 model Order {

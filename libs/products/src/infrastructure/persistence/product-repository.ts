@@ -127,6 +127,19 @@ export class ProductRepository {
     });
   }
 
+  findApprovedShopCategoryRegistration(shopId: string, categoryId: string) {
+    return this.prisma.shopBusinessCategory.findFirst({
+      where: {
+        shopId,
+        categoryId,
+        registrationStatus: 'approved',
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
+
   findOwnedDistributionNode(nodeId: string, shopId: string, ownerUserId: string) {
     return this.prisma.distributionNode.findFirst({
       where: {

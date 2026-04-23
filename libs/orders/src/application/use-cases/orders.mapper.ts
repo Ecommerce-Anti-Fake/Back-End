@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { OrderWithRelations } from '../../infrastructure/persistence/orders.repository';
+import { CartWithItems, OrderWithRelations } from '../../infrastructure/persistence/orders.repository';
 
 export function toOrderResponse(order: OrderWithRelations) {
   return {
@@ -27,6 +27,27 @@ export function toOrderResponse(order: OrderWithRelations) {
       verificationLevelSnapshot: item.verificationLevelSnapshot,
     })),
     createdAt: order.createdAt,
+  };
+}
+
+export function toCartResponse(cart: CartWithItems) {
+  return {
+    id: cart.id,
+    buyerUserId: cart.buyerUserId,
+    cartStatus: cart.cartStatus,
+    items: cart.items.map((item) => ({
+      id: item.id,
+      offerId: item.offerId,
+      offerTitleSnapshot: item.offerTitleSnapshot,
+      unitPriceSnapshot: decimalToNumber(item.unitPriceSnapshot),
+      currencySnapshot: item.currencySnapshot,
+      shopNameSnapshot: item.shopNameSnapshot,
+      quantity: item.quantity,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    })),
+    createdAt: cart.createdAt,
+    updatedAt: cart.updatedAt,
   };
 }
 

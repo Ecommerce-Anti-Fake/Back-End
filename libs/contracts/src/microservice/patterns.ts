@@ -75,6 +75,11 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
 } as const;
 
 export const ORDERS_MESSAGE_PATTERNS = {
+  getActiveCart: 'orders.get-active-cart',
+  addCartItem: 'orders.add-cart-item',
+  updateCartItem: 'orders.update-cart-item',
+  removeCartItem: 'orders.remove-cart-item',
+  checkoutCartItem: 'orders.checkout-cart-item',
   createRetail: 'orders.create-retail',
   createWholesale: 'orders.create-wholesale',
   findById: 'orders.find-by-id',
@@ -479,6 +484,33 @@ export type CreateRetailOrderMessage = {
   buyerUserId: string;
   offerId: string;
   quantity: number;
+  affiliateCode?: string | null;
+};
+
+export type ActiveCartMessage = {
+  buyerUserId: string;
+};
+
+export type AddCartItemMessage = {
+  buyerUserId: string;
+  offerId: string;
+  quantity: number;
+};
+
+export type UpdateCartItemMessage = {
+  buyerUserId: string;
+  cartItemId: string;
+  quantity: number;
+};
+
+export type RemoveCartItemMessage = {
+  buyerUserId: string;
+  cartItemId: string;
+};
+
+export type CheckoutCartItemMessage = {
+  buyerUserId: string;
+  cartItemId: string;
   affiliateCode?: string | null;
 };
 

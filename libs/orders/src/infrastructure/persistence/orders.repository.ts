@@ -96,8 +96,19 @@ const disputeEvidenceArgs = Prisma.validator<Prisma.DisputeEvidenceDefaultArgs>(
   },
 });
 
+const cartWithItemsArgs = Prisma.validator<Prisma.CartDefaultArgs>()({
+  include: {
+    items: {
+      orderBy: {
+        createdAt: 'asc',
+      },
+    },
+  },
+});
+
 export type OfferForOrdering = Prisma.OfferGetPayload<typeof offerForOrderingArgs>;
 export type OrderWithRelations = Prisma.OrderGetPayload<typeof orderWithRelationsArgs>;
+export type CartWithItems = Prisma.CartGetPayload<typeof cartWithItemsArgs>;
 export type OrderBatchAllocation = {
   batchId: string;
   quantity: number;
@@ -178,6 +189,113 @@ export class OrdersRepository {
       where: { id: offerId },
       ...offerForOrderingArgs,
     });
+  }
+
+  async getOrCreateActiveCart(buyerUserId: string): Promise<CartWithItems> {
+    const existing = await this.prisma.cart.findUnique({
+      where: {
+        buyerUserId_cartStatus: {
+          buyerUserId,
+          cartStatus: 'ACTIVE',
+        },
+      },
+      ...cartWithItemsArgs,
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    return this.prisma.cart.create({
+      data: {
+        buyerUserId,
+        cartStatus: 'ACTIVE',
+      },
+      ...cartWithItemsArgs,
+    });
+  }
+
+  findCartItemById(cartItemId: string) {
+    return this.prisma.cartItem.findUnique({
+      where: { id: cartItemId },
+      include: {
+        cart: true,
+      },
+    });
+  }
+
+  async upsertCartItem(input: {
+    buyerUserId: string;
+    offerId: string;
+    quantity: number;
+    offerTitleSnapshot: string;
+    unitPriceSnapshot: number;
+    currencySnapshot: string;
+    shopNameSnapshot: string;
+  }): Promise<CartWithItems> {
+    const cart = await this.getOrCreateActiveCart(input.buyerUserId);
+
+    await this.prisma.cartItem.upsert({
+      where: {
+        cartId_offerId: {
+          cartId: cart.id,
+          offerId: input.offerId,
+        },
+      },
+      update: {
+        quantity: {
+          increment: input.quantity,
+        },
+        offerTitleSnapshot: input.offerTitleSnapshot,
+        unitPriceSnapshot: input.unitPriceSnapshot,
+        currencySnapshot: input.currencySnapshot,
+        shopNameSnapshot: input.shopNameSnapshot,
+      },
+      create: {
+        cartId: cart.id,
+        offerId: input.offerId,
+        quantity: input.quantity,
+        offerTitleSnapshot: input.offerTitleSnapshot,
+        unitPriceSnapshot: input.unitPriceSnapshot,
+        currencySnapshot: input.currencySnapshot,
+        shopNameSnapshot: input.shopNameSnapshot,
+      },
+    });
+
+    return this.getOrCreateActiveCart(input.buyerUserId);
+  }
+
+  async updateCartItemQuantity(input: {
+    buyerUserId: string;
+    cartItemId: string;
+    quantity: number;
+  }): Promise<CartWithItems> {
+    const cartItem = await this.findCartItemById(input.cartItemId);
+    if (!cartItem || cartItem.cart.buyerUserId !== input.buyerUserId || cartItem.cart.cartStatus !== 'ACTIVE') {
+      throw new BadRequestException('Cart item not found');
+    }
+
+    await this.prisma.cartItem.update({
+      where: { id: input.cartItemId },
+      data: {
+        quantity: input.quantity,
+      },
+    });
+
+    return this.getOrCreateActiveCart(input.buyerUserId);
+  }
+
+  async removeCartItem(input: { buyerUserId: string; cartItemId: string }): Promise<CartWithItems> {
+    const cartItem = await this.findCartItemById(input.cartItemId);
+    if (!cartItem || cartItem.cart.buyerUserId !== input.buyerUserId || cartItem.cart.cartStatus !== 'ACTIVE') {
+      throw new BadRequestException('Cart item not found');
+    }
+
+    await this.prisma.cartItem.delete({
+      where: { id: input.cartItemId },
+    });
+
+    return this.getOrCreateActiveCart(input.buyerUserId);
   }
 
   findUserById(id: string) {
