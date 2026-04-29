@@ -13,6 +13,7 @@ import type {
   CreateRetailOrderMessage,
   CreateWholesaleOrderMessage,
   MarkOrderPaidMessage,
+  MyOrdersLookupMessage,
   OrderLookupMessage,
   CompleteOrderMessage,
   CancelOrderMessage,
@@ -43,6 +44,7 @@ import {
   GetDisputeEvidenceUploadSignaturesUseCase,
   ListAdminOpenDisputesUseCase,
   ListDisputeEvidenceUseCase,
+  ListMyOrdersUseCase,
   MarkOrderPaidUseCase,
   RemoveCartItemUseCase,
   CompleteOrderUseCase,
@@ -65,6 +67,7 @@ export class OrdersRpcController {
     private readonly checkoutCartItemUseCase: CheckoutCartItemUseCase,
     private readonly createRetailOrderUseCase: CreateRetailOrderUseCase,
     private readonly createWholesaleOrderUseCase: CreateWholesaleOrderUseCase,
+    private readonly listMyOrdersUseCase: ListMyOrdersUseCase,
     private readonly getAdminDisputeDetailUseCase: GetAdminDisputeDetailUseCase,
     private readonly getAdminDisputeSummaryUseCase: GetAdminDisputeSummaryUseCase,
     private readonly getAdminOpenDisputeCountUseCase: GetAdminOpenDisputeCountUseCase,
@@ -149,6 +152,15 @@ export class OrdersRpcController {
   async createWholesale(@Payload() payload: CreateWholesaleOrderMessage) {
     try {
       return await this.createWholesaleOrderUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.findMine)
+  async findMine(@Payload() payload: MyOrdersLookupMessage) {
+    try {
+      return await this.listMyOrdersUseCase.execute(payload.requesterUserId);
     } catch (error) {
       throwRpcException(error);
     }

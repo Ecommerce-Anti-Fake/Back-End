@@ -23,6 +23,7 @@
     "start:prod:catalog": "node dist/apps/catalog-service/main",
     "start:prod:orders": "node dist/apps/orders-service/main",
     "start:prod:affiliate": "node dist/apps/affiliate-service/main",
+    "db:seed": "ts-node prisma/seed.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",

@@ -17,6 +17,7 @@ import type {
   CreateSupplyBatchMessage,
   CreateDistributionShipmentMessage,
   DispatchDistributionShipmentMessage,
+  DistributionShipmentDetailMessage,
   DistributionNetworksLookupMessage,
   DistributionNodesLookupMessage,
   DistributionPricingPolicyLookupMessage,
@@ -45,6 +46,7 @@ import {
   GetSupplyBatchDetailUseCase,
   CreateDistributionShipmentUseCase,
   DispatchDistributionShipmentUseCase,
+  GetDistributionShipmentUseCase,
   CreatePricingPolicyUseCase,
   ListDistributionNetworksUseCase,
   ListDistributionNodesUseCase,
@@ -79,6 +81,7 @@ export class DistributionPricingRpcController {
     private readonly getInventorySummaryUseCase: GetInventorySummaryUseCase,
     private readonly createDistributionShipmentUseCase: CreateDistributionShipmentUseCase,
     private readonly dispatchDistributionShipmentUseCase: DispatchDistributionShipmentUseCase,
+    private readonly getDistributionShipmentUseCase: GetDistributionShipmentUseCase,
     private readonly listDistributionShipmentsUseCase: ListDistributionShipmentsUseCase,
     private readonly cancelDistributionShipmentUseCase: CancelDistributionShipmentUseCase,
     private readonly receiveDistributionShipmentUseCase: ReceiveDistributionShipmentUseCase,
@@ -262,6 +265,15 @@ export class DistributionPricingRpcController {
   async findShipmentsByNetwork(@Payload() payload: DistributionShipmentsLookupMessage) {
     try {
       return await this.listDistributionShipmentsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(DISTRIBUTION_MESSAGE_PATTERNS.getShipment)
+  async getShipment(@Payload() payload: DistributionShipmentDetailMessage) {
+    try {
+      return await this.getDistributionShipmentUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

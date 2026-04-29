@@ -18,6 +18,7 @@ export * from './get-inventory-summary.use-case';
 export * from './create-distribution-shipment.use-case';
 export * from './dispatch-distribution-shipment.use-case';
 export * from './list-distribution-shipments.use-case';
+export * from './get-distribution-shipment.use-case';
 export * from './receive-distribution-shipment.use-case';
 export * from './cancel-distribution-shipment.use-case';
 export * from './get-batch-document-upload-signatures.use-case';

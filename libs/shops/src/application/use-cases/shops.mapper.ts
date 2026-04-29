@@ -50,6 +50,13 @@ export function toBrandAuthorizationResponse(authorization: {
     publicId: string | null;
     secureUrl: string;
   } | null;
+  brand?: {
+    name: string;
+  } | null;
+  shop?: {
+    shopName: string;
+    registrationType: string;
+  } | null;
 }) {
   return {
     id: authorization.id,
@@ -64,5 +71,8 @@ export function toBrandAuthorizationResponse(authorization: {
     createdAt: authorization.createdAt,
     mimeType: authorization.mediaAsset?.mimeType ?? null,
     publicId: authorization.mediaAsset?.publicId ?? null,
+    brandName: authorization.brand?.name ?? null,
+    shopName: authorization.shop?.shopName ?? null,
+    shopRegistrationType: authorization.shop?.registrationType ?? null,
   };
 }

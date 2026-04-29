@@ -40,6 +40,7 @@ export const SHOPS_MESSAGE_PATTERNS = {
   getAdminVerificationSummary: 'shops.get-admin-verification-summary',
   getAdminVerificationDetail: 'shops.get-admin-verification-detail',
   findShopDocuments: 'shops.find-shop-documents',
+  findShopDocumentRequirements: 'shops.find-shop-document-requirements',
   findCategoryDocuments: 'shops.find-category-documents',
   getShopDocumentUploadSignatures: 'shops.get-shop-document-upload-signatures',
   submitShopDocuments: 'shops.submit-shop-documents',
@@ -48,6 +49,7 @@ export const SHOPS_MESSAGE_PATTERNS = {
   getBrandAuthorizationUploadSignatures: 'shops.get-brand-authorization-upload-signatures',
   submitBrandAuthorization: 'shops.submit-brand-authorization',
   findBrandAuthorizations: 'shops.find-brand-authorizations',
+  findAdminBrandAuthorizations: 'shops.find-admin-brand-authorizations',
   reviewBrandAuthorization: 'shops.review-brand-authorization',
   reviewShopDocument: 'shops.review-shop-document',
   reviewShopCategory: 'shops.review-shop-category',
@@ -82,6 +84,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   checkoutCartItem: 'orders.checkout-cart-item',
   createRetail: 'orders.create-retail',
   createWholesale: 'orders.create-wholesale',
+  findMine: 'orders.find-mine',
   findById: 'orders.find-by-id',
   getAdminOpenDisputeCount: 'orders.get-admin-open-dispute-count',
   findAdminOpenDisputes: 'orders.find-admin-open-disputes',
@@ -119,6 +122,7 @@ export const DISTRIBUTION_MESSAGE_PATTERNS = {
   createShipment: 'distribution.create-shipment',
   dispatchShipment: 'distribution.dispatch-shipment',
   findShipmentsByNetwork: 'distribution.find-shipments-by-network',
+  getShipment: 'distribution.get-shipment',
   receiveShipment: 'distribution.receive-shipment',
   cancelShipment: 'distribution.cancel-shipment',
   getBatchDocumentUploadSignatures: 'distribution.get-batch-document-upload-signatures',
@@ -278,6 +282,11 @@ export type ShopDocumentsLookupMessage = {
   requesterUserId: string;
 };
 
+export type ShopDocumentRequirementsLookupMessage = {
+  shopId: string;
+  requesterUserId: string;
+};
+
 export type CategoryDocumentsLookupMessage = {
   shopId: string;
   categoryId: string;
@@ -363,6 +372,10 @@ export type SubmitBrandAuthorizationMessage = {
 export type BrandAuthorizationsLookupMessage = {
   shopId: string;
   requesterUserId: string;
+};
+
+export type AdminBrandAuthorizationsLookupMessage = {
+  verificationStatus?: 'pending' | 'approved' | 'rejected';
 };
 
 export type ReviewBrandAuthorizationMessage = {
@@ -484,6 +497,7 @@ export type CreateRetailOrderMessage = {
   buyerUserId: string;
   offerId: string;
   quantity: number;
+  paymentMethod?: 'COD' | 'BANK_TRANSFER' | null;
   affiliateCode?: string | null;
 };
 
@@ -511,6 +525,7 @@ export type RemoveCartItemMessage = {
 export type CheckoutCartItemMessage = {
   buyerUserId: string;
   cartItemId: string;
+  paymentMethod?: 'COD' | 'BANK_TRANSFER' | null;
   affiliateCode?: string | null;
 };
 
@@ -521,6 +536,10 @@ export type CreateWholesaleOrderMessage = {
   offerId: string;
   quantity: number;
   affiliateCode?: string | null;
+};
+
+export type MyOrdersLookupMessage = {
+  requesterUserId: string;
 };
 
 export type OrderLookupMessage = {
@@ -760,6 +779,11 @@ export type InventorySummaryMessage = {
 export type DistributionShipmentsLookupMessage = {
   requesterUserId: string;
   networkId: string;
+};
+
+export type DistributionShipmentDetailMessage = {
+  requesterUserId: string;
+  shipmentId: string;
 };
 
 export type ReceiveDistributionShipmentMessage = {

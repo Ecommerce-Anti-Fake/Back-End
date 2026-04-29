@@ -5,6 +5,7 @@ export * from './remove-cart-item.use-case';
 export * from './checkout-cart-item.use-case';
 export * from './create-retail-order.use-case';
 export * from './create-wholesale-order.use-case';
+export * from './list-my-orders.use-case';
 export * from './assign-admin-dispute.use-case';
 export * from './get-admin-open-dispute-count.use-case';
 export * from './get-admin-dispute-summary.use-case';

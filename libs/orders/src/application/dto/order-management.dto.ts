@@ -467,6 +467,11 @@ export class CreateRetailOrderDto {
   @IsOptional()
   @IsString()
   affiliateCode?: string;
+
+  @ApiPropertyOptional({ example: 'COD', enum: ['COD', 'BANK_TRANSFER'] })
+  @IsOptional()
+  @IsIn(['COD', 'BANK_TRANSFER'])
+  paymentMethod?: 'COD' | 'BANK_TRANSFER';
 }
 
 export class AddCartItemDto {
@@ -494,6 +499,11 @@ export class CheckoutCartItemDto {
   @IsOptional()
   @IsString()
   affiliateCode?: string;
+
+  @ApiPropertyOptional({ example: 'COD', enum: ['COD', 'BANK_TRANSFER'] })
+  @IsOptional()
+  @IsIn(['COD', 'BANK_TRANSFER'])
+  paymentMethod?: 'COD' | 'BANK_TRANSFER';
 }
 
 export class CreateWholesaleOrderDto {

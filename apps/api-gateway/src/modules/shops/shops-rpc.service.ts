@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
+  AdminBrandAuthorizationsLookupMessage,
   AdminShopVerificationDetailMessage,
   AdminShopVerificationSummaryMessage,
   BrandAuthorizationUploadSignaturesMessage,
@@ -15,6 +16,7 @@ import {
   ReviewShopCategoryMessage,
   ReviewShopDocumentMessage,
   SHOPS_MESSAGE_PATTERNS,
+  ShopDocumentRequirementsLookupMessage,
   ShopDocumentsLookupMessage,
   ShopDocumentUploadSignaturesMessage,
   ShopLookupMessage,
@@ -49,6 +51,10 @@ export class ShopsRpcService {
     return this.send(SHOPS_MESSAGE_PATTERNS.findBrandAuthorizations, payload);
   }
 
+  findAdminBrandAuthorizations(payload: AdminBrandAuthorizationsLookupMessage = {}) {
+    return this.send(SHOPS_MESSAGE_PATTERNS.findAdminBrandAuthorizations, payload);
+  }
+
   reviewBrandAuthorization(payload: ReviewBrandAuthorizationMessage) {
     return this.send(SHOPS_MESSAGE_PATTERNS.reviewBrandAuthorization, payload);
   }
@@ -79,6 +85,10 @@ export class ShopsRpcService {
 
   findShopDocuments(payload: ShopDocumentsLookupMessage) {
     return this.send(SHOPS_MESSAGE_PATTERNS.findShopDocuments, payload);
+  }
+
+  findShopDocumentRequirements(payload: ShopDocumentRequirementsLookupMessage) {
+    return this.send(SHOPS_MESSAGE_PATTERNS.findShopDocumentRequirements, payload);
   }
 
   findCategoryDocuments(payload: CategoryDocumentsLookupMessage) {

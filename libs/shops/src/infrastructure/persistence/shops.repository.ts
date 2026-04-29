@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@database/prisma/prisma.service';
 import { Prisma, ShopRegistrationType } from '@prisma/client';
+import { randomUUID } from 'crypto';
 
 type AuditLogRecord = {
   id: string;
@@ -33,7 +34,15 @@ const shopWithRelationsArgs = Prisma.validator<Prisma.ShopDefaultArgs>()({
         createdAt: 'asc',
       },
     },
-    documents: true,
+    documents: {
+      include: {
+        files: {
+          orderBy: {
+            sortOrder: 'asc',
+          },
+        },
+      },
+    },
     owner: {
       select: {
         kyc: {
@@ -49,6 +58,13 @@ const shopWithRelationsArgs = Prisma.validator<Prisma.ShopDefaultArgs>()({
 const shopVerificationSummaryArgs = Prisma.validator<Prisma.ShopDefaultArgs>()({
   include: {
     documents: {
+      include: {
+        files: {
+          orderBy: {
+            sortOrder: 'asc',
+          },
+        },
+      },
       orderBy: {
         uploadedAt: 'asc',
       },
@@ -91,6 +107,24 @@ const shopVerificationSummaryArgs = Prisma.validator<Prisma.ShopDefaultArgs>()({
 
 const adminShopVerificationDetailArgs = Prisma.validator<Prisma.ShopDefaultArgs>()({
   include: {
+    shopType: {
+      include: {
+        requirements: {
+          where: {
+            isActive: true,
+            requirement: {
+              isActive: true,
+            },
+          },
+          include: {
+            requirement: true,
+          },
+          orderBy: {
+            sortOrder: 'asc',
+          },
+        },
+      },
+    },
     owner: {
       select: {
         id: true,
@@ -112,6 +146,13 @@ const adminShopVerificationDetailArgs = Prisma.validator<Prisma.ShopDefaultArgs>
       },
     },
     documents: {
+      include: {
+        files: {
+          orderBy: {
+            sortOrder: 'asc',
+          },
+        },
+      },
       orderBy: {
         uploadedAt: 'asc',
       },
@@ -144,6 +185,7 @@ export class ShopsRepository {
 
   create(data: {
     ownerUserId: string;
+    shopTypeId?: string | null;
     shopName: string;
     registrationType: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
     businessType: string;
@@ -158,6 +200,7 @@ export class ShopsRepository {
     return this.prisma.shop.create({
       data: {
         ownerUserId: data.ownerUserId,
+        shopTypeId: data.shopTypeId ?? undefined,
         shopName: data.shopName,
         registrationType: data.registrationType,
         businessType: data.businessType,
@@ -183,6 +226,103 @@ export class ShopsRepository {
         },
       },
     });
+  }
+
+  findActiveShopTypeByCode(code: string) {
+    return this.prisma.shopType.findFirst({
+      where: {
+        code,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        code: true,
+      },
+    });
+  }
+
+  findRequirementForShopType(input: { shopTypeId?: string | null; requirementCode: string }) {
+    if (!input.shopTypeId) {
+      return null;
+    }
+
+    return this.prisma.shopTypeRequirement.findFirst({
+      where: {
+        shopTypeId: input.shopTypeId,
+        isActive: true,
+        requirement: {
+          code: input.requirementCode,
+          isActive: true,
+        },
+      },
+      select: {
+        requirement: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+          },
+        },
+      },
+    });
+  }
+
+  async findDocumentRequirementsForShop(shopId: string) {
+    const shop = await this.prisma.shop.findUnique({
+      where: { id: shopId },
+      select: {
+        id: true,
+        shopTypeId: true,
+        registrationType: true,
+      },
+    });
+
+    if (!shop) {
+      return null;
+    }
+
+    const shopType =
+      shop.shopTypeId !== null
+        ? await this.prisma.shopType.findUnique({
+            where: { id: shop.shopTypeId },
+            include: {
+              requirements: {
+                where: {
+                  isActive: true,
+                  requirement: {
+                    isActive: true,
+                  },
+                },
+                include: {
+                  requirement: true,
+                },
+                orderBy: {
+                  sortOrder: 'asc',
+                },
+              },
+            },
+          })
+        : await this.prisma.shopType.findUnique({
+            where: { code: shop.registrationType },
+            include: {
+              requirements: {
+                where: {
+                  isActive: true,
+                  requirement: {
+                    isActive: true,
+                  },
+                },
+                include: {
+                  requirement: true,
+                },
+                orderBy: {
+                  sortOrder: 'asc',
+                },
+              },
+            },
+          });
+
+    return shopType;
   }
 
   findById(id: string) {
@@ -225,6 +365,12 @@ export class ShopsRepository {
         },
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  countByOwnerUserId(ownerUserId: string) {
+    return this.prisma.shop.count({
+      where: { ownerUserId },
     });
   }
 
@@ -393,6 +539,7 @@ export class ShopsRepository {
 
     return this.prisma.$executeRaw(Prisma.sql`
       INSERT INTO "audit_log" (
+        "id",
         "target_type",
         "target_id",
         "actor_user_id",
@@ -403,6 +550,7 @@ export class ShopsRepository {
         "metadata"
       )
       VALUES (
+        ${randomUUID()},
         ${input.targetType},
         ${input.targetId},
         ${input.actorUserId},
@@ -525,6 +673,7 @@ export class ShopsRepository {
       select: {
         id: true,
         ownerUserId: true,
+        shopTypeId: true,
         registrationType: true,
         shopStatus: true,
       },
@@ -561,17 +710,33 @@ export class ShopsRepository {
 
   createShopDocument(data: {
     shopId: string;
-    mediaAssetId: string;
+    requirementId?: string | null;
     docType: string;
-    fileUrl: string;
+    files: Array<{
+      mediaAssetId: string;
+      fileUrl: string;
+    }>;
   }) {
     return this.prisma.shopDocument.create({
       data: {
         shopId: data.shopId,
-        mediaAssetId: data.mediaAssetId,
+        requirementId: data.requirementId ?? null,
         docType: data.docType,
-        fileUrl: data.fileUrl,
         reviewStatus: 'pending',
+        files: {
+          create: data.files.map((file, index) => ({
+            mediaAssetId: file.mediaAssetId,
+            fileUrl: file.fileUrl,
+            sortOrder: index,
+          })),
+        },
+      },
+      include: {
+        files: {
+          orderBy: {
+            sortOrder: 'asc',
+          },
+        },
       },
     });
   }
@@ -647,6 +812,33 @@ export class ShopsRepository {
       },
       orderBy: {
         createdAt: 'asc',
+      },
+    });
+  }
+
+  findBrandAuthorizationsForAdmin(input: { verificationStatus?: 'pending' | 'approved' | 'rejected' }) {
+    return this.prisma.brandAuthorization.findMany({
+      where: input.verificationStatus
+        ? {
+            verificationStatus: input.verificationStatus,
+          }
+        : undefined,
+      include: {
+        mediaAsset: true,
+        brand: {
+          select: {
+            name: true,
+          },
+        },
+        shop: {
+          select: {
+            shopName: true,
+            registrationType: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   }
@@ -759,9 +951,20 @@ export class ShopsRepository {
       },
       select: {
         id: true,
+        requirementId: true,
         docType: true,
-        fileUrl: true,
-        mediaAssetId: true,
+        files: {
+          orderBy: {
+            sortOrder: 'asc',
+          },
+          select: {
+            id: true,
+            fileUrl: true,
+            mediaAssetId: true,
+            sortOrder: true,
+            uploadedAt: true,
+          },
+        },
         reviewStatus: true,
         reviewNote: true,
         reviewedAt: true,

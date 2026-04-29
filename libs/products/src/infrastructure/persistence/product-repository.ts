@@ -123,6 +123,7 @@ export class ProductRepository {
       select: {
         id: true,
         shopStatus: true,
+        registrationType: true,
       },
     });
   }

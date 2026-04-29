@@ -45,7 +45,19 @@ export class CreateSupplyBatchUseCase {
       throw new BadRequestException('receivedAt must be a valid ISO datetime');
     }
 
+    const normalizedSourceType = sourceType.trim().toUpperCase();
+    if (
+      ['PRODUCTION', 'MANUFACTURED', 'MANUFACTURING'].includes(normalizedSourceType) &&
+      shop.registrationType !== 'MANUFACTURER'
+    ) {
+      throw new BadRequestException('Only manufacturer shops can create production batches');
+    }
+
     let distributionNodeId: string | null = input.distributionNodeId ?? null;
+    if (shop.registrationType === 'DISTRIBUTOR' && !distributionNodeId) {
+      throw new BadRequestException('Distributor shops must create supply batches through an active distribution node');
+    }
+
     if (distributionNodeId) {
       const node = await this.repository.findNodeById(distributionNodeId);
       if (!node || node.shopId !== shop.id) {

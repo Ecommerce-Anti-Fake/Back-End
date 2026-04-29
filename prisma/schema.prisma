@@ -184,7 +184,7 @@ model MediaAsset {
   owner                     User                       @relation("MediaAssetOwner", fields: [ownerUserId], references: [id])
   disputeEvidence           DisputeEvidence[]
   userKycDocument           UserKycDocument?
-  shopDocument              ShopDocument?
+  shopDocumentFiles         ShopDocumentFile[]
   shopCategoryDocument      ShopCategoryDocument?
   userKycSubmissionDocument UserKycSubmissionDocument?
   offerMedia                OfferMedia?
@@ -300,6 +300,7 @@ model UserKycSubmissionDocument {
 model Shop {
   id                         String                 @id @default(uuid())
   ownerUserId                String                 @map("owner_user_id")
+  shopTypeId                 String?                @map("shop_type_id")
   shopName                   String                 @map("shop_name")
   registrationType           ShopRegistrationType   @map("registration_type")
   businessType               String                 @map("business_type")
@@ -307,6 +308,7 @@ model Shop {
   shopStatus                 String                 @map("shop_status")
   createdAt                  DateTime               @default(now()) @map("created_at")
   owner                      User                   @relation("ShopOwner", fields: [ownerUserId], references: [id])
+  shopType                   ShopType?              @relation(fields: [shopTypeId], references: [id])
   documents                  ShopDocument[]
   registeredCategories       ShopBusinessCategory[]
   brandAuthorizations        BrandAuthorization[]
@@ -318,7 +320,56 @@ model Shop {
   distributionNodes          DistributionNode[]
   affiliatePrograms          AffiliateProgram[]
 
+  @@index([shopTypeId])
   @@map("shop")
+}
+
+model ShopType {
+  id          String                @id @default(uuid())
+  code        String                @unique
+  name        String
+  description String?
+  isActive    Boolean               @default(true) @map("is_active")
+  sortOrder   Int                   @default(0) @map("sort_order")
+  createdAt   DateTime              @default(now()) @map("created_at")
+  updatedAt   DateTime              @updatedAt @map("updated_at")
+  shops       Shop[]
+  requirements ShopTypeRequirement[]
+
+  @@index([isActive, sortOrder])
+  @@map("shop_type")
+}
+
+model VerificationRequirement {
+  id                   String                @id @default(uuid())
+  code                 String                @unique
+  name                 String
+  description          String?
+  multipleFilesAllowed Boolean               @default(true) @map("multiple_files_allowed")
+  isActive             Boolean               @default(true) @map("is_active")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
+  shopTypes            ShopTypeRequirement[]
+  shopDocuments        ShopDocument[]
+
+  @@index([isActive])
+  @@map("verification_requirement")
+}
+
+model ShopTypeRequirement {
+  id            String                  @id @default(uuid())
+  shopTypeId    String                  @map("shop_type_id")
+  requirementId String                  @map("requirement_id")
+  required      Boolean                 @default(true)
+  sortOrder     Int                     @default(0) @map("sort_order")
+  isActive      Boolean                 @default(true) @map("is_active")
+  shopType      ShopType                @relation(fields: [shopTypeId], references: [id], onDelete: Cascade)
+  requirement   VerificationRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@unique([shopTypeId, requirementId])
+  @@index([requirementId])
+  @@index([isActive, sortOrder])
+  @@map("shop_type_requirement")
 }
 
 model ShopBusinessCategory {
@@ -361,19 +412,37 @@ model ShopCategoryDocument {
 }
 
 model ShopDocument {
-  id           String      @id @default(uuid())
-  shopId       String      @map("shop_id")
-  mediaAssetId String?     @unique @map("media_asset_id")
-  docType      String      @map("doc_type")
-  fileUrl      String      @map("file_url")
-  reviewStatus String      @map("review_status")
-  reviewNote   String?     @map("review_note")
-  reviewedAt   DateTime?   @map("reviewed_at")
-  uploadedAt   DateTime    @default(now()) @map("uploaded_at")
-  shop         Shop        @relation(fields: [shopId], references: [id])
-  mediaAsset   MediaAsset? @relation(fields: [mediaAssetId], references: [id])
+  id           String             @id @default(uuid())
+  shopId       String             @map("shop_id")
+  requirementId String?           @map("requirement_id")
+  docType      String             @map("doc_type")
+  reviewStatus String             @map("review_status")
+  reviewNote   String?            @map("review_note")
+  reviewedAt   DateTime?          @map("reviewed_at")
+  uploadedAt   DateTime           @default(now()) @map("uploaded_at")
+  shop         Shop               @relation(fields: [shopId], references: [id])
+  requirement  VerificationRequirement? @relation(fields: [requirementId], references: [id])
+  files        ShopDocumentFile[]
+
+  @@index([shopId])
+  @@index([requirementId])
+  @@index([docType])
 
   @@map("shop_document")
+}
+
+model ShopDocumentFile {
+  id             String       @id @default(uuid())
+  shopDocumentId String       @map("shop_document_id")
+  mediaAssetId   String       @unique @map("media_asset_id")
+  fileUrl        String       @map("file_url")
+  sortOrder      Int          @default(0) @map("sort_order")
+  uploadedAt     DateTime     @default(now()) @map("uploaded_at")
+  shopDocument   ShopDocument @relation(fields: [shopDocumentId], references: [id], onDelete: Cascade)
+  mediaAsset     MediaAsset   @relation(fields: [mediaAssetId], references: [id])
+
+  @@index([shopDocumentId])
+  @@map("shop_document_file")
 }
 
 model Brand {

@@ -615,6 +615,40 @@ export class DistributionPricingRepository {
     });
   }
 
+  findShipmentByIdForUser(shipmentId: string, requesterUserId: string) {
+    return this.prisma.distributionShipment.findFirst({
+      where: {
+        id: shipmentId,
+        OR: [
+          {
+            fromNode: {
+              shop: {
+                ownerUserId: requesterUserId,
+              },
+            },
+          },
+          {
+            toNode: {
+              shop: {
+                ownerUserId: requesterUserId,
+              },
+            },
+          },
+          {
+            network: {
+              manufacturerShop: {
+                ownerUserId: requesterUserId,
+              },
+            },
+          },
+        ],
+      },
+      include: {
+        items: true,
+      },
+    });
+  }
+
   findDispatchableShipmentById(shipmentId: string, requesterUserId: string) {
     return this.prisma.distributionShipment.findFirst({
       where: {

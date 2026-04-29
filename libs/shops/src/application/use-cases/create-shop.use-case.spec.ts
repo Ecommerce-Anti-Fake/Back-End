@@ -6,6 +6,7 @@ describe('CreateShopUseCase', () => {
   let useCase: CreateShopUseCase;
 
   const shopsRepositoryMock = {
+    countByOwnerUserId: jest.fn(),
     countCategoriesByIds: jest.fn(),
     findCategoriesByIds: jest.fn(),
     hasApprovedKycForOwner: jest.fn(),
@@ -26,6 +27,7 @@ describe('CreateShopUseCase', () => {
   });
 
   it('should create shop in pending_kyc status when owner does not have approved KYC yet', async () => {
+    shopsRepositoryMock.countByOwnerUserId.mockResolvedValueOnce(0);
     shopsRepositoryMock.countCategoriesByIds.mockResolvedValueOnce(1);
     shopsRepositoryMock.findCategoriesByIds.mockResolvedValueOnce([{ id: 'category-1', riskTier: 'LOW' }]);
     shopsRepositoryMock.hasApprovedKycForOwner.mockResolvedValueOnce(null);
@@ -63,6 +65,7 @@ describe('CreateShopUseCase', () => {
   });
 
   it('should create manufacturer shop in pending_verification even when KYC is approved', async () => {
+    shopsRepositoryMock.countByOwnerUserId.mockResolvedValueOnce(0);
     shopsRepositoryMock.countCategoriesByIds.mockResolvedValueOnce(1);
     shopsRepositoryMock.findCategoriesByIds.mockResolvedValueOnce([{ id: 'category-1', riskTier: 'LOW' }]);
     shopsRepositoryMock.hasApprovedKycForOwner.mockResolvedValueOnce({ id: 'kyc-1' });
@@ -96,5 +99,22 @@ describe('CreateShopUseCase', () => {
       id: 'shop-2',
       shopStatus: 'pending_verification',
     });
+  });
+
+  it('should reject creating a second shop for the same owner', async () => {
+    shopsRepositoryMock.countByOwnerUserId.mockResolvedValueOnce(1);
+
+    await expect(
+      useCase.execute({
+        ownerUserId: 'user-1',
+        shopName: 'Second Shop',
+        registrationType: 'NORMAL',
+        businessType: 'company',
+        taxCode: null,
+        categoryIds: ['category-1'],
+      }),
+    ).rejects.toThrow('Each user can only create one shop');
+
+    expect(shopsRepositoryMock.create).not.toHaveBeenCalled();
   });
 });

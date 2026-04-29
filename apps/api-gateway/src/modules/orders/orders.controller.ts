@@ -120,6 +120,7 @@ export class OrdersController {
       buyerUserId,
       cartItemId,
       affiliateCode: dto.affiliateCode ?? null,
+      paymentMethod: dto.paymentMethod ?? null,
     });
   }
 
@@ -143,6 +144,7 @@ export class OrdersController {
       offerId: dto.offerId,
       quantity: dto.quantity,
       affiliateCode: dto.affiliateCode ?? null,
+      paymentMethod: dto.paymentMethod ?? null,
     });
   }
 
@@ -169,6 +171,19 @@ export class OrdersController {
       quantity: dto.quantity,
       affiliateCode: dto.affiliateCode ?? null,
     });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach don hang cua nguoi dung hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach don hang ma user dang la buyer hoac seller.',
+    type: OrderResponseDto,
+    isArray: true,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('mine')
+  findMine(@CurrentUserId() requesterUserId: string) {
+    return this.ordersRpcService.findMine({ requesterUserId });
   }
 
   @ApiOperation({ summary: 'Lay chi tiet mot don hang' })

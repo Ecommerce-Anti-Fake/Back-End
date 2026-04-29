@@ -151,6 +151,17 @@ export class ShopsController {
     });
   }
 
+  @ApiOperation({ summary: 'Lay checklist ho so can nop theo loai shop' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get(':shopId/document-requirements')
+  findShopDocumentRequirements(@Param('shopId') shopId: string, @CurrentUserId() requesterUserId: string) {
+    return this.shopsRpcService.findShopDocumentRequirements({
+      shopId,
+      requesterUserId,
+    });
+  }
+
   @ApiOperation({ summary: 'Lay danh sach ho so theo category da nop cua shop hien tai' })
   @ApiBearerAuth('access-token')
   @ApiOkResponse({ type: ShopCategoryDocumentResponseDto, isArray: true })
@@ -332,6 +343,19 @@ export class ShopsController {
       reviewerUserId,
       registrationStatus: dto.registrationStatus,
       reviewNote: dto.reviewNote ?? null,
+    });
+  }
+
+  @ApiOperation({ summary: 'Admin duyet ho so uy quyen brand cua shop' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: BrandAuthorizationResponseDto })
+  @ApiForbiddenResponse({ description: 'Chi admin moi co quyen duyet.' })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Get('admin/brand-authorizations')
+  findAdminBrandAuthorizations(@Query('verificationStatus') verificationStatus?: 'pending' | 'approved' | 'rejected') {
+    return this.shopsRpcService.findAdminBrandAuthorizations({
+      verificationStatus,
     });
   }
 

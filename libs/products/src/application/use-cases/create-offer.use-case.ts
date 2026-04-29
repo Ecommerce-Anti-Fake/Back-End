@@ -86,6 +86,13 @@ export class CreateOfferUseCase {
       throw new BadRequestException('Wholesale offers must define minWholesaleQty');
     }
 
+    if (
+      (salesMode === 'WHOLESALE' || salesMode === 'BOTH') &&
+      !['MANUFACTURER', 'DISTRIBUTOR'].includes(ownedShop.registrationType)
+    ) {
+      throw new BadRequestException('Only manufacturer or distributor shops can create wholesale offers');
+    }
+
     const offer = await this.productRepository.createOffer({
       sellerUserId: input.sellerUserId,
       shopId: input.shopId,

@@ -1,8 +1,14 @@
 type ShopDocumentRecord = {
   id: string;
+  requirementId?: string | null;
   docType: string;
-  fileUrl: string;
-  mediaAssetId: string | null;
+  files?: Array<{
+    id: string;
+    fileUrl: string;
+    mediaAssetId: string;
+    sortOrder: number;
+    uploadedAt: Date;
+  }>;
   reviewStatus: string;
   reviewNote: string | null;
   reviewedAt: Date | null;
@@ -66,11 +72,16 @@ type VerificationSummaryRecord = {
 };
 
 export function toShopDocumentResponse(document: ShopDocumentRecord) {
+  const files = [...(document.files ?? [])].sort((left, right) => left.sortOrder - right.sortOrder);
+  const firstFile = files[0] ?? null;
+
   return {
     id: document.id,
+    requirementId: document.requirementId ?? null,
     docType: document.docType,
-    fileUrl: document.fileUrl,
-    mediaAssetId: document.mediaAssetId,
+    fileUrl: firstFile?.fileUrl ?? '',
+    mediaAssetId: firstFile?.mediaAssetId ?? null,
+    files,
     reviewStatus: document.reviewStatus,
     reviewNote: document.reviewNote,
     reviewedAt: document.reviewedAt,
@@ -201,6 +212,24 @@ type AdminVerificationDetailRecord = {
   ownerUserId: string;
   shopName: string;
   registrationType: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
+  shopType?: {
+    id: string;
+    code: string;
+    name: string;
+    description: string | null;
+    requirements: Array<{
+      requirementId: string;
+      required: boolean;
+      sortOrder: number;
+      requirement: {
+        id: string;
+        code: string;
+        name: string;
+        description: string | null;
+        multipleFilesAllowed: boolean;
+      };
+    }>;
+  } | null;
   shopStatus: string;
   businessType: string;
   taxCode: string | null;
@@ -292,6 +321,14 @@ export function toAdminShopVerificationDetailResponse(shop: AdminVerificationDet
       ownerUserId: shop.ownerUserId,
       shopName: shop.shopName,
       registrationType: shop.registrationType,
+      shopType: shop.shopType
+        ? {
+            id: shop.shopType.id,
+            code: shop.shopType.code,
+            name: shop.shopType.name,
+            description: shop.shopType.description,
+          }
+        : null,
       businessType: shop.businessType,
       taxCode: shop.taxCode,
       shopStatus: shop.shopStatus,
@@ -303,6 +340,24 @@ export function toAdminShopVerificationDetailResponse(shop: AdminVerificationDet
       })),
     },
     summary: toShopVerificationSummaryResponse(shop),
+    shopDocumentRequirements:
+      shop.shopType?.requirements.map((item) => {
+        const document =
+          shopDocuments.find((shopDocument) => shopDocument.requirementId === item.requirement.id) ??
+          shopDocuments.find((shopDocument) => shopDocument.docType === item.requirement.code) ??
+          null;
+
+        return {
+          id: item.requirement.id,
+          code: item.requirement.code,
+          name: item.requirement.name,
+          description: item.requirement.description,
+          required: item.required,
+          multipleFilesAllowed: item.requirement.multipleFilesAllowed,
+          sortOrder: item.sortOrder,
+          document,
+        };
+      }) ?? [],
     shopDocuments,
     categoryDocuments,
     shopDocumentGroups,

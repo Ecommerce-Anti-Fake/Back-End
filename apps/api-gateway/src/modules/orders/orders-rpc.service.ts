@@ -14,6 +14,7 @@ import {
   CreateWholesaleOrderMessage,
   CheckoutCartItemMessage,
   MarkOrderPaidMessage,
+  MyOrdersLookupMessage,
   ORDERS_MESSAGE_PATTERNS,
   OrderLookupMessage,
   DisputeEvidenceUploadSignaturesMessage,
@@ -64,6 +65,10 @@ export class OrdersRpcService {
 
   createWholesale(payload: CreateWholesaleOrderMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.createWholesale, payload);
+  }
+
+  findMine(payload: MyOrdersLookupMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.findMine, payload);
   }
 
   findById(payload: OrderLookupMessage) {

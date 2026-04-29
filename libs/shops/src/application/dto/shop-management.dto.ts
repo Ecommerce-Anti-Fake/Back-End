@@ -130,11 +130,33 @@ export class ShopDocumentResponseDto {
   @ApiProperty({ example: 'BUSINESS_LICENSE' })
   docType!: string;
 
+  @ApiPropertyOptional({ example: 'req-business-license', nullable: true })
+  requirementId!: string | null;
+
   @ApiProperty({ example: 'https://res.cloudinary.com/example/image/upload/v1/shops/shop-1/documents/license.jpg' })
   fileUrl!: string;
 
   @ApiPropertyOptional({ example: 'media-asset-1', nullable: true })
   mediaAssetId!: string | null;
+
+  @ApiProperty({
+    example: [
+      {
+        id: 'document-file-1',
+        fileUrl: 'https://res.cloudinary.com/example/image/upload/v1/shops/shop-1/documents/license-front.jpg',
+        mediaAssetId: 'media-asset-1',
+        sortOrder: 0,
+        uploadedAt: '2026-04-15T10:00:00.000Z',
+      },
+    ],
+  })
+  files!: Array<{
+    id: string;
+    fileUrl: string;
+    mediaAssetId: string;
+    sortOrder: number;
+    uploadedAt: Date;
+  }>;
 
   @ApiProperty({ example: 'pending' })
   reviewStatus!: string;

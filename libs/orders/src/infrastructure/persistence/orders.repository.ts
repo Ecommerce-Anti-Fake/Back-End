@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@database/prisma/prisma.service';
 import { calculateAffiliateCommissionAmounts } from './affiliate-commission.util';
+import { randomUUID } from 'crypto';
 
 const offerForOrderingArgs = Prisma.validator<Prisma.OfferDefaultArgs>()({
   include: {
@@ -127,6 +128,7 @@ export type CreateOrderRecordInput = {
   buyerPayableAmount: number;
   sellerReceivableAmount: number;
   totalAmount: number;
+  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'manual_confirmation' | null;
   item: {
     offerId: string;
     offerTitleSnapshot: string;
@@ -412,7 +414,7 @@ export class OrdersRepository {
         },
         paymentIntent: {
           create: {
-            paymentMethod: 'manual_confirmation',
+            paymentMethod: data.paymentMethod ?? 'manual_confirmation',
             paymentStatus: 'PENDING',
             amount: data.buyerPayableAmount,
           },
@@ -547,6 +549,34 @@ export class OrdersRepository {
   findOrderById(id: string): Promise<OrderWithRelations | null> {
     return this.prisma.order.findUnique({
       where: { id },
+      ...orderWithRelationsArgs,
+    });
+  }
+
+  findOrdersForUser(requesterUserId: string): Promise<OrderWithRelations[]> {
+    return this.prisma.order.findMany({
+      where: {
+        OR: [
+          { buyerUserId: requesterUserId },
+          {
+            shop: {
+              is: {
+                ownerUserId: requesterUserId,
+              },
+            },
+          },
+          {
+            buyerShop: {
+              is: {
+                ownerUserId: requesterUserId,
+              },
+            },
+          },
+        ],
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
       ...orderWithRelationsArgs,
     });
   }
@@ -750,6 +780,7 @@ export class OrdersRepository {
 
     return this.prisma.$executeRaw(Prisma.sql`
       INSERT INTO "audit_log" (
+        "id",
         "target_type",
         "target_id",
         "actor_user_id",
@@ -760,6 +791,7 @@ export class OrdersRepository {
         "metadata"
       )
       VALUES (
+        ${randomUUID()},
         ${input.targetType},
         ${input.targetId},
         ${input.actorUserId},

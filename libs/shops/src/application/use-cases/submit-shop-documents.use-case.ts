@@ -28,6 +28,15 @@ export class SubmitShopDocumentsUseCase {
       throw new BadRequestException('At least one shop document is required');
     }
 
+    const documentFilesByType = new Map<
+      string,
+      Array<{
+        mediaAssetId: string;
+        fileUrl: string;
+      }>
+    >();
+    const requirementByType = new Map<string, string | null>();
+
     for (const item of input.items) {
       if (!this.mediaService.isOwnedCloudinaryUrl(item.fileUrl)) {
         throw new BadRequestException('Shop document URL must belong to the configured Cloudinary cloud');
@@ -48,11 +57,28 @@ export class SubmitShopDocumentsUseCase {
         folder: `shops/${shop.id}/documents`,
       });
 
+      const docType = item.docType.trim();
+      if (!requirementByType.has(docType)) {
+        const shopRequirement = await this.shopsRepository.findRequirementForShopType({
+          shopTypeId: shop.shopTypeId,
+          requirementCode: docType,
+        });
+        requirementByType.set(docType, shopRequirement?.requirement.id ?? null);
+      }
+      const documentFiles = documentFilesByType.get(docType) ?? [];
+      documentFiles.push({
+        mediaAssetId: mediaAsset.id,
+        fileUrl: item.fileUrl,
+      });
+      documentFilesByType.set(docType, documentFiles);
+    }
+
+    for (const [docType, files] of documentFilesByType.entries()) {
       await this.shopsRepository.createShopDocument({
         shopId: shop.id,
-        mediaAssetId: mediaAsset.id,
-        docType: item.docType.trim(),
-        fileUrl: item.fileUrl,
+        requirementId: requirementByType.get(docType) ?? null,
+        docType,
+        files,
       });
     }
 

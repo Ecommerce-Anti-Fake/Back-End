@@ -382,6 +382,25 @@ export class DistributionController {
     });
   }
 
+  @ApiOperation({ summary: 'Lay chi tiet shipment theo ID' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'shipmentId', description: 'ID shipment.' })
+  @ApiOkResponse({
+    description: 'Chi tiet shipment.',
+    type: DistributionShipmentResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Thieu access token hoac token khong hop le.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('shipments/:shipmentId')
+  getShipment(@CurrentUserId() requesterUserId: string, @Param('shipmentId') shipmentId: string) {
+    return this.distributionRpcService.getShipment({
+      requesterUserId,
+      shipmentId,
+    });
+  }
+
   @ApiOperation({ summary: 'Xac nhan shipment da duoc nhan' })
   @ApiBearerAuth('access-token')
   @ApiParam({ name: 'shipmentId', description: 'ID shipment.' })

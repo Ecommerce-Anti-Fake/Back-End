@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@database/prisma/prisma.service';
+import { randomUUID } from 'crypto';
 
 const userKycWithDocumentsArgs = Prisma.validator<Prisma.UserKycDefaultArgs>()({
   include: {
@@ -247,6 +248,7 @@ export class UsersRepository {
 
     return this.prisma.$executeRaw(Prisma.sql`
       INSERT INTO "audit_log" (
+        "id",
         "target_type",
         "target_id",
         "actor_user_id",
@@ -257,6 +259,7 @@ export class UsersRepository {
         "metadata"
       )
       VALUES (
+        ${randomUUID()},
         ${input.targetType},
         ${input.targetId},
         ${input.actorUserId},

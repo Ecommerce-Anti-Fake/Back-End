@@ -9,7 +9,12 @@ export class CheckoutCartItemUseCase {
     private readonly createRetailOrderUseCase: CreateRetailOrderUseCase,
   ) {}
 
-  async execute(input: { buyerUserId: string; cartItemId: string; affiliateCode?: string | null }) {
+  async execute(input: {
+    buyerUserId: string;
+    cartItemId: string;
+    paymentMethod?: 'COD' | 'BANK_TRANSFER' | null;
+    affiliateCode?: string | null;
+  }) {
     const cartItem = await this.ordersRepository.findCartItemById(input.cartItemId);
     if (!cartItem || cartItem.cart.buyerUserId !== input.buyerUserId || cartItem.cart.cartStatus !== 'ACTIVE') {
       throw new NotFoundException('Cart item not found');
@@ -19,6 +24,7 @@ export class CheckoutCartItemUseCase {
       buyerUserId: input.buyerUserId,
       offerId: cartItem.offerId,
       quantity: cartItem.quantity,
+      paymentMethod: input.paymentMethod ?? 'COD',
       affiliateCode: input.affiliateCode ?? null,
     });
 

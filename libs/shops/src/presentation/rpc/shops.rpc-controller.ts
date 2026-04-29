@@ -2,6 +2,7 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { SHOPS_MESSAGE_PATTERNS } from '@contracts';
 import type {
+  AdminBrandAuthorizationsLookupMessage,
   AdminShopVerificationDetailMessage,
   AdminShopVerificationSummaryMessage,
   BrandAuthorizationUploadSignaturesMessage,
@@ -14,6 +15,7 @@ import type {
   ReviewShopCategoryMessage,
   ReviewBrandAuthorizationMessage,
   ReviewShopDocumentMessage,
+  ShopDocumentRequirementsLookupMessage,
   ShopDocumentsLookupMessage,
   ShopDocumentUploadSignaturesMessage,
   ShopLookupMessage,
@@ -32,10 +34,12 @@ import {
   GetShopVerificationSummaryUseCase,
   GetShopDocumentUploadSignaturesUseCase,
   GetShopByIdUseCase,
+  ListAdminBrandAuthorizationsUseCase,
   ListBrandAuthorizationsUseCase,
   ListCategoryDocumentsUseCase,
   ListMyShopsUseCase,
   ListPendingVerificationShopsUseCase,
+  ListShopDocumentRequirementsUseCase,
   ListShopDocumentsUseCase,
   ReviewBrandAuthorizationUseCase,
   ReviewShopCategoryUseCase,
@@ -55,6 +59,7 @@ export class ShopsRpcController {
     private readonly getShopVerificationSummaryUseCase: GetShopVerificationSummaryUseCase,
     private readonly listPendingVerificationShopsUseCase: ListPendingVerificationShopsUseCase,
     private readonly listShopDocumentsUseCase: ListShopDocumentsUseCase,
+    private readonly listShopDocumentRequirementsUseCase: ListShopDocumentRequirementsUseCase,
     private readonly listCategoryDocumentsUseCase: ListCategoryDocumentsUseCase,
     private readonly getShopDocumentUploadSignaturesUseCase: GetShopDocumentUploadSignaturesUseCase,
     private readonly submitShopDocumentsUseCase: SubmitShopDocumentsUseCase,
@@ -63,6 +68,7 @@ export class ShopsRpcController {
     private readonly reviewShopDocumentUseCase: ReviewShopDocumentUseCase,
     private readonly reviewShopCategoryUseCase: ReviewShopCategoryUseCase,
     private readonly getShopByIdUseCase: GetShopByIdUseCase,
+    private readonly listAdminBrandAuthorizationsUseCase: ListAdminBrandAuthorizationsUseCase,
     private readonly listBrandAuthorizationsUseCase: ListBrandAuthorizationsUseCase,
     private readonly listMyShopsUseCase: ListMyShopsUseCase,
     private readonly submitBrandAuthorizationUseCase: SubmitBrandAuthorizationUseCase,
@@ -100,6 +106,15 @@ export class ShopsRpcController {
   async findBrandAuthorizations(@Payload() payload: BrandAuthorizationsLookupMessage) {
     try {
       return await this.listBrandAuthorizationsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(SHOPS_MESSAGE_PATTERNS.findAdminBrandAuthorizations)
+  async findAdminBrandAuthorizations(@Payload() payload: AdminBrandAuthorizationsLookupMessage = {}) {
+    try {
+      return await this.listAdminBrandAuthorizationsUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }
@@ -154,6 +169,15 @@ export class ShopsRpcController {
   async findShopDocuments(@Payload() payload: ShopDocumentsLookupMessage) {
     try {
       return await this.listShopDocumentsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(SHOPS_MESSAGE_PATTERNS.findShopDocumentRequirements)
+  async findShopDocumentRequirements(@Payload() payload: ShopDocumentRequirementsLookupMessage) {
+    try {
+      return await this.listShopDocumentRequirementsUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

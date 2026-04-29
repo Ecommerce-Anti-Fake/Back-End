@@ -30,6 +30,7 @@ describe('CreateOfferUseCase', () => {
     productRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'shop-1',
       shopStatus: 'pending_kyc',
+      registrationType: 'NORMAL',
     });
 
     await expect(
@@ -50,6 +51,7 @@ describe('CreateOfferUseCase', () => {
     productRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'shop-1',
       shopStatus: 'active',
+      registrationType: 'NORMAL',
     });
     productRepositoryMock.findModelById.mockResolvedValueOnce({
       id: 'model-1',
@@ -72,5 +74,36 @@ describe('CreateOfferUseCase', () => {
         availableQuantity: 10,
       }),
     ).rejects.toThrow('Shop category must be approved before creating offers in this category');
+  });
+
+  it('should reject wholesale offer creation for normal shops', async () => {
+    productRepositoryMock.findOwnedShop.mockResolvedValueOnce({
+      id: 'shop-1',
+      shopStatus: 'active',
+      registrationType: 'NORMAL',
+    });
+    productRepositoryMock.findModelById.mockResolvedValueOnce({
+      id: 'model-1',
+      categoryId: 'category-1',
+    });
+    productRepositoryMock.findCategoryById.mockResolvedValueOnce({
+      id: 'category-1',
+    });
+    productRepositoryMock.findApprovedShopCategoryRegistration.mockResolvedValueOnce({ id: 'registration-1' });
+
+    await expect(
+      useCase.execute({
+        sellerUserId: 'user-1',
+        shopId: 'shop-1',
+        categoryId: 'category-1',
+        productModelId: 'model-1',
+        title: 'Wholesale Offer',
+        description: 'Desc',
+        price: 100000,
+        availableQuantity: 10,
+        salesMode: 'WHOLESALE',
+        minWholesaleQty: 10,
+      }),
+    ).rejects.toThrow('Only manufacturer or distributor shops can create wholesale offers');
   });
 });

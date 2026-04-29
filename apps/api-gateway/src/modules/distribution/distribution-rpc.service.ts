@@ -16,6 +16,7 @@ import {
   CreateSupplyBatchMessage,
   CreateDistributionShipmentMessage,
   DispatchDistributionShipmentMessage,
+  DistributionShipmentDetailMessage,
   DISTRIBUTION_MESSAGE_PATTERNS,
   DistributionNetworksLookupMessage,
   DistributionNodesLookupMessage,
@@ -124,6 +125,10 @@ export class DistributionRpcService {
 
   findShipmentsByNetwork(payload: DistributionShipmentsLookupMessage) {
     return this.send(DISTRIBUTION_MESSAGE_PATTERNS.findShipmentsByNetwork, payload);
+  }
+
+  getShipment(payload: DistributionShipmentDetailMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.getShipment, payload);
   }
 
   receiveShipment(payload: ReceiveDistributionShipmentMessage) {

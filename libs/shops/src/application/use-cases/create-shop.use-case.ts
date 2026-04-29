@@ -31,12 +31,18 @@ export class CreateShopUseCase {
       throw new BadRequestException('At least one category is required');
     }
 
+    const existingShopCount = await this.shopsRepository.countByOwnerUserId(input.ownerUserId);
+    if (existingShopCount > 0) {
+      throw new BadRequestException('Each user can only create one shop');
+    }
+
     const categoryCount = await this.shopsRepository.countCategoriesByIds(categoryIds);
     if (categoryCount !== categoryIds.length) {
       throw new BadRequestException('One or more categories are invalid');
     }
 
     const categories = await this.shopsRepository.findCategoriesByIds(categoryIds);
+    const shopType = await this.shopsRepository.findActiveShopTypeByCode(input.registrationType);
     const approvedKyc = await this.shopsRepository.hasApprovedKycForOwner(input.ownerUserId);
     const shopStatus = this.resolveInitialShopStatus({
       registrationType: input.registrationType,
@@ -46,6 +52,7 @@ export class CreateShopUseCase {
 
     const shop = await this.shopsRepository.create({
       ownerUserId: input.ownerUserId,
+      shopTypeId: shopType?.id ?? null,
       shopName,
       registrationType: input.registrationType,
       businessType,

@@ -14,6 +14,7 @@ export class CreateRetailOrderUseCase {
     buyerUserId: string;
     offerId: string;
     quantity: number;
+    paymentMethod?: 'COD' | 'BANK_TRANSFER' | null;
     affiliateCode?: string | null;
   }) {
     const buyer = await this.ordersRepository.findUserById(input.buyerUserId);
@@ -63,6 +64,7 @@ export class CreateRetailOrderUseCase {
         buyerPayableAmount,
         sellerReceivableAmount,
         totalAmount: buyerPayableAmount,
+        paymentMethod: input.paymentMethod ?? 'COD',
         item: {
           offerId: offer.id,
           offerTitleSnapshot: offer.title,
