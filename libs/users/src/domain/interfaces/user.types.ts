@@ -4,6 +4,7 @@ export type UserSummary = {
   email: string | null;
   phone: string | null;
   displayName: string | null;
+  address: string | null;
   role: string;
   accountStatus: string;
   createdAt: Date;
@@ -15,6 +16,7 @@ export type UserProfileCompletion = {
   email: string | null;
   phone: string | null;
   displayName: string | null;
+  address: string | null;
   missingProfileFields: string[];
   isOrderReady: boolean;
 };

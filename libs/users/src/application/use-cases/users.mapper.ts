@@ -8,6 +8,7 @@ export function toUserSummary(user: User): UserSummary {
     email: user.email,
     phone: user.phone,
     displayName: user.displayName,
+    address: user.address,
     role: user.role,
     accountStatus: user.accountStatus,
     createdAt: user.createdAt,
@@ -27,6 +28,7 @@ export function toUserProfileCompletion(user: User): UserProfileCompletion {
     email: user.email,
     phone: user.phone,
     displayName: user.displayName,
+    address: user.address,
     missingProfileFields,
     isOrderReady: missingProfileFields.length === 0,
   };

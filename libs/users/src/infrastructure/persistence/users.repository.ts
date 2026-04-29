@@ -343,6 +343,7 @@ export class UsersRepository {
       email?: string | null;
       phone?: string | null;
       displayName?: string | null;
+      address?: string | null;
       accountStatus?: string;
     },
   ) {

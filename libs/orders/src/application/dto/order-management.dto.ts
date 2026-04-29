@@ -82,6 +82,9 @@ export class OrderResponseDto {
   @ApiProperty({ example: 'pending' })
   orderStatus!: string;
 
+  @ApiProperty({ example: 'PENDING' })
+  fulfillmentStatus!: string;
+
   @ApiPropertyOptional({ example: 'PENDING', nullable: true })
   paymentStatus!: string | null;
 
@@ -121,6 +124,15 @@ export class OrderResponseDto {
   @ApiProperty({ example: 1842750 })
   totalAmount!: number;
 
+  @ApiPropertyOptional({ example: 'Nguyen Van A', nullable: true })
+  shippingName!: string | null;
+
+  @ApiPropertyOptional({ example: '0987654321', nullable: true })
+  shippingPhone!: string | null;
+
+  @ApiPropertyOptional({ example: '12 Nguyen Trai, Quan 1, TP.HCM', nullable: true })
+  shippingAddress!: string | null;
+
   @ApiProperty({ type: OrderItemResponseDto, isArray: true })
   items!: OrderItemResponseDto[];
 
@@ -133,6 +145,13 @@ export class MarkOrderPaidDto {
   @IsOptional()
   @IsString()
   providerRef?: string;
+}
+
+export class UpdateOrderFulfillmentDto {
+  @ApiProperty({ example: 'SHIPPING', enum: ['PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED'] })
+  @IsString()
+  @IsIn(['PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED'])
+  fulfillmentStatus!: 'PROCESSING' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED';
 }
 
 export class OpenOrderDisputeDto {
@@ -472,6 +491,21 @@ export class CreateRetailOrderDto {
   @IsOptional()
   @IsIn(['COD', 'BANK_TRANSFER'])
   paymentMethod?: 'COD' | 'BANK_TRANSFER';
+
+  @ApiPropertyOptional({ example: 'Nguyen Van A' })
+  @IsOptional()
+  @IsString()
+  shippingName?: string;
+
+  @ApiPropertyOptional({ example: '0987654321' })
+  @IsOptional()
+  @IsString()
+  shippingPhone?: string;
+
+  @ApiPropertyOptional({ example: '12 Nguyen Trai, Quan 1, TP.HCM' })
+  @IsOptional()
+  @IsString()
+  shippingAddress?: string;
 }
 
 export class AddCartItemDto {
@@ -504,6 +538,21 @@ export class CheckoutCartItemDto {
   @IsOptional()
   @IsIn(['COD', 'BANK_TRANSFER'])
   paymentMethod?: 'COD' | 'BANK_TRANSFER';
+
+  @ApiPropertyOptional({ example: 'Nguyen Van A' })
+  @IsOptional()
+  @IsString()
+  shippingName?: string;
+
+  @ApiPropertyOptional({ example: '0987654321' })
+  @IsOptional()
+  @IsString()
+  shippingPhone?: string;
+
+  @ApiPropertyOptional({ example: '12 Nguyen Trai, Quan 1, TP.HCM' })
+  @IsOptional()
+  @IsString()
+  shippingAddress?: string;
 }
 
 export class CreateWholesaleOrderDto {
@@ -530,4 +579,19 @@ export class CreateWholesaleOrderDto {
   @IsOptional()
   @IsString()
   affiliateCode?: string;
+
+  @ApiPropertyOptional({ example: 'Nguyen Van A' })
+  @IsOptional()
+  @IsString()
+  shippingName?: string;
+
+  @ApiPropertyOptional({ example: '0987654321' })
+  @IsOptional()
+  @IsString()
+  shippingPhone?: string;
+
+  @ApiPropertyOptional({ example: '12 Nguyen Trai, Quan 1, TP.HCM' })
+  @IsOptional()
+  @IsString()
+  shippingAddress?: string;
 }

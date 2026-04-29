@@ -43,6 +43,8 @@ describe('CreateWholesaleOrderUseCase', () => {
     ordersRepositoryMock.findUserById.mockResolvedValueOnce({
       id: 'user-1',
       phone: '0987654321',
+      displayName: 'Buyer',
+      address: '12 Nguyen Trai, Quan 1, TP.HCM',
     });
     ordersRepositoryMock.findOfferForOrdering.mockResolvedValueOnce(
       createOffer({
@@ -122,6 +124,8 @@ describe('CreateWholesaleOrderUseCase', () => {
     ordersRepositoryMock.findUserById.mockResolvedValueOnce({
       id: 'user-1',
       phone: '0987654321',
+      displayName: 'Buyer',
+      address: '12 Nguyen Trai, Quan 1, TP.HCM',
     });
     ordersRepositoryMock.findOfferForOrdering.mockResolvedValueOnce(
       createOffer({
@@ -209,6 +213,8 @@ describe('CreateWholesaleOrderUseCase', () => {
     ordersRepositoryMock.findUserById.mockResolvedValueOnce({
       id: 'user-1',
       phone: '0987654321',
+      displayName: 'Buyer',
+      address: '12 Nguyen Trai, Quan 1, TP.HCM',
     });
     ordersRepositoryMock.findOfferForOrdering.mockResolvedValueOnce(
       createOffer({
@@ -244,6 +250,8 @@ describe('CreateWholesaleOrderUseCase', () => {
     ordersRepositoryMock.findUserById.mockResolvedValueOnce({
       id: 'user-1',
       phone: '0987654321',
+      displayName: 'Buyer',
+      address: '12 Nguyen Trai, Quan 1, TP.HCM',
     });
     ordersRepositoryMock.findOfferForOrdering.mockResolvedValueOnce(
       createOffer({

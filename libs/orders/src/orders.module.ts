@@ -25,6 +25,7 @@ import {
   ListAdminOpenDisputesUseCase,
   ListDisputeEvidenceUseCase,
   ListMyOrdersUseCase,
+  ListSellerShopOrdersUseCase,
   MarkOrderPaidUseCase,
   RemoveCartItemUseCase,
   CompleteOrderUseCase,
@@ -35,6 +36,7 @@ import {
   RefundOrderUseCase,
   UpdateCartItemUseCase,
   UpdateAdminDisputeCaseUseCase,
+  UpdateOrderFulfillmentUseCase,
 } from './application/use-cases';
 import {
   CatalogWholesalePricingAdapter,
@@ -105,6 +107,7 @@ import { CATALOG_SERVICE_CLIENT } from '@contracts';
     CreateRetailOrderUseCase,
     CreateWholesaleOrderUseCase,
     ListMyOrdersUseCase,
+    ListSellerShopOrdersUseCase,
     GetAdminDisputeDetailUseCase,
     GetAdminOpenDisputeCountUseCase,
     GetAdminDisputeSummaryUseCase,
@@ -120,6 +123,7 @@ import { CATALOG_SERVICE_CLIENT } from '@contracts';
     ResolveOrderDisputeUseCase,
     RefundOrderUseCase,
     UpdateAdminDisputeCaseUseCase,
+    UpdateOrderFulfillmentUseCase,
   ],
   exports: [
     OrdersRepository,
@@ -138,6 +142,7 @@ import { CATALOG_SERVICE_CLIENT } from '@contracts';
     CreateRetailOrderUseCase,
     CreateWholesaleOrderUseCase,
     ListMyOrdersUseCase,
+    ListSellerShopOrdersUseCase,
     GetAdminDisputeDetailUseCase,
     GetAdminOpenDisputeCountUseCase,
     GetAdminDisputeSummaryUseCase,
@@ -153,6 +158,7 @@ import { CATALOG_SERVICE_CLIENT } from '@contracts';
     ResolveOrderDisputeUseCase,
     RefundOrderUseCase,
     UpdateAdminDisputeCaseUseCase,
+    UpdateOrderFulfillmentUseCase,
   ],
 })
 export class OrdersModule {}

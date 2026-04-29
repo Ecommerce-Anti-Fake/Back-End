@@ -85,6 +85,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   createRetail: 'orders.create-retail',
   createWholesale: 'orders.create-wholesale',
   findMine: 'orders.find-mine',
+  findSellerShopOrders: 'orders.find-seller-shop-orders',
   findById: 'orders.find-by-id',
   getAdminOpenDisputeCount: 'orders.get-admin-open-dispute-count',
   findAdminOpenDisputes: 'orders.find-admin-open-disputes',
@@ -102,6 +103,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   addDisputeEvidenceBatch: 'orders.add-dispute-evidence-batch',
   findDisputeEvidence: 'orders.find-dispute-evidence',
   refund: 'orders.refund',
+  updateFulfillment: 'orders.update-fulfillment',
 } as const;
 
 export const DISTRIBUTION_MESSAGE_PATTERNS = {
@@ -499,6 +501,9 @@ export type CreateRetailOrderMessage = {
   quantity: number;
   paymentMethod?: 'COD' | 'BANK_TRANSFER' | null;
   affiliateCode?: string | null;
+  shippingName?: string | null;
+  shippingPhone?: string | null;
+  shippingAddress?: string | null;
 };
 
 export type ActiveCartMessage = {
@@ -527,6 +532,9 @@ export type CheckoutCartItemMessage = {
   cartItemId: string;
   paymentMethod?: 'COD' | 'BANK_TRANSFER' | null;
   affiliateCode?: string | null;
+  shippingName?: string | null;
+  shippingPhone?: string | null;
+  shippingAddress?: string | null;
 };
 
 export type CreateWholesaleOrderMessage = {
@@ -536,10 +544,18 @@ export type CreateWholesaleOrderMessage = {
   offerId: string;
   quantity: number;
   affiliateCode?: string | null;
+  shippingName?: string | null;
+  shippingPhone?: string | null;
+  shippingAddress?: string | null;
 };
 
 export type MyOrdersLookupMessage = {
   requesterUserId: string;
+};
+
+export type SellerShopOrdersLookupMessage = {
+  requesterUserId: string;
+  shopId: string;
 };
 
 export type OrderLookupMessage = {
@@ -641,6 +657,12 @@ export type DisputeEvidenceLookupMessage = {
 export type RefundOrderMessage = {
   id: string;
   requesterUserId: string;
+};
+
+export type UpdateOrderFulfillmentMessage = {
+  id: string;
+  requesterUserId: string;
+  fulfillmentStatus: 'PROCESSING' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED';
 };
 
 export type CreateDistributionPricingPolicyMessage = {

@@ -33,6 +33,8 @@ describe('CreateRetailOrderUseCase', () => {
     ordersRepositoryMock.findUserById.mockResolvedValueOnce({
       id: 'buyer-user-1',
       phone: '0987654321',
+      displayName: 'Buyer',
+      address: '12 Nguyen Trai, Quan 1, TP.HCM',
     });
     ordersRepositoryMock.findOfferForOrdering.mockResolvedValueOnce({
       id: 'offer-1',
@@ -123,6 +125,8 @@ describe('CreateRetailOrderUseCase', () => {
     ordersRepositoryMock.findUserById.mockResolvedValueOnce({
       id: 'buyer-user-1',
       phone: null,
+      displayName: 'Buyer',
+      address: '12 Nguyen Trai, Quan 1, TP.HCM',
     });
 
     await expect(
@@ -131,6 +135,6 @@ describe('CreateRetailOrderUseCase', () => {
         offerId: 'offer-1',
         quantity: 1,
       }),
-    ).rejects.toThrow('Please update your profile phone number before creating an order');
+    ).rejects.toThrow('Shipping contact phone is required before creating an order');
   });
 });

@@ -17,6 +17,7 @@ import {
   MyOrdersLookupMessage,
   ORDERS_MESSAGE_PATTERNS,
   OrderLookupMessage,
+  SellerShopOrdersLookupMessage,
   DisputeEvidenceUploadSignaturesMessage,
   AddDisputeEvidenceBatchMessage,
   DisputeEvidenceLookupMessage,
@@ -28,6 +29,7 @@ import {
   RefundOrderMessage,
   RemoveCartItemMessage,
   UpdateCartItemMessage,
+  UpdateOrderFulfillmentMessage,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
 import { lastValueFrom } from 'rxjs';
@@ -71,6 +73,10 @@ export class OrdersRpcService {
     return this.send(ORDERS_MESSAGE_PATTERNS.findMine, payload);
   }
 
+  findSellerShopOrders(payload: SellerShopOrdersLookupMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.findSellerShopOrders, payload);
+  }
+
   findById(payload: OrderLookupMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.findById, payload);
   }
@@ -105,6 +111,10 @@ export class OrdersRpcService {
 
   markPaid(payload: MarkOrderPaidMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.markPaid, payload);
+  }
+
+  updateFulfillment(payload: UpdateOrderFulfillmentMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.updateFulfillment, payload);
   }
 
   complete(payload: CompleteOrderMessage) {

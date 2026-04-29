@@ -6,6 +6,7 @@ export function toOrderResponse(order: OrderWithRelations) {
     id: order.id,
     orderMode: order.orderMode,
     orderStatus: order.orderStatus,
+    fulfillmentStatus: order.fulfillmentStatus,
     paymentStatus: order.paymentIntent?.paymentStatus ?? null,
     paymentMethod: order.paymentIntent?.paymentMethod ?? null,
     paymentProviderRef: order.paymentIntent?.providerRef ?? null,
@@ -24,6 +25,9 @@ export function toOrderResponse(order: OrderWithRelations) {
     buyerPayableAmount: decimalToNumber(order.buyerPayableAmount),
     sellerReceivableAmount: decimalToNumber(order.sellerReceivableAmount),
     totalAmount: decimalToNumber(order.totalAmount),
+    shippingName: order.shippingName,
+    shippingPhone: order.shippingPhone,
+    shippingAddress: order.shippingAddress,
     items: order.items.map((item) => ({
       offerId: item.offerId,
       offerTitleSnapshot: item.offerTitleSnapshot,

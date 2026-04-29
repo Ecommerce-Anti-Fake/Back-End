@@ -142,6 +142,7 @@ model User {
   email                String?               @unique
   displayName          String?               @map("display_name")
   password             String?
+  address              String?
   role                 String                @default("user")
   accountStatus        String                @default("active") @map("account_status")
   createdAt            DateTime              @default(now()) @map("created_at")
@@ -325,15 +326,15 @@ model Shop {
 }
 
 model ShopType {
-  id          String                @id @default(uuid())
-  code        String                @unique
-  name        String
-  description String?
-  isActive    Boolean               @default(true) @map("is_active")
-  sortOrder   Int                   @default(0) @map("sort_order")
-  createdAt   DateTime              @default(now()) @map("created_at")
-  updatedAt   DateTime              @updatedAt @map("updated_at")
-  shops       Shop[]
+  id           String                @id @default(uuid())
+  code         String                @unique
+  name         String
+  description  String?
+  isActive     Boolean               @default(true) @map("is_active")
+  sortOrder    Int                   @default(0) @map("sort_order")
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+  shops        Shop[]
   requirements ShopTypeRequirement[]
 
   @@index([isActive, sortOrder])
@@ -412,22 +413,21 @@ model ShopCategoryDocument {
 }
 
 model ShopDocument {
-  id           String             @id @default(uuid())
-  shopId       String             @map("shop_id")
-  requirementId String?           @map("requirement_id")
-  docType      String             @map("doc_type")
-  reviewStatus String             @map("review_status")
-  reviewNote   String?            @map("review_note")
-  reviewedAt   DateTime?          @map("reviewed_at")
-  uploadedAt   DateTime           @default(now()) @map("uploaded_at")
-  shop         Shop               @relation(fields: [shopId], references: [id])
-  requirement  VerificationRequirement? @relation(fields: [requirementId], references: [id])
-  files        ShopDocumentFile[]
+  id            String                   @id @default(uuid())
+  shopId        String                   @map("shop_id")
+  requirementId String?                  @map("requirement_id")
+  docType       String                   @map("doc_type")
+  reviewStatus  String                   @map("review_status")
+  reviewNote    String?                  @map("review_note")
+  reviewedAt    DateTime?                @map("reviewed_at")
+  uploadedAt    DateTime                 @default(now()) @map("uploaded_at")
+  shop          Shop                     @relation(fields: [shopId], references: [id])
+  requirement   VerificationRequirement? @relation(fields: [requirementId], references: [id])
+  files         ShopDocumentFile[]
 
   @@index([shopId])
   @@index([requirementId])
   @@index([docType])
-
   @@map("shop_document")
 }
 
@@ -682,13 +682,13 @@ model RiskScore {
 }
 
 model Cart {
-  id           String     @id @default(uuid())
-  buyerUserId  String     @map("buyer_user_id")
-  cartStatus   String     @default("ACTIVE") @map("cart_status")
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
-  buyer        User       @relation(fields: [buyerUserId], references: [id])
-  items        CartItem[]
+  id          String     @id @default(uuid())
+  buyerUserId String     @map("buyer_user_id")
+  cartStatus  String     @default("ACTIVE") @map("cart_status")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  buyer       User       @relation(fields: [buyerUserId], references: [id])
+  items       CartItem[]
 
   @@unique([buyerUserId, cartStatus])
   @@index([buyerUserId])
@@ -724,12 +724,16 @@ model Order {
   orderMode               OrderMode            @default(RETAIL) @map("order_mode")
   orderType               String               @map("order_type")
   orderStatus             String               @map("order_status")
+  fulfillmentStatus       String               @default("PENDING") @map("fulfillment_status")
   baseAmount              Decimal              @map("base_amount") @db.Decimal(18, 2)
   discountAmount          Decimal              @default(0) @map("discount_amount") @db.Decimal(18, 2)
   platformFeeAmount       Decimal              @default(0) @map("platform_fee_amount") @db.Decimal(18, 2)
   buyerPayableAmount      Decimal              @map("buyer_payable_amount") @db.Decimal(18, 2)
   sellerReceivableAmount  Decimal              @map("seller_receivable_amount") @db.Decimal(18, 2)
   totalAmount             Decimal              @map("total_amount") @db.Decimal(18, 2)
+  shippingName            String?              @map("shipping_name")
+  shippingPhone           String?              @map("shipping_phone")
+  shippingAddress         String?              @map("shipping_address")
   createdAt               DateTime             @default(now()) @map("created_at")
   buyer                   User?                @relation("OrderBuyer", fields: [buyerUserId], references: [id])
   buyerShop               Shop?                @relation("OrderBuyerShop", fields: [buyerShopId], references: [id])

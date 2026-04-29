@@ -15,6 +15,7 @@ import type {
   MarkOrderPaidMessage,
   MyOrdersLookupMessage,
   OrderLookupMessage,
+  SellerShopOrdersLookupMessage,
   CompleteOrderMessage,
   CancelOrderMessage,
   AddDisputeEvidenceBatchMessage,
@@ -27,6 +28,7 @@ import type {
   RemoveCartItemMessage,
   UpdateCartItemMessage,
   UpdateAdminDisputeCaseMessage,
+  UpdateOrderFulfillmentMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
 import {
@@ -45,6 +47,7 @@ import {
   ListAdminOpenDisputesUseCase,
   ListDisputeEvidenceUseCase,
   ListMyOrdersUseCase,
+  ListSellerShopOrdersUseCase,
   MarkOrderPaidUseCase,
   RemoveCartItemUseCase,
   CompleteOrderUseCase,
@@ -55,6 +58,7 @@ import {
   RefundOrderUseCase,
   UpdateCartItemUseCase,
   UpdateAdminDisputeCaseUseCase,
+  UpdateOrderFulfillmentUseCase,
 } from '../../application/use-cases';
 
 @Controller()
@@ -68,6 +72,7 @@ export class OrdersRpcController {
     private readonly createRetailOrderUseCase: CreateRetailOrderUseCase,
     private readonly createWholesaleOrderUseCase: CreateWholesaleOrderUseCase,
     private readonly listMyOrdersUseCase: ListMyOrdersUseCase,
+    private readonly listSellerShopOrdersUseCase: ListSellerShopOrdersUseCase,
     private readonly getAdminDisputeDetailUseCase: GetAdminDisputeDetailUseCase,
     private readonly getAdminDisputeSummaryUseCase: GetAdminDisputeSummaryUseCase,
     private readonly getAdminOpenDisputeCountUseCase: GetAdminOpenDisputeCountUseCase,
@@ -85,6 +90,7 @@ export class OrdersRpcController {
     private readonly resolveOrderDisputeUseCase: ResolveOrderDisputeUseCase,
     private readonly refundOrderUseCase: RefundOrderUseCase,
     private readonly updateAdminDisputeCaseUseCase: UpdateAdminDisputeCaseUseCase,
+    private readonly updateOrderFulfillmentUseCase: UpdateOrderFulfillmentUseCase,
   ) {}
 
   @MessagePattern(ORDERS_MESSAGE_PATTERNS.getActiveCart)
@@ -166,6 +172,15 @@ export class OrdersRpcController {
     }
   }
 
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.findSellerShopOrders)
+  async findSellerShopOrders(@Payload() payload: SellerShopOrdersLookupMessage) {
+    try {
+      return await this.listSellerShopOrdersUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
   @MessagePattern(ORDERS_MESSAGE_PATTERNS.findById)
   async findById(@Payload() payload: OrderLookupMessage) {
     try {
@@ -242,6 +257,15 @@ export class OrdersRpcController {
   async markPaid(@Payload() payload: MarkOrderPaidMessage) {
     try {
       return await this.markOrderPaidUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.updateFulfillment)
+  async updateFulfillment(@Payload() payload: UpdateOrderFulfillmentMessage) {
+    try {
+      return await this.updateOrderFulfillmentUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

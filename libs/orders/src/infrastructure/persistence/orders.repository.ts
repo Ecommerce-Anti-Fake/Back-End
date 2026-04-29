@@ -122,12 +122,16 @@ export type CreateOrderRecordInput = {
   orderMode: 'RETAIL' | 'WHOLESALE';
   orderType: string;
   orderStatus: string;
+  fulfillmentStatus?: string;
   baseAmount: number;
   discountAmount: number;
   platformFeeAmount: number;
   buyerPayableAmount: number;
   sellerReceivableAmount: number;
   totalAmount: number;
+  shippingName?: string | null;
+  shippingPhone?: string | null;
+  shippingAddress?: string | null;
   paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'manual_confirmation' | null;
   item: {
     offerId: string;
@@ -306,6 +310,8 @@ export class OrdersRepository {
       select: {
         id: true,
         phone: true,
+        displayName: true,
+        address: true,
       },
     });
   }
@@ -396,12 +402,16 @@ export class OrdersRepository {
         orderMode: data.orderMode,
         orderType: data.orderType,
         orderStatus: data.orderStatus,
+        fulfillmentStatus: data.fulfillmentStatus ?? 'PENDING',
         baseAmount: data.baseAmount,
         discountAmount: data.discountAmount,
         platformFeeAmount: data.platformFeeAmount,
         buyerPayableAmount: data.buyerPayableAmount,
         sellerReceivableAmount: data.sellerReceivableAmount,
         totalAmount: data.totalAmount,
+        shippingName: data.shippingName ?? null,
+        shippingPhone: data.shippingPhone ?? null,
+        shippingAddress: data.shippingAddress ?? null,
         items: {
           create: {
             ...data.item,
@@ -526,6 +536,17 @@ export class OrdersRepository {
       where: { id },
       data: {
         orderStatus,
+        fulfillmentStatus: orderStatus === 'cancelled' ? 'CANCELLED' : undefined,
+      },
+      ...orderWithRelationsArgs,
+    });
+  }
+
+  updateFulfillmentStatus(id: string, fulfillmentStatus: string): Promise<OrderWithRelations> {
+    return this.prisma.order.update({
+      where: { id },
+      data: {
+        fulfillmentStatus,
       },
       ...orderWithRelationsArgs,
     });
@@ -573,6 +594,23 @@ export class OrdersRepository {
             },
           },
         ],
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      ...orderWithRelationsArgs,
+    });
+  }
+
+  async findOrdersForSellerShop(input: { requesterUserId: string; shopId: string }): Promise<OrderWithRelations[]> {
+    const shop = await this.findOwnedShop(input.shopId, input.requesterUserId);
+    if (!shop) {
+      throw new BadRequestException('Shop does not belong to current user');
+    }
+
+    return this.prisma.order.findMany({
+      where: {
+        shopId: input.shopId,
       },
       orderBy: {
         createdAt: 'desc',
@@ -935,6 +973,7 @@ export class OrdersRepository {
         where: { id: input.id },
         data: {
           orderStatus: 'paid',
+          fulfillmentStatus: 'PROCESSING',
         },
         ...orderWithRelationsArgs,
       });
@@ -955,6 +994,7 @@ export class OrdersRepository {
         where: { id },
         data: {
           orderStatus: 'completed',
+          fulfillmentStatus: 'DELIVERED',
         },
         ...orderWithRelationsArgs,
       });

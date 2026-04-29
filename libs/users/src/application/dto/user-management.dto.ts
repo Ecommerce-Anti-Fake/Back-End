@@ -39,6 +39,13 @@ export class UserResponseDto {
   })
   displayName!: string | null;
 
+  @ApiPropertyOptional({
+    description: 'Dia chi cua nguoi dung.',
+    example: '12 Nguyen Trai, Quan 1, TP.HCM',
+    nullable: true,
+  })
+  address!: string | null;
+
   @ApiProperty({
     description: 'Vai tro cua nguoi dung.',
     enum: USER_MANAGEMENT_ROLES,
@@ -94,6 +101,13 @@ export class ProfileCompletionResponseDto {
   })
   displayName!: string | null;
 
+  @ApiPropertyOptional({
+    description: 'Dia chi cua nguoi dung.',
+    example: '12 Nguyen Trai, Quan 1, TP.HCM',
+    nullable: true,
+  })
+  address!: string | null;
+
   @ApiProperty({
     description: 'Cac truong profile con thieu de thuc hien cac flow quan trong.',
     example: ['phone'],
@@ -132,6 +146,14 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   displayName?: string;
+
+  @ApiPropertyOptional({
+    description: 'Dia chi cua user.',
+    example: '12 Nguyen Trai, Quan 1, TP.HCM',
+  })
+  @IsOptional()
+  @IsString()
+  address?: string;
 }
 
 export class ListUsersQueryDto {

@@ -20,15 +20,16 @@ export class CreateWholesaleOrderUseCase {
     offerId: string;
     quantity: number;
     affiliateCode?: string | null;
+    shippingName?: string | null;
+    shippingPhone?: string | null;
+    shippingAddress?: string | null;
   }) {
     const buyer = await this.ordersRepository.findUserById(input.buyerUserId);
     if (!buyer) {
       throw new NotFoundException('Buyer not found');
     }
 
-    if (!buyer.phone) {
-      throw new BadRequestException('Please update your profile phone number before creating an order');
-    }
+    const shipping = this.resolveShippingSnapshot(input, buyer);
 
     const offer: OfferForOrdering | null = await this.ordersRepository.findOfferForOrdering(input.offerId);
     if (!offer) {
@@ -86,6 +87,9 @@ export class CreateWholesaleOrderUseCase {
         buyerPayableAmount: pricing.buyerPayableAmount,
         sellerReceivableAmount: pricing.sellerReceivableAmount,
         totalAmount: pricing.totalAmount,
+        shippingName: shipping.name,
+        shippingPhone: shipping.phone,
+        shippingAddress: shipping.address,
         item: {
           offerId: offer.id,
           offerTitleSnapshot: offer.title,
@@ -109,5 +113,36 @@ export class CreateWholesaleOrderUseCase {
     });
 
     return toOrderResponse(order);
+  }
+
+  private resolveShippingSnapshot(
+    input: {
+      shippingName?: string | null;
+      shippingPhone?: string | null;
+      shippingAddress?: string | null;
+    },
+    buyer: {
+      displayName: string | null;
+      phone: string | null;
+      address: string | null;
+    },
+  ) {
+    const name = input.shippingName?.trim() || buyer.displayName?.trim() || null;
+    const phone = input.shippingPhone?.trim() || buyer.phone?.trim() || null;
+    const address = input.shippingAddress?.trim() || buyer.address?.trim() || null;
+
+    if (!phone) {
+      throw new BadRequestException('Shipping contact phone is required before creating an order');
+    }
+
+    if (!address) {
+      throw new BadRequestException('Shipping address is required before creating an order');
+    }
+
+    return {
+      name,
+      phone,
+      address,
+    };
   }
 }

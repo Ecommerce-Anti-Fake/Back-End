@@ -14,6 +14,9 @@ export class CheckoutCartItemUseCase {
     cartItemId: string;
     paymentMethod?: 'COD' | 'BANK_TRANSFER' | null;
     affiliateCode?: string | null;
+    shippingName?: string | null;
+    shippingPhone?: string | null;
+    shippingAddress?: string | null;
   }) {
     const cartItem = await this.ordersRepository.findCartItemById(input.cartItemId);
     if (!cartItem || cartItem.cart.buyerUserId !== input.buyerUserId || cartItem.cart.cartStatus !== 'ACTIVE') {
@@ -26,6 +29,9 @@ export class CheckoutCartItemUseCase {
       quantity: cartItem.quantity,
       paymentMethod: input.paymentMethod ?? 'COD',
       affiliateCode: input.affiliateCode ?? null,
+      shippingName: input.shippingName ?? null,
+      shippingPhone: input.shippingPhone ?? null,
+      shippingAddress: input.shippingAddress ?? null,
     });
 
     await this.ordersRepository.removeCartItem({

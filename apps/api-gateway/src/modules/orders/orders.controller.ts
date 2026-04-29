@@ -31,6 +31,7 @@ import {
   ResolveOrderDisputeDto,
   UpdateCartItemDto,
   UpdateAdminDisputeCaseDto,
+  UpdateOrderFulfillmentDto,
 } from '@orders';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import { OrdersRpcService } from './orders-rpc.service';
@@ -121,6 +122,9 @@ export class OrdersController {
       cartItemId,
       affiliateCode: dto.affiliateCode ?? null,
       paymentMethod: dto.paymentMethod ?? null,
+      shippingName: dto.shippingName ?? null,
+      shippingPhone: dto.shippingPhone ?? null,
+      shippingAddress: dto.shippingAddress ?? null,
     });
   }
 
@@ -145,6 +149,9 @@ export class OrdersController {
       quantity: dto.quantity,
       affiliateCode: dto.affiliateCode ?? null,
       paymentMethod: dto.paymentMethod ?? null,
+      shippingName: dto.shippingName ?? null,
+      shippingPhone: dto.shippingPhone ?? null,
+      shippingAddress: dto.shippingAddress ?? null,
     });
   }
 
@@ -170,6 +177,9 @@ export class OrdersController {
       offerId: dto.offerId,
       quantity: dto.quantity,
       affiliateCode: dto.affiliateCode ?? null,
+      shippingName: dto.shippingName ?? null,
+      shippingPhone: dto.shippingPhone ?? null,
+      shippingAddress: dto.shippingAddress ?? null,
     });
   }
 
@@ -184,6 +194,26 @@ export class OrdersController {
   @Get('mine')
   findMine(@CurrentUserId() requesterUserId: string) {
     return this.ordersRpcService.findMine({ requesterUserId });
+  }
+
+  @ApiOperation({ summary: 'Seller lay danh sach don cua mot shop' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'shopId', description: 'ID shop cua seller.' })
+  @ApiOkResponse({
+    description: 'Danh sach don cua shop.',
+    type: OrderResponseDto,
+    isArray: true,
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi chu shop moi co quyen xem danh sach nay.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('seller/shops/:shopId')
+  findSellerShopOrders(@Param('shopId') shopId: string, @CurrentUserId() requesterUserId: string) {
+    return this.ordersRpcService.findSellerShopOrders({
+      shopId,
+      requesterUserId,
+    });
   }
 
   @ApiOperation({ summary: 'Lay chi tiet mot don hang' })
@@ -348,6 +378,33 @@ export class OrdersController {
       id,
       requesterUserId,
       providerRef: dto.providerRef ?? null,
+    });
+  }
+
+  @ApiOperation({ summary: 'Seller cap nhat trang thai xu ly va giao hang' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'id', description: 'ID don hang.' })
+  @ApiOkResponse({
+    description: 'Cap nhat trang thai xu ly thanh cong.',
+    type: OrderResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Trang thai don khong hop le cho thao tac nay.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi seller cua don moi co quyen cap nhat.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post(':id/fulfillment')
+  updateFulfillment(
+    @Param('id') id: string,
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: UpdateOrderFulfillmentDto,
+  ) {
+    return this.ordersRpcService.updateFulfillment({
+      id,
+      requesterUserId,
+      fulfillmentStatus: dto.fulfillmentStatus,
     });
   }
 

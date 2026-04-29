@@ -12,6 +12,7 @@ export class UpdateUserUseCase {
       email?: string;
       phone?: string;
       displayName?: string;
+      address?: string;
     },
   ) {
     const current = await this.usersRepository.findUserById(id);
@@ -22,6 +23,7 @@ export class UpdateUserUseCase {
     const email = this.normalizeEmail(data.email);
     const phone = this.normalizePhone(data.phone);
     const displayName = data.displayName === undefined ? undefined : data.displayName.trim() || null;
+    const address = data.address === undefined ? undefined : data.address.trim() || null;
 
     if (email === null && phone === null) {
       throw new BadRequestException('Either email or phone must be provided');
@@ -48,6 +50,7 @@ export class UpdateUserUseCase {
       email,
       phone,
       displayName,
+      address,
     });
 
     return toUserSummary(user);
