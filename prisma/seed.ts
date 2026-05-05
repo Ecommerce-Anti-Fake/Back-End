@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { pbkdf2Sync, randomBytes } from 'crypto';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { MediaAssetType, MediaProvider, MediaResourceType, OfferSalesMode, PrismaClient, ShopRegistrationType } from '@prisma/client';
+import { MediaAssetType, MediaProvider, MediaResourceType, OfferSalesMode, OrderMode, PrismaClient, ShopRegistrationType } from '@prisma/client';
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -284,6 +284,62 @@ async function seedUsersAndShops() {
     },
   });
 
+  await prisma.user.upsert({
+    where: { id: 'user-demo-distributor' },
+    update: {
+      email: 'distributor@example.com',
+      displayName: 'Nha phan phoi mau',
+      accountStatus: 'active',
+    },
+    create: {
+      id: 'user-demo-distributor',
+      email: 'distributor@example.com',
+      phone: '0900000004',
+      displayName: 'Nha phan phoi mau',
+      password,
+      role: 'user',
+      accountStatus: 'active',
+    },
+  });
+
+  await prisma.userAddress.upsert({
+    where: { id: 'address-demo-buyer-default' },
+    update: {
+      userId: 'user-demo-buyer',
+      recipientName: 'Người mua mẫu',
+      phone: '0900000001',
+      addressLine: '12 Nguyễn Trãi, Quận 1, TP.HCM',
+      isDefault: true,
+    },
+    create: {
+      id: 'address-demo-buyer-default',
+      userId: 'user-demo-buyer',
+      recipientName: 'Người mua mẫu',
+      phone: '0900000001',
+      addressLine: '12 Nguyễn Trãi, Quận 1, TP.HCM',
+      isDefault: true,
+    },
+  });
+
+  await prisma.userAddress.upsert({
+    where: { id: 'address-demo-buyer-office' },
+    update: {
+      userId: 'user-demo-buyer',
+      recipientName: 'Người mua mẫu',
+      phone: '0900000001',
+      addressLine: 'Tòa nhà ABC, Phường Bến Nghé, Quận 1, TP.HCM',
+      isDefault: false,
+    },
+    create: {
+      id: 'address-demo-buyer-office',
+      userId: 'user-demo-buyer',
+      recipientName: 'Người mua mẫu',
+      phone: '0900000001',
+      addressLine: 'Tòa nhà ABC, Phường Bến Nghé, Quận 1, TP.HCM',
+      isDefault: false,
+    },
+  });
+
   await prisma.shop.upsert({
     where: { id: 'shop-demo-manufacturer' },
     update: {
@@ -307,9 +363,34 @@ async function seedUsersAndShops() {
     },
   });
 
+  await prisma.shop.upsert({
+    where: { id: 'shop-demo-distributor' },
+    update: {
+      ownerUserId: 'user-demo-distributor',
+      shopTypeId: 'shop-type-distributor',
+      shopName: 'Dai Ly Phan Phoi Sai Gon',
+      registrationType: ShopRegistrationType.DISTRIBUTOR,
+      businessType: 'COMPANY',
+      taxCode: '0987654321',
+      shopStatus: 'verified',
+    },
+    create: {
+      id: 'shop-demo-distributor',
+      ownerUserId: 'user-demo-distributor',
+      shopTypeId: 'shop-type-distributor',
+      shopName: 'Dai Ly Phan Phoi Sai Gon',
+      registrationType: ShopRegistrationType.DISTRIBUTOR,
+      businessType: 'COMPANY',
+      taxCode: '0987654321',
+      shopStatus: 'verified',
+    },
+  });
+
   const shopCategories = [
     { id: 'shop-demo-manufacturer-cat-food', shopId: 'shop-demo-manufacturer', categoryId: 'cat-food' },
     { id: 'shop-demo-manufacturer-cat-household', shopId: 'shop-demo-manufacturer', categoryId: 'cat-household' },
+    { id: 'shop-demo-distributor-cat-food', shopId: 'shop-demo-distributor', categoryId: 'cat-food' },
+    { id: 'shop-demo-distributor-cat-household', shopId: 'shop-demo-distributor', categoryId: 'cat-household' },
   ];
 
   for (const item of shopCategories) {
@@ -366,8 +447,8 @@ async function seedOffers() {
       description: 'Hạt điều tuyển chọn, truy xuất nguồn gốc theo lô sản xuất mẫu.',
       price: '129000',
       currency: 'VND',
-      salesMode: OfferSalesMode.BOTH,
-      minWholesaleQty: 20,
+      salesMode: OfferSalesMode.RETAIL,
+      minWholesaleQty: null,
       itemCondition: 'new',
       availableQuantity: 120,
       verificationLevel: 'verified',
@@ -390,17 +471,401 @@ async function seedOffers() {
   });
 }
 
+const sampleProducts = [
+  {
+    id: 'sample-model-01',
+    offerId: 'sample-offer-retail-01',
+    mediaId: 'sample-media-retail-01',
+    offerMediaId: 'sample-offer-media-retail-01',
+    brandId: 'brand-abc-food',
+    categoryId: 'cat-food',
+    modelName: 'Gio lua nac Au Lac goi 250g',
+    title: 'Gio lua nac Au Lac - Goi 250g',
+    description: 'Gio lua nac tu thit heo tuoi, dong goi tien loi cho bua an gia dinh.',
+    price: 66000,
+    quantity: 240,
+    salesMode: OfferSalesMode.RETAIL,
+    imageUrl: 'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    id: 'sample-model-02',
+    offerId: 'sample-offer-retail-02',
+    mediaId: 'sample-media-retail-02',
+    offerMediaId: 'sample-offer-media-retail-02',
+    brandId: 'brand-abc-food',
+    categoryId: 'cat-food',
+    modelName: 'Nem chua Ha Thanh hop 500g',
+    title: 'Nem chua Ha Thanh - Hop 500g',
+    description: 'Nem chua dong hop, co tem truy xuat va thong tin lo san xuat.',
+    price: 41800,
+    quantity: 180,
+    salesMode: OfferSalesMode.RETAIL,
+    imageUrl: 'https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    id: 'sample-model-03',
+    offerId: 'sample-offer-retail-03',
+    mediaId: 'sample-media-retail-03',
+    offerMediaId: 'sample-offer-media-retail-03',
+    brandId: 'brand-green-home',
+    categoryId: 'cat-household',
+    modelName: 'Nuoc rua chen thao moc 750ml',
+    title: 'Nuoc rua chen thao moc Green Home 750ml',
+    description: 'Cong thuc thao moc, phu hop su dung hang ngay trong gia dinh.',
+    price: 59000,
+    quantity: 300,
+    salesMode: OfferSalesMode.RETAIL,
+    imageUrl: 'https://images.unsplash.com/photo-1585421514284-efb74c2b69ba?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    id: 'sample-model-04',
+    offerId: 'sample-offer-retail-04',
+    mediaId: 'sample-media-retail-04',
+    offerMediaId: 'sample-offer-media-retail-04',
+    brandId: 'brand-green-home',
+    categoryId: 'cat-cosmetic',
+    modelName: 'Sua tam gao non 500ml',
+    title: 'Sua tam gao non duong am 500ml',
+    description: 'Sua tam huong gao non, co ho so nguon goc nguyen lieu.',
+    price: 89000,
+    quantity: 160,
+    salesMode: OfferSalesMode.RETAIL,
+    imageUrl: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    id: 'sample-model-05',
+    offerId: 'sample-offer-retail-05',
+    mediaId: 'sample-media-retail-05',
+    offerMediaId: 'sample-offer-media-retail-05',
+    brandId: 'brand-abc-food',
+    categoryId: 'cat-food',
+    modelName: 'Tra atiso Da Lat hop 20 tui',
+    title: 'Tra atiso Da Lat - Hop 20 tui loc',
+    description: 'Tra atiso Da Lat dong hop, kiem tra nguon goc theo ma lo.',
+    price: 72000,
+    quantity: 210,
+    salesMode: OfferSalesMode.RETAIL,
+    imageUrl: 'https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    id: 'sample-model-06',
+    offerId: 'sample-offer-wholesale-01',
+    mediaId: 'sample-media-wholesale-01',
+    offerMediaId: 'sample-offer-media-wholesale-01',
+    brandId: 'brand-abc-food',
+    categoryId: 'cat-food',
+    modelName: 'Thung gio lua Au Lac 40 goi',
+    title: 'Thung gio lua Au Lac - 40 goi',
+    description: 'Lo hang danh cho nha phan phoi, moi thung gom 40 goi 250g.',
+    price: 2300000,
+    quantity: 80,
+    salesMode: OfferSalesMode.WHOLESALE,
+    minWholesaleQty: 5,
+    imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    id: 'sample-model-07',
+    offerId: 'sample-offer-wholesale-02',
+    mediaId: 'sample-media-wholesale-02',
+    offerMediaId: 'sample-offer-media-wholesale-02',
+    brandId: 'brand-abc-food',
+    categoryId: 'cat-food',
+    modelName: 'Lo hat dieu huu co 24 hop',
+    title: 'Lo hat dieu huu co - 24 hop 500g',
+    description: 'Gia nhap si cho dai ly, san pham co chung tu va batch san xuat.',
+    price: 2580000,
+    quantity: 60,
+    salesMode: OfferSalesMode.WHOLESALE,
+    minWholesaleQty: 4,
+    imageUrl: 'https://images.unsplash.com/photo-1599599810769-bcde5a160d32?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    id: 'sample-model-08',
+    offerId: 'sample-offer-wholesale-03',
+    mediaId: 'sample-media-wholesale-03',
+    offerMediaId: 'sample-offer-media-wholesale-03',
+    brandId: 'brand-green-home',
+    categoryId: 'cat-household',
+    modelName: 'Combo nuoc rua chen 60 chai',
+    title: 'Combo nuoc rua chen thao moc - 60 chai',
+    description: 'Goi nhap si cho cua hang tap hoa va dai ly phan phoi.',
+    price: 2850000,
+    quantity: 45,
+    salesMode: OfferSalesMode.WHOLESALE,
+    minWholesaleQty: 3,
+    imageUrl: 'https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    id: 'sample-model-09',
+    offerId: 'sample-offer-wholesale-04',
+    mediaId: 'sample-media-wholesale-04',
+    offerMediaId: 'sample-offer-media-wholesale-04',
+    brandId: 'brand-green-home',
+    categoryId: 'cat-cosmetic',
+    modelName: 'Lo sua tam gao non 36 chai',
+    title: 'Lo sua tam gao non - 36 chai',
+    description: 'Gia si cho kenh ban le my pham, co ho so xac thuc san pham.',
+    price: 2700000,
+    quantity: 50,
+    salesMode: OfferSalesMode.WHOLESALE,
+    minWholesaleQty: 3,
+    imageUrl: 'https://images.unsplash.com/photo-1556228578-8c89e6adf883?auto=format&fit=crop&w=900&q=80',
+  },
+  {
+    id: 'sample-model-10',
+    offerId: 'sample-offer-wholesale-05',
+    mediaId: 'sample-media-wholesale-05',
+    offerMediaId: 'sample-offer-media-wholesale-05',
+    brandId: 'brand-abc-food',
+    categoryId: 'cat-food',
+    modelName: 'Lo tra atiso Da Lat 50 hop',
+    title: 'Lo tra atiso Da Lat - 50 hop',
+    description: 'Lo hang si phu hop cho dai ly thuc pham sach va cua hang dac san.',
+    price: 3150000,
+    quantity: 55,
+    salesMode: OfferSalesMode.WHOLESALE,
+    minWholesaleQty: 2,
+    imageUrl: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=900&q=80',
+  },
+] as const;
+
+async function seedDemoProductsAndOffers() {
+  for (const product of sampleProducts) {
+    await prisma.productModel.upsert({
+      where: { id: product.id },
+      update: {
+        brandId: product.brandId,
+        categoryId: product.categoryId,
+        modelName: product.modelName,
+        verificationPolicy: 'STANDARD',
+        approvalStatus: 'approved',
+      },
+      create: {
+        id: product.id,
+        brandId: product.brandId,
+        categoryId: product.categoryId,
+        modelName: product.modelName,
+        gtin: `8931000000${product.id.slice(-2)}`,
+        verificationPolicy: 'STANDARD',
+        approvalStatus: 'approved',
+      },
+    });
+
+    await prisma.mediaAsset.upsert({
+      where: { id: product.mediaId },
+      update: {
+        secureUrl: product.imageUrl,
+        mimeType: 'image/jpeg',
+      },
+      create: {
+        id: product.mediaId,
+        ownerUserId: 'user-demo-manufacturer',
+        provider: MediaProvider.CLOUDINARY,
+        assetType: MediaAssetType.IMAGE,
+        resourceType: MediaResourceType.PRODUCT_IMAGE,
+        publicId: `seed/offers/${product.offerId}`,
+        secureUrl: product.imageUrl,
+        mimeType: 'image/jpeg',
+        folder: 'seed/offers',
+      },
+    });
+
+    await prisma.offer.upsert({
+      where: { id: product.offerId },
+      update: {
+        categoryId: product.categoryId,
+        productModelId: product.id,
+        title: product.title,
+        description: product.description,
+        price: String(product.price),
+        salesMode: product.salesMode,
+        minWholesaleQty: 'minWholesaleQty' in product ? product.minWholesaleQty : null,
+        availableQuantity: product.quantity,
+        verificationLevel: 'verified',
+        offerStatus: 'active',
+      },
+      create: {
+        id: product.offerId,
+        sellerUserId: 'user-demo-manufacturer',
+        shopId: 'shop-demo-manufacturer',
+        categoryId: product.categoryId,
+        productModelId: product.id,
+        title: product.title,
+        description: product.description,
+        price: String(product.price),
+        currency: 'VND',
+        salesMode: product.salesMode,
+        minWholesaleQty: 'minWholesaleQty' in product ? product.minWholesaleQty : null,
+        itemCondition: 'new',
+        availableQuantity: product.quantity,
+        verificationLevel: 'verified',
+        offerStatus: 'active',
+      },
+    });
+
+    await prisma.offerMedia.upsert({
+      where: { id: product.offerMediaId },
+      update: {
+        offerId: product.offerId,
+        mediaAssetId: product.mediaId,
+        fileUrl: product.imageUrl,
+      },
+      create: {
+        id: product.offerMediaId,
+        offerId: product.offerId,
+        mediaAssetId: product.mediaId,
+        mediaType: 'image',
+        fileUrl: product.imageUrl,
+      },
+    });
+  }
+}
+
+async function seedDemoOrders() {
+  const retailOffers = sampleProducts.filter((product) => product.salesMode === OfferSalesMode.RETAIL);
+  const wholesaleOffers = sampleProducts.filter((product) => product.salesMode === OfferSalesMode.WHOLESALE);
+  const statuses = [
+    { orderStatus: 'pending', fulfillmentStatus: 'PENDING' },
+    { orderStatus: 'paid', fulfillmentStatus: 'PROCESSING' },
+    { orderStatus: 'shipping', fulfillmentStatus: 'SHIPPING' },
+    { orderStatus: 'completed', fulfillmentStatus: 'DELIVERED' },
+    { orderStatus: 'cancelled', fulfillmentStatus: 'CANCELLED' },
+  ];
+
+  async function upsertOrder(input: {
+    id: string;
+    offer: (typeof sampleProducts)[number];
+    mode: OrderMode;
+    quantity: number;
+    index: number;
+  }) {
+    const amount = input.offer.price * input.quantity;
+    const fee = Math.round(amount * 0.03);
+    const status = statuses[input.index % statuses.length];
+
+    await prisma.order.upsert({
+      where: { id: input.id },
+      update: {
+        buyerUserId: input.mode === OrderMode.RETAIL ? 'user-demo-buyer' : 'user-demo-distributor',
+        buyerShopId: input.mode === OrderMode.WHOLESALE ? 'shop-demo-distributor' : null,
+        shopId: 'shop-demo-manufacturer',
+        orderMode: input.mode,
+        orderType: input.mode === OrderMode.RETAIL ? 'DIRECT_RETAIL' : 'DIRECT_WHOLESALE',
+        orderStatus: status.orderStatus,
+        fulfillmentStatus: status.fulfillmentStatus,
+        baseAmount: String(amount),
+        platformFeeAmount: String(fee),
+        buyerPayableAmount: String(amount),
+        sellerReceivableAmount: String(amount - fee),
+        totalAmount: String(amount),
+      },
+      create: {
+        id: input.id,
+        buyerUserId: input.mode === OrderMode.RETAIL ? 'user-demo-buyer' : 'user-demo-distributor',
+        buyerShopId: input.mode === OrderMode.WHOLESALE ? 'shop-demo-distributor' : null,
+        buyerDistributionNodeId: null,
+        shopId: 'shop-demo-manufacturer',
+        orderMode: input.mode,
+        orderType: input.mode === OrderMode.RETAIL ? 'DIRECT_RETAIL' : 'DIRECT_WHOLESALE',
+        orderStatus: status.orderStatus,
+        fulfillmentStatus: status.fulfillmentStatus,
+        baseAmount: String(amount),
+        discountAmount: '0',
+        platformFeeAmount: String(fee),
+        buyerPayableAmount: String(amount),
+        sellerReceivableAmount: String(amount - fee),
+        totalAmount: String(amount),
+        shippingName: input.mode === OrderMode.RETAIL ? 'Nguoi mua mau' : 'Dai Ly Phan Phoi Sai Gon',
+        shippingPhone: input.mode === OrderMode.RETAIL ? '0900000001' : '0900000004',
+        shippingAddress: input.mode === OrderMode.RETAIL ? '12 Nguyen Trai, Quan 1, TP.HCM' : 'Kho B2, KCN Tan Binh, TP.HCM',
+      },
+    });
+
+    await prisma.orderItem.upsert({
+      where: { id: `${input.id}-item` },
+      update: {
+        offerId: input.offer.offerId,
+        offerTitleSnapshot: input.offer.title,
+        unitPrice: String(input.offer.price),
+        quantity: input.quantity,
+        verificationLevelSnapshot: 'verified',
+      },
+      create: {
+        id: `${input.id}-item`,
+        orderId: input.id,
+        offerId: input.offer.offerId,
+        offerTitleSnapshot: input.offer.title,
+        unitPrice: String(input.offer.price),
+        quantity: input.quantity,
+        verificationLevelSnapshot: 'verified',
+      },
+    });
+
+    await prisma.paymentIntent.upsert({
+      where: { orderId: input.id },
+      update: {
+        paymentMethod: input.mode === OrderMode.RETAIL ? 'COD' : 'BANK_TRANSFER',
+        paymentStatus: status.orderStatus === 'paid' || status.orderStatus === 'completed' ? 'PAID' : 'PENDING',
+        amount: String(amount),
+      },
+      create: {
+        orderId: input.id,
+        paymentMethod: input.mode === OrderMode.RETAIL ? 'COD' : 'BANK_TRANSFER',
+        paymentStatus: status.orderStatus === 'paid' || status.orderStatus === 'completed' ? 'PAID' : 'PENDING',
+        amount: String(amount),
+      },
+    });
+
+    await prisma.escrow.upsert({
+      where: { orderId: input.id },
+      update: {
+        escrowStatus: status.orderStatus === 'completed' ? 'RELEASED' : 'PENDING',
+        heldAmount: status.orderStatus === 'paid' ? String(amount) : '0',
+      },
+      create: {
+        orderId: input.id,
+        escrowStatus: status.orderStatus === 'completed' ? 'RELEASED' : 'PENDING',
+        heldAmount: status.orderStatus === 'paid' ? String(amount) : '0',
+      },
+    });
+  }
+
+  for (const [index, offer] of retailOffers.entries()) {
+    await upsertOrder({
+      id: `sample-order-retail-0${index + 1}`,
+      offer,
+      mode: OrderMode.RETAIL,
+      quantity: index + 1,
+      index,
+    });
+  }
+
+  for (const [index, offer] of wholesaleOffers.entries()) {
+    await upsertOrder({
+      id: `sample-order-wholesale-0${index + 1}`,
+      offer,
+      mode: OrderMode.WHOLESALE,
+      quantity: offer.minWholesaleQty ?? 2,
+      index,
+    });
+  }
+}
+
 async function main() {
   await seedShopTypesAndRequirements();
   await seedCatalog();
   await seedUsersAndShops();
   await seedOffers();
+  await seedDemoProductsAndOffers();
+  await seedDemoOrders();
 }
 
 main()
   .then(async () => {
     console.log('Seed data created.');
-    console.log('Demo accounts: buyer@example.com / 12345678, manufacturer@example.com / 12345678, admin@example.com / 12345678');
+    console.log(
+      'Demo accounts: buyer@example.com / 12345678, manufacturer@example.com / 12345678, distributor@example.com / 12345678, admin@example.com / 12345678',
+    );
     await prisma.$disconnect();
   })
   .catch(async (error) => {

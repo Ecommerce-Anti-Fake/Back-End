@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsDateString, IsIn, IsInt, IsOptional, IsString, IsUrl, Max, Min, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, IsUrl, Max, Min, ValidateNested } from 'class-validator';
 
 const USER_MANAGEMENT_ROLES = ['user'] as const;
 const USER_ACCOUNT_STATUSES = ['active', 'inactive', 'blocked'] as const;
@@ -122,6 +122,73 @@ export class ProfileCompletionResponseDto {
   isOrderReady!: boolean;
 }
 
+export class UserAddressResponseDto {
+  @ApiProperty({ example: 'address-id' })
+  id!: string;
+
+  @ApiProperty({ example: 'user-id' })
+  userId!: string;
+
+  @ApiProperty({ example: 'Nguyen Van A' })
+  recipientName!: string;
+
+  @ApiProperty({ example: '0987654321' })
+  phone!: string;
+
+  @ApiProperty({ example: '12 Nguyen Trai, Quan 1, TP.HCM' })
+  addressLine!: string;
+
+  @ApiProperty({ example: true })
+  isDefault!: boolean;
+
+  @ApiProperty({ example: '2026-05-04T09:00:00.000Z' })
+  createdAt!: Date;
+
+  @ApiProperty({ example: '2026-05-04T09:00:00.000Z' })
+  updatedAt!: Date;
+}
+
+export class CreateUserAddressDto {
+  @ApiProperty({ example: 'Nguyen Van A' })
+  @IsString()
+  recipientName!: string;
+
+  @ApiProperty({ example: '0987654321' })
+  @IsString()
+  phone!: string;
+
+  @ApiProperty({ example: '12 Nguyen Trai, Quan 1, TP.HCM' })
+  @IsString()
+  addressLine!: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  isDefault?: boolean;
+}
+
+export class UpdateUserAddressDto {
+  @ApiPropertyOptional({ example: 'Nguyen Van A' })
+  @IsOptional()
+  @IsString()
+  recipientName?: string;
+
+  @ApiPropertyOptional({ example: '0987654321' })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiPropertyOptional({ example: '12 Nguyen Trai, Quan 1, TP.HCM' })
+  @IsOptional()
+  @IsString()
+  addressLine?: string;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  isDefault?: boolean;
+}
+
 export class UpdateUserDto {
   @ApiPropertyOptional({
     description: 'Email cua user.',
@@ -147,13 +214,6 @@ export class UpdateUserDto {
   @IsString()
   displayName?: string;
 
-  @ApiPropertyOptional({
-    description: 'Dia chi cua user.',
-    example: '12 Nguyen Trai, Quan 1, TP.HCM',
-  })
-  @IsOptional()
-  @IsString()
-  address?: string;
 }
 
 export class ListUsersQueryDto {

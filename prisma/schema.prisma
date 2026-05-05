@@ -142,7 +142,6 @@ model User {
   email                String?               @unique
   displayName          String?               @map("display_name")
   password             String?
-  address              String?
   role                 String                @default("user")
   accountStatus        String                @default("active") @map("account_status")
   createdAt            DateTime              @default(now()) @map("created_at")
@@ -167,8 +166,25 @@ model User {
   provenanceEvents     ProvenanceEvent[]     @relation("ProvenanceEventActor")
   affiliateAccounts    AffiliateAccount[]
   affiliateConversions AffiliateConversion[] @relation("AffiliateConversionCustomer")
+  addresses            UserAddress[]
 
   @@map("user")
+}
+
+model UserAddress {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  recipientName String   @map("recipient_name")
+  phone         String
+  addressLine   String   @map("address_line")
+  isDefault     Boolean  @default(false) @map("is_default")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, isDefault])
+  @@map("user_address")
 }
 
 model MediaAsset {

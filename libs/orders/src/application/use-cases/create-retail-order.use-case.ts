@@ -107,12 +107,11 @@ export class CreateRetailOrderUseCase {
     buyer: {
       displayName: string | null;
       phone: string | null;
-      address: string | null;
     },
   ) {
     const name = input.shippingName?.trim() || buyer.displayName?.trim() || null;
     const phone = input.shippingPhone?.trim() || buyer.phone?.trim() || null;
-    const address = input.shippingAddress?.trim() || buyer.address?.trim() || null;
+    const address = input.shippingAddress?.trim() || null;
 
     if (!phone) {
       throw new BadRequestException('Shipping contact phone is required before creating an order');

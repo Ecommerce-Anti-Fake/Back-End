@@ -8,6 +8,6 @@ export class ListUsersUseCase {
 
   async execute(role?: 'user') {
     const users = await this.usersRepository.findAll(role ?? 'user');
-    return users.map(toUserSummary);
+    return users.map((user) => toUserSummary(user));
   }
 }

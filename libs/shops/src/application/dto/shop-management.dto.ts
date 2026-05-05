@@ -716,3 +716,35 @@ export class CreateShopDto {
   @IsString({ each: true })
   categoryIds!: string[];
 }
+
+export class UpdateShopProfileDto {
+  @ApiPropertyOptional({
+    description: 'Ten shop hien thi tren gian hang.',
+    example: 'Thuc pham Au Lac',
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  @MaxLength(255)
+  shopName?: string;
+
+  @ApiPropertyOptional({
+    description: 'Loai hinh kinh doanh cua shop.',
+    example: 'Buon ban thuc pham',
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(100)
+  businessType?: string;
+
+  @ApiPropertyOptional({
+    description: 'Ma so thue, DKKD hoac CCCD dai dien.',
+    example: '0312345678',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  taxCode?: string | null;
+}

@@ -16,6 +16,11 @@ export const USERS_MESSAGE_PATTERNS = {
   findAll: 'users.find-all',
   getCurrentProfile: 'users.get-current-profile',
   getProfileCompletion: 'users.get-profile-completion',
+  listAddresses: 'users.list-addresses',
+  createAddress: 'users.create-address',
+  updateAddress: 'users.update-address',
+  setDefaultAddress: 'users.set-default-address',
+  deleteAddress: 'users.delete-address',
   getMyKyc: 'users.get-my-kyc',
   findPendingKycs: 'users.find-pending-kycs',
   getAdminKycSummary: 'users.get-admin-kyc-summary',
@@ -33,6 +38,7 @@ export const USERS_MESSAGE_PATTERNS = {
 
 export const SHOPS_MESSAGE_PATTERNS = {
   create: 'shops.create',
+  updateProfile: 'shops.update-profile',
   findById: 'shops.find-by-id',
   findMine: 'shops.find-mine',
   getVerificationSummary: 'shops.get-verification-summary',
@@ -162,6 +168,28 @@ export type CurrentUserProfileCompletionMessage = {
   userId: string;
 };
 
+export type UserAddressLookupMessage = {
+  userId: string;
+  addressId: string;
+};
+
+export type CreateUserAddressMessage = {
+  userId: string;
+  recipientName: string;
+  phone: string;
+  addressLine: string;
+  isDefault?: boolean;
+};
+
+export type UpdateUserAddressMessage = {
+  userId: string;
+  addressId: string;
+  recipientName?: string;
+  phone?: string;
+  addressLine?: string;
+  isDefault?: boolean;
+};
+
 export type CurrentUserKycMessage = {
   userId: string;
 };
@@ -247,6 +275,14 @@ export type CreateShopMessage = {
   businessType: string;
   taxCode?: string | null;
   categoryIds: string[];
+};
+
+export type UpdateShopProfileMessage = {
+  shopId: string;
+  requesterUserId: string;
+  shopName?: string;
+  businessType?: string;
+  taxCode?: string | null;
 };
 
 export type ShopLookupMessage = {

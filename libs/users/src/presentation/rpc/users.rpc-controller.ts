@@ -6,6 +6,7 @@ import type {
   AdminKycDetailMessage,
   AdminKycSummaryMessage,
   CreateUserIdentityMessage,
+  CreateUserAddressMessage,
   CurrentUserProfileMessage,
   CurrentUserProfileCompletionMessage,
   CurrentUserKycMessage,
@@ -15,6 +16,8 @@ import type {
   ReviewKycMessage,
   SubmitKycMessage,
   UpdateUserMessage,
+  UpdateUserAddressMessage,
+  UserAddressLookupMessage,
   UserIdentityLookupMessage,
   UserLookupMessage,
 } from '@contracts';
@@ -28,10 +31,15 @@ import {
   GetCurrentUserProfileUseCase,
   GetKycUploadSignaturesUseCase,
   GetUserByIdUseCase,
+  CreateUserAddressUseCase,
+  DeleteUserAddressUseCase,
+  ListUserAddressesUseCase,
   ListPendingKycsUseCase,
   ListUsersUseCase,
   ReviewUserKycUseCase,
+  SetDefaultUserAddressUseCase,
   SubmitUserKycUseCase,
+  UpdateUserAddressUseCase,
   UpdateUserUseCase,
 } from '../../application/use-cases';
 
@@ -47,6 +55,11 @@ export class UsersRpcController {
     private readonly getAdminKycSummaryUseCase: GetAdminKycSummaryUseCase,
     private readonly getCurrentUserProfileUseCase: GetCurrentUserProfileUseCase,
     private readonly getCurrentUserProfileCompletionUseCase: GetCurrentUserProfileCompletionUseCase,
+    private readonly listUserAddressesUseCase: ListUserAddressesUseCase,
+    private readonly createUserAddressUseCase: CreateUserAddressUseCase,
+    private readonly updateUserAddressUseCase: UpdateUserAddressUseCase,
+    private readonly setDefaultUserAddressUseCase: SetDefaultUserAddressUseCase,
+    private readonly deleteUserAddressUseCase: DeleteUserAddressUseCase,
     private readonly getCurrentUserKycUseCase: GetCurrentUserKycUseCase,
     private readonly listPendingKycsUseCase: ListPendingKycsUseCase,
     private readonly getKycUploadSignaturesUseCase: GetKycUploadSignaturesUseCase,
@@ -76,6 +89,51 @@ export class UsersRpcController {
   async getProfileCompletion(@Payload() payload: CurrentUserProfileCompletionMessage) {
     try {
       return await this.getCurrentUserProfileCompletionUseCase.execute(payload.userId);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(USERS_MESSAGE_PATTERNS.listAddresses)
+  async listAddresses(@Payload() payload: CurrentUserProfileMessage) {
+    try {
+      return await this.listUserAddressesUseCase.execute(payload.userId);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(USERS_MESSAGE_PATTERNS.createAddress)
+  async createAddress(@Payload() payload: CreateUserAddressMessage) {
+    try {
+      return await this.createUserAddressUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(USERS_MESSAGE_PATTERNS.updateAddress)
+  async updateAddress(@Payload() payload: UpdateUserAddressMessage) {
+    try {
+      return await this.updateUserAddressUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(USERS_MESSAGE_PATTERNS.setDefaultAddress)
+  async setDefaultAddress(@Payload() payload: UserAddressLookupMessage) {
+    try {
+      return await this.setDefaultUserAddressUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(USERS_MESSAGE_PATTERNS.deleteAddress)
+  async deleteAddress(@Payload() payload: UserAddressLookupMessage) {
+    try {
+      return await this.deleteUserAddressUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

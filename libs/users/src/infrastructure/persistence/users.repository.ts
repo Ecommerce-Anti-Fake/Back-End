@@ -101,6 +101,140 @@ export class UsersRepository {
     });
   }
 
+  findDefaultAddressByUserId(userId: string) {
+    return this.prisma.userAddress.findFirst({
+      where: {
+        userId,
+        isDefault: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  listUserAddresses(userId: string) {
+    return this.prisma.userAddress.findMany({
+      where: { userId },
+      orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  async createUserAddress(input: {
+    userId: string;
+    recipientName: string;
+    phone: string;
+    addressLine: string;
+    isDefault?: boolean;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      const existingCount = await tx.userAddress.count({ where: { userId: input.userId } });
+      const shouldBeDefault = Boolean(input.isDefault) || existingCount === 0;
+
+      if (shouldBeDefault) {
+        await tx.userAddress.updateMany({
+          where: { userId: input.userId, isDefault: true },
+          data: { isDefault: false },
+        });
+      }
+
+      return tx.userAddress.create({
+        data: {
+          userId: input.userId,
+          recipientName: input.recipientName,
+          phone: input.phone,
+          addressLine: input.addressLine,
+          isDefault: shouldBeDefault,
+        },
+      });
+    });
+  }
+
+  async updateUserAddress(input: {
+    userId: string;
+    addressId: string;
+    recipientName?: string;
+    phone?: string;
+    addressLine?: string;
+    isDefault?: boolean;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      if (input.isDefault) {
+        await tx.userAddress.updateMany({
+          where: { userId: input.userId, isDefault: true, id: { not: input.addressId } },
+          data: { isDefault: false },
+        });
+      }
+
+      await tx.userAddress.findFirstOrThrow({
+        where: { id: input.addressId, userId: input.userId },
+      });
+
+      return tx.userAddress.update({
+        where: {
+          id: input.addressId,
+        },
+        data: {
+          recipientName: input.recipientName,
+          phone: input.phone,
+          addressLine: input.addressLine,
+          isDefault: input.isDefault,
+        },
+      });
+    });
+  }
+
+  async setDefaultUserAddress(userId: string, addressId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.userAddress.findFirstOrThrow({
+        where: {
+          id: addressId,
+          userId,
+        },
+      });
+
+      await tx.userAddress.updateMany({
+        where: { userId, isDefault: true, id: { not: addressId } },
+        data: { isDefault: false },
+      });
+
+      return tx.userAddress.update({
+        where: {
+          id: addressId,
+        },
+        data: { isDefault: true },
+      });
+    });
+  }
+
+  async deleteUserAddress(userId: string, addressId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.userAddress.findFirstOrThrow({
+        where: { id: addressId, userId },
+      });
+
+      const deleted = await tx.userAddress.delete({
+        where: {
+          id: addressId,
+        },
+      });
+
+      if (deleted.isDefault) {
+        const nextDefault = await tx.userAddress.findFirst({
+          where: { userId },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        if (nextDefault) {
+          await tx.userAddress.update({
+            where: { id: nextDefault.id },
+            data: { isDefault: true },
+          });
+        }
+      }
+
+      return deleted;
+    });
+  }
+
   findByIdentifier(identifier: { email?: string | null; phone?: string | null }) {
     const { email, phone } = identifier;
 
@@ -343,7 +477,6 @@ export class UsersRepository {
       email?: string | null;
       phone?: string | null;
       displayName?: string | null;
-      address?: string | null;
       accountStatus?: string;
     },
   ) {

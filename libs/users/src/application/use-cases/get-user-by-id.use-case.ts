@@ -12,6 +12,7 @@ export class GetUserByIdUseCase {
       throw new NotFoundException('User not found');
     }
 
-    return toUserSummary(user);
+    const defaultAddress = await this.usersRepository.findDefaultAddressByUserId(id);
+    return toUserSummary(user, defaultAddress);
   }
 }

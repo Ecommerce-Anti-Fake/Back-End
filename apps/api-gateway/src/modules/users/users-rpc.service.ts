@@ -3,6 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import type {
   AdminKycDetailMessage,
   AdminKycSummaryMessage,
+  CreateUserAddressMessage,
   CurrentUserKycMessage,
   CurrentUserProfileCompletionMessage,
   KycUploadSignaturesMessage,
@@ -11,6 +12,8 @@ import type {
   ReviewKycMessage,
   SubmitKycMessage,
   UpdateUserMessage,
+  UpdateUserAddressMessage,
+  UserAddressLookupMessage,
   UserIdentityRecord,
   UserLookupMessage,
 } from '@contracts';
@@ -39,6 +42,26 @@ export class UsersRpcService {
 
   getProfileCompletion(payload: CurrentUserProfileCompletionMessage) {
     return this.send(USERS_MESSAGE_PATTERNS.getProfileCompletion, payload);
+  }
+
+  listAddresses(payload: CurrentUserProfileMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.listAddresses, payload);
+  }
+
+  createAddress(payload: CreateUserAddressMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.createAddress, payload);
+  }
+
+  updateAddress(payload: UpdateUserAddressMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.updateAddress, payload);
+  }
+
+  setDefaultAddress(payload: UserAddressLookupMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.setDefaultAddress, payload);
+  }
+
+  deleteAddress(payload: UserAddressLookupMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.deleteAddress, payload);
   }
 
   getMyKyc(payload: CurrentUserKycMessage) {

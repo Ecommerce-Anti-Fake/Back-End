@@ -16,6 +16,7 @@ export class GetCurrentUserProfileCompletionUseCase {
       throw new ForbiddenException('Account is not active');
     }
 
-    return toUserProfileCompletion(user);
+    const defaultAddress = await this.usersRepository.findDefaultAddressByUserId(userId);
+    return toUserProfileCompletion(user, defaultAddress);
   }
 }

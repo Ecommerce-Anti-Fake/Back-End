@@ -15,7 +15,8 @@ export class GetCurrentUserProfileUseCase {
       throw new ForbiddenException('Account is not active');
     }
 
-    return toUserSummary(user);
+    const defaultAddress = await this.usersRepository.findDefaultAddressByUserId(userId);
+    return toUserSummary(user, defaultAddress);
   }
 
 }

@@ -3,6 +3,7 @@ import { PrismaModule } from '@database/prisma/prisma.module';
 import { MediaModule } from '@media';
 import {
   CreateShopUseCase,
+  UpdateShopProfileUseCase,
   GetBrandAuthorizationUploadSignaturesUseCase,
   GetAdminShopVerificationDetailUseCase,
   GetAdminShopVerificationSummaryUseCase,
@@ -33,6 +34,7 @@ import { ShopsRpcController } from './presentation/rpc/shops.rpc-controller';
   providers: [
     ShopsRepository,
     CreateShopUseCase,
+    UpdateShopProfileUseCase,
     GetBrandAuthorizationUploadSignaturesUseCase,
     GetAdminShopVerificationDetailUseCase,
     GetAdminShopVerificationSummaryUseCase,
@@ -57,6 +59,7 @@ import { ShopsRpcController } from './presentation/rpc/shops.rpc-controller';
   exports: [
     ShopsRepository,
     CreateShopUseCase,
+    UpdateShopProfileUseCase,
     GetBrandAuthorizationUploadSignaturesUseCase,
     GetAdminShopVerificationDetailUseCase,
     GetAdminShopVerificationSummaryUseCase,

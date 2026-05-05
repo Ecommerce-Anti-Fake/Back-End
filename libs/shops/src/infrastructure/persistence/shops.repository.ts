@@ -368,6 +368,35 @@ export class ShopsRepository {
     });
   }
 
+  updateProfile(
+    shopId: string,
+    data: {
+      shopName?: string;
+      businessType?: string;
+      taxCode?: string | null;
+    },
+  ) {
+    return this.prisma.shop.update({
+      where: { id: shopId },
+      data,
+      include: {
+        registeredCategories: {
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+      },
+    });
+  }
+
   countByOwnerUserId(ownerUserId: string) {
     return this.prisma.shop.count({
       where: { ownerUserId },

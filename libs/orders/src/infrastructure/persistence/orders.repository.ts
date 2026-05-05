@@ -311,7 +311,6 @@ export class OrdersRepository {
         id: true,
         phone: true,
         displayName: true,
-        address: true,
       },
     });
   }

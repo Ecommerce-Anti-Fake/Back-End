@@ -13,6 +13,7 @@ import {
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import {
   AdminUserKycDetailResponseDto,
+  CreateUserAddressDto,
   GetKycUploadSignaturesDto,
   PendingKycQueryDto,
   PaginatedAdminUserKycResponseDto,
@@ -22,7 +23,9 @@ import {
   ProfileCompletionResponseDto,
   ReviewUserKycDto,
   SubmitKycDto,
+  UpdateUserAddressDto,
   UpdateUserDto,
+  UserAddressResponseDto,
   UserKycResponseDto,
   UserResponseDto,
 } from '@users';
@@ -126,6 +129,87 @@ export class UsersController {
   @Get('profile-completion')
   getProfileCompletion(@CurrentUserId() userId: string) {
     return this.usersRpcService.getProfileCompletion({ userId });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach dia chi giao hang cua user hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach dia chi giao hang.',
+    type: UserAddressResponseDto,
+    isArray: true,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('addresses')
+  listAddresses(@CurrentUserId() userId: string) {
+    return this.usersRpcService.listAddresses({ userId });
+  }
+
+  @ApiOperation({ summary: 'Them dia chi giao hang cho user hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Dia chi vua tao.',
+    type: UserAddressResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('addresses')
+  createAddress(@CurrentUserId() userId: string, @Body() dto: CreateUserAddressDto) {
+    return this.usersRpcService.createAddress({
+      userId,
+      recipientName: dto.recipientName,
+      phone: dto.phone,
+      addressLine: dto.addressLine,
+      isDefault: dto.isDefault,
+    });
+  }
+
+  @ApiOperation({ summary: 'Cap nhat dia chi giao hang cua user hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'addressId', description: 'ID dia chi can cap nhat.' })
+  @ApiOkResponse({
+    description: 'Dia chi sau cap nhat.',
+    type: UserAddressResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Patch('addresses/:addressId')
+  updateAddress(
+    @CurrentUserId() userId: string,
+    @Param('addressId') addressId: string,
+    @Body() dto: UpdateUserAddressDto,
+  ) {
+    return this.usersRpcService.updateAddress({
+      userId,
+      addressId,
+      recipientName: dto.recipientName,
+      phone: dto.phone,
+      addressLine: dto.addressLine,
+      isDefault: dto.isDefault,
+    });
+  }
+
+  @ApiOperation({ summary: 'Dat mot dia chi lam mac dinh' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'addressId', description: 'ID dia chi can dat mac dinh.' })
+  @ApiOkResponse({
+    description: 'Dia chi mac dinh moi.',
+    type: UserAddressResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('addresses/:addressId/default')
+  setDefaultAddress(@CurrentUserId() userId: string, @Param('addressId') addressId: string) {
+    return this.usersRpcService.setDefaultAddress({ userId, addressId });
+  }
+
+  @ApiOperation({ summary: 'Xoa dia chi giao hang cua user hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'addressId', description: 'ID dia chi can xoa.' })
+  @ApiOkResponse({
+    description: 'Dia chi da xoa.',
+    type: UserAddressResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Delete('addresses/:addressId')
+  deleteAddress(@CurrentUserId() userId: string, @Param('addressId') addressId: string) {
+    return this.usersRpcService.deleteAddress({ userId, addressId });
   }
 
   @ApiOperation({ summary: 'Lay trang thai KYC cua user hien tai' })
@@ -249,7 +333,7 @@ export class UsersController {
   @ApiForbiddenResponse({
     description: 'Chi admin moi co quyen truy cap.',
   })
-  @Roles('admin, user')
+  @Roles('admin', 'user')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateUserDto) {

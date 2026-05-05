@@ -1,2 +1,0 @@
-ALTER TABLE "order"
-  ADD COLUMN IF NOT EXISTS "fulfillment_status" TEXT NOT NULL DEFAULT 'PENDING';

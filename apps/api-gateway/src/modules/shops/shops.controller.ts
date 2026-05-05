@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -29,6 +29,7 @@ import {
   SubmitCategoryDocumentsDto,
   SubmitBrandAuthorizationDto,
   SubmitShopDocumentsDto,
+  UpdateShopProfileDto,
 } from '@shops';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import { ShopsRpcService } from './shops-rpc.service';
@@ -60,6 +61,37 @@ export class ShopsController {
       businessType: dto.businessType,
       taxCode: dto.taxCode ?? null,
       categoryIds: dto.categoryIds,
+    });
+  }
+
+  @ApiOperation({ summary: 'Cap nhat ho so co ban cua shop hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Cap nhat ho so shop thanh cong.',
+    type: ShopResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Du lieu cap nhat khong hop le.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Thieu access token hoac token khong hop le.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Shop khong thuoc user hien tai.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Patch(':shopId/profile')
+  updateProfile(
+    @Param('shopId') shopId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: UpdateShopProfileDto,
+  ) {
+    return this.shopsRpcService.updateProfile({
+      shopId,
+      requesterUserId,
+      shopName: dto.shopName,
+      businessType: dto.businessType,
+      taxCode: dto.taxCode,
     });
   }
 

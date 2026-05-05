@@ -8,6 +8,7 @@ export * from './get-kyc-upload-signatures.use-case';
 export * from './get-user-by-id.use-case';
 export * from './list-pending-kycs.use-case';
 export * from './list-users.use-case';
+export * from './manage-user-addresses.use-case';
 export * from './review-user-kyc.use-case';
 export * from './submit-user-kyc.use-case';
 export * from './update-user.use-case';
