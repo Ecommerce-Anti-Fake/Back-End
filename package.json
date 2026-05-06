@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build api-gateway && nest build auth-service && nest build users-service && nest build catalog-service && nest build orders-service && nest build affiliate-service",
+    "build": "prisma generate && nest build api-gateway && nest build auth-service && nest build users-service && nest build catalog-service && nest build orders-service && nest build affiliate-service",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start api-gateway",
     "start:dev": "nest start api-gateway --watch",
