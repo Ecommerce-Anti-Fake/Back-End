@@ -14,6 +14,7 @@ export * from './get-admin-dispute-detail.use-case';
 export * from './list-admin-open-disputes.use-case';
 export * from './get-order-by-id.use-case';
 export * from './mark-order-paid.use-case';
+export * from './handle-payos-webhook.use-case';
 export * from './complete-order.use-case';
 export * from './cancel-order.use-case';
 export * from './get-dispute-evidence-upload-signatures.use-case';

@@ -24,6 +24,7 @@ import {
   SubmitBrandAuthorizationMessage,
   SubmitCategoryDocumentsMessage,
   SubmitShopDocumentsMessage,
+  UpdateShopRegistrationTypeMessage,
   UpdateShopProfileMessage,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
@@ -42,6 +43,10 @@ export class ShopsRpcService {
 
   updateProfile(payload: UpdateShopProfileMessage) {
     return this.send(SHOPS_MESSAGE_PATTERNS.updateProfile, payload);
+  }
+
+  updateRegistrationType(payload: UpdateShopRegistrationTypeMessage) {
+    return this.send(SHOPS_MESSAGE_PATTERNS.updateRegistrationType, payload);
   }
 
   getBrandAuthorizationUploadSignatures(payload: BrandAuthorizationUploadSignaturesMessage) {

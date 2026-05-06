@@ -748,3 +748,14 @@ export class UpdateShopProfileDto {
   @MaxLength(50)
   taxCode?: string | null;
 }
+
+export class UpdateShopRegistrationTypeDto {
+  @ApiProperty({
+    description: 'Loai tai khoan gian hang moi.',
+    enum: SHOP_REGISTRATION_TYPES,
+    example: 'DISTRIBUTOR',
+  })
+  @IsString()
+  @IsIn(SHOP_REGISTRATION_TYPES)
+  registrationType!: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
+}

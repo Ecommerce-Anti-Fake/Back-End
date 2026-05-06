@@ -25,6 +25,7 @@ import {
   CancelOrderMessage,
   OpenOrderDisputeMessage,
   ORDERS_SERVICE_CLIENT,
+  PayOSWebhookMessage,
   ResolveOrderDisputeMessage,
   RefundOrderMessage,
   RemoveCartItemMessage,
@@ -111,6 +112,10 @@ export class OrdersRpcService {
 
   markPaid(payload: MarkOrderPaidMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.markPaid, payload);
+  }
+
+  handlePayOSWebhook(payload: PayOSWebhookMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.handlePayOSWebhook, payload);
   }
 
   updateFulfillment(payload: UpdateOrderFulfillmentMessage) {

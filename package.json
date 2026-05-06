@@ -12,6 +12,8 @@
     "start:dev": "nest start api-gateway --watch",
     "start:debug": "nest start api-gateway --debug --watch",
     "start:prod": "node dist/apps/api-gateway/main",
+    "start:prod:all": "node scripts/start-all.js",
+    "deploy:start": "npx prisma migrate deploy && npm run start:prod:all",
     "start:dev:gateway": "nest start api-gateway --watch",
     "start:dev:auth": "nest start auth-service --watch",
     "start:dev:users": "nest start users-service --watch",

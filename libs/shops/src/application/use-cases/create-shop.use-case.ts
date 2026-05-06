@@ -60,9 +60,8 @@ export class CreateShopUseCase {
       shopStatus,
       categoryRegistrations: categories.map((category) => ({
         categoryId: category.id,
-        registrationStatus:
-          shopStatus === 'active' ? 'approved' : 'pending',
-        approvedAt: shopStatus === 'active' ? new Date() : null,
+        registrationStatus: category.riskTier.trim().toLowerCase() === 'low' ? 'approved' : 'pending',
+        approvedAt: category.riskTier.trim().toLowerCase() === 'low' ? new Date() : null,
       })),
     });
 

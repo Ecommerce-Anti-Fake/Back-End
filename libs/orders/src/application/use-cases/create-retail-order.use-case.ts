@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { OfferForOrdering, OrdersRepository } from '../../infrastructure/persistence/orders.repository';
-import { OrderPlacementService } from '../services';
+import { OrderPlacementService, PayOSPaymentService } from '../services';
 import { toOrderResponse } from './orders.mapper';
 
 @Injectable()
@@ -8,13 +8,14 @@ export class CreateRetailOrderUseCase {
   constructor(
     private readonly ordersRepository: OrdersRepository,
     private readonly orderPlacementService: OrderPlacementService,
+    private readonly payOSPaymentService: PayOSPaymentService,
   ) {}
 
   async execute(input: {
     buyerUserId: string;
     offerId: string;
     quantity: number;
-    paymentMethod?: 'COD' | 'BANK_TRANSFER' | null;
+    paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | null;
     affiliateCode?: string | null;
     shippingName?: string | null;
     shippingPhone?: string | null;
@@ -50,6 +51,7 @@ export class CreateRetailOrderUseCase {
     const buyerPayableAmount = baseAmount;
     const sellerReceivableAmount = this.roundMoney(baseAmount - platformFeeAmount);
 
+    const paymentMethod = input.paymentMethod ?? 'COD';
     const order = await this.orderPlacementService.createOrder({
       order: {
         buyerUserId: input.buyerUserId,
@@ -68,7 +70,7 @@ export class CreateRetailOrderUseCase {
         shippingName: shipping.name,
         shippingPhone: shipping.phone,
         shippingAddress: shipping.address,
-        paymentMethod: input.paymentMethod ?? 'COD',
+        paymentMethod,
         item: {
           offerId: offer.id,
           offerTitleSnapshot: offer.title,
@@ -91,7 +93,30 @@ export class CreateRetailOrderUseCase {
         : undefined,
     });
 
-    return toOrderResponse(order);
+    const response = toOrderResponse(order);
+    if (paymentMethod !== 'PAYOS') {
+      return response;
+    }
+
+    const paymentLink = await this.payOSPaymentService.createPaymentLink({
+      orderId: order.id,
+      amount: buyerPayableAmount,
+      description: `DH${order.id.replace(/-/g, '').slice(0, 7)}`,
+      buyerName: shipping.name,
+      buyerPhone: shipping.phone,
+      itemName: offer.title,
+      quantity: input.quantity,
+    });
+    await this.ordersRepository.updatePaymentProviderRef(order.id, `PAYOS:${paymentLink.paymentLinkId}`);
+
+    return {
+      ...response,
+      paymentProviderRef: `PAYOS:${paymentLink.paymentLinkId}`,
+      payOSOrderCode: paymentLink.orderCode,
+      payOSPaymentLinkId: paymentLink.paymentLinkId,
+      payOSCheckoutUrl: paymentLink.checkoutUrl,
+      payOSQrCode: paymentLink.qrCode ?? null,
+    };
   }
 
   private roundMoney(value: number) {

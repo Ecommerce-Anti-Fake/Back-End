@@ -132,7 +132,7 @@ export type CreateOrderRecordInput = {
   shippingName?: string | null;
   shippingPhone?: string | null;
   shippingAddress?: string | null;
-  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'manual_confirmation' | null;
+  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'manual_confirmation' | null;
   item: {
     offerId: string;
     offerTitleSnapshot: string;
@@ -976,6 +976,24 @@ export class OrdersRepository {
         },
         ...orderWithRelationsArgs,
       });
+    });
+  }
+
+  updatePaymentProviderRef(orderId: string, providerRef: string): Promise<unknown> {
+    return this.prisma.paymentIntent.update({
+      where: { orderId },
+      data: { providerRef },
+    });
+  }
+
+  findOrderByPaymentProviderRef(providerRef: string): Promise<OrderWithRelations | null> {
+    return this.prisma.order.findFirst({
+      where: {
+        paymentIntent: {
+          providerRef,
+        },
+      },
+      ...orderWithRelationsArgs,
     });
   }
 

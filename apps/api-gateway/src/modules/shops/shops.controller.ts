@@ -29,6 +29,7 @@ import {
   SubmitCategoryDocumentsDto,
   SubmitBrandAuthorizationDto,
   SubmitShopDocumentsDto,
+  UpdateShopRegistrationTypeDto,
   UpdateShopProfileDto,
 } from '@shops';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
@@ -92,6 +93,29 @@ export class ShopsController {
       shopName: dto.shopName,
       businessType: dto.businessType,
       taxCode: dto.taxCode,
+    });
+  }
+
+  @ApiOperation({ summary: 'Yeu cau doi loai tai khoan gian hang' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Cap nhat loai shop thanh cong, trang thai verification duoc tinh lai.',
+    type: ShopResponseDto,
+  })
+  @ApiForbiddenResponse({
+    description: 'Shop khong thuoc user hien tai.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Patch(':shopId/registration-type')
+  updateRegistrationType(
+    @Param('shopId') shopId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: UpdateShopRegistrationTypeDto,
+  ) {
+    return this.shopsRpcService.updateRegistrationType({
+      shopId,
+      requesterUserId,
+      registrationType: dto.registrationType,
     });
   }
 

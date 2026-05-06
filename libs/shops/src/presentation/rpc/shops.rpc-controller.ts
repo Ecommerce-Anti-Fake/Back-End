@@ -23,6 +23,7 @@ import type {
   SubmitBrandAuthorizationMessage,
   SubmitCategoryDocumentsMessage,
   SubmitShopDocumentsMessage,
+  UpdateShopRegistrationTypeMessage,
   UpdateShopProfileMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
@@ -49,6 +50,7 @@ import {
   SubmitCategoryDocumentsUseCase,
   SubmitShopDocumentsUseCase,
   UpdateShopProfileUseCase,
+  UpdateShopRegistrationTypeUseCase,
 } from '../../application/use-cases';
 
 @Controller()
@@ -76,6 +78,7 @@ export class ShopsRpcController {
     private readonly submitBrandAuthorizationUseCase: SubmitBrandAuthorizationUseCase,
     private readonly reviewBrandAuthorizationUseCase: ReviewBrandAuthorizationUseCase,
     private readonly updateShopProfileUseCase: UpdateShopProfileUseCase,
+    private readonly updateShopRegistrationTypeUseCase: UpdateShopRegistrationTypeUseCase,
   ) {}
 
   @MessagePattern(SHOPS_MESSAGE_PATTERNS.create)
@@ -91,6 +94,15 @@ export class ShopsRpcController {
   async updateProfile(@Payload() payload: UpdateShopProfileMessage) {
     try {
       return await this.updateShopProfileUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(SHOPS_MESSAGE_PATTERNS.updateRegistrationType)
+  async updateRegistrationType(@Payload() payload: UpdateShopRegistrationTypeMessage) {
+    try {
+      return await this.updateShopRegistrationTypeUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

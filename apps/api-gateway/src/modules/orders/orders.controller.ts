@@ -33,6 +33,7 @@ import {
   UpdateAdminDisputeCaseDto,
   UpdateOrderFulfillmentDto,
 } from '@orders';
+import type { PayOSWebhookMessage } from '@contracts';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import { OrdersRpcService } from './orders-rpc.service';
 
@@ -379,6 +380,15 @@ export class OrdersController {
       requesterUserId,
       providerRef: dto.providerRef ?? null,
     });
+  }
+
+  @ApiOperation({ summary: 'Webhook public nhan ket qua thanh toan tu payOS' })
+  @ApiOkResponse({
+    description: 'Da nhan webhook payOS.',
+  })
+  @Post('payos/webhook')
+  handlePayOSWebhook(@Body() payload: PayOSWebhookMessage) {
+    return this.ordersRpcService.handlePayOSWebhook(payload);
   }
 
   @ApiOperation({ summary: 'Seller cap nhat trang thai xu ly va giao hang' })

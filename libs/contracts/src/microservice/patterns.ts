@@ -39,6 +39,7 @@ export const USERS_MESSAGE_PATTERNS = {
 export const SHOPS_MESSAGE_PATTERNS = {
   create: 'shops.create',
   updateProfile: 'shops.update-profile',
+  updateRegistrationType: 'shops.update-registration-type',
   findById: 'shops.find-by-id',
   findMine: 'shops.find-mine',
   getVerificationSummary: 'shops.get-verification-summary',
@@ -101,6 +102,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   updateAdminDisputeCase: 'orders.update-admin-dispute-case',
   resolveAdminDispute: 'orders.resolve-admin-dispute',
   markPaid: 'orders.mark-paid',
+  handlePayOSWebhook: 'orders.handle-payos-webhook',
   complete: 'orders.complete',
   cancel: 'orders.cancel',
   openDispute: 'orders.open-dispute',
@@ -283,6 +285,12 @@ export type UpdateShopProfileMessage = {
   shopName?: string;
   businessType?: string;
   taxCode?: string | null;
+};
+
+export type UpdateShopRegistrationTypeMessage = {
+  shopId: string;
+  requesterUserId: string;
+  registrationType: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
 };
 
 export type ShopLookupMessage = {
@@ -535,7 +543,7 @@ export type CreateRetailOrderMessage = {
   buyerUserId: string;
   offerId: string;
   quantity: number;
-  paymentMethod?: 'COD' | 'BANK_TRANSFER' | null;
+  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | null;
   affiliateCode?: string | null;
   shippingName?: string | null;
   shippingPhone?: string | null;
@@ -566,7 +574,7 @@ export type RemoveCartItemMessage = {
 export type CheckoutCartItemMessage = {
   buyerUserId: string;
   cartItemId: string;
-  paymentMethod?: 'COD' | 'BANK_TRANSFER' | null;
+  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | null;
   affiliateCode?: string | null;
   shippingName?: string | null;
   shippingPhone?: string | null;
@@ -642,6 +650,14 @@ export type MarkOrderPaidMessage = {
   id: string;
   requesterUserId: string;
   providerRef?: string | null;
+};
+
+export type PayOSWebhookMessage = {
+  code: string;
+  desc: string;
+  success: boolean;
+  signature: string;
+  data: Record<string, unknown>;
 };
 
 export type CompleteOrderMessage = {

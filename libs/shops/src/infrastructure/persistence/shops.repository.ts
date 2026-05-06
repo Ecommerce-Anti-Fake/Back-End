@@ -397,6 +397,22 @@ export class ShopsRepository {
     });
   }
 
+  updateRegistrationType(
+    shopId: string,
+    data: {
+      registrationType: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
+      shopTypeId: string | null;
+    },
+  ) {
+    return this.prisma.shop.update({
+      where: { id: shopId },
+      data: {
+        registrationType: data.registrationType,
+        shopTypeId: data.shopTypeId,
+      },
+    });
+  }
+
   countByOwnerUserId(ownerUserId: string) {
     return this.prisma.shop.count({
       where: { ownerUserId },
@@ -1074,7 +1090,7 @@ export class ShopsRepository {
 
       const hasApprovedShopDocument = shop.documents.some((document) => document.reviewStatus === 'approved');
       const hasPendingCategoryRegistration = shop.registeredCategories.some(
-        (item) => item.registrationStatus !== 'approved',
+        (item) => item.category.riskTier.trim().toLowerCase() !== 'low' && item.registrationStatus !== 'approved',
       );
 
       if (

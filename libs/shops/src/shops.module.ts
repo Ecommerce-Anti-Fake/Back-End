@@ -4,6 +4,7 @@ import { MediaModule } from '@media';
 import {
   CreateShopUseCase,
   UpdateShopProfileUseCase,
+  UpdateShopRegistrationTypeUseCase,
   GetBrandAuthorizationUploadSignaturesUseCase,
   GetAdminShopVerificationDetailUseCase,
   GetAdminShopVerificationSummaryUseCase,
@@ -35,6 +36,7 @@ import { ShopsRpcController } from './presentation/rpc/shops.rpc-controller';
     ShopsRepository,
     CreateShopUseCase,
     UpdateShopProfileUseCase,
+    UpdateShopRegistrationTypeUseCase,
     GetBrandAuthorizationUploadSignaturesUseCase,
     GetAdminShopVerificationDetailUseCase,
     GetAdminShopVerificationSummaryUseCase,
@@ -60,6 +62,7 @@ import { ShopsRpcController } from './presentation/rpc/shops.rpc-controller';
     ShopsRepository,
     CreateShopUseCase,
     UpdateShopProfileUseCase,
+    UpdateShopRegistrationTypeUseCase,
     GetBrandAuthorizationUploadSignaturesUseCase,
     GetAdminShopVerificationDetailUseCase,
     GetAdminShopVerificationSummaryUseCase,

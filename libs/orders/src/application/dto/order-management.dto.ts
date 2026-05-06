@@ -88,6 +88,21 @@ export class OrderResponseDto {
   @ApiPropertyOptional({ example: 'PENDING', nullable: true })
   paymentStatus!: string | null;
 
+  @ApiPropertyOptional({ example: 'PAYOS', nullable: true })
+  paymentMethod!: string | null;
+
+  @ApiPropertyOptional({ example: 'PAYOS:payment-link-id', nullable: true })
+  paymentProviderRef!: string | null;
+
+  @ApiPropertyOptional({ example: 'https://pay.payos.vn/web/payment-link-id', nullable: true })
+  payOSCheckoutUrl?: string | null;
+
+  @ApiPropertyOptional({ example: 'payment-link-id', nullable: true })
+  payOSPaymentLinkId?: string | null;
+
+  @ApiPropertyOptional({ example: 1776240000123, nullable: true })
+  payOSOrderCode?: number | null;
+
   @ApiPropertyOptional({ example: 'PENDING', nullable: true })
   escrowStatus!: string | null;
 
@@ -487,10 +502,10 @@ export class CreateRetailOrderDto {
   @IsString()
   affiliateCode?: string;
 
-  @ApiPropertyOptional({ example: 'COD', enum: ['COD', 'BANK_TRANSFER'] })
+  @ApiPropertyOptional({ example: 'PAYOS', enum: ['COD', 'BANK_TRANSFER', 'PAYOS'] })
   @IsOptional()
-  @IsIn(['COD', 'BANK_TRANSFER'])
-  paymentMethod?: 'COD' | 'BANK_TRANSFER';
+  @IsIn(['COD', 'BANK_TRANSFER', 'PAYOS'])
+  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS';
 
   @ApiPropertyOptional({ example: 'Nguyen Van A' })
   @IsOptional()
@@ -534,10 +549,10 @@ export class CheckoutCartItemDto {
   @IsString()
   affiliateCode?: string;
 
-  @ApiPropertyOptional({ example: 'COD', enum: ['COD', 'BANK_TRANSFER'] })
+  @ApiPropertyOptional({ example: 'PAYOS', enum: ['COD', 'BANK_TRANSFER', 'PAYOS'] })
   @IsOptional()
-  @IsIn(['COD', 'BANK_TRANSFER'])
-  paymentMethod?: 'COD' | 'BANK_TRANSFER';
+  @IsIn(['COD', 'BANK_TRANSFER', 'PAYOS'])
+  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS';
 
   @ApiPropertyOptional({ example: 'Nguyen Van A' })
   @IsOptional()
