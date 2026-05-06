@@ -1,15 +1,18 @@
 const { spawn } = require('child_process');
+const { existsSync } = require('fs');
+const { join } = require('path');
 
 const services = [
-  ['auth-service', 'dist/apps/auth-service/main.js'],
-  ['users-service', 'dist/apps/users-service/main.js'],
-  ['catalog-service', 'dist/apps/catalog-service/main.js'],
-  ['orders-service', 'dist/apps/orders-service/main.js'],
-  ['affiliate-service', 'dist/apps/affiliate-service/main.js'],
-  ['api-gateway', 'dist/apps/api-gateway/main.js'],
+  'auth-service',
+  'users-service',
+  'catalog-service',
+  'orders-service',
+  'affiliate-service',
+  'api-gateway',
 ];
 
-const children = services.map(([name, entry]) => {
+const children = services.map((name) => {
+  const entry = resolveEntry(name);
   const child = spawn(process.execPath, [entry], {
     stdio: ['ignore', 'pipe', 'pipe'],
     env: process.env,
@@ -44,3 +47,18 @@ function shutdown(code = 0) {
 
 process.on('SIGINT', () => shutdown(0));
 process.on('SIGTERM', () => shutdown(0));
+
+function resolveEntry(name) {
+  const candidates = [
+    join('dist', 'apps', name, 'main.js'),
+    join('dist', 'apps', name, 'src', 'main.js'),
+    join('dist', 'apps', name, 'apps', name, 'src', 'main.js'),
+  ];
+
+  const entry = candidates.find((candidate) => existsSync(candidate));
+  if (!entry) {
+    throw new Error(`Could not find build entry for ${name}. Checked: ${candidates.join(', ')}`);
+  }
+
+  return entry;
+}
