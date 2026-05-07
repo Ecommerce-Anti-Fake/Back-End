@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { PayOSPaymentService } from '../services';
 import { toOrderResponse } from './orders.mapper';
@@ -28,7 +28,11 @@ export class HandlePayOSWebhookUseCase {
 
     const order = await this.ordersRepository.findOrderByPaymentProviderRef(`PAYOS:${paymentLinkId}`);
     if (!order) {
-      throw new NotFoundException('Order not found for payOS payment link');
+      return {
+        received: true,
+        ignored: true,
+        reason: 'order_not_found',
+      };
     }
 
     const amount = Number(input.data.amount);
