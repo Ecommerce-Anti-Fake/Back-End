@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "../../dist/apps/api-gateway"
   },
-  "include": ["src/**/*.ts", "../../libs/**/*.ts"],
+  "include": ["src/**/*.ts", "../*/src/**/*.ts", "../../libs/**/*.ts"],
   "exclude": [
     "node_modules",
     "dist",
