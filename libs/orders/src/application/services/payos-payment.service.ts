@@ -41,8 +41,8 @@ export class PayOSPaymentService {
     }
 
     const orderCode = this.createOrderCode();
-    const returnUrl = this.resolveUrl(input.returnUrl, 'PAYOS_RETURN_URL', `/orders/${input.orderId}?payment=payos-return`);
-    const cancelUrl = this.resolveUrl(input.cancelUrl, 'PAYOS_CANCEL_URL', `/orders/${input.orderId}?payment=payos-cancel`);
+    const returnUrl = this.resolveUrl(input.returnUrl, 'PAYOS_RETURN_URL', `/checkout/success/${input.orderId}`);
+    const cancelUrl = this.resolveUrl(input.cancelUrl, 'PAYOS_CANCEL_URL', `/checkout/cancel/${input.orderId}`);
     const description = this.normalizeDescription(input.description, input.orderId);
     const signaturePayload = {
       amount,
