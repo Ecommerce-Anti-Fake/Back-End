@@ -106,6 +106,25 @@ export class OrderResponseDto {
   @ApiPropertyOptional({ example: 'PENDING', nullable: true })
   escrowStatus!: string | null;
 
+  @ApiPropertyOptional({
+    example: {
+      id: 'dispute-id',
+      reason: 'San pham nhan duoc khong dung voi mo ta',
+      disputeStatus: 'OPEN',
+      openedAt: '2026-04-22T10:00:00.000Z',
+    },
+    nullable: true,
+  })
+  openDispute!: {
+    id: string;
+    reason: string;
+    disputeStatus: string;
+    openedAt: Date;
+  } | null;
+
+  @ApiPropertyOptional({ example: 'dispute-id', nullable: true })
+  openDisputeId!: string | null;
+
   @ApiProperty({ example: 'shop-id' })
   sellerShopId!: string;
 

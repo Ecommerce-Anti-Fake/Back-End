@@ -42,6 +42,15 @@ const orderWithRelationsArgs = Prisma.validator<Prisma.OrderDefaultArgs>()({
     },
     paymentIntent: true,
     escrow: true,
+    disputes: {
+      where: {
+        disputeStatus: 'OPEN',
+      },
+      orderBy: {
+        openedAt: 'desc',
+      },
+      take: 1,
+    },
     items: {
       include: {
         batchAllocations: true,
@@ -67,6 +76,15 @@ const disputeWithOrderArgs = Prisma.validator<Prisma.DisputeDefaultArgs>()({
         },
         paymentIntent: true,
         escrow: true,
+        disputes: {
+          where: {
+            disputeStatus: 'OPEN',
+          },
+          orderBy: {
+            openedAt: 'desc',
+          },
+          take: 1,
+        },
         items: {
           include: {
             batchAllocations: true,

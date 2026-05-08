@@ -2,6 +2,8 @@ import { Prisma } from '@prisma/client';
 import { CartWithItems, OrderWithRelations } from '../../infrastructure/persistence/orders.repository';
 
 export function toOrderResponse(order: OrderWithRelations) {
+  const openDispute = order.disputes?.[0] ?? null;
+
   return {
     id: order.id,
     orderMode: order.orderMode,
@@ -14,6 +16,15 @@ export function toOrderResponse(order: OrderWithRelations) {
     escrowStatus: order.escrow?.escrowStatus ?? null,
     escrowHoldAt: order.escrow?.holdAt ?? null,
     escrowReleaseAt: order.escrow?.releaseAt ?? null,
+    openDispute: openDispute
+      ? {
+          id: openDispute.id,
+          reason: openDispute.reason,
+          disputeStatus: openDispute.disputeStatus,
+          openedAt: openDispute.openedAt,
+        }
+      : null,
+    openDisputeId: openDispute?.id ?? null,
     sellerShopId: order.shopId,
     sellerShopName: order.shop.shopName,
     buyerUserId: order.buyerUserId,
