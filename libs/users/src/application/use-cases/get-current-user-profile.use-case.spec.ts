@@ -8,6 +8,7 @@ describe('GetCurrentUserProfileUseCase', () => {
 
   const usersRepositoryMock = {
     findById: jest.fn(),
+    findDefaultAddressByUserId: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -54,6 +55,7 @@ describe('GetCurrentUserProfileUseCase', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
+    usersRepositoryMock.findDefaultAddressByUserId.mockResolvedValueOnce(null);
 
     const result = await useCase.execute('user-1');
 

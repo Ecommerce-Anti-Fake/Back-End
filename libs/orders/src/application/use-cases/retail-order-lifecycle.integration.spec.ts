@@ -4,7 +4,7 @@ import { CompleteOrderUseCase } from './complete-order.use-case';
 import { CreateRetailOrderUseCase } from './create-retail-order.use-case';
 import { MarkOrderPaidUseCase } from './mark-order-paid.use-case';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
-import { OrderPlacementService } from '../services';
+import { OrderPlacementService, PayOSPaymentService } from '../services';
 
 describe('Retail order lifecycle', () => {
   let createRetailOrderUseCase: CreateRetailOrderUseCase;
@@ -22,6 +22,9 @@ describe('Retail order lifecycle', () => {
   };
   const orderPlacementServiceMock = {
     createOrder: jest.fn(),
+  };
+  const payOSPaymentServiceMock = {
+    createPaymentLink: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -168,6 +171,7 @@ describe('Retail order lifecycle', () => {
         CompleteOrderUseCase,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
         { provide: OrderPlacementService, useValue: orderPlacementServiceMock },
+        { provide: PayOSPaymentService, useValue: payOSPaymentServiceMock },
       ],
     }).compile();
 
@@ -181,6 +185,7 @@ describe('Retail order lifecycle', () => {
       buyerUserId: 'buyer-user-1',
       offerId: 'offer-1',
       quantity: 2,
+      shippingAddress: '12 Nguyen Trai, Quan 1, TP.HCM',
     });
 
     expect(createdOrder).toMatchObject({

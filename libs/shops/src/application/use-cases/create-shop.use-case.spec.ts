@@ -9,6 +9,7 @@ describe('CreateShopUseCase', () => {
     countByOwnerUserId: jest.fn(),
     countCategoriesByIds: jest.fn(),
     findCategoriesByIds: jest.fn(),
+    findActiveShopTypeByCode: jest.fn(),
     hasApprovedKycForOwner: jest.fn(),
     create: jest.fn(),
   };
@@ -30,6 +31,7 @@ describe('CreateShopUseCase', () => {
     shopsRepositoryMock.countByOwnerUserId.mockResolvedValueOnce(0);
     shopsRepositoryMock.countCategoriesByIds.mockResolvedValueOnce(1);
     shopsRepositoryMock.findCategoriesByIds.mockResolvedValueOnce([{ id: 'category-1', riskTier: 'LOW' }]);
+    shopsRepositoryMock.findActiveShopTypeByCode.mockResolvedValueOnce({ id: 'shop-type-manufacturer' });
     shopsRepositoryMock.hasApprovedKycForOwner.mockResolvedValueOnce(null);
     shopsRepositoryMock.create.mockResolvedValueOnce({
       id: 'shop-1',
@@ -55,6 +57,7 @@ describe('CreateShopUseCase', () => {
     expect(shopsRepositoryMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
         ownerUserId: 'user-1',
+        shopTypeId: 'shop-type-manufacturer',
         shopStatus: 'pending_kyc',
       }),
     );
@@ -68,6 +71,7 @@ describe('CreateShopUseCase', () => {
     shopsRepositoryMock.countByOwnerUserId.mockResolvedValueOnce(0);
     shopsRepositoryMock.countCategoriesByIds.mockResolvedValueOnce(1);
     shopsRepositoryMock.findCategoriesByIds.mockResolvedValueOnce([{ id: 'category-1', riskTier: 'LOW' }]);
+    shopsRepositoryMock.findActiveShopTypeByCode.mockResolvedValueOnce({ id: 'shop-type-manufacturer' });
     shopsRepositoryMock.hasApprovedKycForOwner.mockResolvedValueOnce({ id: 'kyc-1' });
     shopsRepositoryMock.create.mockResolvedValueOnce({
       id: 'shop-2',

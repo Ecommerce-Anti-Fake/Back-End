@@ -87,6 +87,7 @@ describe('CreateWholesaleOrderUseCase', () => {
       buyerShopId: 'buyer-shop-1',
       offerId: 'offer-1',
       quantity: 2,
+      shippingAddress: '12 Nguyen Trai, Quan 1, TP.HCM',
     });
 
     expect(wholesalePricingPort.resolve).toHaveBeenCalledWith(
@@ -174,6 +175,7 @@ describe('CreateWholesaleOrderUseCase', () => {
       buyerDistributionNodeId: 'buyer-node-1',
       offerId: 'offer-1',
       quantity: 2,
+      shippingAddress: '12 Nguyen Trai, Quan 1, TP.HCM',
     });
 
     expect(wholesalePricingPort.resolve).toHaveBeenCalledWith(
@@ -242,6 +244,7 @@ describe('CreateWholesaleOrderUseCase', () => {
         buyerDistributionNodeId: 'buyer-node-1',
         offerId: 'offer-1',
         quantity: 1,
+        shippingAddress: '12 Nguyen Trai, Quan 1, TP.HCM',
       }),
     ).rejects.toThrow('In-network pricing policy must use percent discount');
   });
@@ -276,6 +279,7 @@ describe('CreateWholesaleOrderUseCase', () => {
         buyerDistributionNodeId: 'buyer-node-1',
         offerId: 'offer-1',
         quantity: 1,
+        shippingAddress: '12 Nguyen Trai, Quan 1, TP.HCM',
       }),
     ).rejects.toThrow('Only offers attached to a distribution node can use in-network pricing');
   });

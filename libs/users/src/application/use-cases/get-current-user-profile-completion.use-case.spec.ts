@@ -7,6 +7,7 @@ describe('GetCurrentUserProfileCompletionUseCase', () => {
 
   const usersRepositoryMock = {
     findById: jest.fn(),
+    findDefaultAddressByUserId: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -30,6 +31,16 @@ describe('GetCurrentUserProfileCompletionUseCase', () => {
       displayName: 'Nguyen Van A',
       role: 'user',
       accountStatus: 'active',
+      createdAt: new Date('2026-04-16T09:00:00.000Z'),
+      updatedAt: new Date('2026-04-16T09:00:00.000Z'),
+    });
+    usersRepositoryMock.findDefaultAddressByUserId.mockResolvedValueOnce({
+      id: 'address-1',
+      userId: 'user-1',
+      recipientName: 'Nguyen Van A',
+      phone: '0987654321',
+      addressLine: '12 Nguyen Trai, Quan 1, TP.HCM',
+      isDefault: true,
       createdAt: new Date('2026-04-16T09:00:00.000Z'),
       updatedAt: new Date('2026-04-16T09:00:00.000Z'),
     });

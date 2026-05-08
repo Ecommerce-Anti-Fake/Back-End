@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
-import { OrderPlacementService } from '../services';
+import { OrderPlacementService, PayOSPaymentService } from '../services';
 import { CreateRetailOrderUseCase } from './create-retail-order.use-case';
 
 describe('CreateRetailOrderUseCase', () => {
@@ -14,6 +14,9 @@ describe('CreateRetailOrderUseCase', () => {
   const orderPlacementServiceMock = {
     createOrder: jest.fn(),
   };
+  const payOSPaymentServiceMock = {
+    createPaymentLink: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -23,6 +26,7 @@ describe('CreateRetailOrderUseCase', () => {
         CreateRetailOrderUseCase,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
         { provide: OrderPlacementService, useValue: orderPlacementServiceMock },
+        { provide: PayOSPaymentService, useValue: payOSPaymentServiceMock },
       ],
     }).compile();
 
@@ -93,6 +97,7 @@ describe('CreateRetailOrderUseCase', () => {
       offerId: 'offer-1',
       quantity: 2,
       affiliateCode: 'spring-aff-001',
+      shippingAddress: '12 Nguyen Trai, Quan 1, TP.HCM',
     });
 
     expect(orderPlacementServiceMock.createOrder).toHaveBeenCalledWith(
