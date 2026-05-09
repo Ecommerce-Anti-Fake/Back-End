@@ -636,6 +636,60 @@ export class OrdersRepository {
     });
   }
 
+  async findAdminOrders(input?: {
+    orderStatus?: string;
+    paymentStatus?: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<{ total: number; page: number; pageSize: number; items: OrderWithRelations[] }> {
+    const page = Math.max(1, Number(input?.page ?? 1));
+    const pageSize = Math.min(50, Math.max(1, Number(input?.pageSize ?? 20)));
+    const where: Prisma.OrderWhereInput = {
+      ...(input?.orderStatus ? { orderStatus: input.orderStatus } : {}),
+      ...(input?.paymentStatus
+        ? {
+            paymentIntent: {
+              is: {
+                paymentStatus: input.paymentStatus,
+              },
+            },
+          }
+        : {}),
+      ...(input?.search
+        ? {
+            OR: [
+              { id: { contains: input.search, mode: 'insensitive' } },
+              { shop: { is: { shopName: { contains: input.search, mode: 'insensitive' } } } },
+              { shippingName: { contains: input.search, mode: 'insensitive' } },
+              { shippingPhone: { contains: input.search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.order.count({ where }),
+      this.prisma.order.findMany({
+        where,
+        orderBy: {
+          createdAt: input?.sortOrder ?? 'desc',
+        },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        ...orderWithRelationsArgs,
+      }),
+    ]);
+
+    return {
+      total,
+      page,
+      pageSize,
+      items,
+    };
+  }
+
   countOpenDisputes() {
     return this.prisma.dispute.count({
       where: {

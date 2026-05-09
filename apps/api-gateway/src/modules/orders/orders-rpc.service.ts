@@ -3,6 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import {
   ActiveCartMessage,
   AddCartItemMessage,
+  AdminOrdersLookupMessage,
   AssignAdminDisputeMessage,
   UpdateAdminDisputeCaseMessage,
   ResolveAdminDisputeMessage,
@@ -76,6 +77,10 @@ export class OrdersRpcService {
 
   findSellerShopOrders(payload: SellerShopOrdersLookupMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.findSellerShopOrders, payload);
+  }
+
+  findAdminOrders(payload: AdminOrdersLookupMessage = {}) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.findAdminOrders, payload);
   }
 
   findById(payload: OrderLookupMessage) {

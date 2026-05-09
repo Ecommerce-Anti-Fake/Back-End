@@ -217,6 +217,35 @@ export class OrdersController {
     });
   }
 
+  @ApiOperation({ summary: 'Admin lay danh sach don hang' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach don hang cho admin.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi admin moi co quyen truy cap.',
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Get('admin/orders')
+  findAdminOrders(
+    @Query('orderStatus') orderStatus?: string,
+    @Query('paymentStatus') paymentStatus?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+  ) {
+    return this.ordersRpcService.findAdminOrders({
+      orderStatus,
+      paymentStatus,
+      search,
+      page: page ? Number(page) : undefined,
+      pageSize: pageSize ? Number(pageSize) : undefined,
+      sortOrder,
+    });
+  }
+
   @ApiOperation({ summary: 'Lay chi tiet mot don hang' })
   @ApiBearerAuth('access-token')
   @ApiParam({ name: 'id', description: 'ID don hang.' })

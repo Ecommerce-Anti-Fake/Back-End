@@ -93,6 +93,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   createWholesale: 'orders.create-wholesale',
   findMine: 'orders.find-mine',
   findSellerShopOrders: 'orders.find-seller-shop-orders',
+  findAdminOrders: 'orders.find-admin-orders',
   findById: 'orders.find-by-id',
   getAdminOpenDisputeCount: 'orders.get-admin-open-dispute-count',
   findAdminOpenDisputes: 'orders.find-admin-open-disputes',
@@ -600,6 +601,15 @@ export type MyOrdersLookupMessage = {
 export type SellerShopOrdersLookupMessage = {
   requesterUserId: string;
   shopId: string;
+};
+
+export type AdminOrdersLookupMessage = {
+  orderStatus?: string;
+  paymentStatus?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  sortOrder?: 'asc' | 'desc';
 };
 
 export type OrderLookupMessage = {
