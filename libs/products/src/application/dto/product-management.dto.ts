@@ -185,6 +185,9 @@ export class OfferResponseDto {
   @ApiProperty({ example: 'Kem chong nang SPF50' })
   productModelName!: string;
 
+  @ApiPropertyOptional({ example: 'https://res.cloudinary.com/demo/image/upload/product.jpg', nullable: true })
+  thumbnailUrl!: string | null;
+
   @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
   createdAt!: Date;
 }

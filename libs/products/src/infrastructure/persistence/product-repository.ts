@@ -206,6 +206,16 @@ export class ProductRepository {
         productModel: {
           select: { modelName: true },
         },
+        media: {
+          take: 1,
+          orderBy: { createdAt: 'asc' },
+          select: {
+            fileUrl: true,
+            mediaAsset: {
+              select: { secureUrl: true },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -223,6 +233,16 @@ export class ProductRepository {
         },
         productModel: {
           select: { modelName: true },
+        },
+        media: {
+          take: 1,
+          orderBy: { createdAt: 'asc' },
+          select: {
+            fileUrl: true,
+            mediaAsset: {
+              select: { secureUrl: true },
+            },
+          },
         },
       },
     });

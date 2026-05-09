@@ -33,6 +33,12 @@ type OfferWithRelations = Offer & {
   productModel: {
     modelName: string;
   };
+  media?: Array<{
+    fileUrl: string;
+    mediaAsset?: {
+      secureUrl: string;
+    } | null;
+  }>;
 };
 
 type OfferMediaWithAsset = {
@@ -128,6 +134,9 @@ export function toOfferResponse(offer: OfferWithRelations) {
     shopName: offer.shop.shopName,
     categoryName: offer.category.name,
     productModelName: offer.productModel.modelName,
+    thumbnailUrl: offer.media?.find((media) => media.mediaAsset?.secureUrl || media.fileUrl)?.mediaAsset?.secureUrl
+      ?? offer.media?.find((media) => media.fileUrl)?.fileUrl
+      ?? null,
     createdAt: offer.createdAt,
   };
 }
