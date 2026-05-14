@@ -54,6 +54,8 @@ export function toOrderResponse(order: OrderWithRelations) {
         verificationLevelSnapshot: item.verificationLevelSnapshot,
         reviewId: item.reviews?.[0]?.id ?? null,
         reviewRating: item.reviews?.[0]?.rating ?? null,
+        reviewComment: item.reviews?.[0]?.comment ?? null,
+        reviewCreatedAt: item.reviews?.[0]?.createdAt ?? null,
         reviewed: Boolean(item.reviews?.[0]),
         canReview: order.orderStatus === 'completed',
       };

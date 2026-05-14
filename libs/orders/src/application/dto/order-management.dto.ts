@@ -80,6 +80,12 @@ export class OrderItemResponseDto {
   @ApiPropertyOptional({ example: 5, nullable: true })
   reviewRating!: number | null;
 
+  @ApiPropertyOptional({ example: 'San pham dung mo ta.', nullable: true })
+  reviewComment!: string | null;
+
+  @ApiPropertyOptional({ example: '2026-05-14T10:00:00.000Z', nullable: true })
+  reviewCreatedAt!: Date | null;
+
   @ApiProperty({ example: true })
   reviewed!: boolean;
 
