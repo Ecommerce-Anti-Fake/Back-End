@@ -507,18 +507,13 @@ export class ProductRepository {
     });
   }
 
-  findReviewableOrderItemForOffer(offerId: string, buyerUserId: string) {
+  findLatestCompletedOrderItemForOffer(offerId: string, buyerUserId: string) {
     return this.prisma.orderItem.findFirst({
       where: {
         offerId,
         order: {
           buyerUserId,
           orderStatus: 'completed',
-        },
-        reviews: {
-          none: {
-            fromUserId: buyerUserId,
-          },
         },
       },
       include: {
@@ -531,43 +526,20 @@ export class ProductRepository {
             },
           },
         },
+        reviews: {
+          where: {
+            fromUserId: buyerUserId,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 1,
+        },
       },
       orderBy: {
         order: {
           createdAt: 'desc',
         },
-      },
-    });
-  }
-
-  findLatestOfferReviewByBuyer(offerId: string, buyerUserId: string) {
-    return this.prisma.review.findFirst({
-      where: {
-        fromUserId: buyerUserId,
-        orderItem: {
-          offerId,
-          order: {
-            buyerUserId,
-            orderStatus: 'completed',
-          },
-        },
-      },
-      include: {
-        orderItem: {
-          select: {
-            offerId: true,
-          },
-        },
-        fromUser: {
-          select: {
-            displayName: true,
-            email: true,
-            phone: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
       },
     });
   }

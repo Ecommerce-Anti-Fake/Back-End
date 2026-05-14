@@ -17,21 +17,12 @@ export class CreateOfferReviewUseCase {
       throw new BadRequestException('Rating must be between 1 and 5');
     }
 
-    const reviewableItem = await this.productRepository.findReviewableOrderItemForOffer(input.offerId, input.fromUserId);
-    if (reviewableItem) {
-      const review = await this.productRepository.createReview({
-        orderId: reviewableItem.orderId,
-        orderItemId: reviewableItem.id,
-        fromUserId: input.fromUserId,
-        toUserId: reviewableItem.order.shop.ownerUserId,
-        rating,
-        comment: input.comment?.trim() || null,
-      });
-
-      return toOfferReviewResponse(review);
+    const latestOrderItem = await this.productRepository.findLatestCompletedOrderItemForOffer(input.offerId, input.fromUserId);
+    if (!latestOrderItem) {
+      throw new NotFoundException('Completed order item for this offer not found');
     }
 
-    const existingReview = await this.productRepository.findLatestOfferReviewByBuyer(input.offerId, input.fromUserId);
+    const existingReview = latestOrderItem.reviews[0];
     if (existingReview) {
       const review = await this.productRepository.updateReview(existingReview.id, {
         rating,
@@ -41,6 +32,15 @@ export class CreateOfferReviewUseCase {
       return toOfferReviewResponse(review);
     }
 
-    throw new NotFoundException('Completed order item for this offer not found');
+    const review = await this.productRepository.createReview({
+      orderId: latestOrderItem.orderId,
+      orderItemId: latestOrderItem.id,
+      fromUserId: input.fromUserId,
+      toUserId: latestOrderItem.order.shop.ownerUserId,
+      rating,
+      comment: input.comment?.trim() || null,
+    });
+
+    return toOfferReviewResponse(review);
   }
 }
