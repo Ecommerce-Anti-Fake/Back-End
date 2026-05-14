@@ -79,6 +79,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   getOfferMediaUploadSignatures: 'products.get-offer-media-upload-signatures',
   addOfferMediaBatch: 'products.add-offer-media-batch',
   findOfferMedia: 'products.find-offer-media',
+  deleteOfferMedia: 'products.delete-offer-media',
   getOfferDocumentUploadSignatures: 'products.get-offer-document-upload-signatures',
   addOfferDocumentsBatch: 'products.add-offer-documents-batch',
   findOfferDocuments: 'products.find-offer-documents',
@@ -511,6 +512,12 @@ export type AddOfferMediaBatchMessage = {
 
 export type OfferMediaLookupMessage = {
   offerId: string;
+};
+
+export type DeleteOfferMediaMessage = {
+  offerId: string;
+  mediaId: string;
+  requesterUserId: string;
 };
 
 export type OfferDocumentUploadSignaturesMessage = {

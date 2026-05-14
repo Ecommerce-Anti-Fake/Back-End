@@ -8,6 +8,7 @@ import {
   CreateCategoryMessage,
   CreateOfferMessage,
   CreateProductModelMessage,
+  DeleteOfferMediaMessage,
   ListOffersMessage,
   OfferDocumentUploadSignaturesMessage,
   OfferBatchLinksLookupMessage,
@@ -83,6 +84,10 @@ export class ProductsRpcService {
 
   findOfferMedia(payload: OfferMediaLookupMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.findOfferMedia, payload);
+  }
+
+  deleteOfferMedia(payload: DeleteOfferMediaMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.deleteOfferMedia, payload);
   }
 
   getOfferDocumentUploadSignatures(payload: OfferDocumentUploadSignaturesMessage) {

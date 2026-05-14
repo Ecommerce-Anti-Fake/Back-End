@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -327,6 +327,25 @@ export class ProductsController {
   @Get('offers/:offerId/media')
   findOfferMedia(@Param('offerId') offerId: string) {
     return this.productsRpcService.findOfferMedia({ offerId });
+  }
+
+  @ApiOperation({ summary: 'Xoa media cua offer' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Xoa media offer thanh cong.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Delete('offers/:offerId/media/:mediaId')
+  deleteOfferMedia(
+    @Param('offerId') offerId: string,
+    @Param('mediaId') mediaId: string,
+    @CurrentUserId() requesterUserId: string,
+  ) {
+    return this.productsRpcService.deleteOfferMedia({
+      offerId,
+      mediaId,
+      requesterUserId,
+    });
   }
 
   @ApiOperation({ summary: 'Lay chu ky upload tai lieu cho offer' })

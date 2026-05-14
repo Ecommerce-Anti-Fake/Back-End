@@ -11,6 +11,7 @@ import type {
   CreateCategoryMessage,
   CreateOfferMessage,
   CreateProductModelMessage,
+  DeleteOfferMediaMessage,
   ListOffersMessage,
   OfferDocumentUploadSignaturesMessage,
   OfferBatchLinksLookupMessage,
@@ -29,6 +30,7 @@ import {
   CreateCategoryUseCase,
   CreateOfferUseCase,
   CreateProductModelUseCase,
+  DeleteOfferMediaUseCase,
   GetOfferDocumentUploadSignaturesUseCase,
   GetOfferByIdUseCase,
   GetOfferMediaUploadSignaturesUseCase,
@@ -59,6 +61,7 @@ export class ProductsRpcController {
     private readonly getOfferMediaUploadSignaturesUseCase: GetOfferMediaUploadSignaturesUseCase,
     private readonly addOfferMediaBatchUseCase: AddOfferMediaBatchUseCase,
     private readonly listOfferMediaUseCase: ListOfferMediaUseCase,
+    private readonly deleteOfferMediaUseCase: DeleteOfferMediaUseCase,
     private readonly listOfferBatchLinksUseCase: ListOfferBatchLinksUseCase,
     private readonly getOfferDocumentUploadSignaturesUseCase: GetOfferDocumentUploadSignaturesUseCase,
     private readonly addOfferDocumentsBatchUseCase: AddOfferDocumentsBatchUseCase,
@@ -188,6 +191,15 @@ export class ProductsRpcController {
   async findOfferMedia(@Payload() payload: OfferMediaLookupMessage) {
     try {
       return await this.listOfferMediaUseCase.execute(payload.offerId);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.deleteOfferMedia)
+  async deleteOfferMedia(@Payload() payload: DeleteOfferMediaMessage) {
+    try {
+      return await this.deleteOfferMediaUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

@@ -446,6 +446,26 @@ export class ProductRepository {
     });
   }
 
+  findOwnedOfferMedia(offerId: string, mediaId: string, sellerUserId: string) {
+    return this.prisma.offerMedia.findFirst({
+      where: {
+        id: mediaId,
+        offerId,
+        offer: {
+          sellerUserId,
+        },
+      },
+    });
+  }
+
+  deleteOfferMedia(mediaId: string) {
+    return this.prisma.offerMedia.delete({
+      where: {
+        id: mediaId,
+      },
+    });
+  }
+
   createOfferDocument(data: {
     offerId: string;
     mediaAssetId: string | null;
