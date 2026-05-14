@@ -42,6 +42,10 @@ export function toOrderResponse(order: OrderWithRelations) {
     items: order.items.map((item) => ({
       offerId: item.offerId,
       offerTitleSnapshot: item.offerTitleSnapshot,
+      thumbnailUrl:
+        item.offer.media?.find((media) => media.mediaAsset?.secureUrl || media.fileUrl)?.mediaAsset?.secureUrl ??
+        item.offer.media?.find((media) => media.fileUrl)?.fileUrl ??
+        null,
       unitPrice: decimalToNumber(item.unitPrice),
       quantity: item.quantity,
       verificationLevelSnapshot: item.verificationLevelSnapshot,
