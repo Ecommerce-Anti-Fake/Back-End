@@ -80,6 +80,8 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   addOfferMediaBatch: 'products.add-offer-media-batch',
   findOfferMedia: 'products.find-offer-media',
   deleteOfferMedia: 'products.delete-offer-media',
+  findOfferReviews: 'products.find-offer-reviews',
+  createOfferReview: 'products.create-offer-review',
   getOfferDocumentUploadSignatures: 'products.get-offer-document-upload-signatures',
   addOfferDocumentsBatch: 'products.add-offer-documents-batch',
   findOfferDocuments: 'products.find-offer-documents',
@@ -518,6 +520,17 @@ export type DeleteOfferMediaMessage = {
   offerId: string;
   mediaId: string;
   requesterUserId: string;
+};
+
+export type OfferReviewsLookupMessage = {
+  offerId: string;
+};
+
+export type CreateOfferReviewMessage = {
+  offerId: string;
+  fromUserId: string;
+  rating: number;
+  comment?: string | null;
 };
 
 export type OfferDocumentUploadSignaturesMessage = {

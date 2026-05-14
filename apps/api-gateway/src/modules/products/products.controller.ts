@@ -19,6 +19,7 @@ import {
   CreateBrandDto,
   CreateCategoryDto,
   CreateOfferDto,
+  CreateOfferReviewDto,
   CreateProductModelDto,
   GetOfferDocumentUploadSignaturesDto,
   GetOfferMediaUploadSignaturesDto,
@@ -27,6 +28,8 @@ import {
   OfferBatchLinkResponseDto,
   OfferMediaResponseDto,
   OfferMediaUploadSignatureResponseDto,
+  OfferReviewResponseDto,
+  OfferReviewsResponseDto,
   OfferResponseDto,
   ProductModelResponseDto,
   UpdateOfferDto,
@@ -345,6 +348,37 @@ export class ProductsController {
       offerId,
       mediaId,
       requesterUserId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach danh gia cua offer' })
+  @ApiOkResponse({
+    description: 'Danh sach danh gia cua offer.',
+    type: OfferReviewsResponseDto,
+  })
+  @Get('offers/:offerId/reviews')
+  findOfferReviews(@Param('offerId') offerId: string) {
+    return this.productsRpcService.findOfferReviews({ offerId });
+  }
+
+  @ApiOperation({ summary: 'Tao danh gia cho offer da mua' })
+  @ApiBearerAuth('access-token')
+  @ApiCreatedResponse({
+    description: 'Tao danh gia thanh cong.',
+    type: OfferReviewResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('offers/:offerId/reviews')
+  createOfferReview(
+    @Param('offerId') offerId: string,
+    @CurrentUserId() fromUserId: string,
+    @Body() dto: CreateOfferReviewDto,
+  ) {
+    return this.productsRpcService.createOfferReview({
+      offerId,
+      fromUserId,
+      rating: dto.rating,
+      comment: dto.comment ?? null,
     });
   }
 

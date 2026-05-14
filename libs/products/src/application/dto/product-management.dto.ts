@@ -301,6 +301,54 @@ export class OfferMediaResponseDto {
   createdAt!: Date;
 }
 
+export class CreateOfferReviewDto {
+  @ApiProperty({ example: 5 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  rating!: number;
+
+  @ApiPropertyOptional({ example: 'San pham dung mo ta, dong goi chac chan.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  comment?: string;
+}
+
+export class OfferReviewResponseDto {
+  @ApiProperty({ example: 'review-id' })
+  id!: string;
+
+  @ApiProperty({ example: 'order-id' })
+  orderId!: string;
+
+  @ApiProperty({ example: 5 })
+  rating!: number;
+
+  @ApiPropertyOptional({ example: 'San pham dung mo ta.', nullable: true })
+  comment!: string | null;
+
+  @ApiProperty({ example: 'Nguoi mua da xac minh' })
+  authorName!: string;
+
+  @ApiProperty({ example: true })
+  verifiedPurchase!: boolean;
+
+  @ApiProperty({ example: '2026-05-14T10:00:00.000Z' })
+  createdAt!: Date;
+}
+
+export class OfferReviewsResponseDto {
+  @ApiProperty({ example: 2 })
+  total!: number;
+
+  @ApiProperty({ example: 4.5 })
+  averageRating!: number;
+
+  @ApiProperty({ type: OfferReviewResponseDto, isArray: true })
+  items!: OfferReviewResponseDto[];
+}
+
 export class OfferDocumentUploadSignatureItemDto {
   @ApiProperty({ example: 'INGREDIENT_CERTIFICATE' })
   @IsString()

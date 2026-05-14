@@ -7,6 +7,7 @@ import type {
   AllocateOfferBatchesMessage,
   AddOfferDocumentsBatchMessage,
   AddOfferMediaBatchMessage,
+  CreateOfferReviewMessage,
   CreateBrandMessage,
   CreateCategoryMessage,
   CreateOfferMessage,
@@ -18,6 +19,7 @@ import type {
   OfferDocumentsLookupMessage,
   OfferMediaLookupMessage,
   OfferMediaUploadSignaturesMessage,
+  OfferReviewsLookupMessage,
   ProductModelLookupMessage,
   UpdateOfferMessage,
 } from '@contracts';
@@ -29,6 +31,7 @@ import {
   CreateBrandUseCase,
   CreateCategoryUseCase,
   CreateOfferUseCase,
+  CreateOfferReviewUseCase,
   CreateProductModelUseCase,
   DeleteOfferMediaUseCase,
   GetOfferDocumentUploadSignaturesUseCase,
@@ -40,6 +43,7 @@ import {
   ListOfferBatchLinksUseCase,
   ListOfferDocumentsUseCase,
   ListOfferMediaUseCase,
+  ListOfferReviewsUseCase,
   ListOffersUseCase,
   ListProductModelsUseCase,
   UpdateOfferUseCase,
@@ -62,6 +66,8 @@ export class ProductsRpcController {
     private readonly addOfferMediaBatchUseCase: AddOfferMediaBatchUseCase,
     private readonly listOfferMediaUseCase: ListOfferMediaUseCase,
     private readonly deleteOfferMediaUseCase: DeleteOfferMediaUseCase,
+    private readonly listOfferReviewsUseCase: ListOfferReviewsUseCase,
+    private readonly createOfferReviewUseCase: CreateOfferReviewUseCase,
     private readonly listOfferBatchLinksUseCase: ListOfferBatchLinksUseCase,
     private readonly getOfferDocumentUploadSignaturesUseCase: GetOfferDocumentUploadSignaturesUseCase,
     private readonly addOfferDocumentsBatchUseCase: AddOfferDocumentsBatchUseCase,
@@ -200,6 +206,24 @@ export class ProductsRpcController {
   async deleteOfferMedia(@Payload() payload: DeleteOfferMediaMessage) {
     try {
       return await this.deleteOfferMediaUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findOfferReviews)
+  async findOfferReviews(@Payload() payload: OfferReviewsLookupMessage) {
+    try {
+      return await this.listOfferReviewsUseCase.execute(payload.offerId);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.createOfferReview)
+  async createOfferReview(@Payload() payload: CreateOfferReviewMessage) {
+    try {
+      return await this.createOfferReviewUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

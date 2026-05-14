@@ -87,6 +87,19 @@ type OfferBatchLinkWithBatch = {
   };
 };
 
+type ReviewWithAuthor = {
+  id: string;
+  orderId: string;
+  rating: number;
+  comment: string | null;
+  createdAt: Date;
+  fromUser: {
+    displayName: string | null;
+    email: string | null;
+    phone: string | null;
+  };
+};
+
 export function toProductModelResponse(model: ProductModelWithBrand) {
   return {
     id: model.id,
@@ -156,6 +169,18 @@ export function toOfferMediaResponse(media: OfferMediaWithAsset) {
     mimeType: media.mediaAsset?.mimeType ?? null,
     publicId: media.mediaAsset?.publicId ?? null,
     createdAt: media.createdAt,
+  };
+}
+
+export function toOfferReviewResponse(review: ReviewWithAuthor) {
+  return {
+    id: review.id,
+    orderId: review.orderId,
+    rating: review.rating,
+    comment: review.comment,
+    authorName: review.fromUser.displayName || review.fromUser.email || review.fromUser.phone || 'Người mua đã xác minh',
+    verifiedPurchase: true,
+    createdAt: review.createdAt,
   };
 }
 

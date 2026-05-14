@@ -466,6 +466,85 @@ export class ProductRepository {
     });
   }
 
+  findOfferReviews(offerId: string) {
+    return this.prisma.review.findMany({
+      where: {
+        order: {
+          items: {
+            some: {
+              offerId,
+            },
+          },
+        },
+      },
+      include: {
+        fromUser: {
+          select: {
+            displayName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  findCompletedOrderForOfferReview(offerId: string, buyerUserId: string) {
+    return this.prisma.order.findFirst({
+      where: {
+        buyerUserId,
+        orderStatus: 'completed',
+        items: {
+          some: {
+            offerId,
+          },
+        },
+      },
+      include: {
+        shop: {
+          select: {
+            ownerUserId: true,
+          },
+        },
+        reviews: {
+          where: {
+            fromUserId: buyerUserId,
+          },
+          select: {
+            id: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  createReview(data: {
+    orderId: string;
+    fromUserId: string;
+    toUserId: string;
+    rating: number;
+    comment: string | null;
+  }) {
+    return this.prisma.review.create({
+      data,
+      include: {
+        fromUser: {
+          select: {
+            displayName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+  }
+
   createOfferDocument(data: {
     offerId: string;
     mediaAssetId: string | null;

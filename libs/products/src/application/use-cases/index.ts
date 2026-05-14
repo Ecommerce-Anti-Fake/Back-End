@@ -12,6 +12,8 @@ export * from './get-offer-media-upload-signatures.use-case';
 export * from './add-offer-media-batch.use-case';
 export * from './list-offer-media.use-case';
 export * from './delete-offer-media.use-case';
+export * from './list-offer-reviews.use-case';
+export * from './create-offer-review.use-case';
 export * from './list-offer-batch-links.use-case';
 export * from './get-offer-document-upload-signatures.use-case';
 export * from './add-offer-documents-batch.use-case';

@@ -4,6 +4,7 @@ import {
   AllocateOfferBatchesMessage,
   AddOfferDocumentsBatchMessage,
   AddOfferMediaBatchMessage,
+  CreateOfferReviewMessage,
   CreateBrandMessage,
   CreateCategoryMessage,
   CreateOfferMessage,
@@ -15,6 +16,7 @@ import {
   OfferDocumentsLookupMessage,
   OfferMediaLookupMessage,
   OfferMediaUploadSignaturesMessage,
+  OfferReviewsLookupMessage,
   PRODUCTS_MESSAGE_PATTERNS,
   ProductModelLookupMessage,
   UpdateOfferMessage,
@@ -88,6 +90,14 @@ export class ProductsRpcService {
 
   deleteOfferMedia(payload: DeleteOfferMediaMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.deleteOfferMedia, payload);
+  }
+
+  findOfferReviews(payload: OfferReviewsLookupMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.findOfferReviews, payload);
+  }
+
+  createOfferReview(payload: CreateOfferReviewMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.createOfferReview, payload);
   }
 
   getOfferDocumentUploadSignatures(payload: OfferDocumentUploadSignaturesMessage) {
