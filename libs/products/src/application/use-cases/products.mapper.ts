@@ -90,9 +90,13 @@ type OfferBatchLinkWithBatch = {
 type ReviewWithAuthor = {
   id: string;
   orderId: string;
+  orderItemId?: string | null;
   rating: number;
   comment: string | null;
   createdAt: Date;
+  orderItem?: {
+    offerId: string;
+  } | null;
   fromUser: {
     displayName: string | null;
     email: string | null;
@@ -176,6 +180,8 @@ export function toOfferReviewResponse(review: ReviewWithAuthor) {
   return {
     id: review.id,
     orderId: review.orderId,
+    orderItemId: review.orderItemId ?? null,
+    offerId: review.orderItem?.offerId ?? null,
     rating: review.rating,
     comment: review.comment,
     authorName: review.fromUser.displayName || review.fromUser.email || review.fromUser.phone || 'Người mua đã xác minh',

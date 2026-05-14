@@ -469,15 +469,30 @@ export class ProductRepository {
   findOfferReviews(offerId: string) {
     return this.prisma.review.findMany({
       where: {
-        order: {
-          items: {
-            some: {
+        OR: [
+          {
+            orderItem: {
               offerId,
             },
           },
-        },
+          {
+            orderItemId: null,
+            order: {
+              items: {
+                some: {
+                  offerId,
+                },
+              },
+            },
+          },
+        ],
       },
       include: {
+        orderItem: {
+          select: {
+            offerId: true,
+          },
+        },
         fromUser: {
           select: {
             displayName: true,
@@ -492,29 +507,62 @@ export class ProductRepository {
     });
   }
 
-  findCompletedOrderForOfferReview(offerId: string, buyerUserId: string) {
-    return this.prisma.order.findFirst({
+  findReviewableOrderItemForOffer(offerId: string, buyerUserId: string) {
+    return this.prisma.orderItem.findFirst({
       where: {
-        buyerUserId,
-        orderStatus: 'completed',
-        items: {
-          some: {
-            offerId,
+        offerId,
+        order: {
+          buyerUserId,
+          orderStatus: 'completed',
+        },
+        reviews: {
+          none: {
+            fromUserId: buyerUserId,
           },
         },
       },
       include: {
-        shop: {
-          select: {
-            ownerUserId: true,
+        order: {
+          include: {
+            shop: {
+              select: {
+                ownerUserId: true,
+              },
+            },
           },
         },
-        reviews: {
-          where: {
-            fromUserId: buyerUserId,
+      },
+      orderBy: {
+        order: {
+          createdAt: 'desc',
+        },
+      },
+    });
+  }
+
+  findLatestOfferReviewByBuyer(offerId: string, buyerUserId: string) {
+    return this.prisma.review.findFirst({
+      where: {
+        fromUserId: buyerUserId,
+        orderItem: {
+          offerId,
+          order: {
+            buyerUserId,
+            orderStatus: 'completed',
           },
+        },
+      },
+      include: {
+        orderItem: {
           select: {
-            id: true,
+            offerId: true,
+          },
+        },
+        fromUser: {
+          select: {
+            displayName: true,
+            email: true,
+            phone: true,
           },
         },
       },
@@ -526,6 +574,7 @@ export class ProductRepository {
 
   createReview(data: {
     orderId: string;
+    orderItemId: string;
     fromUserId: string;
     toUserId: string;
     rating: number;
@@ -534,6 +583,34 @@ export class ProductRepository {
     return this.prisma.review.create({
       data,
       include: {
+        orderItem: {
+          select: {
+            offerId: true,
+          },
+        },
+        fromUser: {
+          select: {
+            displayName: true,
+            email: true,
+            phone: true,
+          },
+        },
+      },
+    });
+  }
+
+  updateReview(reviewId: string, data: { rating: number; comment: string | null }) {
+    return this.prisma.review.update({
+      where: {
+        id: reviewId,
+      },
+      data,
+      include: {
+        orderItem: {
+          select: {
+            offerId: true,
+          },
+        },
         fromUser: {
           select: {
             displayName: true,

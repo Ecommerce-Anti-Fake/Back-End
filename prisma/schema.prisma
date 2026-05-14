@@ -779,7 +779,10 @@ model OrderItem {
   order                     Order                      @relation(fields: [orderId], references: [id])
   offer                     Offer                      @relation(fields: [offerId], references: [id])
   batchAllocations          OrderItemBatchAllocation[]
+  reviews                   Review[]
 
+  @@index([orderId])
+  @@index([offerId])
   @@map("order_item")
 }
 
@@ -855,15 +858,20 @@ model DisputeEvidence {
 model Review {
   id         String   @id @default(uuid())
   orderId    String   @map("order_id")
+  orderItemId String?  @unique @map("order_item_id")
   fromUserId String   @map("from_user_id")
   toUserId   String   @map("to_user_id")
   rating     Int
   comment    String?
   createdAt  DateTime @default(now()) @map("created_at")
   order      Order    @relation(fields: [orderId], references: [id])
+  orderItem  OrderItem? @relation(fields: [orderItemId], references: [id])
   fromUser   User     @relation("ReviewFromUser", fields: [fromUserId], references: [id])
   toUser     User     @relation("ReviewToUser", fields: [toUserId], references: [id])
 
+  @@index([orderId])
+  @@index([fromUserId])
+  @@index([toUserId])
   @@map("review")
 }
 

@@ -322,6 +322,12 @@ export class OfferReviewResponseDto {
   @ApiProperty({ example: 'order-id' })
   orderId!: string;
 
+  @ApiPropertyOptional({ example: 'order-item-id', nullable: true })
+  orderItemId!: string | null;
+
+  @ApiPropertyOptional({ example: 'offer-id', nullable: true })
+  offerId!: string | null;
+
   @ApiProperty({ example: 5 })
   rating!: number;
 

@@ -17,23 +17,30 @@ export class CreateOfferReviewUseCase {
       throw new BadRequestException('Rating must be between 1 and 5');
     }
 
-    const order = await this.productRepository.findCompletedOrderForOfferReview(input.offerId, input.fromUserId);
-    if (!order) {
-      throw new NotFoundException('Completed order for this offer not found');
+    const reviewableItem = await this.productRepository.findReviewableOrderItemForOffer(input.offerId, input.fromUserId);
+    if (reviewableItem) {
+      const review = await this.productRepository.createReview({
+        orderId: reviewableItem.orderId,
+        orderItemId: reviewableItem.id,
+        fromUserId: input.fromUserId,
+        toUserId: reviewableItem.order.shop.ownerUserId,
+        rating,
+        comment: input.comment?.trim() || null,
+      });
+
+      return toOfferReviewResponse(review);
     }
 
-    if (order.reviews.length > 0) {
-      throw new BadRequestException('This order has already been reviewed');
+    const existingReview = await this.productRepository.findLatestOfferReviewByBuyer(input.offerId, input.fromUserId);
+    if (existingReview) {
+      const review = await this.productRepository.updateReview(existingReview.id, {
+        rating,
+        comment: input.comment?.trim() || null,
+      });
+
+      return toOfferReviewResponse(review);
     }
 
-    const review = await this.productRepository.createReview({
-      orderId: order.id,
-      fromUserId: input.fromUserId,
-      toUserId: order.shop.ownerUserId,
-      rating,
-      comment: input.comment?.trim() || null,
-    });
-
-    return toOfferReviewResponse(review);
+    throw new NotFoundException('Completed order item for this offer not found');
   }
 }
