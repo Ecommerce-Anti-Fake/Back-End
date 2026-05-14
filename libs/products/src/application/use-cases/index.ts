@@ -6,6 +6,7 @@ export * from './list-product-models.use-case';
 export * from './get-product-model-by-id.use-case';
 export * from './create-product-model.use-case';
 export * from './create-offer.use-case';
+export * from './update-offer.use-case';
 export * from './allocate-offer-batches.use-case';
 export * from './get-offer-media-upload-signatures.use-case';
 export * from './add-offer-media-batch.use-case';

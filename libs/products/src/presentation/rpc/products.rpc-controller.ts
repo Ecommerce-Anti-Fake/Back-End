@@ -18,6 +18,7 @@ import type {
   OfferMediaLookupMessage,
   OfferMediaUploadSignaturesMessage,
   ProductModelLookupMessage,
+  UpdateOfferMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
 import {
@@ -39,6 +40,7 @@ import {
   ListOfferMediaUseCase,
   ListOffersUseCase,
   ListProductModelsUseCase,
+  UpdateOfferUseCase,
 } from '../../application/use-cases';
 
 @Controller()
@@ -52,6 +54,7 @@ export class ProductsRpcController {
     private readonly getProductModelByIdUseCase: GetProductModelByIdUseCase,
     private readonly createProductModelUseCase: CreateProductModelUseCase,
     private readonly createOfferUseCase: CreateOfferUseCase,
+    private readonly updateOfferUseCase: UpdateOfferUseCase,
     private readonly allocateOfferBatchesUseCase: AllocateOfferBatchesUseCase,
     private readonly getOfferMediaUploadSignaturesUseCase: GetOfferMediaUploadSignaturesUseCase,
     private readonly addOfferMediaBatchUseCase: AddOfferMediaBatchUseCase,
@@ -131,6 +134,15 @@ export class ProductsRpcController {
   async createOffer(@Payload() payload: CreateOfferMessage) {
     try {
       return await this.createOfferUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.updateOffer)
+  async updateOffer(@Payload() payload: UpdateOfferMessage) {
+    try {
+      return await this.updateOfferUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

@@ -270,6 +270,47 @@ export class ProductRepository {
     });
   }
 
+  updateOwnedOffer(
+    offerId: string,
+    sellerUserId: string,
+    data: {
+      title?: string;
+      description?: string;
+      price?: number;
+      availableQuantity?: number;
+      offerStatus?: string;
+    },
+  ) {
+    return this.prisma.offer.update({
+      where: {
+        id: offerId,
+        sellerUserId,
+      },
+      data,
+      include: {
+        shop: {
+          select: { shopName: true },
+        },
+        category: {
+          select: { name: true },
+        },
+        productModel: {
+          select: { modelName: true },
+        },
+        media: {
+          take: 1,
+          orderBy: { createdAt: 'asc' },
+          select: {
+            fileUrl: true,
+            mediaAsset: {
+              select: { secureUrl: true },
+            },
+          },
+        },
+      },
+    });
+  }
+
   findAllocatableBatches(batchIds: string[], shopId: string, productModelId: string) {
     return this.prisma.supplyBatch.findMany({
       where: {

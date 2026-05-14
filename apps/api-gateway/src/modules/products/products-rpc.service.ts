@@ -16,6 +16,7 @@ import {
   OfferMediaUploadSignaturesMessage,
   PRODUCTS_MESSAGE_PATTERNS,
   ProductModelLookupMessage,
+  UpdateOfferMessage,
   CATALOG_SERVICE_CLIENT,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
@@ -58,6 +59,10 @@ export class ProductsRpcService {
 
   createOffer(payload: CreateOfferMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.createOffer, payload);
+  }
+
+  updateOffer(payload: UpdateOfferMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.updateOffer, payload);
   }
 
   allocateOfferBatches(payload: AllocateOfferBatchesMessage) {

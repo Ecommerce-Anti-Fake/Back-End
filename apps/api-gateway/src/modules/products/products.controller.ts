@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -29,6 +29,7 @@ import {
   OfferMediaUploadSignatureResponseDto,
   OfferResponseDto,
   ProductModelResponseDto,
+  UpdateOfferDto,
 } from '@products';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import { ProductsRpcService } from './products-rpc.service';
@@ -189,6 +190,33 @@ export class ProductsController {
       itemCondition: dto.itemCondition,
       availableQuantity: dto.availableQuantity,
       verificationLevel: dto.verificationLevel,
+    });
+  }
+
+  @ApiOperation({ summary: 'Cap nhat thong tin ban hang cua offer' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Cap nhat offer thanh cong.',
+    type: OfferResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Thieu access token hoac token khong hop le.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Patch('offers/:offerId')
+  updateOffer(
+    @Param('offerId') offerId: string,
+    @CurrentUserId() sellerUserId: string,
+    @Body() dto: UpdateOfferDto,
+  ) {
+    return this.productsRpcService.updateOffer({
+      offerId,
+      sellerUserId,
+      title: dto.title,
+      description: dto.description,
+      price: dto.price,
+      availableQuantity: dto.availableQuantity,
+      offerStatus: dto.offerStatus,
     });
   }
 

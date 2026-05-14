@@ -71,6 +71,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   findModelById: 'products.find-model-by-id',
   createModel: 'products.create-model',
   createOffer: 'products.create-offer',
+  updateOffer: 'products.update-offer',
   findOffers: 'products.find-offers',
   findOfferById: 'products.find-offer-by-id',
   allocateOfferBatches: 'products.allocate-offer-batches',
@@ -475,6 +476,16 @@ export type CreateOfferMessage = {
   itemCondition?: string;
   availableQuantity: number;
   verificationLevel?: string;
+};
+
+export type UpdateOfferMessage = {
+  offerId: string;
+  sellerUserId: string;
+  title?: string;
+  description?: string;
+  price?: number;
+  availableQuantity?: number;
+  offerStatus?: 'active' | 'inactive';
 };
 
 export type OfferMediaUploadSignaturesMessage = {

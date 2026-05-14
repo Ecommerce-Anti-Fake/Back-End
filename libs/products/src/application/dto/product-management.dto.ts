@@ -17,6 +17,7 @@ import {
 
 const OFFER_SALES_MODES = ['RETAIL', 'WHOLESALE', 'BOTH'] as const;
 const OFFER_MEDIA_ASSET_TYPES = ['IMAGE', 'VIDEO'] as const;
+const OFFER_STATUSES = ['active', 'inactive'] as const;
 
 export class CreateBrandDto {
   @ApiProperty({ example: 'Brand ABC' })
@@ -498,6 +499,41 @@ export class CreateOfferDto {
   @IsOptional()
   @IsString()
   verificationLevel?: string;
+}
+
+export class UpdateOfferDto {
+  @ApiPropertyOptional({ example: 'Kem chong nang SPF50 - lo 2026' })
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  @MaxLength(255)
+  title?: string;
+
+  @ApiPropertyOptional({ example: 'Mo ta san pham' })
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  description?: string;
+
+  @ApiPropertyOptional({ example: 150000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @IsPositive()
+  price?: number;
+
+  @ApiPropertyOptional({ example: 500 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  availableQuantity?: number;
+
+  @ApiPropertyOptional({ enum: OFFER_STATUSES, example: 'active' })
+  @IsOptional()
+  @IsString()
+  @IsIn(OFFER_STATUSES)
+  offerStatus?: 'active' | 'inactive';
 }
 
 export class ListOffersQueryDto {

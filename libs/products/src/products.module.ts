@@ -20,6 +20,7 @@ import {
   ListOfferMediaUseCase,
   ListOffersUseCase,
   ListProductModelsUseCase,
+  UpdateOfferUseCase,
 } from './application/use-cases';
 import { ProductRepository } from './infrastructure/persistence/product-repository';
 import { ProductsRpcController } from './presentation/rpc/products.rpc-controller';
@@ -37,6 +38,7 @@ import { ProductsRpcController } from './presentation/rpc/products.rpc-controlle
     GetProductModelByIdUseCase,
     CreateProductModelUseCase,
     CreateOfferUseCase,
+    UpdateOfferUseCase,
     AllocateOfferBatchesUseCase,
     GetOfferMediaUploadSignaturesUseCase,
     AddOfferMediaBatchUseCase,
@@ -58,6 +60,7 @@ import { ProductsRpcController } from './presentation/rpc/products.rpc-controlle
     GetProductModelByIdUseCase,
     CreateProductModelUseCase,
     CreateOfferUseCase,
+    UpdateOfferUseCase,
     AllocateOfferBatchesUseCase,
     GetOfferMediaUploadSignaturesUseCase,
     AddOfferMediaBatchUseCase,
