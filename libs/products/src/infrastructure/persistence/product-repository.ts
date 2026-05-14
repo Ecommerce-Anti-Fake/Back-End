@@ -207,9 +207,9 @@ export class ProductRepository {
           select: { modelName: true },
         },
         media: {
-          take: 1,
           orderBy: { createdAt: 'asc' },
           select: {
+            mediaType: true,
             fileUrl: true,
             mediaAsset: {
               select: { secureUrl: true },
@@ -235,9 +235,9 @@ export class ProductRepository {
           select: { modelName: true },
         },
         media: {
-          take: 1,
           orderBy: { createdAt: 'asc' },
           select: {
+            mediaType: true,
             fileUrl: true,
             mediaAsset: {
               select: { secureUrl: true },
@@ -298,9 +298,9 @@ export class ProductRepository {
           select: { modelName: true },
         },
         media: {
-          take: 1,
           orderBy: { createdAt: 'asc' },
           select: {
+            mediaType: true,
             fileUrl: true,
             mediaAsset: {
               select: { secureUrl: true },

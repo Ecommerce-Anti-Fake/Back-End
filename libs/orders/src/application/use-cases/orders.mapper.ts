@@ -39,17 +39,20 @@ export function toOrderResponse(order: OrderWithRelations) {
     shippingName: order.shippingName,
     shippingPhone: order.shippingPhone,
     shippingAddress: order.shippingAddress,
-    items: order.items.map((item) => ({
-      offerId: item.offerId,
-      offerTitleSnapshot: item.offerTitleSnapshot,
-      thumbnailUrl:
-        item.offer.media?.find((media) => media.mediaAsset?.secureUrl || media.fileUrl)?.mediaAsset?.secureUrl ??
-        item.offer.media?.find((media) => media.fileUrl)?.fileUrl ??
-        null,
-      unitPrice: decimalToNumber(item.unitPrice),
-      quantity: item.quantity,
-      verificationLevelSnapshot: item.verificationLevelSnapshot,
-    })),
+    items: order.items.map((item) => {
+      const thumbnailMedia =
+        item.offer.media?.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
+        item.offer.media?.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
+
+      return {
+        offerId: item.offerId,
+        offerTitleSnapshot: item.offerTitleSnapshot,
+        thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
+        unitPrice: decimalToNumber(item.unitPrice),
+        quantity: item.quantity,
+        verificationLevelSnapshot: item.verificationLevelSnapshot,
+      };
+    }),
     createdAt: order.createdAt,
   };
 }

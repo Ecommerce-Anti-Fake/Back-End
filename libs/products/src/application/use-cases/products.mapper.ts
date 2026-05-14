@@ -34,6 +34,7 @@ type OfferWithRelations = Offer & {
     modelName: string;
   };
   media?: Array<{
+    mediaType?: string;
     fileUrl: string;
     mediaAsset?: {
       secureUrl: string;
@@ -119,6 +120,10 @@ export function toCategoryResponse(category: CategoryRecord) {
 }
 
 export function toOfferResponse(offer: OfferWithRelations) {
+  const thumbnailMedia =
+    offer.media?.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
+    offer.media?.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
+
   return {
     id: offer.id,
     title: offer.title,
@@ -134,9 +139,7 @@ export function toOfferResponse(offer: OfferWithRelations) {
     shopName: offer.shop.shopName,
     categoryName: offer.category.name,
     productModelName: offer.productModel.modelName,
-    thumbnailUrl: offer.media?.find((media) => media.mediaAsset?.secureUrl || media.fileUrl)?.mediaAsset?.secureUrl
-      ?? offer.media?.find((media) => media.fileUrl)?.fileUrl
-      ?? null,
+    thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
     createdAt: offer.createdAt,
   };
 }
