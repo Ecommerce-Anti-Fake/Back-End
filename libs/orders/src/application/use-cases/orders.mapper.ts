@@ -45,12 +45,17 @@ export function toOrderResponse(order: OrderWithRelations) {
         item.offer.media?.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
 
       return {
+        id: item.id,
         offerId: item.offerId,
         offerTitleSnapshot: item.offerTitleSnapshot,
         thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
         unitPrice: decimalToNumber(item.unitPrice),
         quantity: item.quantity,
         verificationLevelSnapshot: item.verificationLevelSnapshot,
+        reviewId: item.reviews?.[0]?.id ?? null,
+        reviewRating: item.reviews?.[0]?.rating ?? null,
+        reviewed: Boolean(item.reviews?.[0]),
+        canReview: order.orderStatus === 'completed',
       };
     }),
     createdAt: order.createdAt,

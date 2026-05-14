@@ -56,6 +56,9 @@ export class CartResponseDto {
 }
 
 export class OrderItemResponseDto {
+  @ApiProperty({ example: 'order-item-id' })
+  id!: string;
+
   @ApiProperty({ example: 'offer-id' })
   offerId!: string;
 
@@ -70,6 +73,18 @@ export class OrderItemResponseDto {
 
   @ApiProperty({ example: 'standard' })
   verificationLevelSnapshot!: string;
+
+  @ApiPropertyOptional({ example: 'review-id', nullable: true })
+  reviewId!: string | null;
+
+  @ApiPropertyOptional({ example: 5, nullable: true })
+  reviewRating!: number | null;
+
+  @ApiProperty({ example: true })
+  reviewed!: boolean;
+
+  @ApiProperty({ example: true })
+  canReview!: boolean;
 }
 
 export class OrderResponseDto {

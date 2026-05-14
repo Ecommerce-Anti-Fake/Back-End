@@ -4,6 +4,7 @@ import {
   AllocateOfferBatchesMessage,
   AddOfferDocumentsBatchMessage,
   AddOfferMediaBatchMessage,
+  CreateOrderItemReviewMessage,
   CreateOfferReviewMessage,
   CreateBrandMessage,
   CreateCategoryMessage,
@@ -98,6 +99,10 @@ export class ProductsRpcService {
 
   createOfferReview(payload: CreateOfferReviewMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.createOfferReview, payload);
+  }
+
+  createOrderItemReview(payload: CreateOrderItemReviewMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.createOrderItemReview, payload);
   }
 
   getOfferDocumentUploadSignatures(payload: OfferDocumentUploadSignaturesMessage) {

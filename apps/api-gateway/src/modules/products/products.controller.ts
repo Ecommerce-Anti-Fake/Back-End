@@ -382,6 +382,27 @@ export class ProductsController {
     });
   }
 
+  @ApiOperation({ summary: 'Tao hoac cap nhat danh gia cho mot san pham trong don hang' })
+  @ApiBearerAuth('access-token')
+  @ApiCreatedResponse({
+    description: 'Tao hoac cap nhat danh gia thanh cong.',
+    type: OfferReviewResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('order-items/:orderItemId/review')
+  createOrderItemReview(
+    @Param('orderItemId') orderItemId: string,
+    @CurrentUserId() fromUserId: string,
+    @Body() dto: CreateOfferReviewDto,
+  ) {
+    return this.productsRpcService.createOrderItemReview({
+      orderItemId,
+      fromUserId,
+      rating: dto.rating,
+      comment: dto.comment ?? null,
+    });
+  }
+
   @ApiOperation({ summary: 'Lay chu ky upload tai lieu cho offer' })
   @ApiBearerAuth('access-token')
   @ApiCreatedResponse({

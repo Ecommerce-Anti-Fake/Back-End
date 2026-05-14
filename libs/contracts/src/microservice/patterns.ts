@@ -82,6 +82,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   deleteOfferMedia: 'products.delete-offer-media',
   findOfferReviews: 'products.find-offer-reviews',
   createOfferReview: 'products.create-offer-review',
+  createOrderItemReview: 'products.create-order-item-review',
   getOfferDocumentUploadSignatures: 'products.get-offer-document-upload-signatures',
   addOfferDocumentsBatch: 'products.add-offer-documents-batch',
   findOfferDocuments: 'products.find-offer-documents',
@@ -528,6 +529,13 @@ export type OfferReviewsLookupMessage = {
 
 export type CreateOfferReviewMessage = {
   offerId: string;
+  fromUserId: string;
+  rating: number;
+  comment?: string | null;
+};
+
+export type CreateOrderItemReviewMessage = {
+  orderItemId: string;
   fromUserId: string;
   rating: number;
   comment?: string | null;

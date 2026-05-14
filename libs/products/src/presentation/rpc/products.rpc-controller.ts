@@ -7,6 +7,7 @@ import type {
   AllocateOfferBatchesMessage,
   AddOfferDocumentsBatchMessage,
   AddOfferMediaBatchMessage,
+  CreateOrderItemReviewMessage,
   CreateOfferReviewMessage,
   CreateBrandMessage,
   CreateCategoryMessage,
@@ -32,6 +33,7 @@ import {
   CreateCategoryUseCase,
   CreateOfferUseCase,
   CreateOfferReviewUseCase,
+  CreateOrderItemReviewUseCase,
   CreateProductModelUseCase,
   DeleteOfferMediaUseCase,
   GetOfferDocumentUploadSignaturesUseCase,
@@ -68,6 +70,7 @@ export class ProductsRpcController {
     private readonly deleteOfferMediaUseCase: DeleteOfferMediaUseCase,
     private readonly listOfferReviewsUseCase: ListOfferReviewsUseCase,
     private readonly createOfferReviewUseCase: CreateOfferReviewUseCase,
+    private readonly createOrderItemReviewUseCase: CreateOrderItemReviewUseCase,
     private readonly listOfferBatchLinksUseCase: ListOfferBatchLinksUseCase,
     private readonly getOfferDocumentUploadSignaturesUseCase: GetOfferDocumentUploadSignaturesUseCase,
     private readonly addOfferDocumentsBatchUseCase: AddOfferDocumentsBatchUseCase,
@@ -224,6 +227,15 @@ export class ProductsRpcController {
   async createOfferReview(@Payload() payload: CreateOfferReviewMessage) {
     try {
       return await this.createOfferReviewUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.createOrderItemReview)
+  async createOrderItemReview(@Payload() payload: CreateOrderItemReviewMessage) {
+    try {
+      return await this.createOrderItemReviewUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

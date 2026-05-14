@@ -54,6 +54,12 @@ const orderWithRelationsArgs = Prisma.validator<Prisma.OrderDefaultArgs>()({
     items: {
       include: {
         batchAllocations: true,
+        reviews: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 1,
+        },
         offer: {
           include: {
             media: {
@@ -104,6 +110,12 @@ const disputeWithOrderArgs = Prisma.validator<Prisma.DisputeDefaultArgs>()({
         items: {
           include: {
             batchAllocations: true,
+            reviews: {
+              orderBy: {
+                createdAt: 'desc',
+              },
+              take: 1,
+            },
             offer: {
               include: {
                 media: {

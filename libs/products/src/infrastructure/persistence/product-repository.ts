@@ -544,6 +544,38 @@ export class ProductRepository {
     });
   }
 
+  findCompletedOrderItemForReview(orderItemId: string, buyerUserId: string) {
+    return this.prisma.orderItem.findFirst({
+      where: {
+        id: orderItemId,
+        order: {
+          buyerUserId,
+          orderStatus: 'completed',
+        },
+      },
+      include: {
+        order: {
+          include: {
+            shop: {
+              select: {
+                ownerUserId: true,
+              },
+            },
+          },
+        },
+        reviews: {
+          where: {
+            fromUserId: buyerUserId,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 1,
+        },
+      },
+    });
+  }
+
   createReview(data: {
     orderId: string;
     orderItemId: string;
