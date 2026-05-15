@@ -26,6 +26,7 @@ import {
   DisputeEvidenceUploadSignatureResponseDto,
   MarkOrderPaidDto,
   OpenOrderDisputeDto,
+  OrderFulfillmentAuditEntryDto,
   OrderResponseDto,
   ResolveAdminDisputeDto,
   ResolveOrderDisputeDto,
@@ -263,6 +264,26 @@ export class OrdersController {
   @Get(':id')
   findById(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
     return this.ordersRpcService.findById({ id, requesterUserId });
+  }
+
+  @ApiOperation({ summary: 'Lay fulfillment audit timeline cua don hang' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'id', description: 'ID don hang.' })
+  @ApiOkResponse({
+    description: 'Timeline cap nhat fulfillment cua don hang.',
+    type: OrderFulfillmentAuditEntryDto,
+    isArray: true,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Thieu access token hoac token khong hop le.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Khong co quyen xem audit timeline cua don hang nay.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get(':id/fulfillment-audit')
+  getFulfillmentAudit(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
+    return this.ordersRpcService.getFulfillmentAudit({ id, requesterUserId });
   }
 
   @ApiOperation({ summary: 'Admin lay danh sach dispute dang mo' })

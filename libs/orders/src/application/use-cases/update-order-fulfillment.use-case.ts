@@ -4,6 +4,7 @@ import { OrderReversalService } from '../services';
 import { toOrderResponse } from './orders.mapper';
 
 const FULFILLMENT_STATUSES = ['PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED'] as const;
+const FULFILLMENT_AUDIT_ACTION = 'FULFILLMENT_STATUS_CHANGED';
 
 @Injectable()
 export class UpdateOrderFulfillmentUseCase {
@@ -41,14 +42,18 @@ export class UpdateOrderFulfillmentUseCase {
       if (!isPaymentReady) {
         throw new BadRequestException('Only paid orders or COD orders can be processed');
       }
-      return toOrderResponse(await this.ordersRepository.allocateOrderBatchesAndUpdateFulfillment(order.id, 'PROCESSING'));
+      const updatedOrder = await this.ordersRepository.allocateOrderBatchesAndUpdateFulfillment(order.id, 'PROCESSING');
+      await this.createFulfillmentAudit(order.id, input.requesterUserId, currentFulfillmentStatus, 'PROCESSING');
+      return toOrderResponse(updatedOrder);
     }
 
     if (input.fulfillmentStatus === 'SHIPPING') {
       if (currentFulfillmentStatus !== 'PROCESSING') {
         throw new BadRequestException('Order must be processing before shipping');
       }
-      return toOrderResponse(await this.ordersRepository.updateFulfillmentStatus(order.id, 'SHIPPING'));
+      const updatedOrder = await this.ordersRepository.updateFulfillmentStatus(order.id, 'SHIPPING');
+      await this.createFulfillmentAudit(order.id, input.requesterUserId, currentFulfillmentStatus, 'SHIPPING');
+      return toOrderResponse(updatedOrder);
     }
 
     if (input.fulfillmentStatus === 'DELIVERED') {
@@ -70,15 +75,34 @@ export class UpdateOrderFulfillmentUseCase {
         throw new BadRequestException('Only paid orders can be delivered');
       }
 
-      return toOrderResponse(await this.ordersRepository.updateFulfillmentStatus(order.id, 'DELIVERED'));
+      const updatedOrder = await this.ordersRepository.updateFulfillmentStatus(order.id, 'DELIVERED');
+      await this.createFulfillmentAudit(order.id, input.requesterUserId, currentFulfillmentStatus, 'DELIVERED');
+      return toOrderResponse(updatedOrder);
     }
 
     if (input.fulfillmentStatus === 'CANCELLED') {
       if (order.orderStatus !== 'pending') {
         throw new BadRequestException('Only pending orders can be cancelled by fulfillment');
       }
-      return toOrderResponse(await this.orderReversalService.cancelOrder(order.id));
+      const cancelledOrder = await this.orderReversalService.cancelOrder(order.id);
+      await this.createFulfillmentAudit(order.id, input.requesterUserId, currentFulfillmentStatus, 'CANCELLED');
+      return toOrderResponse(cancelledOrder);
     }
     throw new BadRequestException('Unsupported fulfillment status');
+  }
+
+  private createFulfillmentAudit(orderId: string, actorUserId: string, fromStatus: string, toStatus: string) {
+    return this.ordersRepository.createAuditLog({
+      targetType: 'ORDER',
+      targetId: orderId,
+      actorUserId,
+      action: FULFILLMENT_AUDIT_ACTION,
+      fromStatus,
+      toStatus,
+      note: `Fulfillment moved from ${fromStatus} to ${toStatus}`,
+      metadata: {
+        domain: 'FULFILLMENT',
+      },
+    });
   }
 }

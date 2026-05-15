@@ -12,6 +12,7 @@ describe('UpdateOrderFulfillmentUseCase', () => {
     allocateOrderBatchesAndUpdateFulfillment: jest.fn(),
     markOrderPaid: jest.fn(),
     updateFulfillmentStatus: jest.fn(),
+    createAuditLog: jest.fn(),
   };
   const orderReversalServiceMock = {
     cancelOrder: jest.fn(),
@@ -44,6 +45,18 @@ describe('UpdateOrderFulfillmentUseCase', () => {
     });
 
     expect(ordersRepositoryMock.allocateOrderBatchesAndUpdateFulfillment).toHaveBeenCalledWith('order-1', 'PROCESSING');
+    expect(ordersRepositoryMock.createAuditLog).toHaveBeenCalledWith({
+      targetType: 'ORDER',
+      targetId: 'order-1',
+      actorUserId: 'seller-user-1',
+      action: 'FULFILLMENT_STATUS_CHANGED',
+      fromStatus: 'PENDING',
+      toStatus: 'PROCESSING',
+      note: 'Fulfillment moved from PENDING to PROCESSING',
+      metadata: {
+        domain: 'FULFILLMENT',
+      },
+    });
     expect(result.fulfillmentStatus).toBe('PROCESSING');
   });
 
@@ -72,6 +85,15 @@ describe('UpdateOrderFulfillmentUseCase', () => {
     });
 
     expect(ordersRepositoryMock.updateFulfillmentStatus).toHaveBeenCalledWith('order-1', 'DELIVERED');
+    expect(ordersRepositoryMock.createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetType: 'ORDER',
+        targetId: 'order-1',
+        actorUserId: 'seller-user-1',
+        fromStatus: 'SHIPPING',
+        toStatus: 'DELIVERED',
+      }),
+    );
     expect(result).toMatchObject({
       orderStatus: 'paid',
       fulfillmentStatus: 'DELIVERED',

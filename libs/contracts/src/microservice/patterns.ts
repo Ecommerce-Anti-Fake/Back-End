@@ -104,6 +104,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   findSellerShopOrders: 'orders.find-seller-shop-orders',
   findAdminOrders: 'orders.find-admin-orders',
   findById: 'orders.find-by-id',
+  getFulfillmentAudit: 'orders.get-fulfillment-audit',
   getAdminOpenDisputeCount: 'orders.get-admin-open-dispute-count',
   findAdminOpenDisputes: 'orders.find-admin-open-disputes',
   getAdminDisputeSummary: 'orders.get-admin-dispute-summary',
@@ -803,6 +804,11 @@ export type UpdateOrderFulfillmentMessage = {
   id: string;
   requesterUserId: string;
   fulfillmentStatus: 'PROCESSING' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED';
+};
+
+export type OrderFulfillmentAuditMessage = {
+  id: string;
+  requesterUserId: string;
 };
 
 export type CreateDistributionPricingPolicyMessage = {

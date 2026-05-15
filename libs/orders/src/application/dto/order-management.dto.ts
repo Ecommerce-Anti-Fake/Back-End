@@ -209,6 +209,35 @@ export class UpdateOrderFulfillmentDto {
   fulfillmentStatus!: 'PROCESSING' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED';
 }
 
+export class OrderFulfillmentAuditEntryDto {
+  @ApiProperty({ example: 'audit-log-id' })
+  id!: string;
+
+  @ApiProperty({ example: 'FULFILLMENT_STATUS_CHANGED' })
+  action!: string;
+
+  @ApiPropertyOptional({ example: 'PENDING', nullable: true })
+  fromStatus!: string | null;
+
+  @ApiPropertyOptional({ example: 'PROCESSING', nullable: true })
+  toStatus!: string | null;
+
+  @ApiPropertyOptional({ example: 'seller-user-id', nullable: true })
+  actorUserId!: string | null;
+
+  @ApiPropertyOptional({ example: 'Seller Nguyen', nullable: true })
+  actorDisplayName!: string | null;
+
+  @ApiPropertyOptional({ example: 'seller@example.com', nullable: true })
+  actorEmail!: string | null;
+
+  @ApiPropertyOptional({ example: 'Seller moved order to processing.', nullable: true })
+  note!: string | null;
+
+  @ApiProperty({ example: '2026-05-15T10:00:00.000Z' })
+  createdAt!: Date;
+}
+
 export class OpenOrderDisputeDto {
   @ApiProperty({ example: 'San pham nhan duoc khong dung voi mo ta' })
   @IsString()

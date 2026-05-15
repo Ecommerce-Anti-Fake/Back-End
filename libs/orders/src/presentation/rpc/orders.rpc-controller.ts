@@ -15,6 +15,7 @@ import type {
   CreateWholesaleOrderMessage,
   MarkOrderPaidMessage,
   MyOrdersLookupMessage,
+  OrderFulfillmentAuditMessage,
   OrderLookupMessage,
   PayOSWebhookMessage,
   SellerShopOrdersLookupMessage,
@@ -45,6 +46,7 @@ import {
   GetAdminOpenDisputeCountUseCase,
   GetActiveCartUseCase,
   GetOrderByIdUseCase,
+  GetOrderFulfillmentAuditUseCase,
   GetDisputeEvidenceUploadSignaturesUseCase,
   ListAdminOpenDisputesUseCase,
   ListDisputeEvidenceUseCase,
@@ -82,6 +84,7 @@ export class OrdersRpcController {
     private readonly getAdminDisputeSummaryUseCase: GetAdminDisputeSummaryUseCase,
     private readonly getAdminOpenDisputeCountUseCase: GetAdminOpenDisputeCountUseCase,
     private readonly getOrderByIdUseCase: GetOrderByIdUseCase,
+    private readonly getOrderFulfillmentAuditUseCase: GetOrderFulfillmentAuditUseCase,
     private readonly getDisputeEvidenceUploadSignaturesUseCase: GetDisputeEvidenceUploadSignaturesUseCase,
     private readonly listAdminOpenDisputesUseCase: ListAdminOpenDisputesUseCase,
     private readonly addDisputeEvidenceBatchUseCase: AddDisputeEvidenceBatchUseCase,
@@ -200,6 +203,15 @@ export class OrdersRpcController {
   async findById(@Payload() payload: OrderLookupMessage) {
     try {
       return await this.getOrderByIdUseCase.execute(payload.id, payload.requesterUserId);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.getFulfillmentAudit)
+  async getFulfillmentAudit(@Payload() payload: OrderFulfillmentAuditMessage) {
+    try {
+      return await this.getOrderFulfillmentAuditUseCase.execute(payload.id, payload.requesterUserId);
     } catch (error) {
       throwRpcException(error);
     }

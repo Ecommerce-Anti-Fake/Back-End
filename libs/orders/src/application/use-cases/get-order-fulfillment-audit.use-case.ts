@@ -1,0 +1,38 @@
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+
+@Injectable()
+export class GetOrderFulfillmentAuditUseCase {
+  constructor(private readonly ordersRepository: OrdersRepository) {}
+
+  async execute(id: string, requesterUserId: string) {
+    const order = await this.ordersRepository.findOrderById(id);
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    const isRetailBuyer = order.buyerUserId === requesterUserId;
+    const isSellerOwner = order.shop.ownerUserId === requesterUserId;
+    const isWholesaleBuyerOwner = order.buyerShop?.ownerUserId === requesterUserId;
+
+    if (!isRetailBuyer && !isSellerOwner && !isWholesaleBuyerOwner) {
+      throw new ForbiddenException('You do not have access to this order');
+    }
+
+    const timeline = await this.ordersRepository.findAuditLogsByTarget('ORDER', id);
+
+    return timeline
+      .filter((log) => log.action === 'FULFILLMENT_STATUS_CHANGED')
+      .map((log) => ({
+        id: log.id,
+        action: log.action,
+        fromStatus: log.fromStatus,
+        toStatus: log.toStatus,
+        actorUserId: log.actorUserId,
+        actorDisplayName: log.actor.displayName,
+        actorEmail: log.actor.email,
+        note: log.note,
+        createdAt: log.createdAt,
+      }));
+  }
+}

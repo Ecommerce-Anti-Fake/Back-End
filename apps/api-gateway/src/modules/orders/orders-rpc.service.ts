@@ -17,6 +17,7 @@ import {
   MarkOrderPaidMessage,
   MyOrdersLookupMessage,
   ORDERS_MESSAGE_PATTERNS,
+  OrderFulfillmentAuditMessage,
   OrderLookupMessage,
   SellerShopOrdersLookupMessage,
   DisputeEvidenceUploadSignaturesMessage,
@@ -85,6 +86,10 @@ export class OrdersRpcService {
 
   findById(payload: OrderLookupMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.findById, payload);
+  }
+
+  getFulfillmentAudit(payload: OrderFulfillmentAuditMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.getFulfillmentAudit, payload);
   }
 
   getAdminOpenDisputeCount(payload: AdminOpenDisputeCountMessage = {}) {
