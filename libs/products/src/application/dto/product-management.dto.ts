@@ -570,6 +570,18 @@ export class OfferBatchLinkResponseDto {
   @ApiProperty({ example: 500 })
   batchQuantity!: number;
 
+  @ApiProperty({ example: 'Nha may ABC' })
+  sourceName!: string;
+
+  @ApiProperty({ example: 'VN' })
+  countryOfOrigin!: string;
+
+  @ApiProperty({ example: 'MANUFACTURER' })
+  sourceType!: string;
+
+  @ApiProperty({ example: '2026-04-16T00:00:00.000Z' })
+  receivedAt!: Date;
+
   @ApiProperty({ example: '2026-04-16T15:00:00.000Z' })
   createdAt!: Date;
 }

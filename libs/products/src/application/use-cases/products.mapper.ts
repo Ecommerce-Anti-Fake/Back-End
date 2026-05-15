@@ -100,6 +100,10 @@ type OfferBatchLinkWithBatch = {
     batchNumber: string;
     productModelId: string;
     quantity: number;
+    sourceName: string;
+    countryOfOrigin: string;
+    sourceType: string;
+    receivedAt: Date;
   };
 };
 
@@ -170,6 +174,9 @@ export function toOfferResponse(offer: OfferWithRelations) {
     availableQuantity: offer.availableQuantity,
     verificationLevel: offer.verificationLevel,
     offerStatus: offer.offerStatus,
+    shopId: offer.shopId,
+    categoryId: offer.categoryId,
+    productModelId: offer.productModelId,
     shopName: offer.shop.shopName,
     categoryName: offer.category.name,
     productModelName: offer.productModel.modelName,
@@ -248,6 +255,10 @@ export function toOfferBatchLinkResponse(link: OfferBatchLinkWithBatch) {
     batchNumber: link.batch.batchNumber,
     productModelId: link.batch.productModelId,
     batchQuantity: link.batch.quantity,
+    sourceName: link.batch.sourceName,
+    countryOfOrigin: link.batch.countryOfOrigin,
+    sourceType: link.batch.sourceType,
+    receivedAt: link.batch.receivedAt,
     createdAt: link.createdAt,
   };
 }

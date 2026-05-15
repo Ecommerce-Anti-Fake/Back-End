@@ -92,6 +92,10 @@ describe('AllocateOfferBatchesUseCase', () => {
           batchNumber: 'BATCH-1',
           productModelId: 'model-1',
           quantity: 10,
+          sourceName: 'Nha may ABC',
+          countryOfOrigin: 'VN',
+          sourceType: 'MANUFACTURER',
+          receivedAt: new Date('2026-04-16T00:00:00.000Z'),
         },
       },
     ]);
@@ -124,7 +128,38 @@ describe('AllocateOfferBatchesUseCase', () => {
         batchId: 'batch-1',
         allocatedQuantity: 5,
         batchNumber: 'BATCH-1',
+        sourceName: 'Nha may ABC',
       },
     ]);
+  });
+
+  it('should clear allocations when nothing has been sold', async () => {
+    productRepositoryMock.findOwnedOffer.mockResolvedValueOnce({
+      id: 'offer-1',
+      productModelId: 'model-1',
+      availableQuantity: 5,
+      shop: {
+        id: 'shop-1',
+        shopStatus: 'active',
+      },
+      batchLinks: [
+        { allocatedQuantity: 5 },
+      ],
+    });
+    productRepositoryMock.findAllocatableBatches.mockResolvedValueOnce([]);
+    productRepositoryMock.replaceOfferBatchLinks.mockResolvedValueOnce([]);
+
+    const result = await useCase.execute({
+      offerId: 'offer-1',
+      requesterUserId: 'user-1',
+      items: [],
+    });
+
+    expect(productRepositoryMock.replaceOfferBatchLinks).toHaveBeenCalledWith({
+      offerId: 'offer-1',
+      soldQuantity: 0,
+      items: [],
+    });
+    expect(result).toEqual([]);
   });
 });
