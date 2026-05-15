@@ -521,7 +521,7 @@ export class ProductRepository {
         offerId,
         order: {
           buyerUserId,
-          orderStatus: 'completed',
+          OR: [{ orderStatus: 'completed' }, { fulfillmentStatus: 'DELIVERED' }],
         },
       },
       include: {
@@ -568,7 +568,7 @@ export class ProductRepository {
         id: orderItemId,
         order: {
           buyerUserId,
-          orderStatus: 'completed',
+          OR: [{ orderStatus: 'completed' }, { fulfillmentStatus: 'DELIVERED' }],
         },
       },
       include: {

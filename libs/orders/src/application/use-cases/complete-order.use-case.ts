@@ -20,6 +20,10 @@ export class CompleteOrderUseCase {
       throw new BadRequestException('Only paid orders can be completed');
     }
 
+    if (order.fulfillmentStatus !== 'DELIVERED') {
+      throw new BadRequestException('Only delivered orders can be completed');
+    }
+
     const updatedOrder = await this.ordersRepository.completeOrder(order.id);
     return toOrderResponse(updatedOrder);
   }

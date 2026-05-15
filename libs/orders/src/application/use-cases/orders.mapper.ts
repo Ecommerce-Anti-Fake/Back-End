@@ -58,7 +58,7 @@ export function toOrderResponse(order: OrderWithRelations) {
         reviewComment: item.reviews?.[0]?.comment ?? null,
         reviewCreatedAt: item.reviews?.[0]?.createdAt ?? null,
         reviewed: Boolean(item.reviews?.[0]),
-        canReview: order.orderStatus === 'completed',
+        canReview: order.orderStatus === 'completed' || order.fulfillmentStatus === 'DELIVERED',
       };
     }),
     createdAt: order.createdAt,

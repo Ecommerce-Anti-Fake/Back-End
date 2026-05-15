@@ -42,13 +42,27 @@ describe('CompleteOrderUseCase', () => {
       escrowStatus: 'RELEASED',
     });
   });
+
+  it('should reject completing an order before it is delivered', async () => {
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord({ fulfillmentStatus: 'SHIPPING' }));
+
+    await expect(
+      useCase.execute({
+        id: 'order-1',
+        requesterUserId: 'seller-user-1',
+      }),
+    ).rejects.toThrow('Only delivered orders can be completed');
+
+    expect(ordersRepositoryMock.completeOrder).not.toHaveBeenCalled();
+  });
 });
 
-function createOrderRecord(overrides?: { orderStatus?: string; escrowStatus?: string }) {
+function createOrderRecord(overrides?: { orderStatus?: string; escrowStatus?: string; fulfillmentStatus?: string }) {
   return {
     id: 'order-1',
     orderMode: 'RETAIL',
     orderStatus: overrides?.orderStatus ?? 'paid',
+    fulfillmentStatus: overrides?.fulfillmentStatus ?? 'DELIVERED',
     shopId: 'seller-shop-1',
     buyerUserId: 'buyer-user-1',
     buyerShopId: null,

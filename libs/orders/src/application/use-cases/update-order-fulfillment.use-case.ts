@@ -26,11 +26,36 @@ export class UpdateOrderFulfillmentUseCase {
       throw new ForbiddenException('Only the seller can update fulfillment');
     }
 
-    if (['cancelled', 'refunded', 'completed'].includes(order.orderStatus) && input.fulfillmentStatus !== 'DELIVERED') {
+    if (['cancelled', 'refunded', 'completed'].includes(order.orderStatus)) {
       throw new BadRequestException('Cannot update fulfillment for closed orders');
     }
 
+    const currentFulfillmentStatus = order.fulfillmentStatus || 'PENDING';
+    const isPaymentReady =
+      order.orderStatus === 'paid' || order.paymentIntent?.paymentStatus === 'PAID' || order.paymentIntent?.paymentMethod === 'COD';
+
+    if (input.fulfillmentStatus === 'PROCESSING') {
+      if (currentFulfillmentStatus !== 'PENDING') {
+        throw new BadRequestException('Order must be pending processing before it can be processed');
+      }
+      if (!isPaymentReady) {
+        throw new BadRequestException('Only paid orders or COD orders can be processed');
+      }
+      return toOrderResponse(await this.ordersRepository.updateFulfillmentStatus(order.id, 'PROCESSING'));
+    }
+
+    if (input.fulfillmentStatus === 'SHIPPING') {
+      if (currentFulfillmentStatus !== 'PROCESSING') {
+        throw new BadRequestException('Order must be processing before shipping');
+      }
+      return toOrderResponse(await this.ordersRepository.updateFulfillmentStatus(order.id, 'SHIPPING'));
+    }
+
     if (input.fulfillmentStatus === 'DELIVERED') {
+      if (currentFulfillmentStatus !== 'SHIPPING') {
+        throw new BadRequestException('Order must be shipping before it can be delivered');
+      }
+
       const paymentMethod = order.paymentIntent?.paymentMethod;
       let paidOrder = order;
 
@@ -45,7 +70,7 @@ export class UpdateOrderFulfillmentUseCase {
         throw new BadRequestException('Only paid orders can be delivered');
       }
 
-      return toOrderResponse(await this.ordersRepository.completeOrder(order.id));
+      return toOrderResponse(await this.ordersRepository.updateFulfillmentStatus(order.id, 'DELIVERED'));
     }
 
     if (input.fulfillmentStatus === 'CANCELLED') {
@@ -54,7 +79,6 @@ export class UpdateOrderFulfillmentUseCase {
       }
       return toOrderResponse(await this.orderReversalService.cancelOrder(order.id));
     }
-
-    return toOrderResponse(await this.ordersRepository.updateFulfillmentStatus(order.id, input.fulfillmentStatus));
+    throw new BadRequestException('Unsupported fulfillment status');
   }
 }
