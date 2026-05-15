@@ -127,6 +127,7 @@ enum MediaResourceType {
   KYC_DOCUMENT
   SHOP_DOCUMENT
   PRODUCT_IMAGE
+  REVIEW_IMAGE
   OFFER_DOCUMENT
   BATCH_DOCUMENT
 }
@@ -205,6 +206,7 @@ model MediaAsset {
   shopCategoryDocument      ShopCategoryDocument?
   userKycSubmissionDocument UserKycSubmissionDocument?
   offerMedia                OfferMedia?
+  reviewMedia               ReviewMedia[]
   offerDocument             OfferDocument?
   batchDocument             BatchDocument?
   brandAuthorization        BrandAuthorization?
@@ -856,23 +858,40 @@ model DisputeEvidence {
 }
 
 model Review {
-  id         String   @id @default(uuid())
-  orderId    String   @map("order_id")
-  orderItemId String?  @unique @map("order_item_id")
-  fromUserId String   @map("from_user_id")
-  toUserId   String   @map("to_user_id")
-  rating     Int
-  comment    String?
-  createdAt  DateTime @default(now()) @map("created_at")
-  order      Order    @relation(fields: [orderId], references: [id])
-  orderItem  OrderItem? @relation(fields: [orderItemId], references: [id])
-  fromUser   User     @relation("ReviewFromUser", fields: [fromUserId], references: [id])
-  toUser     User     @relation("ReviewToUser", fields: [toUserId], references: [id])
+  id          String        @id @default(uuid())
+  orderId     String        @map("order_id")
+  orderItemId String?       @unique @map("order_item_id")
+  fromUserId  String        @map("from_user_id")
+  toUserId    String        @map("to_user_id")
+  rating      Int
+  comment     String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  order       Order         @relation(fields: [orderId], references: [id])
+  orderItem   OrderItem?    @relation(fields: [orderItemId], references: [id])
+  fromUser    User          @relation("ReviewFromUser", fields: [fromUserId], references: [id])
+  toUser      User          @relation("ReviewToUser", fields: [toUserId], references: [id])
+  media       ReviewMedia[]
 
   @@index([orderId])
   @@index([fromUserId])
   @@index([toUserId])
   @@map("review")
+}
+
+model ReviewMedia {
+  id           String      @id @default(uuid())
+  reviewId     String      @map("review_id")
+  mediaAssetId String?     @unique @map("media_asset_id")
+  fileUrl      String      @map("file_url")
+  mimeType     String?     @map("mime_type")
+  publicId     String?     @map("public_id")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  review       Review      @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset? @relation(fields: [mediaAssetId], references: [id])
+
+  @@index([reviewId])
+  @@index([mediaAssetId])
+  @@map("review_media")
 }
 
 model ChatThread {

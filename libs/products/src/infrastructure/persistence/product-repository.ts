@@ -500,6 +500,14 @@ export class ProductRepository {
             phone: true,
           },
         },
+        media: {
+          include: {
+            mediaAsset: true,
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -529,6 +537,16 @@ export class ProductRepository {
         reviews: {
           where: {
             fromUserId: buyerUserId,
+          },
+          include: {
+            media: {
+              include: {
+                mediaAsset: true,
+              },
+              orderBy: {
+                createdAt: 'asc',
+              },
+            },
           },
           orderBy: {
             createdAt: 'desc',
@@ -567,6 +585,16 @@ export class ProductRepository {
           where: {
             fromUserId: buyerUserId,
           },
+          include: {
+            media: {
+              include: {
+                mediaAsset: true,
+              },
+              orderBy: {
+                createdAt: 'asc',
+              },
+            },
+          },
           orderBy: {
             createdAt: 'desc',
           },
@@ -599,6 +627,14 @@ export class ProductRepository {
             phone: true,
           },
         },
+        media: {
+          include: {
+            mediaAsset: true,
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
       },
     });
   }
@@ -622,6 +658,48 @@ export class ProductRepository {
             phone: true,
           },
         },
+        media: {
+          include: {
+            mediaAsset: true,
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+      },
+    });
+  }
+
+  findReviewOwnedByBuyer(reviewId: string, buyerUserId: string) {
+    return this.prisma.review.findFirst({
+      where: {
+        id: reviewId,
+        fromUserId: buyerUserId,
+      },
+      include: {
+        media: {
+          include: {
+            mediaAsset: true,
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+      },
+    });
+  }
+
+  createReviewMedia(data: {
+    reviewId: string;
+    mediaAssetId: string | null;
+    fileUrl: string;
+    mimeType: string | null;
+    publicId: string | null;
+  }) {
+    return this.prisma.reviewMedia.create({
+      data,
+      include: {
+        mediaAsset: true,
       },
     });
   }

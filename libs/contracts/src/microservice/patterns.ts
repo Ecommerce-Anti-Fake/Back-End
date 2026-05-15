@@ -83,6 +83,8 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   findOfferReviews: 'products.find-offer-reviews',
   createOfferReview: 'products.create-offer-review',
   createOrderItemReview: 'products.create-order-item-review',
+  getReviewMediaUploadSignatures: 'products.get-review-media-upload-signatures',
+  addReviewMediaBatch: 'products.add-review-media-batch',
   getOfferDocumentUploadSignatures: 'products.get-offer-document-upload-signatures',
   addOfferDocumentsBatch: 'products.add-offer-documents-batch',
   findOfferDocuments: 'products.find-offer-documents',
@@ -539,6 +541,25 @@ export type CreateOrderItemReviewMessage = {
   fromUserId: string;
   rating: number;
   comment?: string | null;
+};
+
+export type ReviewMediaUploadSignaturesMessage = {
+  reviewId: string;
+  requesterUserId: string;
+  items: Array<{
+    assetType: 'IMAGE';
+  }>;
+};
+
+export type AddReviewMediaBatchMessage = {
+  reviewId: string;
+  requesterUserId: string;
+  items: Array<{
+    assetType: 'IMAGE';
+    mimeType: string;
+    fileUrl: string;
+    publicId: string;
+  }>;
 };
 
 export type OfferDocumentUploadSignaturesMessage = {

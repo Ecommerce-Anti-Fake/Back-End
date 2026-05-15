@@ -7,6 +7,7 @@ import type {
   AllocateOfferBatchesMessage,
   AddOfferDocumentsBatchMessage,
   AddOfferMediaBatchMessage,
+  AddReviewMediaBatchMessage,
   CreateOrderItemReviewMessage,
   CreateOfferReviewMessage,
   CreateBrandMessage,
@@ -22,6 +23,7 @@ import type {
   OfferMediaUploadSignaturesMessage,
   OfferReviewsLookupMessage,
   ProductModelLookupMessage,
+  ReviewMediaUploadSignaturesMessage,
   UpdateOfferMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
@@ -29,6 +31,7 @@ import {
   AllocateOfferBatchesUseCase,
   AddOfferDocumentsBatchUseCase,
   AddOfferMediaBatchUseCase,
+  AddReviewMediaBatchUseCase,
   CreateBrandUseCase,
   CreateCategoryUseCase,
   CreateOfferUseCase,
@@ -40,6 +43,7 @@ import {
   GetOfferByIdUseCase,
   GetOfferMediaUploadSignaturesUseCase,
   GetProductModelByIdUseCase,
+  GetReviewMediaUploadSignaturesUseCase,
   ListBrandsUseCase,
   ListCategoriesUseCase,
   ListOfferBatchLinksUseCase,
@@ -71,6 +75,8 @@ export class ProductsRpcController {
     private readonly listOfferReviewsUseCase: ListOfferReviewsUseCase,
     private readonly createOfferReviewUseCase: CreateOfferReviewUseCase,
     private readonly createOrderItemReviewUseCase: CreateOrderItemReviewUseCase,
+    private readonly getReviewMediaUploadSignaturesUseCase: GetReviewMediaUploadSignaturesUseCase,
+    private readonly addReviewMediaBatchUseCase: AddReviewMediaBatchUseCase,
     private readonly listOfferBatchLinksUseCase: ListOfferBatchLinksUseCase,
     private readonly getOfferDocumentUploadSignaturesUseCase: GetOfferDocumentUploadSignaturesUseCase,
     private readonly addOfferDocumentsBatchUseCase: AddOfferDocumentsBatchUseCase,
@@ -236,6 +242,24 @@ export class ProductsRpcController {
   async createOrderItemReview(@Payload() payload: CreateOrderItemReviewMessage) {
     try {
       return await this.createOrderItemReviewUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.getReviewMediaUploadSignatures)
+  async getReviewMediaUploadSignatures(@Payload() payload: ReviewMediaUploadSignaturesMessage) {
+    try {
+      return await this.getReviewMediaUploadSignaturesUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.addReviewMediaBatch)
+  async addReviewMediaBatch(@Payload() payload: AddReviewMediaBatchMessage) {
+    try {
+      return await this.addReviewMediaBatchUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

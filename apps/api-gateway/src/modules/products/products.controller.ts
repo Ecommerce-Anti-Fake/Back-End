@@ -14,6 +14,7 @@ import {
   AllocateOfferBatchesDto,
   AddOfferDocumentsBatchDto,
   AddOfferMediaBatchDto,
+  AddReviewMediaBatchDto,
   BrandResponseDto,
   CategoryResponseDto,
   CreateBrandDto,
@@ -23,6 +24,7 @@ import {
   CreateProductModelDto,
   GetOfferDocumentUploadSignaturesDto,
   GetOfferMediaUploadSignaturesDto,
+  GetReviewMediaUploadSignaturesDto,
   ListOffersQueryDto,
   OfferDocumentResponseDto,
   OfferBatchLinkResponseDto,
@@ -32,6 +34,7 @@ import {
   OfferReviewsResponseDto,
   OfferResponseDto,
   ProductModelResponseDto,
+  ReviewMediaResponseDto,
   UpdateOfferDto,
 } from '@products';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
@@ -400,6 +403,48 @@ export class ProductsController {
       fromUserId,
       rating: dto.rating,
       comment: dto.comment ?? null,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay chu ky upload anh cho danh gia san pham' })
+  @ApiBearerAuth('access-token')
+  @ApiCreatedResponse({
+    description: 'Danh sach chu ky upload anh danh gia.',
+    type: OfferMediaUploadSignatureResponseDto,
+    isArray: true,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('reviews/:reviewId/media/upload-signatures')
+  getReviewMediaUploadSignatures(
+    @Param('reviewId') reviewId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: GetReviewMediaUploadSignaturesDto,
+  ) {
+    return this.productsRpcService.getReviewMediaUploadSignatures({
+      reviewId,
+      requesterUserId,
+      items: dto.items,
+    });
+  }
+
+  @ApiOperation({ summary: 'Luu metadata anh da upload cho danh gia san pham' })
+  @ApiBearerAuth('access-token')
+  @ApiCreatedResponse({
+    description: 'Danh sach anh danh gia da luu.',
+    type: ReviewMediaResponseDto,
+    isArray: true,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('reviews/:reviewId/media')
+  addReviewMediaBatch(
+    @Param('reviewId') reviewId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: AddReviewMediaBatchDto,
+  ) {
+    return this.productsRpcService.addReviewMediaBatch({
+      reviewId,
+      requesterUserId,
+      items: dto.items,
     });
   }
 

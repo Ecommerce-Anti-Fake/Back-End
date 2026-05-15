@@ -40,9 +40,10 @@ export function toOrderResponse(order: OrderWithRelations) {
     shippingPhone: order.shippingPhone,
     shippingAddress: order.shippingAddress,
     items: order.items.map((item) => {
+      const offerMedia = item.offer?.media ?? [];
       const thumbnailMedia =
-        item.offer.media?.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
-        item.offer.media?.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
+        offerMedia.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
+        offerMedia.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
 
       return {
         id: item.id,

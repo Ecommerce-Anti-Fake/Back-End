@@ -30,6 +30,7 @@ export class MediaService {
       | 'KYC_DOCUMENT'
       | 'SHOP_DOCUMENT'
       | 'PRODUCT_IMAGE'
+      | 'REVIEW_IMAGE'
       | 'OFFER_DOCUMENT'
       | 'BATCH_DOCUMENT';
     publicId: string;

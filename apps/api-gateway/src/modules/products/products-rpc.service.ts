@@ -4,6 +4,7 @@ import {
   AllocateOfferBatchesMessage,
   AddOfferDocumentsBatchMessage,
   AddOfferMediaBatchMessage,
+  AddReviewMediaBatchMessage,
   CreateOrderItemReviewMessage,
   CreateOfferReviewMessage,
   CreateBrandMessage,
@@ -20,6 +21,7 @@ import {
   OfferReviewsLookupMessage,
   PRODUCTS_MESSAGE_PATTERNS,
   ProductModelLookupMessage,
+  ReviewMediaUploadSignaturesMessage,
   UpdateOfferMessage,
   CATALOG_SERVICE_CLIENT,
 } from '@contracts';
@@ -103,6 +105,14 @@ export class ProductsRpcService {
 
   createOrderItemReview(payload: CreateOrderItemReviewMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.createOrderItemReview, payload);
+  }
+
+  getReviewMediaUploadSignatures(payload: ReviewMediaUploadSignaturesMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.getReviewMediaUploadSignatures, payload);
+  }
+
+  addReviewMediaBatch(payload: AddReviewMediaBatchMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.addReviewMediaBatch, payload);
   }
 
   getOfferDocumentUploadSignatures(payload: OfferDocumentUploadSignaturesMessage) {

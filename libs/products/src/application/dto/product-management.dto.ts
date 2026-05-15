@@ -17,6 +17,7 @@ import {
 
 const OFFER_SALES_MODES = ['RETAIL', 'WHOLESALE', 'BOTH'] as const;
 const OFFER_MEDIA_ASSET_TYPES = ['IMAGE', 'VIDEO'] as const;
+const REVIEW_MEDIA_ASSET_TYPES = ['IMAGE'] as const;
 const OFFER_STATUSES = ['active', 'inactive'] as const;
 
 export class CreateBrandDto {
@@ -315,6 +316,75 @@ export class CreateOfferReviewDto {
   comment?: string;
 }
 
+export class ReviewMediaUploadSignatureItemDto {
+  @ApiProperty({ enum: REVIEW_MEDIA_ASSET_TYPES, example: 'IMAGE' })
+  @IsString()
+  @IsIn(REVIEW_MEDIA_ASSET_TYPES)
+  assetType!: 'IMAGE';
+}
+
+export class GetReviewMediaUploadSignaturesDto {
+  @ApiProperty({ type: ReviewMediaUploadSignatureItemDto, isArray: true })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ReviewMediaUploadSignatureItemDto)
+  items!: ReviewMediaUploadSignatureItemDto[];
+}
+
+export class ReviewMediaItemDto {
+  @ApiProperty({ enum: REVIEW_MEDIA_ASSET_TYPES, example: 'IMAGE' })
+  @IsString()
+  @IsIn(REVIEW_MEDIA_ASSET_TYPES)
+  assetType!: 'IMAGE';
+
+  @ApiProperty({ example: 'image/jpeg' })
+  @IsString()
+  mimeType!: string;
+
+  @ApiProperty({ example: 'https://res.cloudinary.com/example/image/upload/v1/reviews/review-1/media/photo.jpg' })
+  @IsString()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  fileUrl!: string;
+
+  @ApiProperty({ example: 'reviews/review-1/media/photo' })
+  @IsString()
+  publicId!: string;
+}
+
+export class AddReviewMediaBatchDto {
+  @ApiProperty({ type: ReviewMediaItemDto, isArray: true })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ReviewMediaItemDto)
+  items!: ReviewMediaItemDto[];
+}
+
+export class ReviewMediaResponseDto {
+  @ApiProperty({ example: 'review-media-1' })
+  id!: string;
+
+  @ApiProperty({ example: 'review-id' })
+  reviewId!: string;
+
+  @ApiPropertyOptional({ example: 'media-asset-1', nullable: true })
+  mediaAssetId!: string | null;
+
+  @ApiProperty({ example: 'https://res.cloudinary.com/example/image/upload/v1/reviews/review-1/media/photo.jpg' })
+  fileUrl!: string;
+
+  @ApiProperty({ example: 'IMAGE' })
+  assetType!: 'IMAGE' | 'VIDEO' | 'RAW';
+
+  @ApiPropertyOptional({ example: 'image/jpeg', nullable: true })
+  mimeType!: string | null;
+
+  @ApiPropertyOptional({ example: 'reviews/review-1/media/photo', nullable: true })
+  publicId!: string | null;
+
+  @ApiProperty({ example: '2026-05-15T10:00:00.000Z' })
+  createdAt!: Date;
+}
+
 export class OfferReviewResponseDto {
   @ApiProperty({ example: 'review-id' })
   id!: string;
@@ -339,6 +409,12 @@ export class OfferReviewResponseDto {
 
   @ApiProperty({ example: true })
   verifiedPurchase!: boolean;
+
+  @ApiProperty({ example: true })
+  hasImage!: boolean;
+
+  @ApiProperty({ type: ReviewMediaResponseDto, isArray: true })
+  media!: ReviewMediaResponseDto[];
 
   @ApiProperty({ example: '2026-05-14T10:00:00.000Z' })
   createdAt!: Date;
