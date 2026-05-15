@@ -3,6 +3,14 @@ import { MediaService } from '@media';
 import { ProductRepository } from '../../infrastructure/persistence/product-repository';
 import { toOfferDocumentResponse } from './products.mapper';
 
+const ALLOWED_OFFER_DOCUMENT_MIME_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+const MAX_OFFER_DOCUMENT_BYTES = 10 * 1024 * 1024;
+
 @Injectable()
 export class AddOfferDocumentsBatchUseCase {
   constructor(
@@ -20,6 +28,7 @@ export class AddOfferDocumentsBatchUseCase {
       publicId: string;
       issuerName?: string | null;
       documentNumber?: string | null;
+      bytes?: number | null;
     }>;
   }) {
     const offer = await this.productRepository.findOwnedOffer(input.offerId, input.requesterUserId);
@@ -47,13 +56,22 @@ export class AddOfferDocumentsBatchUseCase {
         throw new BadRequestException('Offer document public ID does not belong to the offer documents folder');
       }
 
+      const mimeType = item.mimeType.trim().toLowerCase();
+      if (!ALLOWED_OFFER_DOCUMENT_MIME_TYPES.has(mimeType)) {
+        throw new BadRequestException('Offer document must be PDF, JPG, PNG or WEBP');
+      }
+
+      if (item.bytes !== undefined && item.bytes !== null && item.bytes > MAX_OFFER_DOCUMENT_BYTES) {
+        throw new BadRequestException('Offer document file size must be at most 10MB');
+      }
+
       const mediaAsset = await this.mediaService.createCloudinaryAsset({
         ownerUserId: input.requesterUserId,
         assetType: 'RAW',
         resourceType: 'OFFER_DOCUMENT',
         publicId,
         secureUrl: item.fileUrl,
-        mimeType: item.mimeType.trim().toLowerCase(),
+        mimeType,
         folder: `offers/${offer.id}/documents`,
       });
 

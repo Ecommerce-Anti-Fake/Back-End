@@ -470,6 +470,33 @@ export class ProductRepository {
     });
   }
 
+  setOfferPrimaryMedia(offerId: string, mediaId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.offerMedia.updateMany({
+        where: {
+          offerId,
+          mediaType: 'thumbnail',
+          id: { not: mediaId },
+        },
+        data: {
+          mediaType: 'gallery',
+        },
+      });
+
+      return tx.offerMedia.update({
+        where: {
+          id: mediaId,
+        },
+        data: {
+          mediaType: 'thumbnail',
+        },
+        include: {
+          mediaAsset: true,
+        },
+      });
+    });
+  }
+
   findOfferReviews(offerId: string) {
     return this.prisma.review.findMany({
       where: {
@@ -740,6 +767,26 @@ export class ProductRepository {
       },
       orderBy: {
         uploadedAt: 'asc',
+      },
+    });
+  }
+
+  findOwnedOfferDocument(offerId: string, documentId: string, sellerUserId: string) {
+    return this.prisma.offerDocument.findFirst({
+      where: {
+        id: documentId,
+        offerId,
+        offer: {
+          sellerUserId,
+        },
+      },
+    });
+  }
+
+  deleteOfferDocument(documentId: string) {
+    return this.prisma.offerDocument.delete({
+      where: {
+        id: documentId,
       },
     });
   }

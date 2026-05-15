@@ -80,6 +80,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   addOfferMediaBatch: 'products.add-offer-media-batch',
   findOfferMedia: 'products.find-offer-media',
   deleteOfferMedia: 'products.delete-offer-media',
+  setOfferPrimaryMedia: 'products.set-offer-primary-media',
   findOfferReviews: 'products.find-offer-reviews',
   createOfferReview: 'products.create-offer-review',
   createOrderItemReview: 'products.create-order-item-review',
@@ -88,6 +89,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   getOfferDocumentUploadSignatures: 'products.get-offer-document-upload-signatures',
   addOfferDocumentsBatch: 'products.add-offer-documents-batch',
   findOfferDocuments: 'products.find-offer-documents',
+  deleteOfferDocument: 'products.delete-offer-document',
 } as const;
 
 export const ORDERS_MESSAGE_PATTERNS = {
@@ -514,6 +516,7 @@ export type AddOfferMediaBatchMessage = {
     publicId: string;
     mediaType?: string | null;
     phash?: string | null;
+    bytes?: number | null;
   }>;
 };
 
@@ -522,6 +525,12 @@ export type OfferMediaLookupMessage = {
 };
 
 export type DeleteOfferMediaMessage = {
+  offerId: string;
+  mediaId: string;
+  requesterUserId: string;
+};
+
+export type SetOfferPrimaryMediaMessage = {
   offerId: string;
   mediaId: string;
   requesterUserId: string;
@@ -582,11 +591,18 @@ export type AddOfferDocumentsBatchMessage = {
     publicId: string;
     issuerName?: string | null;
     documentNumber?: string | null;
+    bytes?: number | null;
   }>;
 };
 
 export type OfferDocumentsLookupMessage = {
   offerId: string;
+};
+
+export type DeleteOfferDocumentMessage = {
+  offerId: string;
+  documentId: string;
+  requesterUserId: string;
 };
 
 export type AllocateOfferBatchesMessage = {

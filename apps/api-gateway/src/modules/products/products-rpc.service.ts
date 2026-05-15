@@ -11,6 +11,7 @@ import {
   CreateCategoryMessage,
   CreateOfferMessage,
   CreateProductModelMessage,
+  DeleteOfferDocumentMessage,
   DeleteOfferMediaMessage,
   ListOffersMessage,
   OfferDocumentUploadSignaturesMessage,
@@ -22,6 +23,7 @@ import {
   PRODUCTS_MESSAGE_PATTERNS,
   ProductModelLookupMessage,
   ReviewMediaUploadSignaturesMessage,
+  SetOfferPrimaryMediaMessage,
   UpdateOfferMessage,
   CATALOG_SERVICE_CLIENT,
 } from '@contracts';
@@ -95,6 +97,10 @@ export class ProductsRpcService {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.deleteOfferMedia, payload);
   }
 
+  setOfferPrimaryMedia(payload: SetOfferPrimaryMediaMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.setOfferPrimaryMedia, payload);
+  }
+
   findOfferReviews(payload: OfferReviewsLookupMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.findOfferReviews, payload);
   }
@@ -125,6 +131,10 @@ export class ProductsRpcService {
 
   findOfferDocuments(payload: OfferDocumentsLookupMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.findOfferDocuments, payload);
+  }
+
+  deleteOfferDocument(payload: DeleteOfferDocumentMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.deleteOfferDocument, payload);
   }
 
   findOffers(payload: ListOffersMessage = {}) {

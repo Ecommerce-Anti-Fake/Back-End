@@ -83,4 +83,30 @@ describe('AddOfferMediaBatchUseCase', () => {
       mediaAssetId: 'media-1',
     });
   });
+
+  it('should reject unsupported media MIME type', async () => {
+    repositoryMock.findOwnedOffer.mockResolvedValueOnce({
+      id: 'offer-1',
+      shop: {
+        id: 'shop-1',
+        shopStatus: 'active',
+      },
+    });
+    mediaServiceMock.isOwnedCloudinaryUrl.mockReturnValue(true);
+
+    await expect(
+      useCase.execute({
+        offerId: 'offer-1',
+        requesterUserId: 'user-1',
+        items: [
+          {
+            assetType: 'IMAGE',
+            mimeType: 'image/gif',
+            fileUrl: 'https://res.cloudinary.com/demo/image/upload/v1/offers/offer-1/media/photo.gif',
+            publicId: 'offers/offer-1/media/photo',
+          },
+        ],
+      }),
+    ).rejects.toThrow('Offer media must be JPG, PNG or WEBP');
+  });
 });

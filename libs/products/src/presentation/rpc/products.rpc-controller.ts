@@ -14,6 +14,7 @@ import type {
   CreateCategoryMessage,
   CreateOfferMessage,
   CreateProductModelMessage,
+  DeleteOfferDocumentMessage,
   DeleteOfferMediaMessage,
   ListOffersMessage,
   OfferDocumentUploadSignaturesMessage,
@@ -24,6 +25,7 @@ import type {
   OfferReviewsLookupMessage,
   ProductModelLookupMessage,
   ReviewMediaUploadSignaturesMessage,
+  SetOfferPrimaryMediaMessage,
   UpdateOfferMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
@@ -38,6 +40,7 @@ import {
   CreateOfferReviewUseCase,
   CreateOrderItemReviewUseCase,
   CreateProductModelUseCase,
+  DeleteOfferDocumentUseCase,
   DeleteOfferMediaUseCase,
   GetOfferDocumentUploadSignaturesUseCase,
   GetOfferByIdUseCase,
@@ -52,6 +55,7 @@ import {
   ListOfferReviewsUseCase,
   ListOffersUseCase,
   ListProductModelsUseCase,
+  SetOfferPrimaryMediaUseCase,
   UpdateOfferUseCase,
 } from '../../application/use-cases';
 
@@ -72,6 +76,7 @@ export class ProductsRpcController {
     private readonly addOfferMediaBatchUseCase: AddOfferMediaBatchUseCase,
     private readonly listOfferMediaUseCase: ListOfferMediaUseCase,
     private readonly deleteOfferMediaUseCase: DeleteOfferMediaUseCase,
+    private readonly setOfferPrimaryMediaUseCase: SetOfferPrimaryMediaUseCase,
     private readonly listOfferReviewsUseCase: ListOfferReviewsUseCase,
     private readonly createOfferReviewUseCase: CreateOfferReviewUseCase,
     private readonly createOrderItemReviewUseCase: CreateOrderItemReviewUseCase,
@@ -81,6 +86,7 @@ export class ProductsRpcController {
     private readonly getOfferDocumentUploadSignaturesUseCase: GetOfferDocumentUploadSignaturesUseCase,
     private readonly addOfferDocumentsBatchUseCase: AddOfferDocumentsBatchUseCase,
     private readonly listOfferDocumentsUseCase: ListOfferDocumentsUseCase,
+    private readonly deleteOfferDocumentUseCase: DeleteOfferDocumentUseCase,
     private readonly listOffersUseCase: ListOffersUseCase,
     private readonly getOfferByIdUseCase: GetOfferByIdUseCase,
   ) {}
@@ -220,6 +226,15 @@ export class ProductsRpcController {
     }
   }
 
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.setOfferPrimaryMedia)
+  async setOfferPrimaryMedia(@Payload() payload: SetOfferPrimaryMediaMessage) {
+    try {
+      return await this.setOfferPrimaryMediaUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
   @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findOfferReviews)
   async findOfferReviews(@Payload() payload: OfferReviewsLookupMessage) {
     try {
@@ -287,6 +302,15 @@ export class ProductsRpcController {
   async findOfferDocuments(@Payload() payload: OfferDocumentsLookupMessage) {
     try {
       return await this.listOfferDocumentsUseCase.execute(payload.offerId);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.deleteOfferDocument)
+  async deleteOfferDocument(@Payload() payload: DeleteOfferDocumentMessage) {
+    try {
+      return await this.deleteOfferDocumentUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

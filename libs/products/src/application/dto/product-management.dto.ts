@@ -260,6 +260,13 @@ export class OfferMediaItemDto {
   @IsOptional()
   @IsString()
   phash?: string;
+
+  @ApiPropertyOptional({ example: 512000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  bytes?: number;
 }
 
 export class AddOfferMediaBatchDto {
@@ -472,6 +479,13 @@ export class OfferDocumentItemDto {
   @IsOptional()
   @IsString()
   documentNumber?: string;
+
+  @ApiPropertyOptional({ example: 1048576 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  bytes?: number;
 }
 
 export class AddOfferDocumentsBatchDto {

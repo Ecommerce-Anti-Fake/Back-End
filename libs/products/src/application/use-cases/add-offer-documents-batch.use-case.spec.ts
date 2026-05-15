@@ -87,4 +87,30 @@ describe('AddOfferDocumentsBatchUseCase', () => {
       reviewStatus: 'pending',
     });
   });
+
+  it('should reject unsupported document MIME type', async () => {
+    repositoryMock.findOwnedOffer.mockResolvedValueOnce({
+      id: 'offer-1',
+      shop: {
+        id: 'shop-1',
+        shopStatus: 'active',
+      },
+    });
+    mediaServiceMock.isOwnedCloudinaryUrl.mockReturnValue(true);
+
+    await expect(
+      useCase.execute({
+        offerId: 'offer-1',
+        requesterUserId: 'user-1',
+        items: [
+          {
+            docType: 'INGREDIENT_CERTIFICATE',
+            mimeType: 'text/plain',
+            fileUrl: 'https://res.cloudinary.com/demo/raw/upload/v1/offers/offer-1/documents/file.txt',
+            publicId: 'offers/offer-1/documents/file',
+          },
+        ],
+      }),
+    ).rejects.toThrow('Offer document must be PDF, JPG, PNG or WEBP');
+  });
 });

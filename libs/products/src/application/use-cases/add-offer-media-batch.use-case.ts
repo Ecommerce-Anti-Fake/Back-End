@@ -3,6 +3,9 @@ import { MediaService } from '@media';
 import { ProductRepository } from '../../infrastructure/persistence/product-repository';
 import { toOfferMediaResponse } from './products.mapper';
 
+const ALLOWED_OFFER_MEDIA_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const MAX_OFFER_MEDIA_BYTES = 5 * 1024 * 1024;
+
 @Injectable()
 export class AddOfferMediaBatchUseCase {
   constructor(
@@ -20,6 +23,7 @@ export class AddOfferMediaBatchUseCase {
       publicId: string;
       mediaType?: string | null;
       phash?: string | null;
+      bytes?: number | null;
     }>;
   }) {
     const offer = await this.productRepository.findOwnedOffer(input.offerId, input.requesterUserId);
@@ -48,8 +52,12 @@ export class AddOfferMediaBatchUseCase {
       }
 
       const mimeType = item.mimeType.trim().toLowerCase();
-      if (!mimeType) {
-        throw new BadRequestException('MIME type is required');
+      if (!ALLOWED_OFFER_MEDIA_MIME_TYPES.has(mimeType)) {
+        throw new BadRequestException('Offer media must be JPG, PNG or WEBP');
+      }
+
+      if (item.bytes !== undefined && item.bytes !== null && item.bytes > MAX_OFFER_MEDIA_BYTES) {
+        throw new BadRequestException('Offer media file size must be at most 5MB');
       }
 
       const mediaAsset = await this.mediaService.createCloudinaryAsset({

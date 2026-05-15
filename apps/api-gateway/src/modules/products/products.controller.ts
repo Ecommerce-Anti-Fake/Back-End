@@ -344,6 +344,26 @@ export class ProductsController {
     });
   }
 
+  @ApiOperation({ summary: 'Dat media offer lam anh dai dien' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Media offer da duoc dat lam anh dai dien.',
+    type: OfferMediaResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Patch('offers/:offerId/media/:mediaId/primary')
+  setOfferPrimaryMedia(
+    @Param('offerId') offerId: string,
+    @Param('mediaId') mediaId: string,
+    @CurrentUserId() requesterUserId: string,
+  ) {
+    return this.productsRpcService.setOfferPrimaryMedia({
+      offerId,
+      mediaId,
+      requesterUserId,
+    });
+  }
+
   @ApiOperation({ summary: 'Lay danh sach media cua offer' })
   @ApiOkResponse({
     description: 'Danh sach media cua offer.',
@@ -519,5 +539,24 @@ export class ProductsController {
   @Get('offers/:offerId/documents')
   findOfferDocuments(@Param('offerId') offerId: string) {
     return this.productsRpcService.findOfferDocuments({ offerId });
+  }
+
+  @ApiOperation({ summary: 'Xoa tai lieu cua offer' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Xoa tai lieu offer thanh cong.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Delete('offers/:offerId/documents/:documentId')
+  deleteOfferDocument(
+    @Param('offerId') offerId: string,
+    @Param('documentId') documentId: string,
+    @CurrentUserId() requesterUserId: string,
+  ) {
+    return this.productsRpcService.deleteOfferDocument({
+      offerId,
+      documentId,
+      requesterUserId,
+    });
   }
 }
