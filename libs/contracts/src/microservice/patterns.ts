@@ -810,6 +810,7 @@ export type UpdateOrderFulfillmentMessage = {
 export type OrderFulfillmentAuditMessage = {
   id: string;
   requesterUserId: string;
+  requesterRole?: string;
 };
 
 export type CreateDistributionPricingPolicyMessage = {

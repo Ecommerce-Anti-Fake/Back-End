@@ -5,17 +5,19 @@ import { OrdersRepository } from '../../infrastructure/persistence/orders.reposi
 export class GetOrderFulfillmentAuditUseCase {
   constructor(private readonly ordersRepository: OrdersRepository) {}
 
-  async execute(id: string, requesterUserId: string) {
+  async execute(id: string, requesterUserId: string, requesterRole?: string) {
     const order = await this.ordersRepository.findOrderById(id);
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
+    const isAdmin = requesterRole === 'admin';
     const isRetailBuyer = order.buyerUserId === requesterUserId;
     const isSellerOwner = order.shop.ownerUserId === requesterUserId;
     const isWholesaleBuyerOwner = order.buyerShop?.ownerUserId === requesterUserId;
+    const shouldSanitize = !isAdmin && !isSellerOwner && (isRetailBuyer || isWholesaleBuyerOwner);
 
-    if (!isRetailBuyer && !isSellerOwner && !isWholesaleBuyerOwner) {
+    if (!isAdmin && !isRetailBuyer && !isSellerOwner && !isWholesaleBuyerOwner) {
       throw new ForbiddenException('You do not have access to this order');
     }
 
@@ -28,9 +30,9 @@ export class GetOrderFulfillmentAuditUseCase {
         action: log.action,
         fromStatus: log.fromStatus,
         toStatus: log.toStatus,
-        actorUserId: log.actorUserId,
+        actorUserId: shouldSanitize ? null : log.actorUserId,
         actorDisplayName: log.actor.displayName,
-        actorEmail: log.actor.email,
+        actorEmail: shouldSanitize ? null : log.actor.email,
         note: log.note,
         createdAt: log.createdAt,
       }));

@@ -83,7 +83,69 @@ describe('GetOrderFulfillmentAuditUseCase', () => {
 
     expect(ordersRepositoryMock.findAuditLogsByTarget).not.toHaveBeenCalled();
   });
+
+  it('returns sanitized audit entries for the buyer', async () => {
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord());
+    ordersRepositoryMock.findAuditLogsByTarget.mockResolvedValueOnce([
+      createAuditLog({
+        actorUserId: 'seller-user-1',
+        actor: {
+          id: 'seller-user-1',
+          displayName: 'Seller',
+          email: 'seller@example.com',
+        },
+      }),
+    ]);
+
+    const result = await useCase.execute('order-1', 'buyer-user-1');
+
+    expect(result[0]).toMatchObject({
+      actorUserId: null,
+      actorDisplayName: 'Seller',
+      actorEmail: null,
+    });
+  });
+
+  it('allows admins to read full audit entries', async () => {
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord());
+    ordersRepositoryMock.findAuditLogsByTarget.mockResolvedValueOnce([
+      createAuditLog({
+        actorUserId: 'seller-user-1',
+        actor: {
+          id: 'seller-user-1',
+          displayName: 'Seller',
+          email: 'seller@example.com',
+        },
+      }),
+    ]);
+
+    const result = await useCase.execute('order-1', 'admin-user-1', 'admin');
+
+    expect(result[0]).toMatchObject({
+      actorUserId: 'seller-user-1',
+      actorDisplayName: 'Seller',
+      actorEmail: 'seller@example.com',
+    });
+  });
 });
+
+function createAuditLog(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'audit-1',
+    action: 'FULFILLMENT_STATUS_CHANGED',
+    fromStatus: 'PENDING',
+    toStatus: 'PROCESSING',
+    note: 'Fulfillment moved from PENDING to PROCESSING',
+    actorUserId: 'seller-user-1',
+    createdAt: new Date('2026-05-15T10:00:00.000Z'),
+    actor: {
+      id: 'seller-user-1',
+      displayName: 'Seller',
+      email: 'seller@example.com',
+    },
+    ...overrides,
+  };
+}
 
 function createOrderRecord() {
   return {

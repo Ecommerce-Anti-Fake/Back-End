@@ -211,7 +211,7 @@ export class OrdersRpcController {
   @MessagePattern(ORDERS_MESSAGE_PATTERNS.getFulfillmentAudit)
   async getFulfillmentAudit(@Payload() payload: OrderFulfillmentAuditMessage) {
     try {
-      return await this.getOrderFulfillmentAuditUseCase.execute(payload.id, payload.requesterUserId);
+      return await this.getOrderFulfillmentAuditUseCase.execute(payload.id, payload.requesterUserId, payload.requesterRole);
     } catch (error) {
       throwRpcException(error);
     }

@@ -35,7 +35,7 @@ import {
   UpdateOrderFulfillmentDto,
 } from '@orders';
 import type { PayOSWebhookMessage } from '@contracts';
-import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
+import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import { OrdersRpcService } from './orders-rpc.service';
 
 @ApiTags('Orders')
@@ -282,8 +282,12 @@ export class OrdersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Get(':id/fulfillment-audit')
-  getFulfillmentAudit(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
-    return this.ordersRpcService.getFulfillmentAudit({ id, requesterUserId });
+  getFulfillmentAudit(
+    @Param('id') id: string,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester?: { role?: string },
+  ) {
+    return this.ordersRpcService.getFulfillmentAudit({ id, requesterUserId, requesterRole: requester?.role });
   }
 
   @ApiOperation({ summary: 'Admin lay danh sach dispute dang mo' })
