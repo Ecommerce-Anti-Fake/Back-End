@@ -28,6 +28,7 @@ import type {
   CancelDistributionShipmentMessage,
   ReceiveDistributionShipmentMessage,
   ResolveWholesalePricingMessage,
+  AdminInventoryAuditMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
 import {
@@ -42,6 +43,7 @@ import {
   ListMyDistributionMembershipsUseCase,
   UpdateDistributionNodeStatusUseCase,
   CreateSupplyBatchUseCase,
+  GetAdminInventoryAuditUseCase,
   GetInventorySummaryUseCase,
   GetSupplyBatchDetailUseCase,
   CreateDistributionShipmentUseCase,
@@ -79,6 +81,7 @@ export class DistributionPricingRpcController {
     private readonly listSupplyBatchesUseCase: ListSupplyBatchesUseCase,
     private readonly getSupplyBatchDetailUseCase: GetSupplyBatchDetailUseCase,
     private readonly getInventorySummaryUseCase: GetInventorySummaryUseCase,
+    private readonly getAdminInventoryAuditUseCase: GetAdminInventoryAuditUseCase,
     private readonly createDistributionShipmentUseCase: CreateDistributionShipmentUseCase,
     private readonly dispatchDistributionShipmentUseCase: DispatchDistributionShipmentUseCase,
     private readonly getDistributionShipmentUseCase: GetDistributionShipmentUseCase,
@@ -238,6 +241,15 @@ export class DistributionPricingRpcController {
   async getInventorySummary(@Payload() payload: InventorySummaryMessage) {
     try {
       return await this.getInventorySummaryUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(DISTRIBUTION_MESSAGE_PATTERNS.getAdminInventoryAudit)
+  async getAdminInventoryAudit(@Payload() payload: AdminInventoryAuditMessage) {
+    try {
+      return await this.getAdminInventoryAuditUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

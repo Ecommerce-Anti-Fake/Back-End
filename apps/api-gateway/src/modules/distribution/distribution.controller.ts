@@ -11,6 +11,8 @@ import {
 } from '@nestjs/swagger';
 import {
   AddBatchDocumentsBatchDto,
+  AdminInventoryAuditQueryDto,
+  AdminInventoryAuditResponseDto,
   BatchDocumentUploadSignatureResponseDto,
   BatchDocumentResponseDto,
   CreateSupplyBatchDto,
@@ -31,7 +33,7 @@ import {
   SupplyBatchDetailResponseDto,
   SupplyBatchResponseDto,
 } from '@distribution';
-import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
+import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import { DistributionRpcService } from './distribution-rpc.service';
 
 @ApiTags('Distribution')
@@ -281,6 +283,25 @@ export class DistributionController {
     return this.distributionRpcService.getInventorySummary({
       requesterUserId,
       shopId: query.shopId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Admin tra cuu audit inventory theo batch, shop, offer hoac order' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach movement inventory phuc vu audit.',
+    type: AdminInventoryAuditResponseDto,
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Get('admin/inventory-audit')
+  getAdminInventoryAudit(@Query() query: AdminInventoryAuditQueryDto) {
+    return this.distributionRpcService.getAdminInventoryAudit({
+      batchId: query.batchId,
+      shopId: query.shopId,
+      offerId: query.offerId,
+      orderId: query.orderId,
+      search: query.search,
     });
   }
 

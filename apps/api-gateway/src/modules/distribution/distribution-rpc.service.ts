@@ -28,6 +28,7 @@ import {
   CancelDistributionShipmentMessage,
   ReceiveDistributionShipmentMessage,
   CATALOG_SERVICE_CLIENT,
+  AdminInventoryAuditMessage,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
 import { lastValueFrom } from 'rxjs';
@@ -101,6 +102,10 @@ export class DistributionRpcService {
 
   getInventorySummary(payload: InventorySummaryMessage) {
     return this.send(DISTRIBUTION_MESSAGE_PATTERNS.getInventorySummary, payload);
+  }
+
+  getAdminInventoryAudit(payload: AdminInventoryAuditMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.getAdminInventoryAudit, payload);
   }
 
   findNodesByNetwork(payload: DistributionNodesLookupMessage) {

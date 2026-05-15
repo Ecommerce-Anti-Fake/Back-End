@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ShopRegistrationType } from '@prisma/client';
+import { Prisma, ShopRegistrationType } from '@prisma/client';
 import { PrismaService } from '@database/prisma/prisma.service';
 import { createHash } from 'crypto';
 
@@ -567,6 +567,101 @@ export class DistributionPricingRepository {
       batches,
       offers,
     };
+  }
+
+  findAdminInventoryAuditBatches(input: {
+    batchId?: string;
+    shopId?: string;
+    offerId?: string;
+    orderId?: string;
+    search?: string;
+  }) {
+    const and: Prisma.SupplyBatchWhereInput[] = [];
+    const search = input.search?.trim();
+
+    if (input.offerId) {
+      and.push({
+        OR: [
+          { offerLinks: { some: { offerId: input.offerId } } },
+          { orderItemAllocations: { some: { orderItem: { offerId: input.offerId } } } },
+        ],
+      });
+    }
+
+    if (input.orderId) {
+      and.push({
+        orderItemAllocations: {
+          some: {
+            orderItem: {
+              orderId: input.orderId,
+            },
+          },
+        },
+      });
+    }
+
+    if (search) {
+      and.push({
+        OR: [
+          { batchNumber: { contains: search, mode: 'insensitive' } },
+          { sourceName: { contains: search, mode: 'insensitive' } },
+          { shop: { shopName: { contains: search, mode: 'insensitive' } } },
+          { offerLinks: { some: { offer: { title: { contains: search, mode: 'insensitive' } } } } },
+          { orderItemAllocations: { some: { orderItem: { orderId: search } } } },
+        ],
+      });
+    }
+
+    return this.prisma.supplyBatch.findMany({
+      where: {
+        ...(input.batchId ? { id: input.batchId } : {}),
+        ...(input.shopId ? { shopId: input.shopId } : {}),
+        ...(and.length ? { AND: and } : {}),
+      },
+      include: {
+        shop: {
+          select: {
+            shopName: true,
+          },
+        },
+        offerLinks: {
+          include: {
+            offer: {
+              select: {
+                title: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+        orderItemAllocations: {
+          include: {
+            orderItem: {
+              select: {
+                orderId: true,
+                offerId: true,
+                offerTitleSnapshot: true,
+                order: {
+                  select: {
+                    orderStatus: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
+      orderBy: [
+        { receivedAt: 'desc' },
+        { batchNumber: 'asc' },
+      ],
+      take: 50,
+    });
   }
 
   createShipment(data: {

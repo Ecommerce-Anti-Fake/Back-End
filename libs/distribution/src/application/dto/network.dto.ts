@@ -292,6 +292,94 @@ export class InventorySummaryResponseDto {
   batches!: InventorySummaryBatchResponseDto[];
 }
 
+export class AdminInventoryAuditMovementResponseDto {
+  @ApiProperty({ example: 'movement-id' })
+  id!: string;
+
+  @ApiProperty({ example: 'FULFILLMENT_ALLOCATED' })
+  movementType!: string;
+
+  @ApiProperty({ example: 'batch-id' })
+  batchId!: string;
+
+  @ApiProperty({ example: 'BATCH-2026-0001' })
+  batchNumber!: string;
+
+  @ApiProperty({ example: 'shop-id' })
+  shopId!: string;
+
+  @ApiProperty({ example: 'Shop ABC' })
+  shopName!: string;
+
+  @ApiPropertyOptional({ example: 'offer-id', nullable: true })
+  offerId!: string | null;
+
+  @ApiPropertyOptional({ example: 'Offer 1', nullable: true })
+  offerTitle!: string | null;
+
+  @ApiPropertyOptional({ example: 'order-id', nullable: true })
+  orderId!: string | null;
+
+  @ApiProperty({ example: 10 })
+  quantity!: number;
+
+  @ApiProperty({ example: -10 })
+  quantityDelta!: number;
+
+  @ApiPropertyOptional({ example: 'paid', nullable: true })
+  orderStatus!: string | null;
+
+  @ApiProperty({ example: '2026-04-17T09:00:00.000Z' })
+  occurredAt!: Date;
+}
+
+export class AdminInventoryAuditResponseDto {
+  @ApiProperty({ example: 50 })
+  totalMovements!: number;
+
+  @ApiProperty({ example: 500 })
+  totalReceivedQuantity!: number;
+
+  @ApiProperty({ example: 120 })
+  totalOfferReservedQuantity!: number;
+
+  @ApiProperty({ example: 40 })
+  totalFulfilledQuantity!: number;
+
+  @ApiProperty({ example: 10 })
+  totalRestoredQuantity!: number;
+
+  @ApiProperty({ type: AdminInventoryAuditMovementResponseDto, isArray: true })
+  movements!: AdminInventoryAuditMovementResponseDto[];
+}
+
+export class AdminInventoryAuditQueryDto {
+  @ApiPropertyOptional({ example: 'batch-id' })
+  @IsOptional()
+  @IsString()
+  batchId?: string;
+
+  @ApiPropertyOptional({ example: 'shop-id' })
+  @IsOptional()
+  @IsString()
+  shopId?: string;
+
+  @ApiPropertyOptional({ example: 'offer-id' })
+  @IsOptional()
+  @IsString()
+  offerId?: string;
+
+  @ApiPropertyOptional({ example: 'order-id' })
+  @IsOptional()
+  @IsString()
+  orderId?: string;
+
+  @ApiPropertyOptional({ example: 'BATCH-2026' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+}
+
 export class DistributionShipmentResponseDto {
   @ApiProperty({ example: 'shipment-id' })
   id!: string;

@@ -243,3 +243,123 @@ export function toInventorySummaryResponse(input: {
     batches,
   };
 }
+
+export function toAdminInventoryAuditResponse(
+  batches: Array<{
+    id: string;
+    shopId: string;
+    batchNumber: string;
+    quantity: number;
+    receivedAt: Date;
+    shop: {
+      shopName: string;
+    };
+    offerLinks: Array<{
+      id: string;
+      offerId: string;
+      allocatedQuantity: number;
+      createdAt: Date;
+      offer: {
+        title: string;
+      };
+    }>;
+    orderItemAllocations: Array<{
+      id: string;
+      quantity: number;
+      createdAt: Date;
+      orderItem: {
+        orderId: string;
+        offerId: string;
+        offerTitleSnapshot: string;
+        order: {
+          orderStatus: string;
+        };
+      };
+    }>;
+  }>,
+) {
+  const movements = batches.flatMap((batch) => {
+    const base = {
+      batchId: batch.id,
+      batchNumber: batch.batchNumber,
+      shopId: batch.shopId,
+      shopName: batch.shop.shopName,
+    };
+
+    return [
+      {
+        id: `batch:${batch.id}`,
+        movementType: 'BATCH_RECEIVED',
+        ...base,
+        offerId: null,
+        offerTitle: null,
+        orderId: null,
+        quantity: batch.quantity,
+        quantityDelta: batch.quantity,
+        orderStatus: null,
+        occurredAt: batch.receivedAt,
+      },
+      ...batch.offerLinks.map((link) => ({
+        id: `offer-link:${link.id}`,
+        movementType: 'OFFER_RESERVED',
+        ...base,
+        offerId: link.offerId,
+        offerTitle: link.offer.title,
+        orderId: null,
+        quantity: link.allocatedQuantity,
+        quantityDelta: link.allocatedQuantity,
+        orderStatus: null,
+        occurredAt: link.createdAt,
+      })),
+      ...batch.orderItemAllocations.flatMap((allocation) => {
+        const orderStatus = allocation.orderItem.order.orderStatus;
+        const restored = ['cancelled', 'refunded'].includes(String(orderStatus || '').toLowerCase());
+        const fulfilled = {
+          id: `order-allocation:${allocation.id}`,
+          movementType: 'FULFILLMENT_ALLOCATED',
+          ...base,
+          offerId: allocation.orderItem.offerId,
+          offerTitle: allocation.orderItem.offerTitleSnapshot,
+          orderId: allocation.orderItem.orderId,
+          quantity: allocation.quantity,
+          quantityDelta: -allocation.quantity,
+          orderStatus,
+          occurredAt: allocation.createdAt,
+        };
+
+        if (!restored) {
+          return [fulfilled];
+        }
+
+        return [
+          fulfilled,
+          {
+            ...fulfilled,
+            id: `order-restored:${allocation.id}`,
+            movementType: 'FULFILLMENT_RESTORED',
+            quantityDelta: allocation.quantity,
+          },
+        ];
+      }),
+    ];
+  });
+
+  movements.sort((left, right) => right.occurredAt.getTime() - left.occurredAt.getTime());
+
+  return {
+    totalMovements: movements.length,
+    totalReceivedQuantity: movements
+      .filter((movement) => movement.movementType === 'BATCH_RECEIVED')
+      .reduce((sum, movement) => sum + movement.quantity, 0),
+    totalOfferReservedQuantity: movements
+      .filter((movement) => movement.movementType === 'OFFER_RESERVED')
+      .reduce((sum, movement) => sum + movement.quantity, 0),
+    totalFulfilledQuantity: movements
+      .filter((movement) => movement.movementType === 'FULFILLMENT_ALLOCATED')
+      .reduce((sum, movement) => sum + movement.quantity, 0),
+    totalRestoredQuantity: movements
+      .filter((movement) => movement.movementType === 'FULFILLMENT_RESTORED')
+      .reduce((sum, movement) => sum + movement.quantity, 0),
+    movements,
+  };
+}
