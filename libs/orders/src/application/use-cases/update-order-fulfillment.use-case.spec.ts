@@ -9,6 +9,7 @@ describe('UpdateOrderFulfillmentUseCase', () => {
 
   const ordersRepositoryMock = {
     findOrderById: jest.fn(),
+    allocateOrderBatchesAndUpdateFulfillment: jest.fn(),
     markOrderPaid: jest.fn(),
     updateFulfillmentStatus: jest.fn(),
   };
@@ -32,7 +33,9 @@ describe('UpdateOrderFulfillmentUseCase', () => {
 
   it('starts processing only after payment is ready', async () => {
     ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord());
-    ordersRepositoryMock.updateFulfillmentStatus.mockResolvedValueOnce(createOrderRecord({ fulfillmentStatus: 'PROCESSING' }));
+    ordersRepositoryMock.allocateOrderBatchesAndUpdateFulfillment.mockResolvedValueOnce(
+      createOrderRecord({ fulfillmentStatus: 'PROCESSING' }),
+    );
 
     const result = await useCase.execute({
       id: 'order-1',
@@ -40,7 +43,7 @@ describe('UpdateOrderFulfillmentUseCase', () => {
       fulfillmentStatus: 'PROCESSING',
     });
 
-    expect(ordersRepositoryMock.updateFulfillmentStatus).toHaveBeenCalledWith('order-1', 'PROCESSING');
+    expect(ordersRepositoryMock.allocateOrderBatchesAndUpdateFulfillment).toHaveBeenCalledWith('order-1', 'PROCESSING');
     expect(result.fulfillmentStatus).toBe('PROCESSING');
   });
 

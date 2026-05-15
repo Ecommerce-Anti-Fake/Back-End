@@ -28,7 +28,7 @@ export class OrderInventoryService {
       throw new BadRequestException('Quantity exceeds available stock');
     }
 
-    return this.orderInventoryPort.consumeOfferBatchAllocations(tx, input.offerId, input.quantity);
+    return [];
   }
 
   async restoreOrderInventory(

@@ -53,7 +53,20 @@ const orderWithRelationsArgs = Prisma.validator<Prisma.OrderDefaultArgs>()({
     },
     items: {
       include: {
-        batchAllocations: true,
+        batchAllocations: {
+          include: {
+            batch: {
+              select: {
+                id: true,
+                batchNumber: true,
+                sourceName: true,
+                countryOfOrigin: true,
+                sourceType: true,
+                receivedAt: true,
+              },
+            },
+          },
+        },
         reviews: {
           orderBy: {
             createdAt: 'desc',
@@ -109,7 +122,20 @@ const disputeWithOrderArgs = Prisma.validator<Prisma.DisputeDefaultArgs>()({
         },
         items: {
           include: {
-            batchAllocations: true,
+            batchAllocations: {
+              include: {
+                batch: {
+                  select: {
+                    id: true,
+                    batchNumber: true,
+                    sourceName: true,
+                    countryOfOrigin: true,
+                    sourceType: true,
+                    receivedAt: true,
+                  },
+                },
+              },
+            },
             reviews: {
               orderBy: {
                 createdAt: 'desc',
@@ -476,11 +502,7 @@ export class OrdersRepository {
         items: {
           create: {
             ...data.item,
-            batchAllocations: batchAllocations.length
-              ? {
-                  create: batchAllocations,
-                }
-              : undefined,
+            batchAllocations: batchAllocations.length ? { create: batchAllocations } : undefined,
           },
         },
         paymentIntent: {
@@ -677,6 +699,20 @@ export class OrdersRepository {
         createdAt: 'desc',
       },
       ...orderWithRelationsArgs,
+    });
+  }
+
+  allocateOrderBatchesAndUpdateFulfillment(id: string, fulfillmentStatus: string): Promise<OrderWithRelations> {
+    return this.prisma.$transaction(async (tx) => {
+      await this.allocateOrderBatchesForFulfillment(tx, id);
+
+      return tx.order.update({
+        where: { id },
+        data: {
+          fulfillmentStatus,
+        },
+        ...orderWithRelationsArgs,
+      });
     });
   }
 
@@ -1088,7 +1124,7 @@ export class OrdersRepository {
         where: { id: input.id },
         data: {
           orderStatus: 'paid',
-          fulfillmentStatus: 'PROCESSING',
+          fulfillmentStatus: 'PENDING',
         },
         ...orderWithRelationsArgs,
       });
@@ -1418,6 +1454,7 @@ export class OrdersRepository {
     tx: Prisma.TransactionClient,
     offerId: string,
     quantity: number,
+    shopId?: string,
   ): Promise<OrderBatchAllocation[]> {
     const links = await tx.offerBatchLink.findMany({
       where: {
@@ -1425,6 +1462,13 @@ export class OrdersRepository {
         allocatedQuantity: {
           gt: 0,
         },
+        ...(shopId
+          ? {
+              batch: {
+                shopId,
+              },
+            }
+          : {}),
       },
       orderBy: {
         createdAt: 'asc',
@@ -1489,6 +1533,57 @@ export class OrdersRepository {
     }
 
     return allocations;
+  }
+
+  private async allocateOrderBatchesForFulfillment(tx: Prisma.TransactionClient, orderId: string) {
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        shopId: true,
+        items: {
+          select: {
+            id: true,
+            offerId: true,
+            quantity: true,
+            batchAllocations: {
+              select: {
+                quantity: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new BadRequestException('Order not found');
+    }
+
+    for (const item of order.items) {
+      const allocatedQuantity = item.batchAllocations.reduce((sum, allocation) => sum + allocation.quantity, 0);
+      if (allocatedQuantity >= item.quantity) {
+        continue;
+      }
+      if (allocatedQuantity > 0) {
+        throw new BadRequestException('Order item has partial batch allocation');
+      }
+
+      await this.lockOfferInventoryRowsInternal(tx, item.offerId);
+      const allocations = await this.consumeOfferBatchAllocationsInternal(tx, item.offerId, item.quantity, order.shopId);
+      const totalAllocatedQuantity = allocations.reduce((sum, allocation) => sum + allocation.quantity, 0);
+      if (totalAllocatedQuantity < item.quantity) {
+        throw new BadRequestException('Order item does not have enough batch stock');
+      }
+
+      await tx.orderItemBatchAllocation.createMany({
+        data: allocations.map((allocation) => ({
+          orderItemId: item.id,
+          batchId: allocation.batchId,
+          quantity: allocation.quantity,
+        })),
+      });
+    }
   }
 
   private async lockOfferInventoryRowsInternal(tx: Prisma.TransactionClient, offerId: string) {

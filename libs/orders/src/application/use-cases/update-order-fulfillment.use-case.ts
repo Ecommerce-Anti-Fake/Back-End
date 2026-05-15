@@ -41,7 +41,7 @@ export class UpdateOrderFulfillmentUseCase {
       if (!isPaymentReady) {
         throw new BadRequestException('Only paid orders or COD orders can be processed');
       }
-      return toOrderResponse(await this.ordersRepository.updateFulfillmentStatus(order.id, 'PROCESSING'));
+      return toOrderResponse(await this.ordersRepository.allocateOrderBatchesAndUpdateFulfillment(order.id, 'PROCESSING'));
     }
 
     if (input.fulfillmentStatus === 'SHIPPING') {
