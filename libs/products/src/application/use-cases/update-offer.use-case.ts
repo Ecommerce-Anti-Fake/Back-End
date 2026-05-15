@@ -59,6 +59,9 @@ export class UpdateOfferUseCase {
     }
 
     if (input.offerStatus !== undefined) {
+      if (!['active', 'inactive'].includes(input.offerStatus)) {
+        throw new BadRequestException('Offer status must be active or inactive');
+      }
       data.offerStatus = input.offerStatus;
     }
 

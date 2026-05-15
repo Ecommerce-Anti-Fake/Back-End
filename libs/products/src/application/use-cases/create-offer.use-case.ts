@@ -82,6 +82,18 @@ export class CreateOfferUseCase {
       throw new BadRequestException('Title and description are required');
     }
 
+    if (input.price <= 0) {
+      throw new BadRequestException('Price must be greater than 0');
+    }
+
+    if (!Number.isInteger(input.availableQuantity) || input.availableQuantity < 1) {
+      throw new BadRequestException('Available quantity must be at least 1');
+    }
+
+    if (!['RETAIL', 'WHOLESALE', 'BOTH'].includes(salesMode)) {
+      throw new BadRequestException('Sales mode is invalid');
+    }
+
     if ((salesMode === 'WHOLESALE' || salesMode === 'BOTH') && (!minWholesaleQty || minWholesaleQty < 1)) {
       throw new BadRequestException('Wholesale offers must define minWholesaleQty');
     }

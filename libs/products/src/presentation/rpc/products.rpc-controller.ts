@@ -295,7 +295,7 @@ export class ProductsRpcController {
   @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findOffers)
   async findOffers(@Payload() payload?: ListOffersMessage) {
     try {
-      return await this.listOffersUseCase.execute(payload?.shopId);
+      return await this.listOffersUseCase.execute(payload ?? {});
     } catch (error) {
       throwRpcException(error);
     }

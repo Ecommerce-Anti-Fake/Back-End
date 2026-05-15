@@ -26,6 +26,56 @@ describe('CreateOfferUseCase', () => {
     useCase = module.get<CreateOfferUseCase>(CreateOfferUseCase);
   });
 
+  function mockActiveApprovedShop() {
+    productRepositoryMock.findOwnedShop.mockResolvedValueOnce({
+      id: 'shop-1',
+      shopStatus: 'active',
+      registrationType: 'NORMAL',
+    });
+    productRepositoryMock.findModelById.mockResolvedValueOnce({
+      id: 'model-1',
+      categoryId: 'category-1',
+    });
+    productRepositoryMock.findCategoryById.mockResolvedValueOnce({
+      id: 'category-1',
+    });
+    productRepositoryMock.findApprovedShopCategoryRegistration.mockResolvedValueOnce({ id: 'registration-1' });
+  }
+
+  it('should reject non-positive offer price', async () => {
+    mockActiveApprovedShop();
+
+    await expect(
+      useCase.execute({
+        sellerUserId: 'user-1',
+        shopId: 'shop-1',
+        categoryId: 'category-1',
+        productModelId: 'model-1',
+        title: 'Offer 1',
+        description: 'Desc',
+        price: 0,
+        availableQuantity: 10,
+      }),
+    ).rejects.toThrow('Price must be greater than 0');
+  });
+
+  it('should reject zero available quantity', async () => {
+    mockActiveApprovedShop();
+
+    await expect(
+      useCase.execute({
+        sellerUserId: 'user-1',
+        shopId: 'shop-1',
+        categoryId: 'category-1',
+        productModelId: 'model-1',
+        title: 'Offer 1',
+        description: 'Desc',
+        price: 100000,
+        availableQuantity: 0,
+      }),
+    ).rejects.toThrow('Available quantity must be at least 1');
+  });
+
   it('should reject offer creation when shop is pending_kyc', async () => {
     productRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'shop-1',

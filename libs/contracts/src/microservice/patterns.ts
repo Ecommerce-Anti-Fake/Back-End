@@ -465,6 +465,8 @@ export type CreateProductModelMessage = {
 
 export type ListOffersMessage = {
   shopId?: string;
+  sellerUserId?: string;
+  includeInactive?: boolean;
 };
 
 export type CreateOfferMessage = {

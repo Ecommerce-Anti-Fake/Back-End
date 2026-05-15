@@ -193,9 +193,13 @@ export class ProductRepository {
     });
   }
 
-  findAllOffers(shopId?: string) {
+  findAllOffers(input: { shopId?: string; sellerUserId?: string; includeInactive?: boolean } = {}) {
     return this.prisma.offer.findMany({
-      where: shopId ? { shopId } : undefined,
+      where: {
+        ...(input.shopId ? { shopId: input.shopId } : {}),
+        ...(input.sellerUserId ? { shop: { ownerUserId: input.sellerUserId } } : {}),
+        ...(!input.includeInactive ? { offerStatus: 'active' } : {}),
+      },
       include: {
         shop: {
           select: { shopName: true },

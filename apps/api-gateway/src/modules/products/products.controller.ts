@@ -226,6 +226,26 @@ export class ProductsController {
     });
   }
 
+  @ApiOperation({ summary: 'Lay danh sach offer cua shop hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach offer cua seller.',
+    type: OfferResponseDto,
+    isArray: true,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('seller/shops/:shopId/offers')
+  findSellerShopOffers(
+    @Param('shopId') shopId: string,
+    @CurrentUserId() sellerUserId: string,
+  ) {
+    return this.productsRpcService.findOffers({
+      shopId,
+      sellerUserId,
+      includeInactive: true,
+    });
+  }
+
   @ApiOperation({ summary: 'Lay danh sach offer' })
   @ApiOkResponse({
     description: 'Danh sach offer.',

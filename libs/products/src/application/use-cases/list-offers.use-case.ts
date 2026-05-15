@@ -6,8 +6,8 @@ import { toOfferResponse } from './products.mapper';
 export class ListOffersUseCase {
   constructor(private readonly productRepository: ProductRepository) {}
 
-  async execute(shopId?: string) {
-    const offers = await this.productRepository.findAllOffers(shopId);
+  async execute(input: { shopId?: string; sellerUserId?: string; includeInactive?: boolean } = {}) {
+    const offers = await this.productRepository.findAllOffers(input);
     return offers.map(toOfferResponse);
   }
 }
