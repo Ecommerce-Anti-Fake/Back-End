@@ -1091,10 +1091,18 @@ export class OrdersRepository {
     });
   }
 
-  async markOrderPaid(input: { id: string; providerRef: string | null }): Promise<OrderWithRelations> {
+  async markOrderPaid(input: { id: string; actorUserId: string; providerRef: string | null }): Promise<OrderWithRelations> {
     return this.prisma.$transaction(async (tx) => {
       const now = new Date();
       const heldAmount = await this.getOrderPayableAmount(tx, input.id);
+      const paymentIntent = await tx.paymentIntent.findUnique({
+        where: { orderId: input.id },
+        select: {
+          paymentMethod: true,
+          paymentStatus: true,
+        },
+      });
+      const fromStatus = paymentIntent?.paymentStatus ?? 'PENDING';
 
       await tx.paymentIntent.update({
         where: { orderId: input.id },
@@ -1120,12 +1128,75 @@ export class OrdersRepository {
         },
       });
 
+      await tx.auditLog.create({
+        data: {
+          targetType: 'ORDER',
+          targetId: input.id,
+          actorUserId: input.actorUserId,
+          action: 'PAYMENT_STATUS_CHANGED',
+          fromStatus,
+          toStatus: 'PAID',
+          note: `Payment moved from ${fromStatus} to PAID`,
+          metadata: {
+            domain: 'PAYMENT',
+            paymentMethod: paymentIntent?.paymentMethod ?? null,
+          },
+        },
+      });
+
       return tx.order.update({
         where: { id: input.id },
         data: {
           orderStatus: 'paid',
           fulfillmentStatus: 'PENDING',
         },
+        ...orderWithRelationsArgs,
+      });
+    });
+  }
+
+  async markOrderPaymentFailed(input: {
+    id: string;
+    actorUserId: string;
+    providerRef: string | null;
+    reason: string | null;
+  }): Promise<OrderWithRelations> {
+    return this.prisma.$transaction(async (tx) => {
+      const paymentIntent = await tx.paymentIntent.findUnique({
+        where: { orderId: input.id },
+        select: {
+          paymentMethod: true,
+          paymentStatus: true,
+        },
+      });
+      const fromStatus = paymentIntent?.paymentStatus ?? 'PENDING';
+
+      await tx.paymentIntent.update({
+        where: { orderId: input.id },
+        data: {
+          paymentStatus: 'FAILED',
+          providerRef: input.providerRef,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          targetType: 'ORDER',
+          targetId: input.id,
+          actorUserId: input.actorUserId,
+          action: 'PAYMENT_STATUS_CHANGED',
+          fromStatus,
+          toStatus: 'FAILED',
+          note: input.reason || `Payment moved from ${fromStatus} to FAILED`,
+          metadata: {
+            domain: 'PAYMENT',
+            paymentMethod: paymentIntent?.paymentMethod ?? null,
+          },
+        },
+      });
+
+      return tx.order.findUniqueOrThrow({
+        where: { id: input.id },
         ...orderWithRelationsArgs,
       });
     });

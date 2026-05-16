@@ -67,6 +67,7 @@ export class UpdateOrderFulfillmentUseCase {
       if (order.orderStatus === 'pending' && paymentMethod === 'COD') {
         paidOrder = await this.ordersRepository.markOrderPaid({
           id: order.id,
+          actorUserId: input.requesterUserId,
           providerRef: `COD-${order.id.slice(0, 8)}`,
         });
       }

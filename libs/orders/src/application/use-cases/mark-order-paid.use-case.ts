@@ -24,6 +24,7 @@ export class MarkOrderPaidUseCase {
 
     const updatedOrder = await this.ordersRepository.markOrderPaid({
       id: order.id,
+      actorUserId: input.requesterUserId,
       providerRef: input.providerRef?.trim() || null,
     });
 

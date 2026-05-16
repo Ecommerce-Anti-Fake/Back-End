@@ -219,8 +219,14 @@ describe('Retail order lifecycle', () => {
     });
     expect(ordersRepositoryMock.markOrderPaid).toHaveBeenCalledWith({
       id: 'order-1',
+      actorUserId: 'buyer-user-1',
       providerRef: 'PAY-REF-001',
     });
+
+    storedOrder = {
+      ...storedOrder,
+      fulfillmentStatus: 'DELIVERED',
+    };
 
     const completedOrder = await completeOrderUseCase.execute({
       id: 'order-1',

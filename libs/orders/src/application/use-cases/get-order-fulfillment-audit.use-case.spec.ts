@@ -44,10 +44,10 @@ describe('GetOrderFulfillmentAuditUseCase', () => {
       },
       {
         id: 'audit-2',
-        action: 'DISPUTE_OPENED',
-        fromStatus: null,
-        toStatus: 'OPEN',
-        note: null,
+        action: 'PAYMENT_STATUS_CHANGED',
+        fromStatus: 'PENDING',
+        toStatus: 'PAID',
+        note: 'Payment moved from PENDING to PAID',
         actorUserId: 'buyer-user-1',
         createdAt: new Date('2026-05-15T11:00:00.000Z'),
         actor: {
@@ -72,6 +72,17 @@ describe('GetOrderFulfillmentAuditUseCase', () => {
         actorEmail: 'seller@example.com',
         note: 'Fulfillment moved from PENDING to PROCESSING',
         createdAt: new Date('2026-05-15T10:00:00.000Z'),
+      },
+      {
+        id: 'audit-2',
+        action: 'PAYMENT_STATUS_CHANGED',
+        fromStatus: 'PENDING',
+        toStatus: 'PAID',
+        actorUserId: 'buyer-user-1',
+        actorDisplayName: 'Buyer',
+        actorEmail: 'buyer@example.com',
+        note: 'Payment moved from PENDING to PAID',
+        createdAt: new Date('2026-05-15T11:00:00.000Z'),
       },
     ]);
   });

@@ -38,6 +38,7 @@ describe('MarkOrderPaidUseCase', () => {
 
     expect(ordersRepositoryMock.markOrderPaid).toHaveBeenCalledWith({
       id: 'order-1',
+      actorUserId: 'buyer-user-1',
       providerRef: 'bank-ref-1',
     });
     expect(result).toMatchObject({
@@ -94,6 +95,7 @@ function createOrderRecord(overrides?: { orderStatus?: string; paymentStatus?: s
         unitPrice: new Prisma.Decimal(100),
         quantity: 1,
         verificationLevelSnapshot: 'SERIALIZED',
+        batchAllocations: [],
       },
     ],
   };

@@ -24,7 +24,7 @@ export class GetOrderFulfillmentAuditUseCase {
     const timeline = await this.ordersRepository.findAuditLogsByTarget('ORDER', id);
 
     return timeline
-      .filter((log) => log.action === 'FULFILLMENT_STATUS_CHANGED')
+      .filter((log) => ['FULFILLMENT_STATUS_CHANGED', 'PAYMENT_STATUS_CHANGED'].includes(log.action))
       .map((log) => ({
         id: log.id,
         action: log.action,

@@ -43,9 +43,25 @@ export class HandlePayOSWebhookUseCase {
 
     const dataCode = this.readString(input.data.code);
     if (!input.success || input.code !== '00' || dataCode !== '00') {
+      if (order.paymentIntent?.paymentStatus === 'PAID' || order.paymentIntent?.paymentStatus === 'FAILED' || order.orderStatus !== 'pending') {
+        return {
+          received: true,
+          order: toOrderResponse(order),
+        };
+      }
+
+      const reference = this.readString(input.data.reference) || paymentLinkId;
+      const reason = this.readString(input.desc) || this.readString(input.data.desc) || 'payOS payment failed';
+      const updatedOrder = await this.ordersRepository.markOrderPaymentFailed({
+        id: order.id,
+        actorUserId: order.buyerUserId || order.buyerShop?.ownerUserId || order.shop.ownerUserId,
+        providerRef: `PAYOS:${paymentLinkId}:${reference}`,
+        reason,
+      });
+
       return {
         received: true,
-        order: toOrderResponse(order),
+        order: toOrderResponse(updatedOrder),
       };
     }
 
@@ -59,6 +75,7 @@ export class HandlePayOSWebhookUseCase {
     const reference = this.readString(input.data.reference) || paymentLinkId;
     const updatedOrder = await this.ordersRepository.markOrderPaid({
       id: order.id,
+      actorUserId: order.buyerUserId || order.buyerShop?.ownerUserId || order.shop.ownerUserId,
       providerRef: `PAYOS:${paymentLinkId}:${reference}`,
     });
 
