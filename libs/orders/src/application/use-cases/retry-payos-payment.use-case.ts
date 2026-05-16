@@ -45,8 +45,10 @@ export class RetryPayOSPaymentUseCase {
 
     const updatedOrder = await this.ordersRepository.updatePaymentProviderRefAndStatus({
       orderId: order.id,
+      actorUserId: input.requesterUserId,
       providerRef: `PAYOS:${paymentLink.paymentLinkId}`,
       paymentStatus: 'PENDING',
+      note: 'Buyer retried payOS payment; waiting for provider confirmation',
     });
 
     return {

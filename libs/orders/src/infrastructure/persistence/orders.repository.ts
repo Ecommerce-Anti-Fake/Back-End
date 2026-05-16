@@ -1211,18 +1211,52 @@ export class OrdersRepository {
 
   async updatePaymentProviderRefAndStatus(input: {
     orderId: string;
+    actorUserId: string;
     providerRef: string;
     paymentStatus: 'PENDING';
+    note: string;
   }): Promise<OrderWithRelations> {
-    await this.prisma.paymentIntent.update({
-      where: { orderId: input.orderId },
-      data: {
-        providerRef: input.providerRef,
-        paymentStatus: input.paymentStatus,
-      },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const paymentIntent = await tx.paymentIntent.findUnique({
+        where: { orderId: input.orderId },
+        select: {
+          paymentMethod: true,
+          paymentStatus: true,
+        },
+      });
+      const fromStatus = paymentIntent?.paymentStatus ?? 'FAILED';
 
-    return this.findOrderById(input.orderId).then((order) => {
+      await tx.paymentIntent.update({
+        where: { orderId: input.orderId },
+        data: {
+          providerRef: input.providerRef,
+          paymentStatus: input.paymentStatus,
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          targetType: 'ORDER',
+          targetId: input.orderId,
+          actorUserId: input.actorUserId,
+          action: 'PAYMENT_STATUS_CHANGED',
+          fromStatus,
+          toStatus: input.paymentStatus,
+          note: input.note,
+          metadata: {
+            domain: 'PAYMENT',
+            event: 'PAYOS_PAYMENT_RETRY',
+            paymentMethod: paymentIntent?.paymentMethod ?? 'PAYOS',
+            providerConfirmation: false,
+          },
+        },
+      });
+
+      return tx.order.findUnique({
+        where: { id: input.orderId },
+        ...orderWithRelationsArgs,
+      });
+    }).then((order) => {
       if (!order) {
         throw new BadRequestException('Order not found');
       }

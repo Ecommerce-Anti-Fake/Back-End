@@ -53,8 +53,10 @@ describe('RetryPayOSPaymentUseCase', () => {
     });
     expect(ordersRepositoryMock.updatePaymentProviderRefAndStatus).toHaveBeenCalledWith({
       orderId: 'order-1',
+      actorUserId: 'buyer-user-1',
       providerRef: 'PAYOS:new-link',
       paymentStatus: 'PENDING',
+      note: 'Buyer retried payOS payment; waiting for provider confirmation',
     });
     expect(result).toMatchObject({
       id: 'order-1',
