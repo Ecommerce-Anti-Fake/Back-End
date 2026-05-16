@@ -1138,6 +1138,27 @@ export class OrdersRepository {
     });
   }
 
+  async updatePaymentProviderRefAndStatus(input: {
+    orderId: string;
+    providerRef: string;
+    paymentStatus: 'PENDING';
+  }): Promise<OrderWithRelations> {
+    await this.prisma.paymentIntent.update({
+      where: { orderId: input.orderId },
+      data: {
+        providerRef: input.providerRef,
+        paymentStatus: input.paymentStatus,
+      },
+    });
+
+    return this.findOrderById(input.orderId).then((order) => {
+      if (!order) {
+        throw new BadRequestException('Order not found');
+      }
+      return order;
+    });
+  }
+
   findOrderByPaymentProviderRef(providerRef: string): Promise<OrderWithRelations | null> {
     return this.prisma.order.findFirst({
       where: {

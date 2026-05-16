@@ -114,6 +114,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   resolveAdminDispute: 'orders.resolve-admin-dispute',
   markPaid: 'orders.mark-paid',
   handlePayOSWebhook: 'orders.handle-payos-webhook',
+  retryPayOSPayment: 'orders.retry-payos-payment',
   complete: 'orders.complete',
   cancel: 'orders.cancel',
   openDispute: 'orders.open-dispute',
@@ -740,6 +741,11 @@ export type MarkOrderPaidMessage = {
   id: string;
   requesterUserId: string;
   providerRef?: string | null;
+};
+
+export type RetryPayOSPaymentMessage = {
+  id: string;
+  requesterUserId: string;
 };
 
 export type PayOSWebhookMessage = {

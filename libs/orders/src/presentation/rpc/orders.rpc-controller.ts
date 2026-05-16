@@ -18,6 +18,7 @@ import type {
   OrderFulfillmentAuditMessage,
   OrderLookupMessage,
   PayOSWebhookMessage,
+  RetryPayOSPaymentMessage,
   SellerShopOrdersLookupMessage,
   CompleteOrderMessage,
   CancelOrderMessage,
@@ -55,6 +56,7 @@ import {
   ListSellerShopOrdersUseCase,
   MarkOrderPaidUseCase,
   HandlePayOSWebhookUseCase,
+  RetryPayOSPaymentUseCase,
   RemoveCartItemUseCase,
   CompleteOrderUseCase,
   CancelOrderUseCase,
@@ -92,6 +94,7 @@ export class OrdersRpcController {
     private readonly listDisputeEvidenceUseCase: ListDisputeEvidenceUseCase,
     private readonly markOrderPaidUseCase: MarkOrderPaidUseCase,
     private readonly handlePayOSWebhookUseCase: HandlePayOSWebhookUseCase,
+    private readonly retryPayOSPaymentUseCase: RetryPayOSPaymentUseCase,
     private readonly completeOrderUseCase: CompleteOrderUseCase,
     private readonly cancelOrderUseCase: CancelOrderUseCase,
     private readonly openOrderDisputeUseCase: OpenOrderDisputeUseCase,
@@ -293,6 +296,15 @@ export class OrdersRpcController {
   async handlePayOSWebhook(@Payload() payload: PayOSWebhookMessage) {
     try {
       return await this.handlePayOSWebhookUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.retryPayOSPayment)
+  async retryPayOSPayment(@Payload() payload: RetryPayOSPaymentMessage) {
+    try {
+      return await this.retryPayOSPaymentUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

@@ -19,6 +19,7 @@ import {
   ORDERS_MESSAGE_PATTERNS,
   OrderFulfillmentAuditMessage,
   OrderLookupMessage,
+  RetryPayOSPaymentMessage,
   SellerShopOrdersLookupMessage,
   DisputeEvidenceUploadSignaturesMessage,
   AddDisputeEvidenceBatchMessage,
@@ -122,6 +123,10 @@ export class OrdersRpcService {
 
   markPaid(payload: MarkOrderPaidMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.markPaid, payload);
+  }
+
+  retryPayOSPayment(payload: RetryPayOSPaymentMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.retryPayOSPayment, payload);
   }
 
   handlePayOSWebhook(payload: PayOSWebhookMessage) {

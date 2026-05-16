@@ -436,6 +436,31 @@ export class OrdersController {
     });
   }
 
+  @ApiOperation({ summary: 'Buyer tao lai link thanh toan payOS cho don pending bi fail' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'id', description: 'ID don hang.' })
+  @ApiOkResponse({
+    description: 'Tao lai link thanh toan payOS thanh cong.',
+    type: OrderResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Chi don pending co payOS payment FAILED moi duoc retry.',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Thieu access token hoac token khong hop le.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi buyer cua don moi co quyen retry payOS.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post(':id/retry-payos-payment')
+  retryPayOSPayment(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
+    return this.ordersRpcService.retryPayOSPayment({
+      id,
+      requesterUserId,
+    });
+  }
+
   @ApiOperation({ summary: 'Webhook public nhan ket qua thanh toan tu payOS' })
   @ApiOkResponse({
     description: 'Da nhan webhook payOS.',
