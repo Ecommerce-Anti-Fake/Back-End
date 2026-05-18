@@ -269,7 +269,8 @@ export class OrdersController {
   @ApiOperation({
     summary: 'Lay fulfillment audit timeline cua don hang',
     deprecated: true,
-    description: 'Deprecated compatibility alias. Use GET /orders/:id/audit.',
+    description:
+      'Deprecated compatibility alias. Use GET /orders/:id/audit. Target removal date: 2026-06-15, pending external consumer usage confirmation.',
   })
   @ApiBearerAuth('access-token')
   @ApiParam({ name: 'id', description: 'ID don hang.' })
