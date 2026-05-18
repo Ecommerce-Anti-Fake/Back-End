@@ -44,6 +44,17 @@ export class ResolveWholesalePricingUseCase {
         throw new BadRequestException('Buyer distribution node is not in the same network as the offer');
       }
 
+      const sellerNode = await this.repository.findNodeById(input.offer.distributionNodeId);
+      if (!sellerNode || sellerNode.networkId !== input.offer.distributionNetworkId) {
+        throw new BadRequestException('Seller distribution node is invalid for this network');
+      }
+
+      if (sellerNode.relationshipStatus !== 'ACTIVE' || sellerNode.shop.shopStatus !== 'active') {
+        throw new BadRequestException('Seller distribution node must be active before using in-network pricing');
+      }
+
+      this.assertDirectDistributionTrade(buyerNode, sellerNode);
+
       buyerDistributionNodeId = buyerNode.id;
 
       const policies = await this.repository.findApplicablePricingPolicies({
@@ -63,10 +74,10 @@ export class ResolveWholesalePricingUseCase {
         categoryId: input.offer.categoryId,
       });
 
-      if (selectedPolicy) {
-        discountPercent = this.validateAndGetDiscountPercent(selectedPolicy);
-        unitPrice = this.applyPricingPolicy(unitPrice, selectedPolicy);
-      }
+      discountPercent = selectedPolicy
+        ? this.validateAndGetDiscountPercent(selectedPolicy)
+        : this.getTierDiscountPercent(buyerNode.level);
+      unitPrice = this.applyPercentDiscount(unitPrice, discountPercent);
     }
 
     const baseAmount = this.roundMoney(input.offer.price * input.quantity);
@@ -74,13 +85,13 @@ export class ResolveWholesalePricingUseCase {
     const discountAmount = this.roundMoney(baseAmount - discountedAmount);
     const isInNetworkTrade = buyerDistributionNodeId !== null;
     const platformFeeAmount = isInNetworkTrade
-      ? this.roundMoney(discountedAmount * (discountPercent / 100))
+      ? this.roundMoney(baseAmount * ((20 - discountPercent) / 100))
       : this.roundMoney(baseAmount * 0.2);
     const buyerPayableAmount = isInNetworkTrade
-      ? this.roundMoney(discountedAmount + platformFeeAmount)
+      ? discountedAmount
       : baseAmount;
     const sellerReceivableAmount = isInNetworkTrade
-      ? discountedAmount
+      ? this.roundMoney(baseAmount * 0.8)
       : this.roundMoney(baseAmount - platformFeeAmount);
 
     return {
@@ -124,6 +135,22 @@ export class ResolveWholesalePricingUseCase {
     return ranked[0] ?? null;
   }
 
+  private assertDirectDistributionTrade(
+    buyerNode: {
+      id: string;
+      level: number;
+      parentNodeId: string | null;
+    },
+    sellerNode: {
+      id: string;
+      level: number;
+    },
+  ) {
+    if (buyerNode.parentNodeId !== sellerNode.id || buyerNode.level !== sellerNode.level + 1) {
+      throw new BadRequestException('Buyer distribution node must be a direct child of the seller node');
+    }
+  }
+
   private getPolicySpecificityScore(
     policy: DistributionPricingPolicy,
     target: {
@@ -158,18 +185,8 @@ export class ResolveWholesalePricingUseCase {
     return score;
   }
 
-  private applyPricingPolicy(basePrice: number, policy: DistributionPricingPolicy) {
-    const discountValue = this.decimalToNumber(policy.discountValue);
-
-    if (policy.discountType === 'FIXED_PRICE') {
-      return Math.max(discountValue, 0);
-    }
-
-    if (policy.discountType === 'FIXED_AMOUNT') {
-      return Math.max(basePrice - discountValue, 0);
-    }
-
-    const discountedPrice = basePrice * (1 - discountValue / 100);
+  private applyPercentDiscount(basePrice: number, discountPercent: number) {
+    const discountedPrice = basePrice * (1 - discountPercent / 100);
     return Math.max(this.roundMoney(discountedPrice), 0);
   }
 
@@ -184,6 +201,22 @@ export class ResolveWholesalePricingUseCase {
     }
 
     return discountPercent;
+  }
+
+  private getTierDiscountPercent(level: number) {
+    if (level === 1) {
+      return 15;
+    }
+
+    if (level === 2) {
+      return 10;
+    }
+
+    if (level === 3) {
+      return 5;
+    }
+
+    throw new BadRequestException('Distribution pricing only supports buyer levels 1 to 3');
   }
 
   private decimalToNumber(value: Prisma.Decimal) {

@@ -22,6 +22,13 @@ const offerForOrderingArgs = Prisma.validator<Prisma.OfferDefaultArgs>()({
       select: {
         id: true,
         networkId: true,
+        level: true,
+        relationshipStatus: true,
+        shop: {
+          select: {
+            shopStatus: true,
+          },
+        },
       },
     },
   },
@@ -425,6 +432,7 @@ export class OrdersRepository {
         shopId: true,
         networkId: true,
         level: true,
+        parentNodeId: true,
         relationshipStatus: true,
         shop: {
           select: {

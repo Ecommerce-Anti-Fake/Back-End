@@ -49,8 +49,35 @@ export class DistributionNodeResponseDto {
   @ApiProperty({ example: 'shop-id' })
   shopId!: string;
 
+  @ApiPropertyOptional({ example: 'Dai ly XYZ', nullable: true })
+  shopName!: string | null;
+
   @ApiProperty({ example: 'parent-node-id', nullable: true })
   parentNodeId!: string | null;
+
+  @ApiPropertyOptional({ example: 'parent-shop-id', nullable: true })
+  parentShopId!: string | null;
+
+  @ApiPropertyOptional({ example: 'Nha san xuat ABC', nullable: true })
+  parentShopName!: string | null;
+
+  @ApiPropertyOptional({ example: 0, nullable: true })
+  parentLevel!: number | null;
+
+  @ApiPropertyOptional({ example: 'Network phan phoi chinh hang ABC', nullable: true })
+  networkName!: string | null;
+
+  @ApiPropertyOptional({ example: 'brand-id', nullable: true })
+  brandId!: string | null;
+
+  @ApiPropertyOptional({ example: 'Brand ABC', nullable: true })
+  brandName!: string | null;
+
+  @ApiPropertyOptional({ example: 'manufacturer-shop-id', nullable: true })
+  manufacturerShopId!: string | null;
+
+  @ApiPropertyOptional({ example: 'Cong ty TNHH ABC', nullable: true })
+  manufacturerShopName!: string | null;
 
   @ApiProperty({ example: 1 })
   level!: number;

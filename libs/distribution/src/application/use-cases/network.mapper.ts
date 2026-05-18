@@ -13,11 +13,45 @@ export function toDistributionNetworkResponse(network: DistributionNetwork) {
 }
 
 export function toDistributionNodeResponse(node: DistributionNode) {
+  const nodeWithContext = node as DistributionNode & {
+    shop?: {
+      shopName?: string | null;
+    };
+    parent?: {
+      id: string;
+      shopId: string;
+      level: number;
+      shop?: {
+        shopName?: string | null;
+      };
+    } | null;
+    network?: {
+      networkName?: string | null;
+      brandId?: string;
+      brand?: {
+        name?: string | null;
+      };
+      manufacturerShopId?: string;
+      manufacturerShop?: {
+        shopName?: string | null;
+      };
+    };
+  };
+
   return {
     id: node.id,
     networkId: node.networkId,
     shopId: node.shopId,
+    shopName: nodeWithContext.shop?.shopName ?? null,
     parentNodeId: node.parentNodeId,
+    parentShopId: nodeWithContext.parent?.shopId ?? null,
+    parentShopName: nodeWithContext.parent?.shop?.shopName ?? null,
+    parentLevel: nodeWithContext.parent?.level ?? null,
+    networkName: nodeWithContext.network?.networkName ?? null,
+    brandId: nodeWithContext.network?.brandId ?? null,
+    brandName: nodeWithContext.network?.brand?.name ?? null,
+    manufacturerShopId: nodeWithContext.network?.manufacturerShopId ?? null,
+    manufacturerShopName: nodeWithContext.network?.manufacturerShop?.shopName ?? null,
     level: node.level,
     nodeType: node.nodeType,
     relationshipStatus: node.relationshipStatus,

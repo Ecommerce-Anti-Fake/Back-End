@@ -32,6 +32,28 @@ describe('ListMyDistributionInvitationsUseCase', () => {
         level: 1,
         nodeType: 'AGENT_LEVEL_1',
         relationshipStatus: 'INVITED',
+        shop: {
+          shopName: 'Dai ly XYZ',
+        },
+        parent: {
+          id: 'root-node',
+          shopId: 'manufacturer-shop',
+          level: 0,
+          shop: {
+            shopName: 'Nha san xuat ABC',
+          },
+        },
+        network: {
+          networkName: 'Network ABC',
+          brandId: 'brand-1',
+          brand: {
+            name: 'Brand ABC',
+          },
+          manufacturerShopId: 'manufacturer-shop',
+          manufacturerShop: {
+            shopName: 'Nha san xuat ABC',
+          },
+        },
         createdAt: new Date('2026-04-17T12:15:00.000Z'),
       },
     ]);
@@ -42,6 +64,11 @@ describe('ListMyDistributionInvitationsUseCase', () => {
     expect(result).toMatchObject([
       {
         id: 'node-1',
+        networkName: 'Network ABC',
+        shopName: 'Dai ly XYZ',
+        parentShopName: 'Nha san xuat ABC',
+        manufacturerShopName: 'Nha san xuat ABC',
+        level: 1,
         relationshipStatus: 'INVITED',
       },
     ]);

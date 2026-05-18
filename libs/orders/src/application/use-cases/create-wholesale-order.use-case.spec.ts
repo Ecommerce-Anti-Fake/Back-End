@@ -149,10 +149,10 @@ describe('CreateWholesaleOrderUseCase', () => {
       discountPercent: 15,
       baseAmount: 200,
       discountAmount: 30,
-      platformFeeAmount: 25.5,
-      buyerPayableAmount: 195.5,
-      sellerReceivableAmount: 170,
-      totalAmount: 195.5,
+      platformFeeAmount: 10,
+      buyerPayableAmount: 170,
+      sellerReceivableAmount: 160,
+      totalAmount: 170,
       isInNetworkTrade: true,
     });
     orderPlacementServiceMock.createOrder.mockResolvedValueOnce(
@@ -160,10 +160,10 @@ describe('CreateWholesaleOrderUseCase', () => {
         buyerDistributionNodeId: 'buyer-node-1',
         baseAmount: 200,
         discountAmount: 30,
-        platformFeeAmount: 25.5,
-        buyerPayableAmount: 195.5,
-        sellerReceivableAmount: 170,
-        totalAmount: 195.5,
+        platformFeeAmount: 10,
+        buyerPayableAmount: 170,
+        sellerReceivableAmount: 160,
+        totalAmount: 170,
         unitPrice: 85,
         quantity: 2,
       }),
@@ -191,10 +191,10 @@ describe('CreateWholesaleOrderUseCase', () => {
           buyerDistributionNodeId: 'buyer-node-1',
           baseAmount: 200,
           discountAmount: 30,
-          platformFeeAmount: 25.5,
-          buyerPayableAmount: 195.5,
-          sellerReceivableAmount: 170,
-          totalAmount: 195.5,
+          platformFeeAmount: 10,
+          buyerPayableAmount: 170,
+          sellerReceivableAmount: 160,
+          totalAmount: 170,
           item: expect.objectContaining({
             unitPrice: 85,
             quantity: 2,
@@ -204,10 +204,10 @@ describe('CreateWholesaleOrderUseCase', () => {
     );
     expect(result).toMatchObject({
       buyerDistributionNodeId: 'buyer-node-1',
-      buyerPayableAmount: 195.5,
-      sellerReceivableAmount: 170,
+      buyerPayableAmount: 170,
+      sellerReceivableAmount: 160,
       discountAmount: 30,
-      platformFeeAmount: 25.5,
+      platformFeeAmount: 10,
     });
   });
 
@@ -347,6 +347,8 @@ function createOrderRecord(input: {
         unitPrice: new Prisma.Decimal(input.unitPrice),
         quantity: input.quantity,
         verificationLevelSnapshot: 'SERIALIZED',
+        batchAllocations: [],
+        reviews: [],
       },
     ],
   };

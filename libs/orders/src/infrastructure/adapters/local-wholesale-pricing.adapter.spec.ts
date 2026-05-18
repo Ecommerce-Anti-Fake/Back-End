@@ -52,6 +52,7 @@ describe('LocalWholesalePricingAdapter', () => {
       shopId: 'buyer-shop-1',
       networkId: 'network-1',
       level: 1,
+      parentNodeId: 'seller-node-1',
       relationshipStatus: 'ACTIVE',
       shop: {
         shopStatus: 'active',
@@ -71,6 +72,11 @@ describe('LocalWholesalePricingAdapter', () => {
         distributionNode: {
           id: 'seller-node-1',
           networkId: 'network-1',
+          level: 0,
+          relationshipStatus: 'ACTIVE',
+          shop: {
+            shopStatus: 'active',
+          },
         },
       }),
       quantity: 2,
@@ -81,12 +87,90 @@ describe('LocalWholesalePricingAdapter', () => {
       unitPrice: 85,
       baseAmount: 200,
       discountAmount: 30,
-      platformFeeAmount: 25.5,
-      buyerPayableAmount: 195.5,
-      sellerReceivableAmount: 170,
-      totalAmount: 195.5,
+      platformFeeAmount: 10,
+      buyerPayableAmount: 170,
+      sellerReceivableAmount: 160,
+      totalAmount: 170,
       isInNetworkTrade: true,
     });
+  });
+
+  it('should apply default tier economics when no explicit policy exists', async () => {
+    ordersRepositoryMock.findDistributionNodeById.mockResolvedValueOnce({
+      id: 'buyer-node-2',
+      shopId: 'buyer-shop-1',
+      networkId: 'network-1',
+      level: 2,
+      parentNodeId: 'seller-node-1',
+      relationshipStatus: 'ACTIVE',
+      shop: {
+        shopStatus: 'active',
+      },
+    });
+    ordersRepositoryMock.findApplicablePricingPolicies.mockResolvedValueOnce([]);
+
+    const result = await service.resolve({
+      buyerShopId: 'buyer-shop-1',
+      buyerDistributionNodeId: 'buyer-node-2',
+      offer: createOffer({
+        price: 100,
+        distributionNode: {
+          id: 'seller-node-1',
+          networkId: 'network-1',
+          level: 1,
+          relationshipStatus: 'ACTIVE',
+          shop: {
+            shopStatus: 'active',
+          },
+        },
+      }),
+      quantity: 1,
+    });
+
+    expect(result).toMatchObject({
+      buyerDistributionNodeId: 'buyer-node-2',
+      unitPrice: 90,
+      baseAmount: 100,
+      discountAmount: 10,
+      platformFeeAmount: 10,
+      buyerPayableAmount: 90,
+      sellerReceivableAmount: 80,
+      totalAmount: 90,
+      isInNetworkTrade: true,
+    });
+  });
+
+  it('should reject in-network pricing when buyer is not direct child of seller node', async () => {
+    ordersRepositoryMock.findDistributionNodeById.mockResolvedValueOnce({
+      id: 'buyer-node-2',
+      shopId: 'buyer-shop-1',
+      networkId: 'network-1',
+      level: 2,
+      parentNodeId: 'other-level-1-node',
+      relationshipStatus: 'ACTIVE',
+      shop: {
+        shopStatus: 'active',
+      },
+    });
+
+    await expect(
+      service.resolve({
+        buyerShopId: 'buyer-shop-1',
+        buyerDistributionNodeId: 'buyer-node-2',
+        offer: createOffer({
+          distributionNode: {
+            id: 'seller-node-1',
+            networkId: 'network-1',
+            level: 1,
+            relationshipStatus: 'ACTIVE',
+            shop: {
+              shopStatus: 'active',
+            },
+          },
+        }),
+        quantity: 1,
+      }),
+    ).rejects.toThrow('Buyer distribution node must be a direct child of the seller node');
   });
 
   it('should reject in-network pricing when offer is not attached to a distribution node', async () => {
@@ -95,6 +179,7 @@ describe('LocalWholesalePricingAdapter', () => {
       shopId: 'buyer-shop-1',
       networkId: 'network-1',
       level: 1,
+      parentNodeId: 'seller-node-1',
       relationshipStatus: 'ACTIVE',
       shop: {
         shopStatus: 'active',

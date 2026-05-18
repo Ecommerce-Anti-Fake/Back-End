@@ -239,6 +239,42 @@ export class DistributionPricingRepository {
           ownerUserId: requesterUserId,
         },
       },
+      include: {
+        shop: {
+          select: {
+            shopName: true,
+          },
+        },
+        parent: {
+          select: {
+            id: true,
+            shopId: true,
+            level: true,
+            shop: {
+              select: {
+                shopName: true,
+              },
+            },
+          },
+        },
+        network: {
+          select: {
+            networkName: true,
+            brandId: true,
+            brand: {
+              select: {
+                name: true,
+              },
+            },
+            manufacturerShopId: true,
+            manufacturerShop: {
+              select: {
+                shopName: true,
+              },
+            },
+          },
+        },
+      },
       orderBy: [
         { createdAt: 'desc' },
       ],
