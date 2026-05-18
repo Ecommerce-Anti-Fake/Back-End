@@ -90,6 +90,7 @@ describe('ResolveAdminDisputeUseCase', () => {
 
     expect(orderReversalServiceMock.resolveDispute).toHaveBeenCalledWith({
       disputeId: 'dispute-1',
+      actorUserId: 'admin-1',
       resolution: 'RESOLVED',
     });
     expect(result.dispute).toMatchObject({

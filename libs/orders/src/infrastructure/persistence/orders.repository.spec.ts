@@ -115,4 +115,46 @@ describe('OrdersRepository', () => {
       }),
     );
   });
+
+  it('should create payment audit row when cancelling or refunding payment status', async () => {
+    const tx = {
+      paymentIntent: {
+        findUnique: jest.fn().mockResolvedValue({
+          paymentMethod: 'PAYOS',
+          paymentStatus: 'PAID',
+        }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      auditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
+      },
+    };
+    const repository = new OrdersRepository({} as never);
+
+    await repository.updatePaymentStatusWithAudit(tx as never, {
+      orderId: 'order-1',
+      actorUserId: 'seller-user-1',
+      paymentStatus: 'REFUNDED',
+    });
+
+    expect(tx.paymentIntent.update).toHaveBeenCalledWith({
+      where: { orderId: 'order-1' },
+      data: { paymentStatus: 'REFUNDED' },
+    });
+    expect(tx.auditLog.create).toHaveBeenCalledWith({
+      data: {
+        targetType: 'ORDER',
+        targetId: 'order-1',
+        actorUserId: 'seller-user-1',
+        action: 'PAYMENT_STATUS_CHANGED',
+        fromStatus: 'PAID',
+        toStatus: 'REFUNDED',
+        note: 'Payment moved from PAID to REFUNDED',
+        metadata: {
+          domain: 'PAYMENT',
+          paymentMethod: 'PAYOS',
+        },
+      },
+    });
+  });
 });

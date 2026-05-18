@@ -14,7 +14,7 @@ export class OrderReversalService {
     private readonly orderInventoryService: OrderInventoryService,
   ) {}
 
-  cancelOrder(orderId: string): Promise<OrderWithRelations> {
+  cancelOrder(orderId: string, actorUserId: string): Promise<OrderWithRelations> {
     return this.ordersRepository.withTransaction(async (tx) => {
       const order = await this.ordersRepository.findOrderForReversal(tx, orderId);
       if (!order) {
@@ -22,7 +22,11 @@ export class OrderReversalService {
       }
 
       await this.orderInventoryService.restoreOrderInventory(tx, order);
-      await this.ordersRepository.updatePaymentStatus(tx, orderId, 'CANCELLED');
+      await this.ordersRepository.updatePaymentStatusWithAudit(tx, {
+        orderId,
+        actorUserId,
+        paymentStatus: 'CANCELLED',
+      });
       await this.ordersRepository.updateEscrowStatus(tx, orderId, 'CANCELLED');
       await this.ordersRepository.cancelPendingAffiliateArtifacts(tx, orderId);
 
@@ -30,7 +34,7 @@ export class OrderReversalService {
     });
   }
 
-  refundPaidOrder(orderId: string): Promise<OrderWithRelations> {
+  refundPaidOrder(orderId: string, actorUserId: string): Promise<OrderWithRelations> {
     return this.ordersRepository.withTransaction(async (tx) => {
       const order = await this.ordersRepository.findOrderForReversal(tx, orderId);
       if (!order) {
@@ -38,7 +42,11 @@ export class OrderReversalService {
       }
 
       await this.orderInventoryService.restoreOrderInventory(tx, order);
-      await this.ordersRepository.updatePaymentStatus(tx, orderId, 'REFUNDED');
+      await this.ordersRepository.updatePaymentStatusWithAudit(tx, {
+        orderId,
+        actorUserId,
+        paymentStatus: 'REFUNDED',
+      });
       await this.ordersRepository.updateEscrowStatus(tx, orderId, 'REFUNDED');
       await this.ordersRepository.cancelRefundableAffiliateArtifacts(tx, orderId);
 
@@ -48,6 +56,7 @@ export class OrderReversalService {
 
   resolveDispute(input: {
     disputeId: string;
+    actorUserId: string;
     resolution: 'RESOLVED' | 'REFUNDED';
   }): Promise<DisputeWithOrder> {
     return this.ordersRepository.withTransaction(async (tx) => {
@@ -58,7 +67,11 @@ export class OrderReversalService {
 
       if (input.resolution === 'REFUNDED' && dispute.order.orderStatus === 'paid') {
         await this.orderInventoryService.restoreOrderInventory(tx, dispute.order);
-        await this.ordersRepository.updatePaymentStatus(tx, dispute.orderId, 'REFUNDED');
+        await this.ordersRepository.updatePaymentStatusWithAudit(tx, {
+          orderId: dispute.orderId,
+          actorUserId: input.actorUserId,
+          paymentStatus: 'REFUNDED',
+        });
         await this.ordersRepository.updateEscrowStatus(tx, dispute.orderId, 'REFUNDED');
         await this.ordersRepository.cancelRefundableAffiliateArtifacts(tx, dispute.orderId);
         await this.ordersRepository.updateOrderStatus(tx, dispute.orderId, 'refunded');

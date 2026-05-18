@@ -99,6 +99,23 @@ describe('UpdateOrderFulfillmentUseCase', () => {
       fulfillmentStatus: 'DELIVERED',
     });
   });
+
+  it('passes seller actor when cancelling through fulfillment', async () => {
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(
+      createOrderRecord({ orderStatus: 'pending', paymentStatus: 'PENDING' }),
+    );
+    orderReversalServiceMock.cancelOrder.mockResolvedValueOnce(
+      createOrderRecord({ orderStatus: 'cancelled', fulfillmentStatus: 'CANCELLED', paymentStatus: 'CANCELLED' }),
+    );
+
+    await useCase.execute({
+      id: 'order-1',
+      requesterUserId: 'seller-user-1',
+      fulfillmentStatus: 'CANCELLED',
+    });
+
+    expect(orderReversalServiceMock.cancelOrder).toHaveBeenCalledWith('order-1', 'seller-user-1');
+  });
 });
 
 function createOrderRecord(overrides?: { orderStatus?: string; fulfillmentStatus?: string; paymentStatus?: string }) {

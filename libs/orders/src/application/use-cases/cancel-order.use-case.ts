@@ -28,7 +28,7 @@ export class CancelOrderUseCase {
       throw new BadRequestException('Only pending orders can be cancelled');
     }
 
-    const updatedOrder = await this.orderReversalService.cancelOrder(order.id);
+    const updatedOrder = await this.orderReversalService.cancelOrder(order.id, input.requesterUserId);
     return toOrderResponse(updatedOrder);
   }
 }

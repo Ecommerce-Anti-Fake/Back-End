@@ -544,6 +544,47 @@ export class OrdersRepository {
     });
   }
 
+  async updatePaymentStatusWithAudit(
+    tx: Prisma.TransactionClient,
+    input: {
+      orderId: string;
+      actorUserId: string;
+      paymentStatus: 'CANCELLED' | 'REFUNDED';
+    },
+  ) {
+    const paymentIntent = await tx.paymentIntent.findUnique({
+      where: { orderId: input.orderId },
+      select: {
+        paymentMethod: true,
+        paymentStatus: true,
+      },
+    });
+    const fromStatus = paymentIntent?.paymentStatus ?? 'PENDING';
+
+    await tx.paymentIntent.update({
+      where: { orderId: input.orderId },
+      data: {
+        paymentStatus: input.paymentStatus,
+      },
+    });
+
+    return tx.auditLog.create({
+      data: {
+        targetType: 'ORDER',
+        targetId: input.orderId,
+        actorUserId: input.actorUserId,
+        action: 'PAYMENT_STATUS_CHANGED',
+        fromStatus,
+        toStatus: input.paymentStatus,
+        note: `Payment moved from ${fromStatus} to ${input.paymentStatus}`,
+        metadata: {
+          domain: 'PAYMENT',
+          paymentMethod: paymentIntent?.paymentMethod ?? null,
+        },
+      },
+    });
+  }
+
   updateEscrowStatus(
     tx: Prisma.TransactionClient,
     orderId: string,

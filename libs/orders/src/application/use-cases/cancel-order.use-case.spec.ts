@@ -39,7 +39,7 @@ describe('CancelOrderUseCase', () => {
       requesterUserId: 'seller-user-1',
     });
 
-    expect(orderReversalServiceMock.cancelOrder).toHaveBeenCalledWith('order-1');
+    expect(orderReversalServiceMock.cancelOrder).toHaveBeenCalledWith('order-1', 'seller-user-1');
     expect(result).toMatchObject({
       id: 'order-1',
       orderStatus: 'cancelled',
@@ -91,11 +91,17 @@ function createOrderRecord(overrides?: { orderStatus?: string; paymentStatus?: s
     },
     items: [
       {
+        id: 'order-item-1',
         offerId: 'offer-1',
         offerTitleSnapshot: 'Offer 1',
         unitPrice: new Prisma.Decimal(90),
         quantity: 10,
         verificationLevelSnapshot: 'SERIALIZED',
+        batchAllocations: [],
+        reviews: [],
+        offer: {
+          media: [],
+        },
       },
     ],
   };

@@ -45,6 +45,7 @@ describe('ResolveOrderDisputeUseCase', () => {
 
     expect(orderReversalServiceMock.resolveDispute).toHaveBeenCalledWith({
       disputeId: 'dispute-1',
+      actorUserId: 'seller-user-1',
       resolution: 'RESOLVED',
     });
     expect(ordersRepositoryMock.createAuditLog).toHaveBeenCalledWith(
@@ -82,6 +83,7 @@ describe('ResolveOrderDisputeUseCase', () => {
 
     expect(orderReversalServiceMock.resolveDispute).toHaveBeenCalledWith({
       disputeId: 'dispute-1',
+      actorUserId: 'seller-user-1',
       resolution: 'REFUNDED',
     });
     expect(ordersRepositoryMock.createAuditLog).toHaveBeenCalledWith(

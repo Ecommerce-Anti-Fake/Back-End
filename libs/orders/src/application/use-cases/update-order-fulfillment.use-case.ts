@@ -85,7 +85,7 @@ export class UpdateOrderFulfillmentUseCase {
       if (order.orderStatus !== 'pending') {
         throw new BadRequestException('Only pending orders can be cancelled by fulfillment');
       }
-      const cancelledOrder = await this.orderReversalService.cancelOrder(order.id);
+      const cancelledOrder = await this.orderReversalService.cancelOrder(order.id, input.requesterUserId);
       await this.createFulfillmentAudit(order.id, input.requesterUserId, currentFulfillmentStatus, 'CANCELLED');
       return toOrderResponse(cancelledOrder);
     }

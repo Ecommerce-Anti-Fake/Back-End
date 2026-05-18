@@ -33,6 +33,7 @@ export class ResolveOrderDisputeUseCase {
 
     const resolved = await this.orderReversalService.resolveDispute({
       disputeId: dispute.id,
+      actorUserId: input.requesterUserId,
       resolution: input.resolution,
     });
 

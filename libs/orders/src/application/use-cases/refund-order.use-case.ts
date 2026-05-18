@@ -24,7 +24,7 @@ export class RefundOrderUseCase {
       throw new BadRequestException('Only paid orders can be refunded');
     }
 
-    const updatedOrder = await this.orderReversalService.refundPaidOrder(order.id);
+    const updatedOrder = await this.orderReversalService.refundPaidOrder(order.id, input.requesterUserId);
     return toOrderResponse(updatedOrder);
   }
 }
