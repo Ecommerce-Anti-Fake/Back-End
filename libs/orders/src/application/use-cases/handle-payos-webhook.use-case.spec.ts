@@ -126,6 +126,33 @@ describe('HandlePayOSWebhookUseCase', () => {
     });
   });
 
+  it('ignores duplicate failed webhook after order is already paid', async () => {
+    const paidOrder = createOrderRecord({ orderStatus: 'paid', paymentStatus: 'PAID' });
+    payOSPaymentServiceMock.verifyWebhook.mockReturnValueOnce(true);
+    ordersRepositoryMock.findOrderByPaymentProviderRef.mockResolvedValueOnce(paidOrder);
+
+    const result = await useCase.execute({
+      code: '01',
+      desc: 'Payment failed',
+      success: false,
+      signature: 'sig',
+      data: {
+        paymentLinkId: 'link-1',
+        amount: 100,
+        code: '01',
+        reference: 'ref-1',
+      },
+    });
+
+    expect(ordersRepositoryMock.markOrderPaymentFailed).not.toHaveBeenCalled();
+    expect(ordersRepositoryMock.markOrderPaid).not.toHaveBeenCalled();
+    expect(result.order).toMatchObject({
+      id: 'order-1',
+      orderStatus: 'paid',
+      paymentStatus: 'PAID',
+    });
+  });
+
   it('ignores stale webhook for an old payOS link after retry changes provider ref', async () => {
     payOSPaymentServiceMock.verifyWebhook.mockReturnValueOnce(true);
     ordersRepositoryMock.findOrderByPaymentProviderRef.mockResolvedValueOnce(null);
@@ -139,6 +166,33 @@ describe('HandlePayOSWebhookUseCase', () => {
         paymentLinkId: 'old-link',
         amount: 100,
         code: '00',
+        reference: 'old-ref',
+      },
+    });
+
+    expect(ordersRepositoryMock.findOrderByPaymentProviderRef).toHaveBeenCalledWith('PAYOS:old-link');
+    expect(ordersRepositoryMock.markOrderPaid).not.toHaveBeenCalled();
+    expect(ordersRepositoryMock.markOrderPaymentFailed).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      received: true,
+      ignored: true,
+      reason: 'order_not_found',
+    });
+  });
+
+  it('ignores stale failed webhook for an old payOS link after retry changes provider ref', async () => {
+    payOSPaymentServiceMock.verifyWebhook.mockReturnValueOnce(true);
+    ordersRepositoryMock.findOrderByPaymentProviderRef.mockResolvedValueOnce(null);
+
+    const result = await useCase.execute({
+      code: '01',
+      desc: 'Payment failed',
+      success: false,
+      signature: 'sig',
+      data: {
+        paymentLinkId: 'old-link',
+        amount: 100,
+        code: '01',
         reference: 'old-ref',
       },
     });
