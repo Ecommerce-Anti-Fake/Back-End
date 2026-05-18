@@ -1,7 +1,17 @@
 import 'dotenv/config';
 import { pbkdf2Sync, randomBytes } from 'crypto';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { MediaAssetType, MediaProvider, MediaResourceType, OfferSalesMode, OrderMode, PrismaClient, ShopRegistrationType } from '@prisma/client';
+import {
+  DistributionNodeType,
+  DistributionRelationshipStatus,
+  MediaAssetType,
+  MediaProvider,
+  MediaResourceType,
+  OfferSalesMode,
+  OrderMode,
+  PrismaClient,
+  ShopRegistrationType,
+} from '@prisma/client';
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -721,6 +731,283 @@ async function seedDemoProductsAndOffers() {
   }
 }
 
+async function seedDistributorOnboardingFixtures() {
+  const password = hashPassword('12345678');
+  const users = [
+    {
+      id: 'user-fixture-manufacturer',
+      email: 'fixture-manufacturer@example.com',
+      phone: '0911000001',
+      displayName: 'Fixture Manufacturer',
+    },
+    {
+      id: 'user-fixture-distributor-l1',
+      email: 'fixture-l1@example.com',
+      phone: '0911000002',
+      displayName: 'Fixture Distributor L1',
+    },
+    {
+      id: 'user-fixture-distributor-l2',
+      email: 'fixture-l2@example.com',
+      phone: '0911000003',
+      displayName: 'Fixture Distributor L2',
+    },
+    {
+      id: 'user-fixture-distributor-l3',
+      email: 'fixture-l3@example.com',
+      phone: '0911000004',
+      displayName: 'Fixture Distributor L3',
+    },
+  ];
+
+  for (const user of users) {
+    await prisma.user.upsert({
+      where: { id: user.id },
+      update: {
+        email: user.email,
+        phone: user.phone,
+        displayName: user.displayName,
+        accountStatus: 'active',
+      },
+      create: {
+        ...user,
+        password,
+        role: 'user',
+        accountStatus: 'active',
+      },
+    });
+  }
+
+  const shops = [
+    {
+      id: 'shop-fixture-manufacturer',
+      ownerUserId: 'user-fixture-manufacturer',
+      shopTypeId: 'shop-type-manufacturer',
+      shopName: 'Fixture Manufacturer Co',
+      registrationType: ShopRegistrationType.MANUFACTURER,
+      taxCode: 'FIXTURE-MNF',
+    },
+    {
+      id: 'shop-fixture-distributor-l1',
+      ownerUserId: 'user-fixture-distributor-l1',
+      shopTypeId: 'shop-type-distributor',
+      shopName: 'Fixture Distributor L1',
+      registrationType: ShopRegistrationType.DISTRIBUTOR,
+      taxCode: 'FIXTURE-L1',
+    },
+    {
+      id: 'shop-fixture-distributor-l2',
+      ownerUserId: 'user-fixture-distributor-l2',
+      shopTypeId: 'shop-type-distributor',
+      shopName: 'Fixture Distributor L2',
+      registrationType: ShopRegistrationType.DISTRIBUTOR,
+      taxCode: 'FIXTURE-L2',
+    },
+    {
+      id: 'shop-fixture-distributor-l3',
+      ownerUserId: 'user-fixture-distributor-l3',
+      shopTypeId: 'shop-type-distributor',
+      shopName: 'Fixture Distributor L3',
+      registrationType: ShopRegistrationType.DISTRIBUTOR,
+      taxCode: 'FIXTURE-L3',
+    },
+  ];
+
+  for (const shop of shops) {
+    await prisma.shop.upsert({
+      where: { id: shop.id },
+      update: {
+        ownerUserId: shop.ownerUserId,
+        shopTypeId: shop.shopTypeId,
+        shopName: shop.shopName,
+        registrationType: shop.registrationType,
+        businessType: 'COMPANY',
+        taxCode: shop.taxCode,
+        shopStatus: 'active',
+      },
+      create: {
+        ...shop,
+        businessType: 'COMPANY',
+        shopStatus: 'active',
+      },
+    });
+
+    await prisma.shopBusinessCategory.upsert({
+      where: {
+        shopId_categoryId: {
+          shopId: shop.id,
+          categoryId: 'cat-food',
+        },
+      },
+      update: {
+        registrationStatus: 'approved',
+        approvedAt: new Date(),
+      },
+      create: {
+        id: `${shop.id}-cat-food`,
+        shopId: shop.id,
+        categoryId: 'cat-food',
+        registrationStatus: 'approved',
+        approvedAt: new Date(),
+      },
+    });
+  }
+
+  await prisma.distributionNetwork.upsert({
+    where: {
+      brandId_manufacturerShopId: {
+        brandId: 'brand-abc-food',
+        manufacturerShopId: 'shop-fixture-manufacturer',
+      },
+    },
+    update: {
+      networkName: 'Fixture ABC Food Distribution Network',
+      networkStatus: 'active',
+      maxAgentDepth: 3,
+    },
+    create: {
+      id: 'network-fixture-abc-food',
+      brandId: 'brand-abc-food',
+      manufacturerShopId: 'shop-fixture-manufacturer',
+      networkName: 'Fixture ABC Food Distribution Network',
+      networkStatus: 'active',
+      maxAgentDepth: 3,
+    },
+  });
+
+  const nodes = [
+    {
+      id: 'node-fixture-manufacturer',
+      shopId: 'shop-fixture-manufacturer',
+      parentNodeId: null,
+      level: 0,
+      nodeType: DistributionNodeType.MANUFACTURER,
+    },
+    {
+      id: 'node-fixture-l1',
+      shopId: 'shop-fixture-distributor-l1',
+      parentNodeId: 'node-fixture-manufacturer',
+      level: 1,
+      nodeType: DistributionNodeType.AGENT_LEVEL_1,
+    },
+    {
+      id: 'node-fixture-l2',
+      shopId: 'shop-fixture-distributor-l2',
+      parentNodeId: 'node-fixture-l1',
+      level: 2,
+      nodeType: DistributionNodeType.AGENT_LEVEL_2,
+    },
+    {
+      id: 'node-fixture-l3',
+      shopId: 'shop-fixture-distributor-l3',
+      parentNodeId: 'node-fixture-l2',
+      level: 3,
+      nodeType: DistributionNodeType.AGENT_LEVEL_3,
+    },
+  ];
+
+  for (const node of nodes) {
+    await prisma.distributionNode.upsert({
+      where: {
+        networkId_shopId: {
+          networkId: 'network-fixture-abc-food',
+          shopId: node.shopId,
+        },
+      },
+      update: {
+        id: node.id,
+        parentNodeId: node.parentNodeId,
+        level: node.level,
+        nodeType: node.nodeType,
+        relationshipStatus: DistributionRelationshipStatus.ACTIVE,
+        activatedAt: new Date(),
+      },
+      create: {
+        ...node,
+        networkId: 'network-fixture-abc-food',
+        relationshipStatus: DistributionRelationshipStatus.ACTIVE,
+        activatedAt: new Date(),
+      },
+    });
+  }
+
+  await prisma.productModel.upsert({
+    where: { id: 'model-fixture-wholesale-food' },
+    update: {
+      brandId: 'brand-abc-food',
+      categoryId: 'cat-food',
+      modelName: 'Fixture Wholesale Food Carton',
+      verificationPolicy: 'STANDARD',
+      approvalStatus: 'approved',
+    },
+    create: {
+      id: 'model-fixture-wholesale-food',
+      brandId: 'brand-abc-food',
+      categoryId: 'cat-food',
+      modelName: 'Fixture Wholesale Food Carton',
+      gtin: '8930000999001',
+      verificationPolicy: 'STANDARD',
+      approvalStatus: 'approved',
+    },
+  });
+
+  const offers = [
+    {
+      id: 'offer-fixture-manufacturer-wholesale',
+      sellerUserId: 'user-fixture-manufacturer',
+      shopId: 'shop-fixture-manufacturer',
+      distributionNodeId: 'node-fixture-manufacturer',
+      title: 'Fixture Manufacturer Wholesale Carton',
+      price: '1000000',
+    },
+    {
+      id: 'offer-fixture-l1-wholesale',
+      sellerUserId: 'user-fixture-distributor-l1',
+      shopId: 'shop-fixture-distributor-l1',
+      distributionNodeId: 'node-fixture-l1',
+      title: 'Fixture L1 Wholesale Carton',
+      price: '1200000',
+    },
+    {
+      id: 'offer-fixture-l2-wholesale',
+      sellerUserId: 'user-fixture-distributor-l2',
+      shopId: 'shop-fixture-distributor-l2',
+      distributionNodeId: 'node-fixture-l2',
+      title: 'Fixture L2 Wholesale Carton',
+      price: '1400000',
+    },
+  ];
+
+  for (const offer of offers) {
+    await prisma.offer.upsert({
+      where: { id: offer.id },
+      update: {
+        shopId: offer.shopId,
+        distributionNodeId: offer.distributionNodeId,
+        title: offer.title,
+        price: offer.price,
+        salesMode: OfferSalesMode.WHOLESALE,
+        minWholesaleQty: 2,
+        availableQuantity: 500,
+        offerStatus: 'active',
+      },
+      create: {
+        ...offer,
+        categoryId: 'cat-food',
+        productModelId: 'model-fixture-wholesale-food',
+        description: 'Deterministic fixture offer for distributor onboarding and tier pricing tests.',
+        currency: 'VND',
+        salesMode: OfferSalesMode.WHOLESALE,
+        minWholesaleQty: 2,
+        itemCondition: 'new',
+        availableQuantity: 500,
+        verificationLevel: 'verified',
+        offerStatus: 'active',
+      },
+    });
+  }
+}
+
 async function seedDemoOrders() {
   const retailOffers = sampleProducts.filter((product) => product.salesMode === OfferSalesMode.RETAIL);
   const wholesaleOffers = sampleProducts.filter((product) => product.salesMode === OfferSalesMode.WHOLESALE);
@@ -857,6 +1144,7 @@ async function main() {
   await seedUsersAndShops();
   await seedOffers();
   await seedDemoProductsAndOffers();
+  await seedDistributorOnboardingFixtures();
   await seedDemoOrders();
 }
 

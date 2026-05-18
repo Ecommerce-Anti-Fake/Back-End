@@ -5,5 +5,31 @@
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^@common$": "<rootDir>/../libs/common/src/index.ts",
+    "^@common/(.*)$": "<rootDir>/../libs/common/src/$1",
+    "^@security$": "<rootDir>/../libs/security/src/index.ts",
+    "^@security/(.*)$": "<rootDir>/../libs/security/src/$1",
+    "^@contracts$": "<rootDir>/../libs/contracts/src/index.ts",
+    "^@contracts/(.*)$": "<rootDir>/../libs/contracts/src/$1",
+    "^@database$": "<rootDir>/../libs/database/src/index.ts",
+    "^@database/(.*)$": "<rootDir>/../libs/database/src/$1",
+    "^@auth$": "<rootDir>/../libs/auth/src/index.ts",
+    "^@auth/(.*)$": "<rootDir>/../libs/auth/src/$1",
+    "^@users$": "<rootDir>/../libs/users/src/index.ts",
+    "^@users/(.*)$": "<rootDir>/../libs/users/src/$1",
+    "^@products$": "<rootDir>/../libs/products/src/index.ts",
+    "^@products/(.*)$": "<rootDir>/../libs/products/src/$1",
+    "^@distribution$": "<rootDir>/../libs/distribution/src/index.ts",
+    "^@distribution/(.*)$": "<rootDir>/../libs/distribution/src/$1",
+    "^@affiliate$": "<rootDir>/../libs/affiliate/src/index.ts",
+    "^@affiliate/(.*)$": "<rootDir>/../libs/affiliate/src/$1",
+    "^@shops$": "<rootDir>/../libs/shops/src/index.ts",
+    "^@shops/(.*)$": "<rootDir>/../libs/shops/src/$1",
+    "^@orders$": "<rootDir>/../libs/orders/src/index.ts",
+    "^@orders/(.*)$": "<rootDir>/../libs/orders/src/$1",
+    "^@media$": "<rootDir>/../libs/media/src/index.ts",
+    "^@media/(.*)$": "<rootDir>/../libs/media/src/$1"
   }
 }
