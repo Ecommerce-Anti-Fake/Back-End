@@ -290,6 +290,30 @@ export class OrdersController {
     return this.ordersRpcService.getFulfillmentAudit({ id, requesterUserId, requesterRole: requester?.role });
   }
 
+  @ApiOperation({ summary: 'Lay order audit timeline cua don hang' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'id', description: 'ID don hang.' })
+  @ApiOkResponse({
+    description: 'Timeline audit cua don hang.',
+    type: OrderFulfillmentAuditEntryDto,
+    isArray: true,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Thieu access token hoac token khong hop le.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Khong co quyen xem audit timeline cua don hang nay.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get(':id/audit')
+  getAudit(
+    @Param('id') id: string,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester?: { role?: string },
+  ) {
+    return this.ordersRpcService.getFulfillmentAudit({ id, requesterUserId, requesterRole: requester?.role });
+  }
+
   @ApiOperation({ summary: 'Admin lay danh sach dispute dang mo' })
   @ApiBearerAuth('access-token')
   @ApiOkResponse({
