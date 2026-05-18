@@ -266,7 +266,11 @@ export class OrdersController {
     return this.ordersRpcService.findById({ id, requesterUserId });
   }
 
-  @ApiOperation({ summary: 'Lay fulfillment audit timeline cua don hang' })
+  @ApiOperation({
+    summary: 'Lay fulfillment audit timeline cua don hang',
+    deprecated: true,
+    description: 'Deprecated compatibility alias. Use GET /orders/:id/audit.',
+  })
   @ApiBearerAuth('access-token')
   @ApiParam({ name: 'id', description: 'ID don hang.' })
   @ApiOkResponse({
