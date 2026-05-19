@@ -7,6 +7,7 @@ export class ResolveWholesalePricingUseCase {
   constructor(private readonly repository: DistributionPricingRepository) {}
 
   async execute(input: {
+    requesterUserId?: string;
     buyerShopId: string;
     buyerDistributionNodeId?: string;
     quantity: number;
@@ -30,6 +31,10 @@ export class ResolveWholesalePricingUseCase {
 
       if (buyerNode.shopId !== input.buyerShopId) {
         throw new BadRequestException('Distribution node does not belong to buyer shop');
+      }
+
+      if (input.requesterUserId && buyerNode.shop.ownerUserId !== input.requesterUserId) {
+        throw new BadRequestException('Distribution node does not belong to current user');
       }
 
       if (buyerNode.relationshipStatus !== 'ACTIVE' || buyerNode.shop.shopStatus !== 'active') {

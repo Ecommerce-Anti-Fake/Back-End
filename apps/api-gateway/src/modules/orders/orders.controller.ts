@@ -33,6 +33,7 @@ import {
   UpdateCartItemDto,
   UpdateAdminDisputeCaseDto,
   UpdateOrderFulfillmentDto,
+  WholesaleInventoryReceiptResponseDto,
 } from '@orders';
 import type { PayOSWebhookMessage } from '@contracts';
 import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
@@ -485,6 +486,28 @@ export class OrdersController {
   @Post(':id/retry-payos-payment')
   retryPayOSPayment(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
     return this.ordersRpcService.retryPayOSPayment({
+      id,
+      requesterUserId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Distributor nhan don si da giao vao ton kho' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'id', description: 'ID don hang si.' })
+  @ApiOkResponse({
+    description: 'Da tao hoac tra ve supply batch tu don si.',
+    type: WholesaleInventoryReceiptResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Chi don si da giao moi duoc nhan vao ton kho.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi chu shop mua si moi co quyen nhan ton kho.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post(':id/receive-inventory')
+  receiveWholesaleInventory(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
+    return this.ordersRpcService.receiveWholesaleInventory({
       id,
       requesterUserId,
     });

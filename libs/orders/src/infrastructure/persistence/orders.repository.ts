@@ -263,6 +263,18 @@ export type OrderAuditLogRecord = {
     email: string | null;
   };
 };
+export type SupplyBatchReceipt = {
+  id: string;
+  shopId: string;
+  productModelId: string;
+  distributionNodeId: string | null;
+  batchNumber: string;
+  quantity: number;
+  sourceName: string;
+  countryOfOrigin: string;
+  sourceType: string;
+  receivedAt: Date;
+};
 
 @Injectable()
 export class OrdersRepository {
@@ -703,6 +715,53 @@ export class OrdersRepository {
     return this.prisma.order.findUnique({
       where: { id },
       ...orderWithRelationsArgs,
+    });
+  }
+
+  async receiveWholesaleOrderIntoInventory(order: OrderWithRelations): Promise<SupplyBatchReceipt[]> {
+    if (!order.buyerShopId || !order.buyerDistributionNodeId) {
+      throw new BadRequestException('Wholesale buyer distribution node is required');
+    }
+
+    const buyerShopId = order.buyerShopId;
+    const buyerDistributionNodeId = order.buyerDistributionNodeId;
+
+    return this.prisma.$transaction(async (tx) => {
+      const receipts: SupplyBatchReceipt[] = [];
+
+      for (const item of order.items) {
+        const batchNumber = this.wholesaleReceiptBatchNumber(order.id, item.id);
+        const existingBatch = await tx.supplyBatch.findFirst({
+          where: {
+            shopId: buyerShopId,
+            distributionNodeId: buyerDistributionNodeId,
+            batchNumber,
+          },
+        });
+
+        if (existingBatch) {
+          receipts.push(existingBatch);
+          continue;
+        }
+
+        receipts.push(
+          await tx.supplyBatch.create({
+            data: {
+              shopId: buyerShopId,
+              productModelId: item.offer.productModelId,
+              distributionNodeId: buyerDistributionNodeId,
+              batchNumber,
+              quantity: item.quantity,
+              sourceName: order.shop.shopName,
+              countryOfOrigin: 'UNKNOWN',
+              sourceType: 'WHOLESALE_ORDER',
+              receivedAt: new Date(),
+            },
+          }),
+        );
+      }
+
+      return receipts;
     });
   }
 
@@ -1615,6 +1674,10 @@ export class OrdersRepository {
     quantity: number,
   ): Promise<OrderBatchAllocation[]> {
     return this.consumeOfferBatchAllocationsInternal(tx, offerId, quantity);
+  }
+
+  private wholesaleReceiptBatchNumber(orderId: string, orderItemId: string) {
+    return `WHOLESALE-${orderId.slice(0, 8).toUpperCase()}-${orderItemId.slice(0, 8).toUpperCase()}`;
   }
 
   restoreOrderItemBatchAllocations(

@@ -18,6 +18,7 @@ import type {
   OrderFulfillmentAuditMessage,
   OrderLookupMessage,
   PayOSWebhookMessage,
+  ReceiveWholesaleInventoryMessage,
   RetryPayOSPaymentMessage,
   SellerShopOrdersLookupMessage,
   CompleteOrderMessage,
@@ -56,6 +57,7 @@ import {
   ListSellerShopOrdersUseCase,
   MarkOrderPaidUseCase,
   HandlePayOSWebhookUseCase,
+  ReceiveWholesaleOrderInventoryUseCase,
   RetryPayOSPaymentUseCase,
   RemoveCartItemUseCase,
   CompleteOrderUseCase,
@@ -94,6 +96,7 @@ export class OrdersRpcController {
     private readonly listDisputeEvidenceUseCase: ListDisputeEvidenceUseCase,
     private readonly markOrderPaidUseCase: MarkOrderPaidUseCase,
     private readonly handlePayOSWebhookUseCase: HandlePayOSWebhookUseCase,
+    private readonly receiveWholesaleOrderInventoryUseCase: ReceiveWholesaleOrderInventoryUseCase,
     private readonly retryPayOSPaymentUseCase: RetryPayOSPaymentUseCase,
     private readonly completeOrderUseCase: CompleteOrderUseCase,
     private readonly cancelOrderUseCase: CancelOrderUseCase,
@@ -305,6 +308,15 @@ export class OrdersRpcController {
   async retryPayOSPayment(@Payload() payload: RetryPayOSPaymentMessage) {
     try {
       return await this.retryPayOSPaymentUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.receiveWholesaleInventory)
+  async receiveWholesaleInventory(@Payload() payload: ReceiveWholesaleInventoryMessage) {
+    try {
+      return await this.receiveWholesaleOrderInventoryUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

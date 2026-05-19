@@ -77,6 +77,35 @@ describe('ResolveWholesalePricingUseCase', () => {
       }),
     ).rejects.toThrow('Buyer distribution node must be a direct child of the seller node');
   });
+
+  it('should reject pricing preview when buyer node belongs to another user', async () => {
+    repositoryMock.findNodeById.mockResolvedValueOnce(
+      createNode({
+        id: 'buyer-node-1',
+        shop: {
+          id: 'buyer-shop-3',
+          ownerUserId: 'other-user',
+          shopStatus: 'active',
+        },
+      }),
+    );
+
+    await expect(
+      useCase.execute({
+        requesterUserId: 'buyer-user',
+        buyerShopId: 'buyer-shop-3',
+        buyerDistributionNodeId: 'buyer-node-1',
+        quantity: 1,
+        offer: {
+          price: 100,
+          productModelId: 'product-model-1',
+          categoryId: 'category-1',
+          distributionNodeId: 'seller-node-1',
+          distributionNetworkId: 'network-1',
+        },
+      }),
+    ).rejects.toThrow('Distribution node does not belong to current user');
+  });
 });
 
 function createNode(overrides?: Partial<any>) {

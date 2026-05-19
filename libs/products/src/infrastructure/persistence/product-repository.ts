@@ -187,7 +187,7 @@ export class ProductRepository {
           select: { modelName: true },
         },
         distributionNode: {
-          select: { id: true },
+          select: { networkId: true },
         },
       },
     });
@@ -209,6 +209,9 @@ export class ProductRepository {
         },
         productModel: {
           select: { modelName: true },
+        },
+        distributionNode: {
+          select: { networkId: true },
         },
         media: {
           orderBy: { createdAt: 'asc' },
@@ -237,6 +240,9 @@ export class ProductRepository {
         },
         productModel: {
           select: { modelName: true },
+        },
+        distributionNode: {
+          select: { networkId: true },
         },
         media: {
           orderBy: { createdAt: 'asc' },

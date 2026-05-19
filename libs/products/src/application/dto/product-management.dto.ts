@@ -178,6 +178,21 @@ export class OfferResponseDto {
   @ApiProperty({ example: 'active' })
   offerStatus!: string;
 
+  @ApiProperty({ example: 'shop-id' })
+  shopId!: string;
+
+  @ApiProperty({ example: 'category-id' })
+  categoryId!: string;
+
+  @ApiProperty({ example: 'product-model-id' })
+  productModelId!: string;
+
+  @ApiPropertyOptional({ example: 'seller-node-id', nullable: true })
+  distributionNodeId!: string | null;
+
+  @ApiPropertyOptional({ example: 'network-id', nullable: true })
+  distributionNetworkId!: string | null;
+
   @ApiProperty({ example: 'Cong ty TNHH San Xuat ABC' })
   shopName!: string;
 

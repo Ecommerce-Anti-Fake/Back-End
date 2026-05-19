@@ -33,6 +33,9 @@ type OfferWithRelations = Offer & {
   productModel: {
     modelName: string;
   };
+  distributionNode?: {
+    networkId: string;
+  } | null;
   media?: Array<{
     mediaType?: string;
     fileUrl: string;
@@ -177,6 +180,8 @@ export function toOfferResponse(offer: OfferWithRelations) {
     shopId: offer.shopId,
     categoryId: offer.categoryId,
     productModelId: offer.productModelId,
+    distributionNodeId: offer.distributionNodeId,
+    distributionNetworkId: offer.distributionNode?.networkId ?? null,
     shopName: offer.shop.shopName,
     categoryName: offer.category.name,
     productModelName: offer.productModel.modelName,

@@ -115,6 +115,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   markPaid: 'orders.mark-paid',
   handlePayOSWebhook: 'orders.handle-payos-webhook',
   retryPayOSPayment: 'orders.retry-payos-payment',
+  receiveWholesaleInventory: 'orders.receive-wholesale-inventory',
   complete: 'orders.complete',
   cancel: 'orders.cancel',
   openDispute: 'orders.open-dispute',
@@ -748,6 +749,11 @@ export type RetryPayOSPaymentMessage = {
   requesterUserId: string;
 };
 
+export type ReceiveWholesaleInventoryMessage = {
+  id: string;
+  requesterUserId: string;
+};
+
 export type PayOSWebhookMessage = {
   code: string;
   desc: string;
@@ -840,6 +846,7 @@ export type DistributionPricingPolicyLookupMessage = {
 };
 
 export type ResolveWholesalePricingMessage = {
+  requesterUserId?: string;
   buyerShopId: string;
   buyerDistributionNodeId?: string;
   quantity: number;

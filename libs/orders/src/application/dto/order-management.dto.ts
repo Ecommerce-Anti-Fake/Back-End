@@ -195,6 +195,49 @@ export class OrderResponseDto {
   createdAt!: Date;
 }
 
+export class WholesaleInventoryBatchResponseDto {
+  @ApiProperty({ example: 'batch-id' })
+  id!: string;
+
+  @ApiProperty({ example: 'buyer-shop-id' })
+  shopId!: string;
+
+  @ApiProperty({ example: 'product-model-id' })
+  productModelId!: string;
+
+  @ApiPropertyOptional({ example: 'buyer-node-id', nullable: true })
+  distributionNodeId!: string | null;
+
+  @ApiProperty({ example: 'WHOLESALE-ORDER001-ITEM001' })
+  batchNumber!: string;
+
+  @ApiProperty({ example: 100 })
+  quantity!: number;
+
+  @ApiProperty({ example: 'Seller Shop' })
+  sourceName!: string;
+
+  @ApiProperty({ example: 'UNKNOWN' })
+  countryOfOrigin!: string;
+
+  @ApiProperty({ example: 'WHOLESALE_ORDER' })
+  sourceType!: string;
+
+  @ApiProperty({ example: '2026-05-18T10:30:00.000Z' })
+  receivedAt!: Date;
+}
+
+export class WholesaleInventoryReceiptResponseDto {
+  @ApiProperty({ example: 'order-id' })
+  orderId!: string;
+
+  @ApiProperty({ example: true })
+  received!: boolean;
+
+  @ApiProperty({ type: WholesaleInventoryBatchResponseDto, isArray: true })
+  batches!: WholesaleInventoryBatchResponseDto[];
+}
+
 export class MarkOrderPaidDto {
   @ApiPropertyOptional({ example: 'bank-transfer-ref-001' })
   @IsOptional()

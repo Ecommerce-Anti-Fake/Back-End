@@ -3,10 +3,12 @@ import { Type } from 'class-transformer';
 import {
   IsIn,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Max,
   Min,
+  ValidateNested,
 } from 'class-validator';
 
 const PRICING_POLICY_SCOPES = ['NETWORK_DEFAULT', 'NODE_LEVEL', 'NODE_SPECIFIC'] as const;
@@ -120,4 +122,84 @@ export class CreateDistributionPricingPolicyDto {
   @IsOptional()
   @IsString()
   endsAt?: string;
+}
+
+export class ResolveWholesalePricingOfferDto {
+  @ApiProperty({ example: 120000 })
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  price!: number;
+
+  @ApiProperty({ example: 'product-model-id' })
+  @IsString()
+  productModelId!: string;
+
+  @ApiProperty({ example: 'category-id' })
+  @IsString()
+  categoryId!: string;
+
+  @ApiPropertyOptional({ example: 'seller-node-id', nullable: true })
+  @IsOptional()
+  @IsString()
+  distributionNodeId?: string | null;
+
+  @ApiPropertyOptional({ example: 'network-id', nullable: true })
+  @IsOptional()
+  @IsString()
+  distributionNetworkId?: string | null;
+}
+
+export class ResolveWholesalePricingDto {
+  @ApiProperty({ example: 'buyer-shop-id' })
+  @IsString()
+  buyerShopId!: string;
+
+  @ApiPropertyOptional({ example: 'buyer-node-id' })
+  @IsOptional()
+  @IsString()
+  buyerDistributionNodeId?: string;
+
+  @ApiProperty({ example: 100 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  quantity!: number;
+
+  @ApiProperty({ type: ResolveWholesalePricingOfferDto })
+  @ValidateNested()
+  @Type(() => ResolveWholesalePricingOfferDto)
+  offer!: ResolveWholesalePricingOfferDto;
+}
+
+export class WholesalePricingPreviewResponseDto {
+  @ApiPropertyOptional({ example: 'buyer-node-id', nullable: true })
+  buyerDistributionNodeId!: string | null;
+
+  @ApiProperty({ example: 102000 })
+  unitPrice!: number;
+
+  @ApiProperty({ example: 15 })
+  discountPercent!: number;
+
+  @ApiProperty({ example: 12000000 })
+  baseAmount!: number;
+
+  @ApiProperty({ example: 1800000 })
+  discountAmount!: number;
+
+  @ApiProperty({ example: 600000 })
+  platformFeeAmount!: number;
+
+  @ApiProperty({ example: 10200000 })
+  buyerPayableAmount!: number;
+
+  @ApiProperty({ example: 9600000 })
+  sellerReceivableAmount!: number;
+
+  @ApiProperty({ example: 10200000 })
+  totalAmount!: number;
+
+  @ApiProperty({ example: true })
+  isInNetworkTrade!: boolean;
 }

@@ -30,8 +30,10 @@ import {
   DistributionPricingPolicyResponseDto,
   DistributionShipmentResponseDto,
   InventorySummaryResponseDto,
+  ResolveWholesalePricingDto,
   SupplyBatchDetailResponseDto,
   SupplyBatchResponseDto,
+  WholesalePricingPreviewResponseDto,
 } from '@distribution';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import { DistributionRpcService } from './distribution-rpc.service';
@@ -575,6 +577,33 @@ export class DistributionController {
     return this.distributionRpcService.findPricingPoliciesByNetwork({
       requesterUserId,
       networkId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Tinh gia ban si theo node nha phan phoi truoc checkout' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Gia ban si da ap dung tier discount va phi nen tang.',
+    type: WholesalePricingPreviewResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Buyer node khong hop le hoac khong du dieu kien mua tu parent node.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('wholesale-pricing/resolve')
+  resolveWholesalePricing(@CurrentUserId() requesterUserId: string, @Body() dto: ResolveWholesalePricingDto) {
+    return this.distributionRpcService.resolveWholesalePricing({
+      requesterUserId,
+      buyerShopId: dto.buyerShopId,
+      buyerDistributionNodeId: dto.buyerDistributionNodeId,
+      quantity: dto.quantity,
+      offer: {
+        price: dto.offer.price,
+        productModelId: dto.offer.productModelId,
+        categoryId: dto.offer.categoryId,
+        distributionNodeId: dto.offer.distributionNodeId ?? null,
+        distributionNetworkId: dto.offer.distributionNetworkId ?? null,
+      },
     });
   }
 }

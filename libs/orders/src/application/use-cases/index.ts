@@ -18,6 +18,7 @@ export * from './get-order-fulfillment-audit.use-case';
 export * from './mark-order-paid.use-case';
 export * from './handle-payos-webhook.use-case';
 export * from './retry-payos-payment.use-case';
+export * from './receive-wholesale-order-inventory.use-case';
 export * from './complete-order.use-case';
 export * from './cancel-order.use-case';
 export * from './get-dispute-evidence-upload-signatures.use-case';

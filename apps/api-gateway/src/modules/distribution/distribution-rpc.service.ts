@@ -29,6 +29,7 @@ import {
   ReceiveDistributionShipmentMessage,
   CATALOG_SERVICE_CLIENT,
   AdminInventoryAuditMessage,
+  ResolveWholesalePricingMessage,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
 import { lastValueFrom } from 'rxjs';
@@ -118,6 +119,10 @@ export class DistributionRpcService {
 
   findPricingPoliciesByNetwork(payload: DistributionPricingPolicyLookupMessage) {
     return this.send(DISTRIBUTION_MESSAGE_PATTERNS.findPricingPoliciesByNetwork, payload);
+  }
+
+  resolveWholesalePricing(payload: ResolveWholesalePricingMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.resolveWholesalePricing, payload);
   }
 
   createShipment(payload: CreateDistributionShipmentMessage) {

@@ -29,6 +29,7 @@ import {
   OpenOrderDisputeMessage,
   ORDERS_SERVICE_CLIENT,
   PayOSWebhookMessage,
+  ReceiveWholesaleInventoryMessage,
   ResolveOrderDisputeMessage,
   RefundOrderMessage,
   RemoveCartItemMessage,
@@ -127,6 +128,10 @@ export class OrdersRpcService {
 
   retryPayOSPayment(payload: RetryPayOSPaymentMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.retryPayOSPayment, payload);
+  }
+
+  receiveWholesaleInventory(payload: ReceiveWholesaleInventoryMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.receiveWholesaleInventory, payload);
   }
 
   handlePayOSWebhook(payload: PayOSWebhookMessage) {
