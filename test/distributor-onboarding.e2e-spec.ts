@@ -8,9 +8,18 @@ import {
   AcceptDistributionNodeInvitationUseCase,
   InviteDistributionNodeUseCase,
 } from '@distribution/application/use-cases';
-import { CreateWholesaleOrderUseCase } from '@orders/application/use-cases';
-import { OrderInventoryService, OrderPlacementService } from '@orders/application/services';
-import { LocalOrderInventoryAdapter, LocalWholesalePricingAdapter } from '@orders/infrastructure/adapters';
+import {
+  CreateWholesaleOrderUseCase,
+  ReceiveWholesaleOrderInventoryUseCase,
+} from '@orders/application/use-cases';
+import {
+  OrderInventoryService,
+  OrderPlacementService,
+} from '@orders/application/services';
+import {
+  LocalOrderInventoryAdapter,
+  LocalWholesalePricingAdapter,
+} from '@orders/infrastructure/adapters';
 import { OrdersRepository } from '@orders/infrastructure/persistence/orders.repository';
 
 describe('Distributor onboarding (e2e)', () => {
@@ -18,6 +27,8 @@ describe('Distributor onboarding (e2e)', () => {
   let inviteNode: InviteDistributionNodeUseCase;
   let acceptInvitation: AcceptDistributionNodeInvitationUseCase;
   let createWholesaleOrder: CreateWholesaleOrderUseCase;
+  let receiveWholesaleInventory: ReceiveWholesaleOrderInventoryUseCase;
+  let ordersRepository: OrdersRepository;
   const createdInviteeUserIds: string[] = [];
 
   beforeAll(async () => {
@@ -25,18 +36,26 @@ describe('Distributor onboarding (e2e)', () => {
     await prisma.$connect();
 
     const distributionRepository = new DistributionPricingRepository(prisma);
-    const ordersRepository = new OrdersRepository(prisma);
+    ordersRepository = new OrdersRepository(prisma);
     const wholesalePricing = new LocalWholesalePricingAdapter(ordersRepository);
     const orderInventory = new LocalOrderInventoryAdapter(ordersRepository);
     const orderInventoryService = new OrderInventoryService(orderInventory);
-    const orderPlacementService = new OrderPlacementService(ordersRepository, orderInventoryService);
+    const orderPlacementService = new OrderPlacementService(
+      ordersRepository,
+      orderInventoryService,
+    );
 
     inviteNode = new InviteDistributionNodeUseCase(distributionRepository);
-    acceptInvitation = new AcceptDistributionNodeInvitationUseCase(distributionRepository);
+    acceptInvitation = new AcceptDistributionNodeInvitationUseCase(
+      distributionRepository,
+    );
     createWholesaleOrder = new CreateWholesaleOrderUseCase(
       ordersRepository,
       orderPlacementService,
       wholesalePricing,
+    );
+    receiveWholesaleInventory = new ReceiveWholesaleOrderInventoryUseCase(
+      ordersRepository,
     );
 
     await upsertBaseFixtures();
@@ -113,6 +132,219 @@ describe('Distributor onboarding (e2e)', () => {
     expect(order.totalAmount).toBe(1_700_000);
     expect(order.items[0].unitPrice).toBe(850_000);
   });
+
+  it('continues distributor resale inventory from L1 to L2 to L3', async () => {
+    const suffix = randomUUID();
+    const l1 = await createDistributorFixture('l1', suffix);
+    const l2 = await createDistributorFixture('l2', suffix);
+    const l3 = await createDistributorFixture('l3', suffix);
+
+    const l1Node = await inviteAndAcceptDistributor({
+      requesterUserId: 'user-e2e-manufacturer',
+      inviteeUserId: l1.userId,
+      inviteeShopId: l1.shopId,
+      parentNodeId: 'node-e2e-manufacturer',
+    });
+    const l2Node = await inviteAndAcceptDistributor({
+      requesterUserId: 'user-e2e-manufacturer',
+      inviteeUserId: l2.userId,
+      inviteeShopId: l2.shopId,
+      parentNodeId: l1Node.id,
+    });
+    const l3Node = await inviteAndAcceptDistributor({
+      requesterUserId: 'user-e2e-manufacturer',
+      inviteeUserId: l3.userId,
+      inviteeShopId: l3.shopId,
+      parentNodeId: l2Node.id,
+    });
+
+    const l1Purchase = await createWholesaleOrder.execute({
+      buyerUserId: l1.userId,
+      buyerShopId: l1.shopId,
+      buyerDistributionNodeId: l1Node.id,
+      offerId: 'offer-e2e-manufacturer-wholesale',
+      quantity: 2,
+      shippingPhone: l1.phone,
+      shippingAddress: 'L1 receiving address',
+    });
+    await markWholesaleOrderDelivered(l1Purchase.id);
+    const l1Receipt = await receiveWholesaleInventory.execute({
+      id: l1Purchase.id,
+      requesterUserId: l1.userId,
+    });
+
+    const l1ResaleOfferId = `offer-e2e-l1-resale-${suffix}`;
+    await createResaleOfferFromBatch({
+      offerId: l1ResaleOfferId,
+      sellerUserId: l1.userId,
+      shopId: l1.shopId,
+      distributionNodeId: l1Node.id,
+      batchId: l1Receipt.batches[0].id,
+      title: 'E2E L1 resale carton',
+      price: 1_100_000,
+      quantity: 2,
+    });
+
+    const l2Purchase = await createWholesaleOrder.execute({
+      buyerUserId: l2.userId,
+      buyerShopId: l2.shopId,
+      buyerDistributionNodeId: l2Node.id,
+      offerId: l1ResaleOfferId,
+      quantity: 1,
+      shippingPhone: l2.phone,
+      shippingAddress: 'L2 receiving address',
+    });
+    expect(l2Purchase.buyerDistributionNodeId).toBe(l2Node.id);
+    expect(l2Purchase.items[0].unitPrice).toBe(990_000);
+
+    await ordersRepository.allocateOrderBatchesAndUpdateFulfillment(
+      l2Purchase.id,
+      'PROCESSING',
+    );
+    await markWholesaleOrderDelivered(l2Purchase.id);
+    const l2Receipt = await receiveWholesaleInventory.execute({
+      id: l2Purchase.id,
+      requesterUserId: l2.userId,
+    });
+
+    const l1BatchAfterFulfillment = await prisma.supplyBatch.findUnique({
+      where: { id: l1Receipt.batches[0].id },
+      select: { quantity: true },
+    });
+    expect(l1BatchAfterFulfillment?.quantity).toBe(1);
+
+    const l2ResaleOfferId = `offer-e2e-l2-resale-${suffix}`;
+    await createResaleOfferFromBatch({
+      offerId: l2ResaleOfferId,
+      sellerUserId: l2.userId,
+      shopId: l2.shopId,
+      distributionNodeId: l2Node.id,
+      batchId: l2Receipt.batches[0].id,
+      title: 'E2E L2 resale carton',
+      price: 1_200_000,
+      quantity: 1,
+    });
+
+    const l3Purchase = await createWholesaleOrder.execute({
+      buyerUserId: l3.userId,
+      buyerShopId: l3.shopId,
+      buyerDistributionNodeId: l3Node.id,
+      offerId: l2ResaleOfferId,
+      quantity: 1,
+      shippingPhone: l3.phone,
+      shippingAddress: 'L3 receiving address',
+    });
+
+    expect(l3Purchase.buyerDistributionNodeId).toBe(l3Node.id);
+    expect(l3Purchase.items[0].unitPrice).toBe(1_140_000);
+    expect(l3Purchase.discountAmount).toBe(60_000);
+    expect(l3Purchase.platformFeeAmount).toBe(180_000);
+  }, 30_000);
+
+  async function createDistributorFixture(
+    role: 'l1' | 'l2' | 'l3',
+    suffix: string,
+  ) {
+    const compactSuffix = suffix.replaceAll('-', '');
+    const userId = `user-e2e-${role}-${suffix}`;
+    const shopId = `shop-e2e-${role}-${suffix}`;
+    const phone = `09${role === 'l1' ? '31' : role === 'l2' ? '32' : '33'}${compactSuffix.slice(0, 6)}`;
+    createdInviteeUserIds.push(userId);
+
+    await prisma.user.create({
+      data: {
+        id: userId,
+        email: `${userId}@example.com`,
+        phone,
+        displayName: `E2E ${role.toUpperCase()} Distributor`,
+        role: 'user',
+        accountStatus: 'active',
+      },
+    });
+
+    await prisma.shop.create({
+      data: {
+        id: shopId,
+        ownerUserId: userId,
+        shopName: `E2E ${role.toUpperCase()} Distributor Shop`,
+        registrationType: ShopRegistrationType.DISTRIBUTOR,
+        businessType: 'COMPANY',
+        taxCode: `E2E-${role}-${compactSuffix.slice(0, 8)}`,
+        shopStatus: 'active',
+      },
+    });
+
+    return { userId, shopId, phone };
+  }
+
+  async function inviteAndAcceptDistributor(input: {
+    requesterUserId: string;
+    inviteeUserId: string;
+    inviteeShopId: string;
+    parentNodeId: string;
+  }) {
+    const invitation = await inviteNode.execute({
+      requesterUserId: input.requesterUserId,
+      networkId: 'network-e2e-onboarding',
+      shopId: input.inviteeShopId,
+      parentNodeId: input.parentNodeId,
+    });
+
+    return acceptInvitation.execute({
+      requesterUserId: input.inviteeUserId,
+      nodeId: invitation.id,
+    });
+  }
+
+  async function markWholesaleOrderDelivered(orderId: string) {
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        fulfillmentStatus: 'DELIVERED',
+      },
+    });
+  }
+
+  async function createResaleOfferFromBatch(input: {
+    offerId: string;
+    sellerUserId: string;
+    shopId: string;
+    distributionNodeId: string;
+    batchId: string;
+    title: string;
+    price: number;
+    quantity: number;
+  }) {
+    await prisma.offer.create({
+      data: {
+        id: input.offerId,
+        sellerUserId: input.sellerUserId,
+        shopId: input.shopId,
+        categoryId: 'cat-e2e-food',
+        productModelId: 'model-e2e-wholesale',
+        distributionNodeId: input.distributionNodeId,
+        title: input.title,
+        description:
+          'E2E resale offer created from received distributor inventory.',
+        price: input.price.toString(),
+        currency: 'VND',
+        salesMode: OfferSalesMode.WHOLESALE,
+        minWholesaleQty: 1,
+        itemCondition: 'new',
+        availableQuantity: input.quantity,
+        verificationLevel: 'verified',
+        offerStatus: 'active',
+      },
+    });
+
+    await prisma.offerBatchLink.create({
+      data: {
+        offerId: input.offerId,
+        batchId: input.batchId,
+        allocatedQuantity: input.quantity,
+      },
+    });
+  }
 
   async function upsertBaseFixtures() {
     await prisma.brand.upsert({
@@ -268,7 +500,8 @@ describe('Distributor onboarding (e2e)', () => {
         productModelId: 'model-e2e-wholesale',
         distributionNodeId: 'node-e2e-manufacturer',
         title: 'E2E Manufacturer Wholesale Carton',
-        description: 'E2E wholesale offer attached to the manufacturer root node.',
+        description:
+          'E2E wholesale offer attached to the manufacturer root node.',
         price: '1000000',
         currency: 'VND',
         salesMode: OfferSalesMode.WHOLESALE,
@@ -283,8 +516,25 @@ describe('Distributor onboarding (e2e)', () => {
 
   async function cleanupCreatedInvitees() {
     for (const userId of createdInviteeUserIds) {
+      const shops = await prisma.shop.findMany({
+        where: { ownerUserId: userId },
+        select: { id: true },
+      });
+      const shopIds = shops.map((shop) => shop.id);
+      const offers = await prisma.offer.findMany({
+        where: { shopId: { in: shopIds } },
+        select: { id: true },
+      });
+      const offerIds = offers.map((offer) => offer.id);
       const orders = await prisma.order.findMany({
-        where: { buyerUserId: userId },
+        where: {
+          OR: [
+            { buyerUserId: userId },
+            { buyerShopId: { in: shopIds } },
+            { shopId: { in: shopIds } },
+            { items: { some: { offerId: { in: offerIds } } } },
+          ],
+        },
         select: {
           id: true,
           items: {
@@ -295,12 +545,9 @@ describe('Distributor onboarding (e2e)', () => {
         },
       });
       const orderIds = orders.map((order) => order.id);
-      const orderItemIds = orders.flatMap((order) => order.items.map((item) => item.id));
-      const shops = await prisma.shop.findMany({
-        where: { ownerUserId: userId },
-        select: { id: true },
-      });
-      const shopIds = shops.map((shop) => shop.id);
+      const orderItemIds = orders.flatMap((order) =>
+        order.items.map((item) => item.id),
+      );
 
       await prisma.orderItemBatchAllocation.deleteMany({
         where: {
@@ -323,6 +570,11 @@ describe('Distributor onboarding (e2e)', () => {
           },
         },
       });
+      await prisma.auditLog.deleteMany({
+        where: {
+          OR: [{ actorUserId: userId }, { targetId: { in: orderIds } }],
+        },
+      });
       await prisma.orderItem.deleteMany({
         where: {
           orderId: {
@@ -334,6 +586,49 @@ describe('Distributor onboarding (e2e)', () => {
         where: {
           id: {
             in: orderIds,
+          },
+        },
+      });
+      await prisma.offerBatchLink.deleteMany({
+        where: {
+          OR: [
+            {
+              offer: {
+                shopId: {
+                  in: shopIds,
+                },
+              },
+            },
+            {
+              batch: {
+                shopId: {
+                  in: shopIds,
+                },
+              },
+            },
+          ],
+        },
+      });
+      await prisma.offer.deleteMany({
+        where: {
+          shopId: {
+            in: shopIds,
+          },
+        },
+      });
+      await prisma.batchDocument.deleteMany({
+        where: {
+          batch: {
+            shopId: {
+              in: shopIds,
+            },
+          },
+        },
+      });
+      await prisma.supplyBatch.deleteMany({
+        where: {
+          shopId: {
+            in: shopIds,
           },
         },
       });
