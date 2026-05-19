@@ -21,6 +21,7 @@ export class CreateOfferUseCase {
     itemCondition?: string;
     availableQuantity: number;
     verificationLevel?: string;
+    offerStatus?: 'active' | 'inactive' | 'draft';
   }) {
     const ownedShop = await this.productRepository.findOwnedShop(input.shopId, input.sellerUserId);
     if (!ownedShop) {
@@ -77,6 +78,7 @@ export class CreateOfferUseCase {
     const minWholesaleQty = input.minWholesaleQty ?? null;
     const itemCondition = input.itemCondition?.trim() || 'new';
     const verificationLevel = input.verificationLevel?.trim() || 'standard';
+    const offerStatus = input.offerStatus ?? 'active';
 
     if (!title || !description) {
       throw new BadRequestException('Title and description are required');
@@ -96,6 +98,10 @@ export class CreateOfferUseCase {
 
     if ((salesMode === 'WHOLESALE' || salesMode === 'BOTH') && (!minWholesaleQty || minWholesaleQty < 1)) {
       throw new BadRequestException('Wholesale offers must define minWholesaleQty');
+    }
+
+    if (!['active', 'inactive', 'draft'].includes(offerStatus)) {
+      throw new BadRequestException('Offer status must be active, inactive, or draft');
     }
 
     if (
@@ -120,7 +126,7 @@ export class CreateOfferUseCase {
       itemCondition,
       availableQuantity: input.availableQuantity,
       verificationLevel,
-      offerStatus: 'active',
+      offerStatus,
     });
 
     return toOfferResponse(offer);

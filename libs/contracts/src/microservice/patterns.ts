@@ -490,6 +490,7 @@ export type CreateOfferMessage = {
   itemCondition?: string;
   availableQuantity: number;
   verificationLevel?: string;
+  offerStatus?: 'active' | 'inactive' | 'draft';
 };
 
 export type UpdateOfferMessage = {
@@ -499,7 +500,7 @@ export type UpdateOfferMessage = {
   description?: string;
   price?: number;
   availableQuantity?: number;
-  offerStatus?: 'active' | 'inactive';
+  offerStatus?: 'active' | 'inactive' | 'draft';
 };
 
 export type OfferMediaUploadSignaturesMessage = {

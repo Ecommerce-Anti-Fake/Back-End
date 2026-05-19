@@ -10,6 +10,7 @@ describe('CreateOfferUseCase', () => {
     findModelById: jest.fn(),
     findCategoryById: jest.fn(),
     findApprovedShopCategoryRegistration: jest.fn(),
+    findOwnedDistributionNode: jest.fn(),
     createOffer: jest.fn(),
   };
 
@@ -155,5 +156,71 @@ describe('CreateOfferUseCase', () => {
         minWholesaleQty: 10,
       }),
     ).rejects.toThrow('Only manufacturer or distributor shops can create wholesale offers');
+  });
+
+  it('should create a draft distributor resale offer for an active distribution node', async () => {
+    productRepositoryMock.findOwnedShop.mockResolvedValueOnce({
+      id: 'shop-1',
+      shopStatus: 'active',
+      registrationType: 'DISTRIBUTOR',
+    });
+    productRepositoryMock.findModelById.mockResolvedValueOnce({
+      id: 'model-1',
+      categoryId: 'category-1',
+    });
+    productRepositoryMock.findCategoryById.mockResolvedValueOnce({
+      id: 'category-1',
+    });
+    productRepositoryMock.findApprovedShopCategoryRegistration.mockResolvedValueOnce({ id: 'registration-1' });
+    productRepositoryMock.findOwnedDistributionNode.mockResolvedValueOnce({
+      id: 'node-1',
+      relationshipStatus: 'ACTIVE',
+    });
+    productRepositoryMock.createOffer.mockResolvedValueOnce({
+      id: 'offer-1',
+      title: 'Resale draft',
+      description: 'Draft from received inventory',
+      price: 100000,
+      currency: 'VND',
+      salesMode: 'WHOLESALE',
+      minWholesaleQty: 5,
+      itemCondition: 'new',
+      availableQuantity: 20,
+      verificationLevel: 'standard',
+      offerStatus: 'draft',
+      shopId: 'shop-1',
+      categoryId: 'category-1',
+      productModelId: 'model-1',
+      distributionNodeId: 'node-1',
+      createdAt: new Date('2026-05-19T00:00:00.000Z'),
+      shop: { shopName: 'Distributor shop' },
+      category: { name: 'Category' },
+      productModel: { modelName: 'Model' },
+      distributionNode: { networkId: 'network-1' },
+      media: [],
+    });
+
+    await useCase.execute({
+      sellerUserId: 'user-1',
+      shopId: 'shop-1',
+      categoryId: 'category-1',
+      productModelId: 'model-1',
+      distributionNodeId: 'node-1',
+      title: 'Resale draft',
+      description: 'Draft from received inventory',
+      price: 100000,
+      availableQuantity: 20,
+      salesMode: 'WHOLESALE',
+      minWholesaleQty: 5,
+      offerStatus: 'draft',
+    });
+
+    expect(productRepositoryMock.createOffer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        distributionNodeId: 'node-1',
+        offerStatus: 'draft',
+        salesMode: 'WHOLESALE',
+      }),
+    );
   });
 });

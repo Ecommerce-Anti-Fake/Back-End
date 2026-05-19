@@ -13,7 +13,7 @@ export class UpdateOfferUseCase {
     description?: string;
     price?: number;
     availableQuantity?: number;
-    offerStatus?: 'active' | 'inactive';
+    offerStatus?: 'active' | 'inactive' | 'draft';
   }) {
     const offer = await this.productRepository.findOwnedOffer(input.offerId, input.sellerUserId);
     if (!offer) {
@@ -59,8 +59,8 @@ export class UpdateOfferUseCase {
     }
 
     if (input.offerStatus !== undefined) {
-      if (!['active', 'inactive'].includes(input.offerStatus)) {
-        throw new BadRequestException('Offer status must be active or inactive');
+      if (!['active', 'inactive', 'draft'].includes(input.offerStatus)) {
+        throw new BadRequestException('Offer status must be active, inactive, or draft');
       }
       data.offerStatus = input.offerStatus;
     }

@@ -196,6 +196,7 @@ export class ProductsController {
       itemCondition: dto.itemCondition,
       availableQuantity: dto.availableQuantity,
       verificationLevel: dto.verificationLevel,
+      offerStatus: dto.offerStatus,
     });
   }
 
