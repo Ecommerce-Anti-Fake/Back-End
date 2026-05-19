@@ -269,11 +269,29 @@ export class ProductRepository {
           select: {
             id: true,
             shopStatus: true,
+            registrationType: true,
+          },
+        },
+        distributionNode: {
+          select: {
+            id: true,
+            relationshipStatus: true,
+            shop: {
+              select: {
+                shopStatus: true,
+              },
+            },
           },
         },
         batchLinks: {
           select: {
             allocatedQuantity: true,
+            batch: {
+              select: {
+                distributionNodeId: true,
+                sourceType: true,
+              },
+            },
           },
         },
       },

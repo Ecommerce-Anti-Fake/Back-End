@@ -62,6 +62,9 @@ export class UpdateOfferUseCase {
       if (!['active', 'inactive', 'draft'].includes(input.offerStatus)) {
         throw new BadRequestException('Offer status must be active, inactive, or draft');
       }
+      if (input.offerStatus === 'active' && offer.offerStatus === 'draft') {
+        this.assertCanPublishDraft(offer, input.availableQuantity);
+      }
       data.offerStatus = input.offerStatus;
     }
 
@@ -71,5 +74,66 @@ export class UpdateOfferUseCase {
 
     const updatedOffer = await this.productRepository.updateOwnedOffer(input.offerId, input.sellerUserId, data);
     return toOfferResponse(updatedOffer);
+  }
+
+  private assertCanPublishDraft(
+    offer: {
+      salesMode: string;
+      minWholesaleQty: number | null;
+      availableQuantity: number;
+      distributionNodeId: string | null;
+      distributionNode: {
+        relationshipStatus: string;
+        shop: {
+          shopStatus: string;
+        };
+      } | null;
+      shop: {
+        registrationType: string;
+      };
+      batchLinks: Array<{
+        allocatedQuantity: number;
+        batch?: {
+          distributionNodeId: string | null;
+          sourceType: string;
+        };
+      }>;
+    },
+    nextAvailableQuantity?: number,
+  ) {
+    if (offer.shop.registrationType !== 'DISTRIBUTOR' || !offer.distributionNodeId) {
+      return;
+    }
+
+    if (!['WHOLESALE', 'BOTH'].includes(offer.salesMode)) {
+      throw new BadRequestException('Resale draft must be a wholesale offer before publishing');
+    }
+
+    if (!offer.minWholesaleQty || offer.minWholesaleQty < 1) {
+      throw new BadRequestException('Resale draft must define minimum wholesale quantity before publishing');
+    }
+
+    const availableQuantity = nextAvailableQuantity ?? offer.availableQuantity;
+    if (!Number.isInteger(availableQuantity) || availableQuantity < 1) {
+      throw new BadRequestException('Resale draft must have available stock before publishing');
+    }
+
+    if (
+      !offer.distributionNode ||
+      offer.distributionNode.relationshipStatus !== 'ACTIVE' ||
+      offer.distributionNode.shop.shopStatus !== 'active'
+    ) {
+      throw new BadRequestException('Resale draft distribution node must be active before publishing');
+    }
+
+    const resaleBatchLinks = offer.batchLinks.filter(
+      (link) =>
+        link.batch?.sourceType === 'WHOLESALE_ORDER' &&
+        link.batch.distributionNodeId === offer.distributionNodeId,
+    );
+    const allocatedQuantity = resaleBatchLinks.reduce((sum, link) => sum + link.allocatedQuantity, 0);
+    if (allocatedQuantity < availableQuantity) {
+      throw new BadRequestException('Resale draft must have enough attached batch stock before publishing');
+    }
   }
 }
