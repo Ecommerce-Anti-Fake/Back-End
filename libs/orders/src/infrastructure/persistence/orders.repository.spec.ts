@@ -116,6 +116,127 @@ describe('OrdersRepository', () => {
     );
   });
 
+  it('should sum offer batch allocation quantity for resale checkout validation', async () => {
+    const prisma = {
+      offerBatchLink: {
+        aggregate: jest.fn().mockResolvedValue({
+          _sum: {
+            allocatedQuantity: 12,
+          },
+        }),
+      },
+    };
+    const repository = new OrdersRepository(prisma as never);
+
+    await expect(repository.getOfferAllocatedBatchQuantity('offer-1')).resolves.toBe(12);
+    expect(prisma.offerBatchLink.aggregate).toHaveBeenCalledWith({
+      where: {
+        offerId: 'offer-1',
+        allocatedQuantity: {
+          gt: 0,
+        },
+      },
+      _sum: {
+        allocatedQuantity: true,
+      },
+    });
+  });
+
+  it('should consume the resale offer attached batch during fulfillment allocation', async () => {
+    const updatedOrder = {
+      id: 'order-1',
+      fulfillmentStatus: 'PROCESSING',
+    };
+    const tx = {
+      order: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'order-1',
+          shopId: 'l1-shop',
+          items: [
+            {
+              id: 'order-item-1',
+              offerId: 'resale-offer-1',
+              quantity: 3,
+              batchAllocations: [],
+            },
+          ],
+        }),
+        update: jest.fn().mockResolvedValue(updatedOrder),
+      },
+      $queryRaw: jest.fn().mockResolvedValue([]),
+      offerBatchLink: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            offerId: 'resale-offer-1',
+            batchId: 'received-batch-1',
+            allocatedQuantity: 5,
+            createdAt: new Date('2026-05-19T00:00:00.000Z'),
+          },
+        ]),
+        update: jest.fn(),
+      },
+      supplyBatch: {
+        update: jest.fn(),
+      },
+      orderItemBatchAllocation: {
+        createMany: jest.fn(),
+      },
+    };
+    const prisma = {
+      $transaction: jest.fn((callback) => callback(tx)),
+    };
+    const repository = new OrdersRepository(prisma as never);
+
+    await expect(repository.allocateOrderBatchesAndUpdateFulfillment('order-1', 'PROCESSING')).resolves.toBe(
+      updatedOrder,
+    );
+
+    expect(tx.offerBatchLink.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          offerId: 'resale-offer-1',
+          batch: {
+            shopId: 'l1-shop',
+          },
+        }),
+      }),
+    );
+    expect(tx.offerBatchLink.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          offerId_batchId: {
+            offerId: 'resale-offer-1',
+            batchId: 'received-batch-1',
+          },
+        },
+        data: {
+          allocatedQuantity: {
+            decrement: 3,
+          },
+        },
+      }),
+    );
+    expect(tx.supplyBatch.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'received-batch-1' },
+        data: {
+          quantity: {
+            decrement: 3,
+          },
+        },
+      }),
+    );
+    expect(tx.orderItemBatchAllocation.createMany).toHaveBeenCalledWith({
+      data: [
+        {
+          orderItemId: 'order-item-1',
+          batchId: 'received-batch-1',
+          quantity: 3,
+        },
+      ],
+    });
+  });
+
   it('should create payment audit row when cancelling or refunding payment status', async () => {
     const tx = {
       paymentIntent: {

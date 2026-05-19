@@ -11,6 +11,7 @@ const offerForOrderingArgs = Prisma.validator<Prisma.OfferDefaultArgs>()({
         id: true,
         shopName: true,
         ownerUserId: true,
+        registrationType: true,
       },
     },
     productModel: {
@@ -302,6 +303,22 @@ export class OrdersRepository {
       where: { id: offerId },
       ...offerForOrderingArgs,
     });
+  }
+
+  async getOfferAllocatedBatchQuantity(offerId: string) {
+    const result = await this.prisma.offerBatchLink.aggregate({
+      where: {
+        offerId,
+        allocatedQuantity: {
+          gt: 0,
+        },
+      },
+      _sum: {
+        allocatedQuantity: true,
+      },
+    });
+
+    return result._sum.allocatedQuantity ?? 0;
   }
 
   async getOrCreateActiveCart(buyerUserId: string): Promise<CartWithItems> {

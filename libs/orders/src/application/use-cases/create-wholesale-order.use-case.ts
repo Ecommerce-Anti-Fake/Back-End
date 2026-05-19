@@ -36,6 +36,10 @@ export class CreateWholesaleOrderUseCase {
       throw new NotFoundException('Offer not found');
     }
 
+    if (offer.offerStatus !== 'active') {
+      throw new BadRequestException('Only active wholesale offers can be ordered');
+    }
+
     if (offer.salesMode === 'RETAIL') {
       throw new BadRequestException('This offer only supports retail orders');
     }
@@ -65,12 +69,27 @@ export class CreateWholesaleOrderUseCase {
       throw new BadRequestException('Buyer shop cannot create wholesale order for its own offer');
     }
 
+    if (offer.distributionNode && !input.buyerDistributionNodeId) {
+      throw new BadRequestException('Buyer distribution node is required for distribution wholesale checkout');
+    }
+
     const pricing = await this.wholesalePricingPort.resolve({
       buyerShopId: input.buyerShopId,
       buyerDistributionNodeId: input.buyerDistributionNodeId,
       offer,
       quantity: input.quantity,
     });
+
+    if (offer.distributionNode && !pricing.isInNetworkTrade) {
+      throw new BadRequestException('Distribution wholesale checkout must use in-network pricing');
+    }
+
+    if (offer.shop.registrationType === 'DISTRIBUTOR') {
+      const allocatedBatchQuantity = await this.ordersRepository.getOfferAllocatedBatchQuantity(offer.id);
+      if (allocatedBatchQuantity < input.quantity) {
+        throw new BadRequestException('Quantity exceeds allocated resale batch stock');
+      }
+    }
 
     const order = await this.orderPlacementService.createOrder({
       order: {
