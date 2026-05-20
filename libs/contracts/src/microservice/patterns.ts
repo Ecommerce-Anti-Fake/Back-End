@@ -107,6 +107,10 @@ export const ORDERS_MESSAGE_PATTERNS = {
   getFulfillmentAudit: 'orders.get-fulfillment-audit',
   getAdminOpenDisputeCount: 'orders.get-admin-open-dispute-count',
   findAdminOpenDisputes: 'orders.find-admin-open-disputes',
+  createReport: 'orders.create-report',
+  findMyReports: 'orders.find-my-reports',
+  findAdminReports: 'orders.find-admin-reports',
+  updateAdminReport: 'orders.update-admin-report',
   getAdminDisputeSummary: 'orders.get-admin-dispute-summary',
   getAdminDisputeDetail: 'orders.get-admin-dispute-detail',
   assignAdminDispute: 'orders.assign-admin-dispute',
@@ -719,6 +723,34 @@ export type AdminDisputeDetailMessage = {
 };
 
 export type AdminDisputeSummaryMessage = Record<string, never>;
+
+export type CreateReportMessage = {
+  requesterUserId: string;
+  targetType: 'ORDER' | 'OFFER' | 'SHOP';
+  targetId: string;
+  reason: string;
+  description?: string | null;
+};
+
+export type MyReportsLookupMessage = {
+  requesterUserId: string;
+};
+
+export type AdminReportsLookupMessage = {
+  reportStatus?: 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'REJECTED';
+  targetType?: 'ORDER' | 'OFFER' | 'SHOP';
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  sortOrder?: 'asc' | 'desc';
+};
+
+export type UpdateAdminReportMessage = {
+  reportId: string;
+  requesterUserId: string;
+  reportStatus: 'IN_REVIEW' | 'RESOLVED' | 'REJECTED';
+  internalNote?: string | null;
+};
 
 export type AssignAdminDisputeMessage = {
   disputeId: string;

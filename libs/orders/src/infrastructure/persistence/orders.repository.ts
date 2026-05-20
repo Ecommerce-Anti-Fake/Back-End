@@ -191,6 +191,18 @@ const openDisputesForAdminArgs = Prisma.validator<Prisma.DisputeDefaultArgs>()({
   },
 });
 
+const reportWithReporterArgs = Prisma.validator<Prisma.ReportDefaultArgs>()({
+  include: {
+    reporter: {
+      select: {
+        id: true,
+        displayName: true,
+        email: true,
+      },
+    },
+  },
+});
+
 const disputeEvidenceArgs = Prisma.validator<Prisma.DisputeEvidenceDefaultArgs>()({
   include: {
     mediaAsset: true,
@@ -254,6 +266,7 @@ export type AffiliateAttributionInput = {
 export type DisputeWithOrder = Prisma.DisputeGetPayload<typeof disputeWithOrderArgs>;
 export type DisputeEvidenceRecord = Prisma.DisputeEvidenceGetPayload<typeof disputeEvidenceArgs>;
 export type AdminOpenDisputeRecord = Prisma.DisputeGetPayload<typeof openDisputesForAdminArgs>;
+export type ReportWithReporter = Prisma.ReportGetPayload<typeof reportWithReporterArgs>;
 export type OrderAuditLogRecord = {
   id: string;
   action: string;
@@ -455,6 +468,27 @@ export class OrdersRepository {
         id: true,
         shopStatus: true,
         registrationType: true,
+      },
+    });
+  }
+
+  findShopReportTarget(shopId: string) {
+    return this.prisma.shop.findUnique({
+      where: { id: shopId },
+      select: {
+        id: true,
+        shopName: true,
+      },
+    });
+  }
+
+  findOfferReportTarget(offerId: string) {
+    return this.prisma.offer.findUnique({
+      where: { id: offerId },
+      select: {
+        id: true,
+        title: true,
+        shopId: true,
       },
     });
   }
@@ -1060,6 +1094,111 @@ export class OrdersRepository {
     });
   }
 
+  findOpenReportByTarget(input: { reporterUserId: string; targetType: string; targetId: string }) {
+    return this.prisma.report.findFirst({
+      where: {
+        reporterUserId: input.reporterUserId,
+        targetType: input.targetType,
+        targetId: input.targetId,
+        reportStatus: {
+          in: ['OPEN', 'IN_REVIEW'],
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+  }
+
+  createReport(input: {
+    reporterUserId: string;
+    targetType: string;
+    targetId: string;
+    reason: string;
+  }): Promise<ReportWithReporter> {
+    return this.prisma.report.create({
+      data: {
+        reporterUserId: input.reporterUserId,
+        targetType: input.targetType,
+        targetId: input.targetId,
+        reason: input.reason,
+        reportStatus: 'OPEN',
+      },
+      ...reportWithReporterArgs,
+    });
+  }
+
+  findReportsForUser(reporterUserId: string): Promise<ReportWithReporter[]> {
+    return this.prisma.report.findMany({
+      where: { reporterUserId },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      ...reportWithReporterArgs,
+    });
+  }
+
+  async findReportsForAdmin(filters?: {
+    reportStatus?: 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'REJECTED';
+    targetType?: 'ORDER' | 'OFFER' | 'SHOP';
+    search?: string;
+    page?: number;
+    pageSize?: number;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<{ total: number; page: number; pageSize: number; items: ReportWithReporter[] }> {
+    const page = Math.max(1, Number(filters?.page ?? 1));
+    const pageSize = Math.min(50, Math.max(1, Number(filters?.pageSize ?? 20)));
+    const where: Prisma.ReportWhereInput = {
+      ...(filters?.reportStatus ? { reportStatus: filters.reportStatus } : { reportStatus: { in: ['OPEN', 'IN_REVIEW'] } }),
+      ...(filters?.targetType ? { targetType: filters.targetType } : {}),
+      ...(filters?.search
+        ? {
+            OR: [
+              { reason: { contains: filters.search, mode: 'insensitive' } },
+              { targetId: { contains: filters.search, mode: 'insensitive' } },
+              { reporter: { is: { email: { contains: filters.search, mode: 'insensitive' } } } },
+              { reporter: { is: { displayName: { contains: filters.search, mode: 'insensitive' } } } },
+            ],
+          }
+        : {}),
+    };
+
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.report.count({ where }),
+      this.prisma.report.findMany({
+        where,
+        orderBy: {
+          createdAt: filters?.sortOrder ?? 'desc',
+        },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        ...reportWithReporterArgs,
+      }),
+    ]);
+
+    return { total, page, pageSize, items };
+  }
+
+  findReportById(id: string): Promise<ReportWithReporter | null> {
+    return this.prisma.report.findUnique({
+      where: { id },
+      ...reportWithReporterArgs,
+    });
+  }
+
+  updateReportStatus(input: {
+    id: string;
+    reportStatus: 'IN_REVIEW' | 'RESOLVED' | 'REJECTED';
+  }): Promise<ReportWithReporter> {
+    return this.prisma.report.update({
+      where: { id: input.id },
+      data: {
+        reportStatus: input.reportStatus,
+      },
+      ...reportWithReporterArgs,
+    });
+  }
+
   findDisputeById(id: string): Promise<DisputeWithOrder | null> {
     return this.prisma.dispute.findUnique({
       where: { id },
@@ -1192,6 +1331,43 @@ export class OrdersRepository {
         data: {
           targetType: 'DISPUTE',
           targetId: input.disputeId,
+          reason: input.reason,
+          caseStatus: input.caseStatus,
+          internalNote: input.internalNote ?? null,
+          assignedAdminUserId: input.assignedAdminUserId ?? null,
+          resolvedAt: input.resolvedAt ?? null,
+        },
+      });
+    }
+
+    return this.prisma.moderationCase.update({
+      where: {
+        id: existing.id,
+      },
+      data: {
+        caseStatus: input.caseStatus,
+        internalNote: input.internalNote ?? existing.internalNote,
+        assignedAdminUserId: input.assignedAdminUserId ?? existing.assignedAdminUserId,
+        resolvedAt: input.resolvedAt ?? existing.resolvedAt,
+      },
+    });
+  }
+
+  async upsertReportModerationCase(input: {
+    reportId: string;
+    caseStatus: string;
+    internalNote?: string | null;
+    reason: string;
+    assignedAdminUserId?: string | null;
+    resolvedAt?: Date | null;
+  }) {
+    const existing = await this.findModerationCaseByTarget('REPORT', input.reportId);
+
+    if (!existing) {
+      return this.prisma.moderationCase.create({
+        data: {
+          targetType: 'REPORT',
+          targetId: input.reportId,
           reason: input.reason,
           caseStatus: input.caseStatus,
           internalNote: input.internalNote ?? null,

@@ -4,6 +4,8 @@ import { IsArray, IsIn, IsInt, IsOptional, IsString, IsUrl, Max, Min, ValidateNe
 
 const ADMIN_DISPUTE_STATUSES = ['OPEN', 'RESOLVED', 'REFUNDED'] as const;
 const ADMIN_DISPUTE_SORT_FIELDS = ['openedAt', 'orderId', 'disputeStatus'] as const;
+const REPORT_TARGET_TYPES = ['ORDER', 'OFFER', 'SHOP'] as const;
+const REPORT_STATUSES = ['OPEN', 'IN_REVIEW', 'RESOLVED', 'REJECTED'] as const;
 const SORT_ORDERS = ['asc', 'desc'] as const;
 
 export class CartItemResponseDto {
@@ -323,6 +325,129 @@ export class OpenOrderDisputeDto {
   @ApiProperty({ example: 'San pham nhan duoc khong dung voi mo ta' })
   @IsString()
   reason!: string;
+}
+
+export class CreateReportDto {
+  @ApiProperty({ example: 'ORDER', enum: REPORT_TARGET_TYPES })
+  @IsString()
+  @IsIn(REPORT_TARGET_TYPES)
+  targetType!: 'ORDER' | 'OFFER' | 'SHOP';
+
+  @ApiProperty({ example: 'target-id' })
+  @IsString()
+  targetId!: string;
+
+  @ApiProperty({ example: 'Nghi ngo hang gia' })
+  @IsString()
+  reason!: string;
+
+  @ApiPropertyOptional({ example: 'Tem niem phong bi rach va ma lo khong khop voi thong tin truy xuat.' })
+  @IsOptional()
+  @IsString()
+  description?: string | null;
+}
+
+export class ReportResponseDto {
+  @ApiProperty({ example: 'report-id' })
+  id!: string;
+
+  @ApiProperty({ example: 'buyer-user-id' })
+  reporterUserId!: string;
+
+  @ApiProperty({ example: 'ORDER', enum: REPORT_TARGET_TYPES })
+  targetType!: string;
+
+  @ApiProperty({ example: 'target-id' })
+  targetId!: string;
+
+  @ApiProperty({ example: 'Nghi ngo hang gia' })
+  reason!: string;
+
+  @ApiProperty({ example: 'OPEN', enum: REPORT_STATUSES })
+  reportStatus!: string;
+
+  @ApiProperty({ example: '2026-05-20T10:00:00.000Z' })
+  createdAt!: Date;
+
+  @ApiPropertyOptional({ example: 'Buyer Name', nullable: true })
+  reporterDisplayName!: string | null;
+
+  @ApiPropertyOptional({ example: 'buyer@example.com', nullable: true })
+  reporterEmail!: string | null;
+
+  @ApiPropertyOptional({ example: 'Shop ABC', nullable: true })
+  targetLabel!: string | null;
+}
+
+export class MyReportsResponseDto {
+  @ApiProperty({ type: ReportResponseDto, isArray: true })
+  items!: ReportResponseDto[];
+}
+
+export class AdminReportQueryDto {
+  @ApiPropertyOptional({ example: 'OPEN', enum: REPORT_STATUSES })
+  @IsOptional()
+  @IsString()
+  @IsIn(REPORT_STATUSES)
+  reportStatus?: 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'REJECTED';
+
+  @ApiPropertyOptional({ example: 'OFFER', enum: REPORT_TARGET_TYPES })
+  @IsOptional()
+  @IsString()
+  @IsIn(REPORT_TARGET_TYPES)
+  targetType?: 'ORDER' | 'OFFER' | 'SHOP';
+
+  @ApiPropertyOptional({ example: 'hang gia' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  pageSize?: number;
+
+  @ApiPropertyOptional({ example: 'desc', enum: SORT_ORDERS })
+  @IsOptional()
+  @IsString()
+  @IsIn(SORT_ORDERS)
+  sortOrder?: 'asc' | 'desc';
+}
+
+export class PaginatedAdminReportResponseDto {
+  @ApiProperty({ example: 1 })
+  total!: number;
+
+  @ApiProperty({ example: 1 })
+  page!: number;
+
+  @ApiProperty({ example: 20 })
+  pageSize!: number;
+
+  @ApiProperty({ type: ReportResponseDto, isArray: true })
+  items!: ReportResponseDto[];
+}
+
+export class UpdateAdminReportDto {
+  @ApiProperty({ example: 'IN_REVIEW', enum: ['IN_REVIEW', 'RESOLVED', 'REJECTED'] })
+  @IsString()
+  @IsIn(['IN_REVIEW', 'RESOLVED', 'REJECTED'])
+  reportStatus!: 'IN_REVIEW' | 'RESOLVED' | 'REJECTED';
+
+  @ApiPropertyOptional({ example: 'Da lien he shop de xac minh.' })
+  @IsOptional()
+  @IsString()
+  internalNote?: string | null;
 }
 
 export class ResolveOrderDisputeDto {

@@ -13,11 +13,14 @@ import {
 import {
   AddCartItemDto,
   AddDisputeEvidenceBatchDto,
+  AdminReportQueryDto,
   AdminDisputeDetailResponseDto,
   AdminOpenDisputeQueryDto,
   CartResponseDto,
   CheckoutCartItemDto,
+  CreateReportDto,
   PaginatedAdminOpenDisputeResponseDto,
+  PaginatedAdminReportResponseDto,
   AssignAdminDisputeDto,
   CreateRetailOrderDto,
   CreateWholesaleOrderDto,
@@ -28,8 +31,11 @@ import {
   OpenOrderDisputeDto,
   OrderFulfillmentAuditEntryDto,
   OrderResponseDto,
+  MyReportsResponseDto,
+  ReportResponseDto,
   ResolveAdminDisputeDto,
   ResolveOrderDisputeDto,
+  UpdateAdminReportDto,
   UpdateCartItemDto,
   UpdateAdminDisputeCaseDto,
   UpdateOrderFulfillmentDto,
@@ -342,6 +348,77 @@ export class OrdersController {
       pageSize: query.pageSize,
       sortBy: query.sortBy,
       sortOrder: query.sortOrder,
+    });
+  }
+
+  @ApiOperation({ summary: 'Buyer tao report cho order, offer hoac shop' })
+  @ApiBearerAuth('access-token')
+  @ApiCreatedResponse({
+    description: 'Report da duoc tao va dua vao moderation queue.',
+    type: ReportResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('reports')
+  createReport(@CurrentUserId() requesterUserId: string, @Body() dto: CreateReportDto) {
+    return this.ordersRpcService.createReport({
+      requesterUserId,
+      targetType: dto.targetType,
+      targetId: dto.targetId,
+      reason: dto.reason,
+      description: dto.description ?? null,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach report cua buyer hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach report cua buyer.',
+    type: MyReportsResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('reports/mine')
+  listMyReports(@CurrentUserId() requesterUserId: string) {
+    return this.ordersRpcService.findMyReports({ requesterUserId });
+  }
+
+  @ApiOperation({ summary: 'Admin xem queue report cua buyer' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach report can moderation.',
+    type: PaginatedAdminReportResponseDto,
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi admin moi co quyen truy cap.',
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Get('admin/reports')
+  listAdminReports(@Query() query: AdminReportQueryDto) {
+    return this.ordersRpcService.findAdminReports(query);
+  }
+
+  @ApiOperation({ summary: 'Admin cap nhat trang thai report' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Report da duoc cap nhat.',
+    type: ReportResponseDto,
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi admin moi co quyen truy cap.',
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Patch('admin/reports/:reportId')
+  updateAdminReport(
+    @Param('reportId') reportId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: UpdateAdminReportDto,
+  ) {
+    return this.ordersRpcService.updateAdminReport({
+      reportId,
+      requesterUserId,
+      reportStatus: dto.reportStatus,
+      internalNote: dto.internalNote ?? null,
     });
   }
 

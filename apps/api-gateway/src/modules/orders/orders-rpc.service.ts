@@ -11,11 +11,14 @@ import {
   AdminDisputeSummaryMessage,
   AdminOpenDisputesLookupMessage,
   AdminOpenDisputeCountMessage,
+  AdminReportsLookupMessage,
   CreateRetailOrderMessage,
+  CreateReportMessage,
   CreateWholesaleOrderMessage,
   CheckoutCartItemMessage,
   MarkOrderPaidMessage,
   MyOrdersLookupMessage,
+  MyReportsLookupMessage,
   ORDERS_MESSAGE_PATTERNS,
   OrderFulfillmentAuditMessage,
   OrderLookupMessage,
@@ -31,6 +34,7 @@ import {
   PayOSWebhookMessage,
   ReceiveWholesaleInventoryMessage,
   ResolveOrderDisputeMessage,
+  UpdateAdminReportMessage,
   RefundOrderMessage,
   RemoveCartItemMessage,
   UpdateCartItemMessage,
@@ -100,6 +104,22 @@ export class OrdersRpcService {
 
   findAdminOpenDisputes(payload: AdminOpenDisputesLookupMessage = {}) {
     return this.send(ORDERS_MESSAGE_PATTERNS.findAdminOpenDisputes, payload);
+  }
+
+  createReport(payload: CreateReportMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.createReport, payload);
+  }
+
+  findMyReports(payload: MyReportsLookupMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.findMyReports, payload);
+  }
+
+  findAdminReports(payload: AdminReportsLookupMessage = {}) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.findAdminReports, payload);
+  }
+
+  updateAdminReport(payload: UpdateAdminReportMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.updateAdminReport, payload);
   }
 
   getAdminDisputeSummary(payload: AdminDisputeSummaryMessage = {}) {

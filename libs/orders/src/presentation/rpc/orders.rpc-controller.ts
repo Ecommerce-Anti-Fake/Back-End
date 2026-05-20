@@ -9,12 +9,15 @@ import type {
   AdminOrdersLookupMessage,
   AdminOpenDisputeCountMessage,
   AdminOpenDisputesLookupMessage,
+  AdminReportsLookupMessage,
   AssignAdminDisputeMessage,
   CheckoutCartItemMessage,
   CreateRetailOrderMessage,
+  CreateReportMessage,
   CreateWholesaleOrderMessage,
   MarkOrderPaidMessage,
   MyOrdersLookupMessage,
+  MyReportsLookupMessage,
   OrderFulfillmentAuditMessage,
   OrderLookupMessage,
   PayOSWebhookMessage,
@@ -31,6 +34,7 @@ import type {
   ResolveOrderDisputeMessage,
   RefundOrderMessage,
   RemoveCartItemMessage,
+  UpdateAdminReportMessage,
   UpdateCartItemMessage,
   UpdateAdminDisputeCaseMessage,
   UpdateOrderFulfillmentMessage,
@@ -42,6 +46,7 @@ import {
   AssignAdminDisputeUseCase,
   CheckoutCartItemUseCase,
   CreateRetailOrderUseCase,
+  CreateReportUseCase,
   CreateWholesaleOrderUseCase,
   GetAdminDisputeDetailUseCase,
   GetAdminDisputeSummaryUseCase,
@@ -51,8 +56,10 @@ import {
   GetOrderFulfillmentAuditUseCase,
   GetDisputeEvidenceUploadSignaturesUseCase,
   ListAdminOpenDisputesUseCase,
+  ListAdminReportsUseCase,
   ListDisputeEvidenceUseCase,
   ListMyOrdersUseCase,
+  ListMyReportsUseCase,
   ListAdminOrdersUseCase,
   ListSellerShopOrdersUseCase,
   MarkOrderPaidUseCase,
@@ -66,6 +73,7 @@ import {
   ResolveAdminDisputeUseCase,
   ResolveOrderDisputeUseCase,
   RefundOrderUseCase,
+  UpdateAdminReportUseCase,
   UpdateCartItemUseCase,
   UpdateAdminDisputeCaseUseCase,
   UpdateOrderFulfillmentUseCase,
@@ -100,10 +108,14 @@ export class OrdersRpcController {
     private readonly retryPayOSPaymentUseCase: RetryPayOSPaymentUseCase,
     private readonly completeOrderUseCase: CompleteOrderUseCase,
     private readonly cancelOrderUseCase: CancelOrderUseCase,
+    private readonly createReportUseCase: CreateReportUseCase,
+    private readonly listAdminReportsUseCase: ListAdminReportsUseCase,
+    private readonly listMyReportsUseCase: ListMyReportsUseCase,
     private readonly openOrderDisputeUseCase: OpenOrderDisputeUseCase,
     private readonly resolveAdminDisputeUseCase: ResolveAdminDisputeUseCase,
     private readonly resolveOrderDisputeUseCase: ResolveOrderDisputeUseCase,
     private readonly refundOrderUseCase: RefundOrderUseCase,
+    private readonly updateAdminReportUseCase: UpdateAdminReportUseCase,
     private readonly updateAdminDisputeCaseUseCase: UpdateAdminDisputeCaseUseCase,
     private readonly updateOrderFulfillmentUseCase: UpdateOrderFulfillmentUseCase,
   ) {}
@@ -353,6 +365,42 @@ export class OrdersRpcController {
   async openDispute(@Payload() payload: OpenOrderDisputeMessage) {
     try {
       return await this.openOrderDisputeUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.createReport)
+  async createReport(@Payload() payload: CreateReportMessage) {
+    try {
+      return await this.createReportUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.findMyReports)
+  async findMyReports(@Payload() payload: MyReportsLookupMessage) {
+    try {
+      return await this.listMyReportsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.findAdminReports)
+  async findAdminReports(@Payload() payload?: AdminReportsLookupMessage) {
+    try {
+      return await this.listAdminReportsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.updateAdminReport)
+  async updateAdminReport(@Payload() payload: UpdateAdminReportMessage) {
+    try {
+      return await this.updateAdminReportUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }
