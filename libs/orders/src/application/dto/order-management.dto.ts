@@ -55,6 +55,35 @@ export class CartResponseDto {
   updatedAt!: Date;
 }
 
+export class OrderItemBatchAllocationResponseDto {
+  @ApiProperty({ example: 'batch-id' })
+  batchId!: string;
+
+  @ApiProperty({ example: 2 })
+  quantity!: number;
+
+  @ApiPropertyOptional({ example: 'BATCH-2026-0001', nullable: true })
+  batchNumber!: string | null;
+
+  @ApiPropertyOptional({ example: 'Seller Shop', nullable: true })
+  sourceName!: string | null;
+
+  @ApiPropertyOptional({ example: 'VN', nullable: true })
+  countryOfOrigin!: string | null;
+
+  @ApiPropertyOptional({ example: 'WHOLESALE_ORDER', nullable: true })
+  sourceType!: string | null;
+
+  @ApiPropertyOptional({ example: 'source-order-id', nullable: true })
+  sourceOrderId!: string | null;
+
+  @ApiPropertyOptional({ example: 'source-order-item-id', nullable: true })
+  sourceOrderItemId!: string | null;
+
+  @ApiPropertyOptional({ example: '2026-05-18T10:30:00.000Z', nullable: true })
+  receivedAt!: Date | null;
+}
+
 export class OrderItemResponseDto {
   @ApiProperty({ example: 'order-item-id' })
   id!: string;
@@ -91,6 +120,9 @@ export class OrderItemResponseDto {
 
   @ApiProperty({ example: true })
   canReview!: boolean;
+
+  @ApiProperty({ type: OrderItemBatchAllocationResponseDto, isArray: true })
+  batchAllocations!: OrderItemBatchAllocationResponseDto[];
 }
 
 export class OrderResponseDto {
@@ -222,6 +254,12 @@ export class WholesaleInventoryBatchResponseDto {
 
   @ApiProperty({ example: 'WHOLESALE_ORDER' })
   sourceType!: string;
+
+  @ApiPropertyOptional({ example: 'source-order-id', nullable: true })
+  sourceOrderId!: string | null;
+
+  @ApiPropertyOptional({ example: 'source-order-item-id', nullable: true })
+  sourceOrderItemId!: string | null;
 
   @ApiProperty({ example: '2026-05-18T10:30:00.000Z' })
   receivedAt!: Date;

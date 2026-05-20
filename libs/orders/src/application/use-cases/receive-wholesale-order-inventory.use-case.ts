@@ -42,6 +42,11 @@ export class ReceiveWholesaleOrderInventoryUseCase {
       metadata: {
         event: 'WHOLESALE_INVENTORY_RECEIVED',
         batchIds: batches.map((batch) => batch.id),
+        batchLineage: batches.map((batch) => ({
+          batchId: batch.id,
+          sourceOrderId: batch.sourceOrderId,
+          sourceOrderItemId: batch.sourceOrderItemId,
+        })),
         buyerShopId: order.buyerShopId,
         buyerDistributionNodeId: order.buyerDistributionNodeId,
       },

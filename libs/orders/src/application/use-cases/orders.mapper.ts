@@ -66,6 +66,8 @@ export function toOrderResponse(order: OrderWithRelations) {
           sourceName: allocation.batch?.sourceName ?? null,
           countryOfOrigin: allocation.batch?.countryOfOrigin ?? null,
           sourceType: allocation.batch?.sourceType ?? null,
+          sourceOrderId: allocation.batch?.sourceOrderId ?? null,
+          sourceOrderItemId: allocation.batch?.sourceOrderItemId ?? null,
           receivedAt: allocation.batch?.receivedAt ?? null,
         })),
       };

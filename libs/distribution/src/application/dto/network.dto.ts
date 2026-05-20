@@ -181,6 +181,12 @@ export class SupplyBatchResponseDto {
   @ApiProperty({ example: 'MANUFACTURER' })
   sourceType!: string;
 
+  @ApiPropertyOptional({ example: 'source-order-id', nullable: true })
+  sourceOrderId!: string | null;
+
+  @ApiPropertyOptional({ example: 'source-order-item-id', nullable: true })
+  sourceOrderItemId!: string | null;
+
   @ApiProperty({ example: '2026-04-16T00:00:00.000Z' })
   receivedAt!: Date;
 }

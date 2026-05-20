@@ -172,6 +172,8 @@ describe('Distributor onboarding (e2e)', () => {
       id: l1Purchase.id,
       requesterUserId: l1.userId,
     });
+    expect(l1Receipt.batches[0].sourceOrderId).toBe(l1Purchase.id);
+    expect(l1Receipt.batches[0].sourceOrderItemId).toBe(l1Purchase.items[0].id);
 
     const l1ResaleOfferId = `offer-e2e-l1-resale-${suffix}`;
     await createResaleOfferFromBatch({
@@ -206,6 +208,8 @@ describe('Distributor onboarding (e2e)', () => {
       id: l2Purchase.id,
       requesterUserId: l2.userId,
     });
+    expect(l2Receipt.batches[0].sourceOrderId).toBe(l2Purchase.id);
+    expect(l2Receipt.batches[0].sourceOrderItemId).toBe(l2Purchase.items[0].id);
 
     const l1BatchAfterFulfillment = await prisma.supplyBatch.findUnique({
       where: { id: l1Receipt.batches[0].id },

@@ -55,7 +55,14 @@ describe('ReceiveWholesaleOrderInventoryUseCase', () => {
     expect(result).toMatchObject({
       orderId: 'order-1',
       received: true,
-      batches: [{ batchNumber: 'WHOLESALE-ORDER-1-ITEM-1', quantity: 10 }],
+      batches: [
+        {
+          batchNumber: 'WHOLESALE-ORDER-1-ITEM-1',
+          quantity: 10,
+          sourceOrderId: 'order-1',
+          sourceOrderItemId: 'item-1',
+        },
+      ],
     });
   });
 
@@ -150,6 +157,8 @@ function createBatchReceipt(overrides?: Partial<any>) {
     sourceName: 'Seller Shop',
     countryOfOrigin: 'UNKNOWN',
     sourceType: 'WHOLESALE_ORDER',
+    sourceOrderId: 'order-1',
+    sourceOrderItemId: 'item-1',
     receivedAt: new Date('2026-05-18T10:30:00.000Z'),
     ...overrides,
   };

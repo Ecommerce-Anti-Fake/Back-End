@@ -106,6 +106,8 @@ type OfferBatchLinkWithBatch = {
     sourceName: string;
     countryOfOrigin: string;
     sourceType: string;
+    sourceOrderId: string | null;
+    sourceOrderItemId: string | null;
     receivedAt: Date;
   };
 };
@@ -263,6 +265,8 @@ export function toOfferBatchLinkResponse(link: OfferBatchLinkWithBatch) {
     sourceName: link.batch.sourceName,
     countryOfOrigin: link.batch.countryOfOrigin,
     sourceType: link.batch.sourceType,
+    sourceOrderId: link.batch.sourceOrderId,
+    sourceOrderItemId: link.batch.sourceOrderItemId,
     receivedAt: link.batch.receivedAt,
     createdAt: link.createdAt,
   };

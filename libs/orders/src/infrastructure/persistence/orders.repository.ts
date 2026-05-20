@@ -70,6 +70,8 @@ const orderWithRelationsArgs = Prisma.validator<Prisma.OrderDefaultArgs>()({
                 sourceName: true,
                 countryOfOrigin: true,
                 sourceType: true,
+                sourceOrderId: true,
+                sourceOrderItemId: true,
                 receivedAt: true,
               },
             },
@@ -139,6 +141,8 @@ const disputeWithOrderArgs = Prisma.validator<Prisma.DisputeDefaultArgs>()({
                     sourceName: true,
                     countryOfOrigin: true,
                     sourceType: true,
+                    sourceOrderId: true,
+                    sourceOrderItemId: true,
                     receivedAt: true,
                   },
                 },
@@ -274,6 +278,8 @@ export type SupplyBatchReceipt = {
   sourceName: string;
   countryOfOrigin: string;
   sourceType: string;
+  sourceOrderId: string | null;
+  sourceOrderItemId: string | null;
   receivedAt: Date;
 };
 
@@ -772,6 +778,8 @@ export class OrdersRepository {
               sourceName: order.shop.shopName,
               countryOfOrigin: 'UNKNOWN',
               sourceType: 'WHOLESALE_ORDER',
+              sourceOrderId: order.id,
+              sourceOrderItemId: item.id,
               receivedAt: new Date(),
             },
           }),

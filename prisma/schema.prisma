@@ -611,16 +611,22 @@ model SupplyBatch {
   sourceName           String                     @map("source_name")
   countryOfOrigin      String                     @map("country_of_origin")
   sourceType           String                     @map("source_type")
+  sourceOrderId        String?                    @map("source_order_id")
+  sourceOrderItemId    String?                    @map("source_order_item_id")
   receivedAt           DateTime                   @map("received_at")
   shop                 Shop                       @relation(fields: [shopId], references: [id])
   productModel         ProductModel               @relation(fields: [productModelId], references: [id])
   distributionNode     DistributionNode?          @relation(fields: [distributionNodeId], references: [id])
+  sourceOrder          Order?                     @relation("SupplyBatchSourceOrder", fields: [sourceOrderId], references: [id], onDelete: SetNull)
+  sourceOrderItem      OrderItem?                 @relation("SupplyBatchSourceOrderItem", fields: [sourceOrderItemId], references: [id], onDelete: SetNull)
   documents            BatchDocument[]
   offerLinks           OfferBatchLink[]
   orderItemAllocations OrderItemBatchAllocation[]
   shipmentItems        DistributionShipmentItem[]
 
   @@index([distributionNodeId])
+  @@index([sourceOrderId])
+  @@index([sourceOrderItemId])
   @@map("supply_batch")
 }
 
@@ -763,6 +769,7 @@ model Order {
   disputes                Dispute[]
   reviews                 Review[]
   affiliateConversion     AffiliateConversion?
+  sourceSupplyBatches     SupplyBatch[]        @relation("SupplyBatchSourceOrder")
 
   @@index([buyerUserId])
   @@index([buyerShopId])
@@ -782,6 +789,7 @@ model OrderItem {
   offer                     Offer                      @relation(fields: [offerId], references: [id])
   batchAllocations          OrderItemBatchAllocation[]
   reviews                   Review[]
+  sourceSupplyBatches       SupplyBatch[]                @relation("SupplyBatchSourceOrderItem")
 
   @@index([orderId])
   @@index([offerId])

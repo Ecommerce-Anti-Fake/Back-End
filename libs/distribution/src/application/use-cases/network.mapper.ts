@@ -131,6 +131,8 @@ export function toSupplyBatchResponse(batch: SupplyBatch) {
     sourceName: batch.sourceName,
     countryOfOrigin: batch.countryOfOrigin,
     sourceType: batch.sourceType,
+    sourceOrderId: batch.sourceOrderId,
+    sourceOrderItemId: batch.sourceOrderItemId,
     receivedAt: batch.receivedAt,
   };
 }
