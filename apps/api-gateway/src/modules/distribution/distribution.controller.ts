@@ -30,6 +30,7 @@ import {
   DistributionPricingPolicyResponseDto,
   DistributionShipmentResponseDto,
   InventorySummaryResponseDto,
+  OrderItemLineageResponseDto,
   ResolveWholesalePricingDto,
   SupplyBatchDetailResponseDto,
   SupplyBatchResponseDto,
@@ -304,6 +305,22 @@ export class DistributionController {
       offerId: query.offerId,
       orderId: query.orderId,
       search: query.search,
+    });
+  }
+
+  @ApiOperation({ summary: 'Resolve upstream lineage for an order item' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'orderItemId', description: 'ID order item can truy xuat lineage.' })
+  @ApiOkResponse({
+    description: 'Chuoi provenance tu manufacturer batch den order item hien tai.',
+    type: OrderItemLineageResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('lineage/order-items/:orderItemId')
+  getOrderItemLineage(@CurrentUserId() requesterUserId: string, @Param('orderItemId') orderItemId: string) {
+    return this.distributionRpcService.getOrderItemLineage({
+      requesterUserId,
+      orderItemId,
     });
   }
 

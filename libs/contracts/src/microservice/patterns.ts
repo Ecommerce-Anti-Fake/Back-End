@@ -143,6 +143,7 @@ export const DISTRIBUTION_MESSAGE_PATTERNS = {
   getBatchDetail: 'distribution.get-batch-detail',
   getInventorySummary: 'distribution.get-inventory-summary',
   getAdminInventoryAudit: 'distribution.get-admin-inventory-audit',
+  getOrderItemLineage: 'distribution.get-order-item-lineage',
   createShipment: 'distribution.create-shipment',
   dispatchShipment: 'distribution.dispatch-shipment',
   findShipmentsByNetwork: 'distribution.find-shipments-by-network',
@@ -966,6 +967,11 @@ export type AdminInventoryAuditMessage = {
   offerId?: string;
   orderId?: string;
   search?: string;
+};
+
+export type OrderItemLineageMessage = {
+  requesterUserId: string;
+  orderItemId: string;
 };
 
 export type DistributionShipmentsLookupMessage = {

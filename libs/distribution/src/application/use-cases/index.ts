@@ -16,6 +16,7 @@ export * from './list-supply-batches.use-case';
 export * from './get-supply-batch-detail.use-case';
 export * from './get-inventory-summary.use-case';
 export * from './get-admin-inventory-audit.use-case';
+export * from './get-order-item-lineage.use-case';
 export * from './create-distribution-shipment.use-case';
 export * from './dispatch-distribution-shipment.use-case';
 export * from './list-distribution-shipments.use-case';

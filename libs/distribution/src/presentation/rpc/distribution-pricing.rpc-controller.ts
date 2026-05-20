@@ -29,6 +29,7 @@ import type {
   ReceiveDistributionShipmentMessage,
   ResolveWholesalePricingMessage,
   AdminInventoryAuditMessage,
+  OrderItemLineageMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
 import {
@@ -44,6 +45,7 @@ import {
   UpdateDistributionNodeStatusUseCase,
   CreateSupplyBatchUseCase,
   GetAdminInventoryAuditUseCase,
+  GetOrderItemLineageUseCase,
   GetInventorySummaryUseCase,
   GetSupplyBatchDetailUseCase,
   CreateDistributionShipmentUseCase,
@@ -82,6 +84,7 @@ export class DistributionPricingRpcController {
     private readonly getSupplyBatchDetailUseCase: GetSupplyBatchDetailUseCase,
     private readonly getInventorySummaryUseCase: GetInventorySummaryUseCase,
     private readonly getAdminInventoryAuditUseCase: GetAdminInventoryAuditUseCase,
+    private readonly getOrderItemLineageUseCase: GetOrderItemLineageUseCase,
     private readonly createDistributionShipmentUseCase: CreateDistributionShipmentUseCase,
     private readonly dispatchDistributionShipmentUseCase: DispatchDistributionShipmentUseCase,
     private readonly getDistributionShipmentUseCase: GetDistributionShipmentUseCase,
@@ -250,6 +253,15 @@ export class DistributionPricingRpcController {
   async getAdminInventoryAudit(@Payload() payload: AdminInventoryAuditMessage) {
     try {
       return await this.getAdminInventoryAuditUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(DISTRIBUTION_MESSAGE_PATTERNS.getOrderItemLineage)
+  async getOrderItemLineage(@Payload() payload: OrderItemLineageMessage) {
+    try {
+      return await this.getOrderItemLineageUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

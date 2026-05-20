@@ -29,6 +29,7 @@ import {
   ReceiveDistributionShipmentMessage,
   CATALOG_SERVICE_CLIENT,
   AdminInventoryAuditMessage,
+  OrderItemLineageMessage,
   ResolveWholesalePricingMessage,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
@@ -107,6 +108,10 @@ export class DistributionRpcService {
 
   getAdminInventoryAudit(payload: AdminInventoryAuditMessage) {
     return this.send(DISTRIBUTION_MESSAGE_PATTERNS.getAdminInventoryAudit, payload);
+  }
+
+  getOrderItemLineage(payload: OrderItemLineageMessage) {
+    return this.send(DISTRIBUTION_MESSAGE_PATTERNS.getOrderItemLineage, payload);
   }
 
   findNodesByNetwork(payload: DistributionNodesLookupMessage) {

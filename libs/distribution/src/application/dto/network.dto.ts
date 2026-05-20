@@ -413,6 +413,111 @@ export class AdminInventoryAuditQueryDto {
   search?: string;
 }
 
+export class OrderItemLineageBatchResponseDto {
+  @ApiProperty({ example: 'allocation-id' })
+  allocationId!: string;
+
+  @ApiProperty({ example: 'batch-id' })
+  batchId!: string;
+
+  @ApiProperty({ example: 'BATCH-2026-0001' })
+  batchNumber!: string;
+
+  @ApiProperty({ example: 10 })
+  allocatedQuantity!: number;
+
+  @ApiProperty({ example: 100 })
+  batchQuantity!: number;
+
+  @ApiProperty({ example: 'Manufacturer ABC' })
+  sourceName!: string;
+
+  @ApiProperty({ example: 'VN' })
+  countryOfOrigin!: string;
+
+  @ApiProperty({ example: 'WHOLESALE_ORDER' })
+  sourceType!: string;
+
+  @ApiPropertyOptional({ example: 'source-order-id', nullable: true })
+  sourceOrderId!: string | null;
+
+  @ApiPropertyOptional({ example: 'source-order-item-id', nullable: true })
+  sourceOrderItemId!: string | null;
+
+  @ApiProperty({ example: 'source-shop-id' })
+  sourceShopId!: string;
+
+  @ApiProperty({ example: 'Source Shop' })
+  sourceShopName!: string;
+
+  @ApiPropertyOptional({ example: 'distribution-node-id', nullable: true })
+  distributionNodeId!: string | null;
+
+  @ApiPropertyOptional({ example: 2, nullable: true })
+  distributionLevel!: number | null;
+
+  @ApiPropertyOptional({ example: 'AGENT_LEVEL_2', nullable: true })
+  distributionNodeType!: string | null;
+
+  @ApiProperty({ example: '2026-05-17T10:00:00.000Z' })
+  receivedAt!: Date;
+
+  @ApiProperty({ example: '2026-05-18T10:00:00.000Z' })
+  allocatedAt!: Date;
+}
+
+export class OrderItemLineageHopResponseDto {
+  @ApiProperty({ example: 'order-id' })
+  orderId!: string;
+
+  @ApiProperty({ example: 'order-item-id' })
+  orderItemId!: string;
+
+  @ApiProperty({ example: 'offer-id' })
+  offerId!: string;
+
+  @ApiProperty({ example: 'Wholesale SPF50 lot' })
+  offerTitle!: string;
+
+  @ApiProperty({ example: 10 })
+  quantity!: number;
+
+  @ApiProperty({ example: 'seller-shop-id' })
+  sellerShopId!: string;
+
+  @ApiProperty({ example: 'L2 Distributor' })
+  sellerShopName!: string;
+
+  @ApiProperty({ example: 'DISTRIBUTOR' })
+  sellerRegistrationType!: string;
+
+  @ApiPropertyOptional({ example: 'buyer-user-id', nullable: true })
+  buyerUserId!: string | null;
+
+  @ApiPropertyOptional({ example: 'buyer-shop-id', nullable: true })
+  buyerShopId!: string | null;
+
+  @ApiPropertyOptional({ example: 'L3 Distributor', nullable: true })
+  buyerShopName!: string | null;
+
+  @ApiProperty({ type: OrderItemLineageBatchResponseDto, isArray: true })
+  batchAllocations!: OrderItemLineageBatchResponseDto[];
+}
+
+export class OrderItemLineageResponseDto {
+  @ApiProperty({ example: 'target-order-item-id' })
+  orderItemId!: string;
+
+  @ApiProperty({ example: 'target-order-id' })
+  orderId!: string;
+
+  @ApiProperty({ type: OrderItemLineageBatchResponseDto, isArray: true })
+  terminalBatches!: OrderItemLineageBatchResponseDto[];
+
+  @ApiProperty({ type: OrderItemLineageHopResponseDto, isArray: true })
+  hops!: OrderItemLineageHopResponseDto[];
+}
+
 export class DistributionShipmentResponseDto {
   @ApiProperty({ example: 'shipment-id' })
   id!: string;

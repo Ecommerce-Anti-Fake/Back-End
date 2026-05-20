@@ -700,6 +700,81 @@ export class DistributionPricingRepository {
     });
   }
 
+  findLineageOrderItem(orderItemId: string) {
+    return this.prisma.orderItem.findUnique({
+      where: { id: orderItemId },
+      select: {
+        id: true,
+        orderId: true,
+        offerId: true,
+        offerTitleSnapshot: true,
+        quantity: true,
+        order: {
+          select: {
+            id: true,
+            buyerUserId: true,
+            buyerShopId: true,
+            buyerShop: {
+              select: {
+                id: true,
+                shopName: true,
+                ownerUserId: true,
+              },
+            },
+            shop: {
+              select: {
+                id: true,
+                shopName: true,
+                ownerUserId: true,
+                registrationType: true,
+              },
+            },
+          },
+        },
+        batchAllocations: {
+          select: {
+            id: true,
+            batchId: true,
+            quantity: true,
+            createdAt: true,
+            batch: {
+              select: {
+                id: true,
+                shopId: true,
+                productModelId: true,
+                distributionNodeId: true,
+                batchNumber: true,
+                quantity: true,
+                sourceName: true,
+                countryOfOrigin: true,
+                sourceType: true,
+                sourceOrderId: true,
+                sourceOrderItemId: true,
+                receivedAt: true,
+                shop: {
+                  select: {
+                    id: true,
+                    shopName: true,
+                  },
+                },
+                distributionNode: {
+                  select: {
+                    id: true,
+                    level: true,
+                    nodeType: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+      },
+    });
+  }
+
   createShipment(data: {
     networkId: string;
     fromNodeId: string;
