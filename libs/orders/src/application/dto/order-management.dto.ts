@@ -165,6 +165,15 @@ export class OrderResponseDto {
   @ApiPropertyOptional({ example: 'PENDING', nullable: true })
   escrowStatus!: string | null;
 
+  @ApiPropertyOptional({ example: 1842750, nullable: true })
+  escrowHeldAmount!: number | null;
+
+  @ApiPropertyOptional({ example: '2026-05-21T10:00:00.000Z', nullable: true })
+  escrowHoldAt!: Date | null;
+
+  @ApiPropertyOptional({ example: '2026-05-22T10:00:00.000Z', nullable: true })
+  escrowReleaseAt!: Date | null;
+
   @ApiPropertyOptional({
     example: {
       id: 'dispute-id',

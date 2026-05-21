@@ -35,7 +35,10 @@ describe('CompleteOrderUseCase', () => {
       requesterUserId: 'seller-user-1',
     });
 
-    expect(ordersRepositoryMock.completeOrder).toHaveBeenCalledWith('order-1');
+    expect(ordersRepositoryMock.completeOrder).toHaveBeenCalledWith({
+      id: 'order-1',
+      actorUserId: 'seller-user-1',
+    });
     expect(result).toMatchObject({
       id: 'order-1',
       orderStatus: 'completed',
@@ -55,9 +58,36 @@ describe('CompleteOrderUseCase', () => {
 
     expect(ordersRepositoryMock.completeOrder).not.toHaveBeenCalled();
   });
+
+  it('should reject completing while an open dispute exists', async () => {
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(
+      createOrderRecord({
+        disputes: [
+          {
+            id: 'dispute-1',
+            disputeStatus: 'OPEN',
+          },
+        ],
+      }),
+    );
+
+    await expect(
+      useCase.execute({
+        id: 'order-1',
+        requesterUserId: 'seller-user-1',
+      }),
+    ).rejects.toThrow('Cannot complete order while an open dispute exists');
+
+    expect(ordersRepositoryMock.completeOrder).not.toHaveBeenCalled();
+  });
 });
 
-function createOrderRecord(overrides?: { orderStatus?: string; escrowStatus?: string; fulfillmentStatus?: string }) {
+function createOrderRecord(overrides?: {
+  orderStatus?: string;
+  escrowStatus?: string;
+  fulfillmentStatus?: string;
+  disputes?: Array<{ id: string; disputeStatus: string }>;
+}) {
   return {
     id: 'order-1',
     orderMode: 'RETAIL',
@@ -96,6 +126,7 @@ function createOrderRecord(overrides?: { orderStatus?: string; escrowStatus?: st
       holdAt: new Date('2026-04-15T10:05:00.000Z'),
       releaseAt: overrides?.escrowStatus === 'RELEASED' ? new Date('2026-04-15T10:30:00.000Z') : null,
     },
+    disputes: overrides?.disputes ?? [],
     items: [
       {
         offerId: 'offer-1',
@@ -103,6 +134,11 @@ function createOrderRecord(overrides?: { orderStatus?: string; escrowStatus?: st
         unitPrice: new Prisma.Decimal(100),
         quantity: 1,
         verificationLevelSnapshot: 'SERIALIZED',
+        batchAllocations: [],
+        reviews: [],
+        offer: {
+          media: [],
+        },
       },
     ],
   };

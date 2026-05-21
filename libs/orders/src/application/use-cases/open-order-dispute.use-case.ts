@@ -42,6 +42,12 @@ export class OpenOrderDisputeUseCase {
       openedByUserId: input.requesterUserId,
       reason,
     });
+    await this.ordersRepository.updateEscrowStatusForOrder({
+      orderId: order.id,
+      actorUserId: input.requesterUserId,
+      escrowStatus: 'FROZEN',
+      note: 'Escrow frozen because a dispute was opened',
+    });
 
     await this.ordersRepository.createAuditLog({
       targetType: 'DISPUTE',

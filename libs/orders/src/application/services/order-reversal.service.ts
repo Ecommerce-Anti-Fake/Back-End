@@ -27,7 +27,12 @@ export class OrderReversalService {
         actorUserId,
         paymentStatus: 'CANCELLED',
       });
-      await this.ordersRepository.updateEscrowStatus(tx, orderId, 'CANCELLED');
+      await this.ordersRepository.updateEscrowStatusWithAudit(tx, {
+        orderId,
+        actorUserId,
+        escrowStatus: 'CANCELLED',
+        note: 'Escrow cancelled because order was cancelled',
+      });
       await this.ordersRepository.cancelPendingAffiliateArtifacts(tx, orderId);
 
       return this.ordersRepository.updateOrderStatus(tx, orderId, 'cancelled');
@@ -47,7 +52,12 @@ export class OrderReversalService {
         actorUserId,
         paymentStatus: 'REFUNDED',
       });
-      await this.ordersRepository.updateEscrowStatus(tx, orderId, 'REFUNDED');
+      await this.ordersRepository.updateEscrowStatusWithAudit(tx, {
+        orderId,
+        actorUserId,
+        escrowStatus: 'REFUNDED',
+        note: 'Escrow refunded because order was refunded',
+      });
       await this.ordersRepository.cancelRefundableAffiliateArtifacts(tx, orderId);
 
       return this.ordersRepository.updateOrderStatus(tx, orderId, 'refunded');
@@ -72,9 +82,28 @@ export class OrderReversalService {
           actorUserId: input.actorUserId,
           paymentStatus: 'REFUNDED',
         });
-        await this.ordersRepository.updateEscrowStatus(tx, dispute.orderId, 'REFUNDED');
+        await this.ordersRepository.updateEscrowStatusWithAudit(tx, {
+          orderId: dispute.orderId,
+          actorUserId: input.actorUserId,
+          escrowStatus: 'REFUNDED',
+          note: 'Escrow refunded by dispute resolution',
+        });
         await this.ordersRepository.cancelRefundableAffiliateArtifacts(tx, dispute.orderId);
         await this.ordersRepository.updateOrderStatus(tx, dispute.orderId, 'refunded');
+      } else if (input.resolution === 'RESOLVED' && dispute.order.orderStatus === 'completed') {
+        await this.ordersRepository.updateEscrowStatusWithAudit(tx, {
+          orderId: dispute.orderId,
+          actorUserId: input.actorUserId,
+          escrowStatus: 'RELEASED',
+          note: 'Escrow released after dispute was resolved without refund',
+        });
+      } else if (input.resolution === 'RESOLVED' && dispute.order.orderStatus === 'paid') {
+        await this.ordersRepository.updateEscrowStatusWithAudit(tx, {
+          orderId: dispute.orderId,
+          actorUserId: input.actorUserId,
+          escrowStatus: 'HELD',
+          note: 'Escrow returned to hold after dispute was resolved without refund',
+        });
       }
 
       return this.ordersRepository.updateDisputeStatus(tx, input.disputeId, input.resolution);

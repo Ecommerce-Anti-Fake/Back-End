@@ -14,6 +14,7 @@ export function toOrderResponse(order: OrderWithRelations) {
     paymentProviderRef: order.paymentIntent?.providerRef ?? null,
     paymentCreatedAt: order.paymentIntent?.createdAt ?? null,
     escrowStatus: order.escrow?.escrowStatus ?? null,
+    escrowHeldAmount: order.escrow ? decimalToNumber(order.escrow.heldAmount) : null,
     escrowHoldAt: order.escrow?.holdAt ?? null,
     escrowReleaseAt: order.escrow?.releaseAt ?? null,
     openDispute: openDispute

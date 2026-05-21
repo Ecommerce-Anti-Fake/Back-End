@@ -24,7 +24,14 @@ export class CompleteOrderUseCase {
       throw new BadRequestException('Only delivered orders can be completed');
     }
 
-    const updatedOrder = await this.ordersRepository.completeOrder(order.id);
+    if (order.disputes?.length) {
+      throw new BadRequestException('Cannot complete order while an open dispute exists');
+    }
+
+    const updatedOrder = await this.ordersRepository.completeOrder({
+      id: order.id,
+      actorUserId: input.requesterUserId,
+    });
     return toOrderResponse(updatedOrder);
   }
 }

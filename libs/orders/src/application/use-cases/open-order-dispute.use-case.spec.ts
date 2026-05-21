@@ -11,6 +11,7 @@ describe('OpenOrderDisputeUseCase', () => {
     findOrderById: jest.fn(),
     findOpenDisputeByOrder: jest.fn(),
     createDispute: jest.fn(),
+    updateEscrowStatusForOrder: jest.fn(),
     createAuditLog: jest.fn(),
   };
   const recalculateRiskTargetsUseCaseMock = {
@@ -52,6 +53,12 @@ describe('OpenOrderDisputeUseCase', () => {
       orderId: 'order-1',
       openedByUserId: 'buyer-user-1',
       reason: 'Wrong item delivered',
+    });
+    expect(ordersRepositoryMock.updateEscrowStatusForOrder).toHaveBeenCalledWith({
+      orderId: 'order-1',
+      actorUserId: 'buyer-user-1',
+      escrowStatus: 'FROZEN',
+      note: 'Escrow frozen because a dispute was opened',
     });
     expect(ordersRepositoryMock.createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -690,18 +690,73 @@ export class OrdersRepository {
     });
   }
 
-  updateEscrowStatus(
+  async updateEscrowStatusWithAudit(
     tx: Prisma.TransactionClient,
-    orderId: string,
-    escrowStatus: 'CANCELLED' | 'REFUNDED',
+    input: {
+      orderId: string;
+      actorUserId: string;
+      escrowStatus: 'HELD' | 'FROZEN' | 'RELEASED' | 'CANCELLED' | 'REFUNDED';
+      heldAmount?: Prisma.Decimal | number | null;
+      note?: string | null;
+    },
   ) {
-    return tx.escrow.updateMany({
-      where: { orderId },
-      data: {
-        escrowStatus,
-        releaseAt: new Date(),
+    const now = new Date();
+    const existing = await tx.escrow.findUnique({
+      where: { orderId: input.orderId },
+      select: {
+        escrowStatus: true,
+        heldAmount: true,
       },
     });
+    const heldAmount = input.heldAmount ?? existing?.heldAmount ?? 0;
+    const releaseAt = ['RELEASED', 'CANCELLED', 'REFUNDED'].includes(input.escrowStatus) ? now : null;
+    const holdAt = input.escrowStatus === 'HELD' && !existing ? now : undefined;
+
+    await tx.escrow.upsert({
+      where: { orderId: input.orderId },
+      create: {
+        orderId: input.orderId,
+        escrowStatus: input.escrowStatus,
+        heldAmount,
+        holdAt: input.escrowStatus === 'HELD' ? now : null,
+        releaseAt,
+      },
+      update: {
+        escrowStatus: input.escrowStatus,
+        heldAmount,
+        holdAt,
+        releaseAt,
+      },
+    });
+
+    if (existing?.escrowStatus === input.escrowStatus) {
+      return;
+    }
+
+    await tx.auditLog.create({
+      data: {
+        targetType: 'ORDER',
+        targetId: input.orderId,
+        actorUserId: input.actorUserId,
+        action: 'ESCROW_STATUS_CHANGED',
+        fromStatus: existing?.escrowStatus ?? null,
+        toStatus: input.escrowStatus,
+        note: input.note ?? `Escrow moved from ${existing?.escrowStatus ?? '-'} to ${input.escrowStatus}`,
+        metadata: {
+          domain: 'ESCROW',
+          heldAmount: heldAmount.toString(),
+        },
+      },
+    });
+  }
+
+  updateEscrowStatusForOrder(input: {
+    orderId: string;
+    actorUserId: string;
+    escrowStatus: 'HELD' | 'FROZEN' | 'RELEASED' | 'CANCELLED' | 'REFUNDED';
+    note?: string | null;
+  }) {
+    return this.prisma.$transaction((tx) => this.updateEscrowStatusWithAudit(tx, input));
   }
 
   cancelPendingAffiliateArtifacts(tx: Prisma.TransactionClient, orderId: string) {
@@ -1717,20 +1772,12 @@ export class OrdersRepository {
         },
       });
 
-      await tx.escrow.upsert({
-        where: { orderId: input.id },
-        create: {
-          orderId: input.id,
-          escrowStatus: 'HELD',
-          heldAmount,
-          holdAt: now,
-        },
-        update: {
-          escrowStatus: 'HELD',
-          heldAmount,
-          holdAt: now,
-          releaseAt: null,
-        },
+      await this.updateEscrowStatusWithAudit(tx, {
+        orderId: input.id,
+        actorUserId: input.actorUserId,
+        escrowStatus: 'HELD',
+        heldAmount,
+        note: `Escrow held after payment moved from ${fromStatus} to PAID`,
       });
 
       await tx.auditLog.create({
@@ -1880,18 +1927,17 @@ export class OrdersRepository {
     });
   }
 
-  async completeOrder(id: string): Promise<OrderWithRelations> {
+  async completeOrder(input: { id: string; actorUserId: string }): Promise<OrderWithRelations> {
     return this.prisma.$transaction(async (tx) => {
-      await tx.escrow.updateMany({
-        where: { orderId: id },
-        data: {
-          escrowStatus: 'RELEASED',
-          releaseAt: new Date(),
-        },
+      await this.updateEscrowStatusWithAudit(tx, {
+        orderId: input.id,
+        actorUserId: input.actorUserId,
+        escrowStatus: 'RELEASED',
+        note: 'Escrow released after seller completed delivered order',
       });
 
       return tx.order.update({
-        where: { id },
+        where: { id: input.id },
         data: {
           orderStatus: 'completed',
           fulfillmentStatus: 'DELIVERED',
