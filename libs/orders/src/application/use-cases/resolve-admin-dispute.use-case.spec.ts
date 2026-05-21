@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ResolveAdminDisputeUseCase } from './resolve-admin-dispute.use-case';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { OrderReversalService } from '../services';
+import { RecalculateRiskTargetsUseCase } from './recalculate-risk-targets.use-case';
 
 describe('ResolveAdminDisputeUseCase', () => {
   let useCase: ResolveAdminDisputeUseCase;
@@ -16,6 +17,9 @@ describe('ResolveAdminDisputeUseCase', () => {
   const orderReversalServiceMock = {
     resolveDispute: jest.fn(),
   };
+  const recalculateRiskTargetsUseCaseMock = {
+    executeForReport: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -25,6 +29,7 @@ describe('ResolveAdminDisputeUseCase', () => {
         ResolveAdminDisputeUseCase,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
         { provide: OrderReversalService, useValue: orderReversalServiceMock },
+        { provide: RecalculateRiskTargetsUseCase, useValue: recalculateRiskTargetsUseCaseMock },
       ],
     }).compile();
 
@@ -108,5 +113,10 @@ describe('ResolveAdminDisputeUseCase', () => {
         toStatus: 'RESOLVED',
       }),
     );
+    expect(recalculateRiskTargetsUseCaseMock.executeForReport).toHaveBeenCalledWith({
+      targetType: 'ORDER',
+      targetId: 'order-1',
+      actorUserId: 'admin-1',
+    });
   });
 });

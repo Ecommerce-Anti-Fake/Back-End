@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { OpenOrderDisputeUseCase } from './open-order-dispute.use-case';
+import { RecalculateRiskTargetsUseCase } from './recalculate-risk-targets.use-case';
 
 describe('OpenOrderDisputeUseCase', () => {
   let useCase: OpenOrderDisputeUseCase;
@@ -12,6 +13,9 @@ describe('OpenOrderDisputeUseCase', () => {
     createDispute: jest.fn(),
     createAuditLog: jest.fn(),
   };
+  const recalculateRiskTargetsUseCaseMock = {
+    executeForReport: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -20,6 +24,7 @@ describe('OpenOrderDisputeUseCase', () => {
       providers: [
         OpenOrderDisputeUseCase,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
+        { provide: RecalculateRiskTargetsUseCase, useValue: recalculateRiskTargetsUseCaseMock },
       ],
     }).compile();
 
@@ -57,6 +62,11 @@ describe('OpenOrderDisputeUseCase', () => {
         toStatus: 'OPEN',
       }),
     );
+    expect(recalculateRiskTargetsUseCaseMock.executeForReport).toHaveBeenCalledWith({
+      targetType: 'ORDER',
+      targetId: 'order-1',
+      actorUserId: 'buyer-user-1',
+    });
     expect(result).toMatchObject({
       id: 'dispute-1',
       disputeStatus: 'OPEN',

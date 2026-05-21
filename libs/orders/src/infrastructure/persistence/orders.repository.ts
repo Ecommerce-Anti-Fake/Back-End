@@ -267,6 +267,23 @@ export type DisputeWithOrder = Prisma.DisputeGetPayload<typeof disputeWithOrderA
 export type DisputeEvidenceRecord = Prisma.DisputeEvidenceGetPayload<typeof disputeEvidenceArgs>;
 export type AdminOpenDisputeRecord = Prisma.DisputeGetPayload<typeof openDisputesForAdminArgs>;
 export type ReportWithReporter = Prisma.ReportGetPayload<typeof reportWithReporterArgs>;
+export type RiskTargetType = 'SHOP' | 'OFFER' | 'BATCH';
+export type RiskScoreRecord = Prisma.RiskScoreGetPayload<Record<string, never>>;
+export type RiskSignalSnapshot = {
+  targetType: RiskTargetType;
+  targetId: string;
+  targetLabel: string | null;
+  openReportCount: number;
+  resolvedReportCount: number;
+  rejectedReportCount: number;
+  openDisputeCount: number;
+  refundedDisputeCount: number;
+  rejectedDocumentCount: number;
+  pendingDocumentCount: number;
+  missingProvenance: boolean;
+  reviewCount: number;
+  averageRating: number | null;
+};
 export type OrderAuditLogRecord = {
   id: string;
   action: string;
@@ -1199,6 +1216,146 @@ export class OrdersRepository {
     });
   }
 
+  findRiskScoreByTarget(targetType: RiskTargetType, targetId: string): Promise<RiskScoreRecord | null> {
+    return this.prisma.riskScore.findFirst({
+      where: {
+        targetType,
+        targetId,
+      },
+      orderBy: {
+        calculatedAt: 'desc',
+      },
+    });
+  }
+
+  async saveRiskScore(input: {
+    targetType: RiskTargetType;
+    targetId: string;
+    score: number;
+    riskLevel: string;
+    factorSummary: string;
+    calculatedAt: Date;
+  }): Promise<RiskScoreRecord> {
+    const existing = await this.findRiskScoreByTarget(input.targetType, input.targetId);
+    const data = {
+      score: new Prisma.Decimal(input.score),
+      riskLevel: input.riskLevel,
+      factorSummary: input.factorSummary,
+      calculatedAt: input.calculatedAt,
+    };
+
+    if (existing) {
+      return this.prisma.riskScore.update({
+        where: { id: existing.id },
+        data,
+      });
+    }
+
+    return this.prisma.riskScore.create({
+      data: {
+        targetType: input.targetType,
+        targetId: input.targetId,
+        ...data,
+      },
+    });
+  }
+
+  async findRiskScoresForAdmin(filters?: {
+    targetType?: RiskTargetType;
+    riskLevel?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    search?: string;
+    page?: number;
+    pageSize?: number;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<{ total: number; page: number; pageSize: number; items: RiskScoreRecord[] }> {
+    const page = Math.max(1, Number(filters?.page ?? 1));
+    const pageSize = Math.min(50, Math.max(1, Number(filters?.pageSize ?? 20)));
+    const where: Prisma.RiskScoreWhereInput = {
+      ...(filters?.targetType ? { targetType: filters.targetType } : {}),
+      ...(filters?.riskLevel ? { riskLevel: filters.riskLevel } : {}),
+      ...(filters?.search
+        ? {
+            OR: [
+              { targetId: { contains: filters.search, mode: 'insensitive' } },
+              { factorSummary: { contains: filters.search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.riskScore.count({ where }),
+      this.prisma.riskScore.findMany({
+        where,
+        orderBy: {
+          calculatedAt: filters?.sortOrder ?? 'desc',
+        },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    return { total, page, pageSize, items };
+  }
+
+  async getRiskSignals(targetType: RiskTargetType, targetId: string): Promise<RiskSignalSnapshot | null> {
+    if (targetType === 'SHOP') {
+      return this.getShopRiskSignals(targetId);
+    }
+    if (targetType === 'OFFER') {
+      return this.getOfferRiskSignals(targetId);
+    }
+    return this.getBatchRiskSignals(targetId);
+  }
+
+  async resolveRiskTargetsForReport(input: { targetType: string; targetId: string }): Promise<Array<{ targetType: RiskTargetType; targetId: string }>> {
+    if (input.targetType === 'SHOP') {
+      return [{ targetType: 'SHOP', targetId: input.targetId }];
+    }
+
+    if (input.targetType === 'OFFER') {
+      const offer = await this.prisma.offer.findUnique({
+        where: { id: input.targetId },
+        include: {
+          batchLinks: {
+            select: { batchId: true },
+          },
+        },
+      });
+      if (!offer) return [];
+      return this.dedupeRiskTargets([
+        { targetType: 'OFFER', targetId: offer.id },
+        { targetType: 'SHOP', targetId: offer.shopId },
+        ...offer.batchLinks.map((link) => ({ targetType: 'BATCH' as const, targetId: link.batchId })),
+      ]);
+    }
+
+    if (input.targetType === 'ORDER') {
+      const order = await this.prisma.order.findUnique({
+        where: { id: input.targetId },
+        include: {
+          items: {
+            include: {
+              batchAllocations: {
+                select: { batchId: true },
+              },
+            },
+          },
+        },
+      });
+      if (!order) return [];
+      return this.dedupeRiskTargets([
+        { targetType: 'SHOP', targetId: order.shopId },
+        ...order.items.map((item) => ({ targetType: 'OFFER' as const, targetId: item.offerId })),
+        ...order.items.flatMap((item) =>
+          item.batchAllocations.map((allocation) => ({ targetType: 'BATCH' as const, targetId: allocation.batchId })),
+        ),
+      ]);
+    }
+
+    return [];
+  }
+
   findDisputeById(id: string): Promise<DisputeWithOrder | null> {
     return this.prisma.dispute.findUnique({
       where: { id },
@@ -1602,6 +1759,187 @@ export class OrdersRepository {
         },
         ...orderWithRelationsArgs,
       });
+    });
+  }
+
+  private async getShopRiskSignals(shopId: string): Promise<RiskSignalSnapshot | null> {
+    const shop = await this.prisma.shop.findUnique({
+      where: { id: shopId },
+      include: {
+        documents: { select: { reviewStatus: true } },
+        registeredCategories: {
+          include: {
+            documents: { select: { reviewStatus: true } },
+          },
+        },
+        brandAuthorizations: { select: { verificationStatus: true } },
+      },
+    });
+    if (!shop) return null;
+
+    const reportCounts = await this.countReportsForTarget('SHOP', shopId);
+    const disputeCounts = await this.countDisputesForWhere({ order: { is: { shopId } } });
+    const rating = await this.prisma.review.aggregate({
+      where: { toUserId: shop.ownerUserId },
+      _avg: { rating: true },
+      _count: { id: true },
+    });
+    const statuses = [
+      shop.shopStatus,
+      ...shop.documents.map((doc) => doc.reviewStatus),
+      ...shop.registeredCategories.flatMap((category) => category.documents.map((doc) => doc.reviewStatus)),
+      ...shop.brandAuthorizations.map((authorization) => authorization.verificationStatus),
+    ];
+
+    return {
+      targetType: 'SHOP',
+      targetId: shop.id,
+      targetLabel: shop.shopName,
+      ...reportCounts,
+      ...disputeCounts,
+      ...this.countDocumentStatuses(statuses),
+      missingProvenance: false,
+      reviewCount: rating._count.id ?? 0,
+      averageRating: rating._avg.rating ? Number(rating._avg.rating) : null,
+    };
+  }
+
+  private async getOfferRiskSignals(offerId: string): Promise<RiskSignalSnapshot | null> {
+    const offer = await this.prisma.offer.findUnique({
+      where: { id: offerId },
+      include: {
+        documents: { select: { reviewStatus: true } },
+        batchLinks: { select: { batchId: true } },
+      },
+    });
+    if (!offer) return null;
+
+    const reportCounts = await this.countReportsForTarget('OFFER', offerId);
+    const disputeCounts = await this.countDisputesForWhere({ order: { is: { items: { some: { offerId } } } } });
+    const rating = await this.prisma.review.aggregate({
+      where: {
+        orderItem: {
+          is: {
+            offerId,
+          },
+        },
+      },
+      _avg: { rating: true },
+      _count: { id: true },
+    });
+
+    return {
+      targetType: 'OFFER',
+      targetId: offer.id,
+      targetLabel: offer.title,
+      ...reportCounts,
+      ...disputeCounts,
+      ...this.countDocumentStatuses(offer.documents.map((doc) => doc.reviewStatus)),
+      missingProvenance: offer.batchLinks.length === 0,
+      reviewCount: rating._count.id ?? 0,
+      averageRating: rating._avg.rating ? Number(rating._avg.rating) : null,
+    };
+  }
+
+  private async getBatchRiskSignals(batchId: string): Promise<RiskSignalSnapshot | null> {
+    const batch = await this.prisma.supplyBatch.findUnique({
+      where: { id: batchId },
+      include: {
+        documents: { select: { reviewStatus: true } },
+      },
+    });
+    if (!batch) return null;
+
+    const reportCounts = await this.countReportsForTarget('BATCH', batchId);
+    const disputeCounts = await this.countDisputesForWhere({
+      order: {
+        is: {
+          items: {
+            some: {
+              batchAllocations: {
+                some: { batchId },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return {
+      targetType: 'BATCH',
+      targetId: batch.id,
+      targetLabel: batch.batchNumber || batch.sourceName,
+      ...reportCounts,
+      ...disputeCounts,
+      ...this.countDocumentStatuses(batch.documents.map((doc) => doc.reviewStatus)),
+      missingProvenance: !batch.sourceOrderItemId && String(batch.sourceType || '').toUpperCase() !== 'MANUFACTURER',
+      reviewCount: 0,
+      averageRating: null,
+    };
+  }
+
+  private async countReportsForTarget(targetType: string, targetId: string) {
+    const [openReportCount, resolvedReportCount, rejectedReportCount] = await this.prisma.$transaction([
+      this.prisma.report.count({
+        where: {
+          targetType,
+          targetId,
+          reportStatus: { in: ['OPEN', 'IN_REVIEW'] },
+        },
+      }),
+      this.prisma.report.count({
+        where: {
+          targetType,
+          targetId,
+          reportStatus: 'RESOLVED',
+        },
+      }),
+      this.prisma.report.count({
+        where: {
+          targetType,
+          targetId,
+          reportStatus: 'REJECTED',
+        },
+      }),
+    ]);
+
+    return { openReportCount, resolvedReportCount, rejectedReportCount };
+  }
+
+  private async countDisputesForWhere(where: Prisma.DisputeWhereInput) {
+    const [openDisputeCount, refundedDisputeCount] = await this.prisma.$transaction([
+      this.prisma.dispute.count({
+        where: {
+          ...where,
+          disputeStatus: 'OPEN',
+        },
+      }),
+      this.prisma.dispute.count({
+        where: {
+          ...where,
+          disputeStatus: 'REFUNDED',
+        },
+      }),
+    ]);
+
+    return { openDisputeCount, refundedDisputeCount };
+  }
+
+  private countDocumentStatuses(statuses: string[]) {
+    const normalized = statuses.map((status) => String(status || '').toUpperCase());
+    return {
+      rejectedDocumentCount: normalized.filter((status) => ['REJECTED', 'DENIED', 'SUSPENDED'].includes(status)).length,
+      pendingDocumentCount: normalized.filter((status) => ['PENDING', 'PENDING_VERIFICATION', 'IN_REVIEW', 'SUBMITTED'].includes(status)).length,
+    };
+  }
+
+  private dedupeRiskTargets(targets: Array<{ targetType: RiskTargetType; targetId: string }>) {
+    const seen = new Set<string>();
+    return targets.filter((target) => {
+      const key = `${target.targetType}:${target.targetId}`;
+      if (!target.targetId || seen.has(key)) return false;
+      seen.add(key);
+      return true;
     });
   }
 

@@ -1,9 +1,13 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { RecalculateRiskTargetsUseCase } from './recalculate-risk-targets.use-case';
 
 @Injectable()
 export class OpenOrderDisputeUseCase {
-  constructor(private readonly ordersRepository: OrdersRepository) {}
+  constructor(
+    private readonly ordersRepository: OrdersRepository,
+    private readonly recalculateRiskTargetsUseCase: RecalculateRiskTargetsUseCase,
+  ) {}
 
   async execute(input: { id: string; requesterUserId: string; reason: string }) {
     const order = await this.ordersRepository.findOrderById(input.id);
@@ -49,6 +53,12 @@ export class OpenOrderDisputeUseCase {
       metadata: {
         orderId: order.id,
       },
+    });
+
+    await this.recalculateRiskTargetsUseCase.executeForReport({
+      targetType: 'ORDER',
+      targetId: order.id,
+      actorUserId: input.requesterUserId,
     });
 
     return dispute;

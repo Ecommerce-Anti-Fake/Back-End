@@ -14,13 +14,16 @@ import {
   AddCartItemDto,
   AddDisputeEvidenceBatchDto,
   AdminReportQueryDto,
+  AdminRiskScoreQueryDto,
   AdminDisputeDetailResponseDto,
   AdminOpenDisputeQueryDto,
   CartResponseDto,
   CheckoutCartItemDto,
   CreateReportDto,
+  CalculateRiskScoreDto,
   PaginatedAdminOpenDisputeResponseDto,
   PaginatedAdminReportResponseDto,
+  PaginatedAdminRiskScoreResponseDto,
   AssignAdminDisputeDto,
   CreateRetailOrderDto,
   CreateWholesaleOrderDto,
@@ -33,6 +36,7 @@ import {
   OrderResponseDto,
   MyReportsResponseDto,
   ReportResponseDto,
+  RiskScoreResponseDto,
   ResolveAdminDisputeDto,
   ResolveOrderDisputeDto,
   UpdateAdminReportDto,
@@ -419,6 +423,42 @@ export class OrdersController {
       requesterUserId,
       reportStatus: dto.reportStatus,
       internalNote: dto.internalNote ?? null,
+    });
+  }
+
+  @ApiOperation({ summary: 'Admin xem danh sach risk score' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach risk score cua shop, offer va batch.',
+    type: PaginatedAdminRiskScoreResponseDto,
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi admin moi co quyen truy cap.',
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Get('admin/risk-scores')
+  listAdminRiskScores(@Query() query: AdminRiskScoreQueryDto) {
+    return this.ordersRpcService.findAdminRiskScores(query);
+  }
+
+  @ApiOperation({ summary: 'Admin tinh lai risk score cho shop, offer hoac batch' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Risk score da duoc tinh lai.',
+    type: RiskScoreResponseDto,
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi admin moi co quyen truy cap.',
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Post('admin/risk-scores/recalculate')
+  calculateRiskScore(@CurrentUserId() requesterUserId: string, @Body() dto: CalculateRiskScoreDto) {
+    return this.ordersRpcService.calculateRiskScore({
+      targetType: dto.targetType,
+      targetId: dto.targetId,
+      actorUserId: requesterUserId,
     });
   }
 

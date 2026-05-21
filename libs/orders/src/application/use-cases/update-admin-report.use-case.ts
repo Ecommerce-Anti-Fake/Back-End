@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { RecalculateRiskTargetsUseCase } from './recalculate-risk-targets.use-case';
 import { toReportResponse } from './reports.mapper';
 
 @Injectable()
 export class UpdateAdminReportUseCase {
-  constructor(private readonly ordersRepository: OrdersRepository) {}
+  constructor(
+    private readonly ordersRepository: OrdersRepository,
+    private readonly recalculateRiskTargetsUseCase: RecalculateRiskTargetsUseCase,
+  ) {}
 
   async execute(input: {
     reportId: string;
@@ -43,6 +47,12 @@ export class UpdateAdminReportUseCase {
         targetType: report.targetType,
         targetId: report.targetId,
       },
+    });
+
+    await this.recalculateRiskTargetsUseCase.executeForReport({
+      targetType: report.targetType,
+      targetId: report.targetId,
+      actorUserId: input.requesterUserId,
     });
 
     return toReportResponse(updated);

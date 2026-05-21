@@ -10,7 +10,9 @@ import type {
   AdminOpenDisputeCountMessage,
   AdminOpenDisputesLookupMessage,
   AdminReportsLookupMessage,
+  AdminRiskScoresLookupMessage,
   AssignAdminDisputeMessage,
+  CalculateRiskScoreMessage,
   CheckoutCartItemMessage,
   CreateRetailOrderMessage,
   CreateReportMessage,
@@ -45,6 +47,7 @@ import {
   AddCartItemUseCase,
   AssignAdminDisputeUseCase,
   CheckoutCartItemUseCase,
+  CalculateRiskScoreUseCase,
   CreateRetailOrderUseCase,
   CreateReportUseCase,
   CreateWholesaleOrderUseCase,
@@ -57,6 +60,7 @@ import {
   GetDisputeEvidenceUploadSignaturesUseCase,
   ListAdminOpenDisputesUseCase,
   ListAdminReportsUseCase,
+  ListAdminRiskScoresUseCase,
   ListDisputeEvidenceUseCase,
   ListMyOrdersUseCase,
   ListMyReportsUseCase,
@@ -108,7 +112,9 @@ export class OrdersRpcController {
     private readonly retryPayOSPaymentUseCase: RetryPayOSPaymentUseCase,
     private readonly completeOrderUseCase: CompleteOrderUseCase,
     private readonly cancelOrderUseCase: CancelOrderUseCase,
+    private readonly calculateRiskScoreUseCase: CalculateRiskScoreUseCase,
     private readonly createReportUseCase: CreateReportUseCase,
+    private readonly listAdminRiskScoresUseCase: ListAdminRiskScoresUseCase,
     private readonly listAdminReportsUseCase: ListAdminReportsUseCase,
     private readonly listMyReportsUseCase: ListMyReportsUseCase,
     private readonly openOrderDisputeUseCase: OpenOrderDisputeUseCase,
@@ -374,6 +380,24 @@ export class OrdersRpcController {
   async createReport(@Payload() payload: CreateReportMessage) {
     try {
       return await this.createReportUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.calculateRiskScore)
+  async calculateRiskScore(@Payload() payload: CalculateRiskScoreMessage) {
+    try {
+      return await this.calculateRiskScoreUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.findAdminRiskScores)
+  async findAdminRiskScores(@Payload() payload?: AdminRiskScoresLookupMessage) {
+    try {
+      return await this.listAdminRiskScoresUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

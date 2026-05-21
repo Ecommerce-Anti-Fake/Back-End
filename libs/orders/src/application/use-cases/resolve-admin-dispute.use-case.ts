@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { OrderReversalService } from '../services';
+import { RecalculateRiskTargetsUseCase } from './recalculate-risk-targets.use-case';
 import { toAdminDisputeDetailResponse } from './admin-disputes.mapper';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class ResolveAdminDisputeUseCase {
   constructor(
     private readonly ordersRepository: OrdersRepository,
     private readonly orderReversalService: OrderReversalService,
+    private readonly recalculateRiskTargetsUseCase: RecalculateRiskTargetsUseCase,
   ) {}
 
   async execute(input: {
@@ -56,6 +58,11 @@ export class ResolveAdminDisputeUseCase {
       metadata: {
         resolution: input.resolution,
       },
+    });
+    await this.recalculateRiskTargetsUseCase.executeForReport({
+      targetType: 'ORDER',
+      targetId: dispute.orderId,
+      actorUserId: input.requesterUserId,
     });
     const timeline = await this.ordersRepository.findAuditLogsByTarget('DISPUTE', dispute.id);
     return toAdminDisputeDetailResponse(resolved, evidence, moderationCase, timeline);

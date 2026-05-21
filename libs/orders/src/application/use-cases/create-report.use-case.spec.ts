@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { CreateReportUseCase } from './create-report.use-case';
+import { RecalculateRiskTargetsUseCase } from './recalculate-risk-targets.use-case';
 
 describe('CreateReportUseCase', () => {
   let useCase: CreateReportUseCase;
@@ -16,6 +17,9 @@ describe('CreateReportUseCase', () => {
     upsertReportModerationCase: jest.fn(),
     createAuditLog: jest.fn(),
   };
+  const recalculateRiskTargetsUseCaseMock = {
+    executeForReport: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -24,6 +28,7 @@ describe('CreateReportUseCase', () => {
       providers: [
         CreateReportUseCase,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
+        { provide: RecalculateRiskTargetsUseCase, useValue: recalculateRiskTargetsUseCaseMock },
       ],
     }).compile();
 
@@ -64,6 +69,11 @@ describe('CreateReportUseCase', () => {
         toStatus: 'OPEN',
       }),
     );
+    expect(recalculateRiskTargetsUseCaseMock.executeForReport).toHaveBeenCalledWith({
+      targetType: 'ORDER',
+      targetId: 'order-1',
+      actorUserId: 'buyer-user-1',
+    });
     expect(result).toMatchObject({
       id: 'report-1',
       reportStatus: 'OPEN',

@@ -1,12 +1,16 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { RecalculateRiskTargetsUseCase } from './recalculate-risk-targets.use-case';
 import { toReportResponse } from './reports.mapper';
 
 const REPORT_TARGET_TYPES = ['ORDER', 'OFFER', 'SHOP'] as const;
 
 @Injectable()
 export class CreateReportUseCase {
-  constructor(private readonly ordersRepository: OrdersRepository) {}
+  constructor(
+    private readonly ordersRepository: OrdersRepository,
+    private readonly recalculateRiskTargetsUseCase: RecalculateRiskTargetsUseCase,
+  ) {}
 
   async execute(input: {
     requesterUserId: string;
@@ -60,6 +64,12 @@ export class CreateReportUseCase {
         targetType: input.targetType,
         targetId: input.targetId,
       },
+    });
+
+    await this.recalculateRiskTargetsUseCase.executeForReport({
+      targetType: input.targetType,
+      targetId: input.targetId,
+      actorUserId: input.requesterUserId,
     });
 
     return toReportResponse(report, targetLabel);

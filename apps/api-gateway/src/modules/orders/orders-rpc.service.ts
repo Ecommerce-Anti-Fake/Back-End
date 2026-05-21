@@ -11,7 +11,9 @@ import {
   AdminDisputeSummaryMessage,
   AdminOpenDisputesLookupMessage,
   AdminOpenDisputeCountMessage,
+  AdminRiskScoresLookupMessage,
   AdminReportsLookupMessage,
+  CalculateRiskScoreMessage,
   CreateRetailOrderMessage,
   CreateReportMessage,
   CreateWholesaleOrderMessage,
@@ -116,6 +118,14 @@ export class OrdersRpcService {
 
   findAdminReports(payload: AdminReportsLookupMessage = {}) {
     return this.send(ORDERS_MESSAGE_PATTERNS.findAdminReports, payload);
+  }
+
+  calculateRiskScore(payload: CalculateRiskScoreMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.calculateRiskScore, payload);
+  }
+
+  findAdminRiskScores(payload: AdminRiskScoresLookupMessage = {}) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.findAdminRiskScores, payload);
   }
 
   updateAdminReport(payload: UpdateAdminReportMessage) {

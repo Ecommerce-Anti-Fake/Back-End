@@ -6,6 +6,8 @@ const ADMIN_DISPUTE_STATUSES = ['OPEN', 'RESOLVED', 'REFUNDED'] as const;
 const ADMIN_DISPUTE_SORT_FIELDS = ['openedAt', 'orderId', 'disputeStatus'] as const;
 const REPORT_TARGET_TYPES = ['ORDER', 'OFFER', 'SHOP'] as const;
 const REPORT_STATUSES = ['OPEN', 'IN_REVIEW', 'RESOLVED', 'REJECTED'] as const;
+const RISK_TARGET_TYPES = ['SHOP', 'OFFER', 'BATCH'] as const;
+const RISK_LEVELS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
 const SORT_ORDERS = ['asc', 'desc'] as const;
 
 export class CartItemResponseDto {
@@ -448,6 +450,111 @@ export class UpdateAdminReportDto {
   @IsOptional()
   @IsString()
   internalNote?: string | null;
+}
+
+export class RiskScoreFactorDto {
+  @ApiProperty({ example: 'openReports' })
+  key!: string;
+
+  @ApiProperty({ example: 2 })
+  value!: number | string | boolean | null;
+
+  @ApiProperty({ example: 30 })
+  impact!: number;
+
+  @ApiProperty({ example: '2 report dang mo hoac dang xu ly' })
+  label!: string;
+}
+
+export class RiskScoreResponseDto {
+  @ApiProperty({ example: 'risk-score-id' })
+  id!: string;
+
+  @ApiProperty({ example: 'SHOP', enum: RISK_TARGET_TYPES })
+  targetType!: string;
+
+  @ApiProperty({ example: 'target-id' })
+  targetId!: string;
+
+  @ApiPropertyOptional({ example: 'Shop ABC', nullable: true })
+  targetLabel!: string | null;
+
+  @ApiProperty({ example: 62.5 })
+  score!: number;
+
+  @ApiProperty({ example: 'HIGH', enum: RISK_LEVELS })
+  riskLevel!: string;
+
+  @ApiProperty({ type: RiskScoreFactorDto, isArray: true })
+  factors!: RiskScoreFactorDto[];
+
+  @ApiProperty({ example: '2026-05-21T10:00:00.000Z' })
+  calculatedAt!: Date;
+}
+
+export class AdminRiskScoreQueryDto {
+  @ApiPropertyOptional({ example: 'SHOP', enum: RISK_TARGET_TYPES })
+  @IsOptional()
+  @IsString()
+  @IsIn(RISK_TARGET_TYPES)
+  targetType?: 'SHOP' | 'OFFER' | 'BATCH';
+
+  @ApiPropertyOptional({ example: 'HIGH', enum: RISK_LEVELS })
+  @IsOptional()
+  @IsString()
+  @IsIn(RISK_LEVELS)
+  riskLevel?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+
+  @ApiPropertyOptional({ example: 'shop-id' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  pageSize?: number;
+
+  @ApiPropertyOptional({ example: 'desc', enum: SORT_ORDERS })
+  @IsOptional()
+  @IsString()
+  @IsIn(SORT_ORDERS)
+  sortOrder?: 'asc' | 'desc';
+}
+
+export class PaginatedAdminRiskScoreResponseDto {
+  @ApiProperty({ example: 1 })
+  total!: number;
+
+  @ApiProperty({ example: 1 })
+  page!: number;
+
+  @ApiProperty({ example: 20 })
+  pageSize!: number;
+
+  @ApiProperty({ type: RiskScoreResponseDto, isArray: true })
+  items!: RiskScoreResponseDto[];
+}
+
+export class CalculateRiskScoreDto {
+  @ApiProperty({ example: 'SHOP', enum: RISK_TARGET_TYPES })
+  @IsString()
+  @IsIn(RISK_TARGET_TYPES)
+  targetType!: 'SHOP' | 'OFFER' | 'BATCH';
+
+  @ApiProperty({ example: 'target-id' })
+  @IsString()
+  targetId!: string;
 }
 
 export class ResolveOrderDisputeDto {

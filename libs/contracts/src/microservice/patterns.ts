@@ -111,6 +111,8 @@ export const ORDERS_MESSAGE_PATTERNS = {
   findMyReports: 'orders.find-my-reports',
   findAdminReports: 'orders.find-admin-reports',
   updateAdminReport: 'orders.update-admin-report',
+  calculateRiskScore: 'orders.calculate-risk-score',
+  findAdminRiskScores: 'orders.find-admin-risk-scores',
   getAdminDisputeSummary: 'orders.get-admin-dispute-summary',
   getAdminDisputeDetail: 'orders.get-admin-dispute-detail',
   assignAdminDispute: 'orders.assign-admin-dispute',
@@ -750,6 +752,23 @@ export type UpdateAdminReportMessage = {
   requesterUserId: string;
   reportStatus: 'IN_REVIEW' | 'RESOLVED' | 'REJECTED';
   internalNote?: string | null;
+};
+
+export type RiskTargetType = 'SHOP' | 'OFFER' | 'BATCH';
+
+export type CalculateRiskScoreMessage = {
+  targetType: RiskTargetType;
+  targetId: string;
+  actorUserId?: string | null;
+};
+
+export type AdminRiskScoresLookupMessage = {
+  targetType?: RiskTargetType;
+  riskLevel?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  sortOrder?: 'asc' | 'desc';
 };
 
 export type AssignAdminDisputeMessage = {
