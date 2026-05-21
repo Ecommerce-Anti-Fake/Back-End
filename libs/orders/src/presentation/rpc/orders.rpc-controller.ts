@@ -9,6 +9,7 @@ import type {
   AdminOrdersLookupMessage,
   AdminOpenDisputeCountMessage,
   AdminOpenDisputesLookupMessage,
+  AdminModerationCasesLookupMessage,
   AdminReportsLookupMessage,
   AdminRiskScoresLookupMessage,
   AssignAdminDisputeMessage,
@@ -37,6 +38,7 @@ import type {
   RefundOrderMessage,
   RemoveCartItemMessage,
   UpdateAdminReportMessage,
+  UpdateAdminModerationCaseMessage,
   UpdateCartItemMessage,
   UpdateAdminDisputeCaseMessage,
   UpdateOrderFulfillmentMessage,
@@ -59,6 +61,7 @@ import {
   GetOrderFulfillmentAuditUseCase,
   GetDisputeEvidenceUploadSignaturesUseCase,
   ListAdminOpenDisputesUseCase,
+  ListAdminModerationCasesUseCase,
   ListAdminReportsUseCase,
   ListAdminRiskScoresUseCase,
   ListDisputeEvidenceUseCase,
@@ -78,6 +81,7 @@ import {
   ResolveOrderDisputeUseCase,
   RefundOrderUseCase,
   UpdateAdminReportUseCase,
+  UpdateAdminModerationCaseUseCase,
   UpdateCartItemUseCase,
   UpdateAdminDisputeCaseUseCase,
   UpdateOrderFulfillmentUseCase,
@@ -115,6 +119,7 @@ export class OrdersRpcController {
     private readonly calculateRiskScoreUseCase: CalculateRiskScoreUseCase,
     private readonly createReportUseCase: CreateReportUseCase,
     private readonly listAdminRiskScoresUseCase: ListAdminRiskScoresUseCase,
+    private readonly listAdminModerationCasesUseCase: ListAdminModerationCasesUseCase,
     private readonly listAdminReportsUseCase: ListAdminReportsUseCase,
     private readonly listMyReportsUseCase: ListMyReportsUseCase,
     private readonly openOrderDisputeUseCase: OpenOrderDisputeUseCase,
@@ -122,6 +127,7 @@ export class OrdersRpcController {
     private readonly resolveOrderDisputeUseCase: ResolveOrderDisputeUseCase,
     private readonly refundOrderUseCase: RefundOrderUseCase,
     private readonly updateAdminReportUseCase: UpdateAdminReportUseCase,
+    private readonly updateAdminModerationCaseUseCase: UpdateAdminModerationCaseUseCase,
     private readonly updateAdminDisputeCaseUseCase: UpdateAdminDisputeCaseUseCase,
     private readonly updateOrderFulfillmentUseCase: UpdateOrderFulfillmentUseCase,
   ) {}
@@ -398,6 +404,24 @@ export class OrdersRpcController {
   async findAdminRiskScores(@Payload() payload?: AdminRiskScoresLookupMessage) {
     try {
       return await this.listAdminRiskScoresUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.findAdminModerationCases)
+  async findAdminModerationCases(@Payload() payload?: AdminModerationCasesLookupMessage) {
+    try {
+      return await this.listAdminModerationCasesUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.updateAdminModerationCase)
+  async updateAdminModerationCase(@Payload() payload: UpdateAdminModerationCaseMessage) {
+    try {
+      return await this.updateAdminModerationCaseUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

@@ -47,6 +47,37 @@ export class CalculateRiskScoreUseCase {
       });
     }
 
+    if (riskLevel === 'HIGH' || riskLevel === 'CRITICAL') {
+      const existingCase = await this.ordersRepository.findModerationCaseByTarget(input.targetType, input.targetId);
+      const moderationCase = await this.ordersRepository.upsertRiskModerationCase({
+        targetType: input.targetType,
+        targetId: input.targetId,
+        riskLevel,
+        score,
+        reason: `Risk score ${riskLevel} (${score})`,
+        internalNote: `Tu dong mo case tu risk score ${riskLevel} (${score}).`,
+      });
+      if (
+        input.actorUserId &&
+        (!existingCase || existingCase.id !== moderationCase.id || existingCase.caseStatus !== moderationCase.caseStatus)
+      ) {
+        await this.ordersRepository.createAuditLog({
+          targetType: input.targetType,
+          targetId: input.targetId,
+          actorUserId: input.actorUserId,
+          action: 'MODERATION_CASE_AUTOMATED',
+          fromStatus: existingCase?.caseStatus ?? null,
+          toStatus: moderationCase.caseStatus,
+          note: `Auto moderation case from ${riskLevel} risk score ${score}`,
+          metadata: {
+            caseId: moderationCase.id,
+            score,
+            riskLevel,
+          },
+        });
+      }
+    }
+
     return toRiskScoreResponse(saved, signals.targetLabel);
   }
 

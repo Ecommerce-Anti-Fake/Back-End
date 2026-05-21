@@ -9,7 +9,9 @@ describe('CalculateRiskScoreUseCase', () => {
   const ordersRepositoryMock = {
     getRiskSignals: jest.fn(),
     findRiskScoreByTarget: jest.fn(),
+    findModerationCaseByTarget: jest.fn(),
     saveRiskScore: jest.fn(),
+    upsertRiskModerationCase: jest.fn(),
     createAuditLog: jest.fn(),
   };
 
@@ -43,6 +45,7 @@ describe('CalculateRiskScoreUseCase', () => {
       averageRating: 2.5,
     });
     ordersRepositoryMock.findRiskScoreByTarget.mockResolvedValueOnce(null);
+    ordersRepositoryMock.findModerationCaseByTarget.mockResolvedValueOnce(null);
     ordersRepositoryMock.saveRiskScore.mockImplementationOnce(async (input) => ({
       id: 'risk-1',
       targetType: input.targetType,
@@ -52,6 +55,12 @@ describe('CalculateRiskScoreUseCase', () => {
       factorSummary: input.factorSummary,
       calculatedAt: input.calculatedAt,
     }));
+    ordersRepositoryMock.upsertRiskModerationCase.mockResolvedValueOnce({
+      id: 'case-1',
+      targetType: 'OFFER',
+      targetId: 'offer-1',
+      caseStatus: 'ESCALATED',
+    });
 
     const result = await useCase.execute({ targetType: 'OFFER', targetId: 'offer-1', actorUserId: 'admin-1' });
 
@@ -70,6 +79,22 @@ describe('CalculateRiskScoreUseCase', () => {
         actorUserId: 'admin-1',
         action: 'RISK_SCORE_RECALCULATED',
         toStatus: 'CRITICAL',
+      }),
+    );
+    expect(ordersRepositoryMock.upsertRiskModerationCase).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetType: 'OFFER',
+        targetId: 'offer-1',
+        riskLevel: 'CRITICAL',
+        score: 96,
+      }),
+    );
+    expect(ordersRepositoryMock.createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetType: 'OFFER',
+        targetId: 'offer-1',
+        action: 'MODERATION_CASE_AUTOMATED',
+        toStatus: 'ESCALATED',
       }),
     );
     expect(result).toMatchObject({
@@ -117,5 +142,6 @@ describe('CalculateRiskScoreUseCase', () => {
     await useCase.execute({ targetType: 'SHOP', targetId: 'shop-1', actorUserId: 'admin-1' });
 
     expect(ordersRepositoryMock.createAuditLog).not.toHaveBeenCalled();
+    expect(ordersRepositoryMock.upsertRiskModerationCase).not.toHaveBeenCalled();
   });
 });

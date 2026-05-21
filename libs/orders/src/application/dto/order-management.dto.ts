@@ -8,6 +8,8 @@ const REPORT_TARGET_TYPES = ['ORDER', 'OFFER', 'SHOP'] as const;
 const REPORT_STATUSES = ['OPEN', 'IN_REVIEW', 'RESOLVED', 'REJECTED'] as const;
 const RISK_TARGET_TYPES = ['SHOP', 'OFFER', 'BATCH'] as const;
 const RISK_LEVELS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
+const MODERATION_TARGET_TYPES = ['KYC', 'SHOP', 'OFFER', 'BATCH', 'REPORT', 'DISPUTE'] as const;
+const MODERATION_CASE_STATUSES = ['ASSIGNED', 'IN_REVIEW', 'ESCALATED', 'RESOLVED', 'CLOSED'] as const;
 const SORT_ORDERS = ['asc', 'desc'] as const;
 
 export class CartItemResponseDto {
@@ -555,6 +557,117 @@ export class CalculateRiskScoreDto {
   @ApiProperty({ example: 'target-id' })
   @IsString()
   targetId!: string;
+}
+
+export class AdminModerationCaseResponseDto {
+  @ApiProperty({ example: 'moderation-case-id' })
+  id!: string;
+
+  @ApiProperty({ example: 'OFFER', enum: MODERATION_TARGET_TYPES })
+  targetType!: string;
+
+  @ApiProperty({ example: 'target-id' })
+  targetId!: string;
+
+  @ApiProperty({ example: 'Risk score CRITICAL (96)' })
+  reason!: string;
+
+  @ApiProperty({ example: 'ESCALATED', enum: MODERATION_CASE_STATUSES })
+  caseStatus!: string;
+
+  @ApiPropertyOptional({ example: 'Can xu ly truoc khi cho hien thi lai.', nullable: true })
+  internalNote!: string | null;
+
+  @ApiPropertyOptional({ example: 'admin-user-id', nullable: true })
+  assignedAdminUserId!: string | null;
+
+  @ApiPropertyOptional({ example: 'Admin Name', nullable: true })
+  assignedAdminDisplayName!: string | null;
+
+  @ApiPropertyOptional({ example: 'admin@example.com', nullable: true })
+  assignedAdminEmail!: string | null;
+
+  @ApiProperty({ example: '2026-05-21T10:00:00.000Z' })
+  createdAt!: Date;
+
+  @ApiPropertyOptional({ example: '2026-05-21T11:00:00.000Z', nullable: true })
+  resolvedAt!: Date | null;
+}
+
+export class AdminModerationCaseQueryDto {
+  @ApiPropertyOptional({ example: 'OFFER', enum: MODERATION_TARGET_TYPES })
+  @IsOptional()
+  @IsString()
+  @IsIn(MODERATION_TARGET_TYPES)
+  targetType?: 'KYC' | 'SHOP' | 'OFFER' | 'BATCH' | 'REPORT' | 'DISPUTE';
+
+  @ApiPropertyOptional({ example: 'IN_REVIEW', enum: MODERATION_CASE_STATUSES })
+  @IsOptional()
+  @IsString()
+  @IsIn(MODERATION_CASE_STATUSES)
+  caseStatus?: 'ASSIGNED' | 'IN_REVIEW' | 'ESCALATED' | 'RESOLVED' | 'CLOSED';
+
+  @ApiPropertyOptional({ example: 'admin-user-id' })
+  @IsOptional()
+  @IsString()
+  assignedAdminUserId?: string;
+
+  @ApiPropertyOptional({ example: 'target-id hoac reason' })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  pageSize?: number;
+
+  @ApiPropertyOptional({ example: 'desc', enum: SORT_ORDERS })
+  @IsOptional()
+  @IsString()
+  @IsIn(SORT_ORDERS)
+  sortOrder?: 'asc' | 'desc';
+}
+
+export class PaginatedAdminModerationCaseResponseDto {
+  @ApiProperty({ example: 1 })
+  total!: number;
+
+  @ApiProperty({ example: 1 })
+  page!: number;
+
+  @ApiProperty({ example: 20 })
+  pageSize!: number;
+
+  @ApiProperty({ type: AdminModerationCaseResponseDto, isArray: true })
+  items!: AdminModerationCaseResponseDto[];
+}
+
+export class UpdateAdminModerationCaseDto {
+  @ApiProperty({ example: 'IN_REVIEW', enum: MODERATION_CASE_STATUSES })
+  @IsString()
+  @IsIn(MODERATION_CASE_STATUSES)
+  caseStatus!: 'ASSIGNED' | 'IN_REVIEW' | 'ESCALATED' | 'RESOLVED' | 'CLOSED';
+
+  @ApiPropertyOptional({ example: 'admin-user-id' })
+  @IsOptional()
+  @IsString()
+  assignedAdminUserId?: string | null;
+
+  @ApiPropertyOptional({ example: 'Da kiem tra bang chung va can doi chieu nha cung cap.' })
+  @IsOptional()
+  @IsString()
+  internalNote?: string | null;
 }
 
 export class ResolveOrderDisputeDto {

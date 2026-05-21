@@ -269,6 +269,17 @@ export type AdminOpenDisputeRecord = Prisma.DisputeGetPayload<typeof openDispute
 export type ReportWithReporter = Prisma.ReportGetPayload<typeof reportWithReporterArgs>;
 export type RiskTargetType = 'SHOP' | 'OFFER' | 'BATCH';
 export type RiskScoreRecord = Prisma.RiskScoreGetPayload<Record<string, never>>;
+export type ModerationCaseRecord = Prisma.ModerationCaseGetPayload<{
+  include: {
+    assignedAdmin: {
+      select: {
+        id: true;
+        displayName: true;
+        email: true;
+      };
+    };
+  };
+}>;
 export type RiskSignalSnapshot = {
   targetType: RiskTargetType;
   targetId: string;
@@ -1378,6 +1389,134 @@ export class OrdersRepository {
       },
       orderBy: {
         createdAt: 'desc',
+      },
+    });
+  }
+
+  findModerationCaseById(id: string): Promise<ModerationCaseRecord | null> {
+    return this.prisma.moderationCase.findUnique({
+      where: { id },
+      include: {
+        assignedAdmin: {
+          select: {
+            id: true,
+            displayName: true,
+            email: true,
+          },
+        },
+      },
+    });
+  }
+
+  async findModerationCasesForAdmin(filters?: {
+    targetType?: string;
+    caseStatus?: string;
+    assignedAdminUserId?: string;
+    search?: string;
+    page?: number;
+    pageSize?: number;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<{ total: number; page: number; pageSize: number; items: ModerationCaseRecord[] }> {
+    const page = Math.max(1, Number(filters?.page ?? 1));
+    const pageSize = Math.min(50, Math.max(1, Number(filters?.pageSize ?? 20)));
+    const where: Prisma.ModerationCaseWhereInput = {
+      ...(filters?.targetType ? { targetType: filters.targetType } : {}),
+      ...(filters?.caseStatus ? { caseStatus: filters.caseStatus } : {}),
+      ...(filters?.assignedAdminUserId ? { assignedAdminUserId: filters.assignedAdminUserId } : {}),
+      ...(filters?.search
+        ? {
+            OR: [
+              { targetId: { contains: filters.search, mode: 'insensitive' } },
+              { reason: { contains: filters.search, mode: 'insensitive' } },
+              { internalNote: { contains: filters.search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+
+    const include = {
+      assignedAdmin: {
+        select: {
+          id: true,
+          displayName: true,
+          email: true,
+        },
+      },
+    } satisfies Prisma.ModerationCaseInclude;
+
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.moderationCase.count({ where }),
+      this.prisma.moderationCase.findMany({
+        where,
+        include,
+        orderBy: {
+          createdAt: filters?.sortOrder ?? 'desc',
+        },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    return { total, page, pageSize, items };
+  }
+
+  updateModerationCase(input: {
+    id: string;
+    caseStatus: string;
+    internalNote?: string | null;
+    assignedAdminUserId?: string | null;
+    resolvedAt?: Date | null;
+  }): Promise<ModerationCaseRecord> {
+    return this.prisma.moderationCase.update({
+      where: { id: input.id },
+      data: {
+        caseStatus: input.caseStatus,
+        internalNote: input.internalNote ?? null,
+        assignedAdminUserId: input.assignedAdminUserId ?? null,
+        resolvedAt: input.resolvedAt ?? null,
+      },
+      include: {
+        assignedAdmin: {
+          select: {
+            id: true,
+            displayName: true,
+            email: true,
+          },
+        },
+      },
+    });
+  }
+
+  async upsertRiskModerationCase(input: {
+    targetType: RiskTargetType;
+    targetId: string;
+    riskLevel: 'HIGH' | 'CRITICAL';
+    score: number;
+    reason: string;
+    internalNote?: string | null;
+  }) {
+    const existing = await this.findModerationCaseByTarget(input.targetType, input.targetId);
+    const caseStatus = input.riskLevel === 'CRITICAL' ? 'ESCALATED' : 'IN_REVIEW';
+
+    if (!existing || ['RESOLVED', 'CLOSED'].includes(existing.caseStatus)) {
+      return this.prisma.moderationCase.create({
+        data: {
+          targetType: input.targetType,
+          targetId: input.targetId,
+          reason: input.reason,
+          caseStatus,
+          internalNote: input.internalNote ?? `Risk score ${input.riskLevel} (${input.score})`,
+        },
+      });
+    }
+
+    const nextStatus = existing.caseStatus === 'ESCALATED' ? 'ESCALATED' : caseStatus;
+    return this.prisma.moderationCase.update({
+      where: { id: existing.id },
+      data: {
+        reason: input.reason,
+        caseStatus: nextStatus,
+        internalNote: input.internalNote ?? existing.internalNote ?? `Risk score ${input.riskLevel} (${input.score})`,
       },
     });
   }

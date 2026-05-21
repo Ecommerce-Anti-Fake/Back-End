@@ -11,6 +11,7 @@ import {
   AdminDisputeSummaryMessage,
   AdminOpenDisputesLookupMessage,
   AdminOpenDisputeCountMessage,
+  AdminModerationCasesLookupMessage,
   AdminRiskScoresLookupMessage,
   AdminReportsLookupMessage,
   CalculateRiskScoreMessage,
@@ -37,6 +38,7 @@ import {
   ReceiveWholesaleInventoryMessage,
   ResolveOrderDisputeMessage,
   UpdateAdminReportMessage,
+  UpdateAdminModerationCaseMessage,
   RefundOrderMessage,
   RemoveCartItemMessage,
   UpdateCartItemMessage,
@@ -126,6 +128,14 @@ export class OrdersRpcService {
 
   findAdminRiskScores(payload: AdminRiskScoresLookupMessage = {}) {
     return this.send(ORDERS_MESSAGE_PATTERNS.findAdminRiskScores, payload);
+  }
+
+  findAdminModerationCases(payload: AdminModerationCasesLookupMessage = {}) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.findAdminModerationCases, payload);
+  }
+
+  updateAdminModerationCase(payload: UpdateAdminModerationCaseMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.updateAdminModerationCase, payload);
   }
 
   updateAdminReport(payload: UpdateAdminReportMessage) {

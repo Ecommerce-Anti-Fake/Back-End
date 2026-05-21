@@ -113,6 +113,8 @@ export const ORDERS_MESSAGE_PATTERNS = {
   updateAdminReport: 'orders.update-admin-report',
   calculateRiskScore: 'orders.calculate-risk-score',
   findAdminRiskScores: 'orders.find-admin-risk-scores',
+  findAdminModerationCases: 'orders.find-admin-moderation-cases',
+  updateAdminModerationCase: 'orders.update-admin-moderation-case',
   getAdminDisputeSummary: 'orders.get-admin-dispute-summary',
   getAdminDisputeDetail: 'orders.get-admin-dispute-detail',
   assignAdminDispute: 'orders.assign-admin-dispute',
@@ -769,6 +771,28 @@ export type AdminRiskScoresLookupMessage = {
   page?: number;
   pageSize?: number;
   sortOrder?: 'asc' | 'desc';
+};
+
+export type ModerationCaseTargetType = 'KYC' | 'SHOP' | 'OFFER' | 'BATCH' | 'REPORT' | 'DISPUTE';
+
+export type ModerationCaseStatus = 'ASSIGNED' | 'IN_REVIEW' | 'ESCALATED' | 'RESOLVED' | 'CLOSED';
+
+export type AdminModerationCasesLookupMessage = {
+  targetType?: ModerationCaseTargetType;
+  caseStatus?: ModerationCaseStatus;
+  assignedAdminUserId?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  sortOrder?: 'asc' | 'desc';
+};
+
+export type UpdateAdminModerationCaseMessage = {
+  caseId: string;
+  requesterUserId: string;
+  caseStatus: ModerationCaseStatus;
+  internalNote?: string | null;
+  assignedAdminUserId?: string | null;
 };
 
 export type AssignAdminDisputeMessage = {

@@ -13,6 +13,7 @@ import {
 import {
   AddCartItemDto,
   AddDisputeEvidenceBatchDto,
+  AdminModerationCaseQueryDto,
   AdminReportQueryDto,
   AdminRiskScoreQueryDto,
   AdminDisputeDetailResponseDto,
@@ -21,6 +22,7 @@ import {
   CheckoutCartItemDto,
   CreateReportDto,
   CalculateRiskScoreDto,
+  PaginatedAdminModerationCaseResponseDto,
   PaginatedAdminOpenDisputeResponseDto,
   PaginatedAdminReportResponseDto,
   PaginatedAdminRiskScoreResponseDto,
@@ -40,6 +42,7 @@ import {
   ResolveAdminDisputeDto,
   ResolveOrderDisputeDto,
   UpdateAdminReportDto,
+  UpdateAdminModerationCaseDto,
   UpdateCartItemDto,
   UpdateAdminDisputeCaseDto,
   UpdateOrderFulfillmentDto,
@@ -459,6 +462,47 @@ export class OrdersController {
       targetType: dto.targetType,
       targetId: dto.targetId,
       actorUserId: requesterUserId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Admin xem moderation case queue tong hop' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach moderation case tu report, dispute, risk score va cac luong xac minh.',
+    type: PaginatedAdminModerationCaseResponseDto,
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi admin moi co quyen truy cap.',
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Get('admin/moderation-cases')
+  listAdminModerationCases(@Query() query: AdminModerationCaseQueryDto) {
+    return this.ordersRpcService.findAdminModerationCases(query);
+  }
+
+  @ApiOperation({ summary: 'Admin cap nhat moderation case tong hop' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Cap nhat moderation case thanh cong.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi admin moi co quyen truy cap.',
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Patch('admin/moderation-cases/:caseId')
+  updateAdminModerationCase(
+    @Param('caseId') caseId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: UpdateAdminModerationCaseDto,
+  ) {
+    return this.ordersRpcService.updateAdminModerationCase({
+      caseId,
+      requesterUserId,
+      caseStatus: dto.caseStatus,
+      internalNote: dto.internalNote ?? null,
+      assignedAdminUserId: dto.assignedAdminUserId ?? null,
     });
   }
 
