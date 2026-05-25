@@ -19,6 +19,9 @@ const OFFER_SALES_MODES = ['RETAIL', 'WHOLESALE', 'BOTH'] as const;
 const OFFER_MEDIA_ASSET_TYPES = ['IMAGE', 'VIDEO'] as const;
 const REVIEW_MEDIA_ASSET_TYPES = ['IMAGE'] as const;
 const OFFER_STATUSES = ['active', 'inactive', 'draft'] as const;
+const SHOP_TYPES = ['NORMAL', 'HANDMADE', 'MANUFACTURER', 'DISTRIBUTOR'] as const;
+const OFFER_SALES_CHANNELS = ['retail', 'wholesale', 'all'] as const;
+const OFFER_SORTS = ['featured', 'newest', 'price-asc', 'price-desc'] as const;
 
 export class CreateBrandDto {
   @ApiProperty({ example: 'Brand ABC' })
@@ -187,6 +190,9 @@ export class OfferResponseDto {
   @ApiProperty({ example: 'product-model-id' })
   productModelId!: string;
 
+  @ApiPropertyOptional({ example: 'brand-id', nullable: true })
+  brandId!: string | null;
+
   @ApiPropertyOptional({ example: 'seller-node-id', nullable: true })
   distributionNodeId!: string | null;
 
@@ -195,6 +201,9 @@ export class OfferResponseDto {
 
   @ApiProperty({ example: 'Cong ty TNHH San Xuat ABC' })
   shopName!: string;
+
+  @ApiProperty({ example: 'MANUFACTURER' })
+  shopType!: string;
 
   @ApiProperty({ example: 'My pham' })
   categoryName!: string;
@@ -724,4 +733,58 @@ export class ListOffersQueryDto {
   @IsOptional()
   @IsString()
   shopId?: string;
+
+  @ApiPropertyOptional({ example: 'kem chong nang' })
+  @IsOptional()
+  @IsString()
+  q?: string;
+
+  @ApiPropertyOptional({ example: 'category-id' })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiPropertyOptional({ example: 'brand-id' })
+  @IsOptional()
+  @IsString()
+  brandId?: string;
+
+  @ApiPropertyOptional({ example: 100000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  minPrice?: number;
+
+  @ApiPropertyOptional({ example: 500000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  maxPrice?: number;
+
+  @ApiPropertyOptional({ example: 'VN' })
+  @IsOptional()
+  @IsString()
+  location?: string;
+
+  @ApiPropertyOptional({ example: 'standard' })
+  @IsOptional()
+  @IsString()
+  verificationStatus?: string;
+
+  @ApiPropertyOptional({ enum: SHOP_TYPES })
+  @IsOptional()
+  @IsIn(SHOP_TYPES)
+  shopType?: (typeof SHOP_TYPES)[number];
+
+  @ApiPropertyOptional({ enum: OFFER_SALES_CHANNELS })
+  @IsOptional()
+  @IsIn(OFFER_SALES_CHANNELS)
+  salesChannel?: (typeof OFFER_SALES_CHANNELS)[number];
+
+  @ApiPropertyOptional({ enum: OFFER_SORTS })
+  @IsOptional()
+  @IsIn(OFFER_SORTS)
+  sort?: (typeof OFFER_SORTS)[number];
 }

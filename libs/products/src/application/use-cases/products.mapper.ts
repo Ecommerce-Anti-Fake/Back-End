@@ -26,12 +26,14 @@ type CategoryRecord = {
 type OfferWithRelations = Offer & {
   shop: {
     shopName: string;
+    registrationType: string;
   };
   category: {
     name: string;
   };
   productModel: {
     modelName: string;
+    brandId: string;
   };
   distributionNode?: {
     networkId: string;
@@ -182,9 +184,11 @@ export function toOfferResponse(offer: OfferWithRelations) {
     shopId: offer.shopId,
     categoryId: offer.categoryId,
     productModelId: offer.productModelId,
+    brandId: offer.productModel.brandId ?? null,
     distributionNodeId: offer.distributionNodeId,
     distributionNetworkId: offer.distributionNode?.networkId ?? null,
     shopName: offer.shop.shopName,
+    shopType: offer.shop.registrationType,
     categoryName: offer.category.name,
     productModelName: offer.productModel.modelName,
     thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,

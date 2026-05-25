@@ -483,6 +483,16 @@ export type ListOffersMessage = {
   shopId?: string;
   sellerUserId?: string;
   includeInactive?: boolean;
+  q?: string;
+  categoryId?: string;
+  brandId?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  location?: string;
+  verificationStatus?: string;
+  shopType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
+  salesChannel?: 'retail' | 'wholesale' | 'all';
+  sort?: 'featured' | 'newest' | 'price-asc' | 'price-desc';
 };
 
 export type CreateOfferMessage = {

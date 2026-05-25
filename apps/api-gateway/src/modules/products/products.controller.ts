@@ -257,6 +257,16 @@ export class ProductsController {
   findOffers(@Query() query: ListOffersQueryDto) {
     return this.productsRpcService.findOffers({
       shopId: query.shopId,
+      q: query.q,
+      categoryId: query.categoryId,
+      brandId: query.brandId,
+      minPrice: query.minPrice,
+      maxPrice: query.maxPrice,
+      location: query.location,
+      verificationStatus: query.verificationStatus,
+      shopType: query.shopType,
+      salesChannel: query.salesChannel,
+      sort: query.sort,
     });
   }
 

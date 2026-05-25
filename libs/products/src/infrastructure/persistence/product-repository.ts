@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '@database/prisma/prisma.service';
 
 @Injectable()
@@ -178,13 +179,13 @@ export class ProductRepository {
       data,
       include: {
         shop: {
-          select: { shopName: true },
+          select: { shopName: true, registrationType: true },
         },
         category: {
           select: { name: true },
         },
         productModel: {
-          select: { modelName: true },
+          select: { modelName: true, brandId: true },
         },
         distributionNode: {
           select: { networkId: true },
@@ -193,22 +194,85 @@ export class ProductRepository {
     });
   }
 
-  findAllOffers(input: { shopId?: string; sellerUserId?: string; includeInactive?: boolean } = {}) {
+  findAllOffers(
+    input: {
+      shopId?: string;
+      sellerUserId?: string;
+      includeInactive?: boolean;
+      q?: string;
+      categoryId?: string;
+      brandId?: string;
+      minPrice?: number;
+      maxPrice?: number;
+      location?: string;
+      verificationStatus?: string;
+      shopType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
+      salesChannel?: 'retail' | 'wholesale' | 'all';
+      sort?: 'featured' | 'newest' | 'price-asc' | 'price-desc';
+    } = {},
+  ) {
+    const q = input.q?.trim();
+    const location = input.location?.trim();
+    const salesMode = this.resolveSalesModeFilter(input.salesChannel);
+    const shopWhere: Prisma.ShopWhereInput = {
+      ...(input.sellerUserId ? { ownerUserId: input.sellerUserId } : {}),
+      ...(input.shopType ? { registrationType: input.shopType } : {}),
+    };
+    const where: Prisma.OfferWhereInput = {
+      ...(input.shopId ? { shopId: input.shopId } : {}),
+      ...(Object.keys(shopWhere).length ? { shop: { is: shopWhere } } : {}),
+      ...(!input.includeInactive ? { offerStatus: 'active' } : {}),
+      ...(input.categoryId ? { categoryId: input.categoryId } : {}),
+      ...(input.brandId ? { productModel: { is: { brandId: input.brandId } } } : {}),
+      ...(input.verificationStatus ? { verificationLevel: input.verificationStatus } : {}),
+      ...(salesMode ? { salesMode } : {}),
+      ...(input.minPrice !== undefined || input.maxPrice !== undefined
+        ? {
+            price: {
+              ...(input.minPrice !== undefined ? { gte: input.minPrice } : {}),
+              ...(input.maxPrice !== undefined ? { lte: input.maxPrice } : {}),
+            },
+          }
+        : {}),
+      ...(q
+        ? {
+            OR: [
+              { title: { contains: q, mode: 'insensitive' } },
+              { description: { contains: q, mode: 'insensitive' } },
+              { shop: { is: { shopName: { contains: q, mode: 'insensitive' } } } },
+              { category: { is: { name: { contains: q, mode: 'insensitive' } } } },
+              { productModel: { is: { modelName: { contains: q, mode: 'insensitive' } } } },
+              { productModel: { is: { brand: { is: { name: { contains: q, mode: 'insensitive' } } } } } },
+            ],
+          }
+        : {}),
+      ...(location
+        ? {
+            batchLinks: {
+              some: {
+                batch: {
+                  OR: [
+                    { countryOfOrigin: { contains: location, mode: 'insensitive' } },
+                    { sourceName: { contains: location, mode: 'insensitive' } },
+                  ],
+                },
+              },
+            },
+          }
+        : {}),
+    };
+
     return this.prisma.offer.findMany({
-      where: {
-        ...(input.shopId ? { shopId: input.shopId } : {}),
-        ...(input.sellerUserId ? { shop: { ownerUserId: input.sellerUserId } } : {}),
-        ...(!input.includeInactive ? { offerStatus: 'active' } : {}),
-      },
+      where,
       include: {
         shop: {
-          select: { shopName: true },
+          select: { shopName: true, registrationType: true },
         },
         category: {
           select: { name: true },
         },
         productModel: {
-          select: { modelName: true },
+          select: { modelName: true, brandId: true },
         },
         distributionNode: {
           select: { networkId: true },
@@ -224,8 +288,30 @@ export class ProductRepository {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: this.resolveOfferSort(input.sort),
     });
+  }
+
+  private resolveSalesModeFilter(salesChannel?: 'retail' | 'wholesale' | 'all'): Prisma.EnumOfferSalesModeFilter | undefined {
+    if (salesChannel === 'retail') {
+      return { in: ['RETAIL', 'BOTH'] };
+    }
+    if (salesChannel === 'wholesale') {
+      return { in: ['WHOLESALE', 'BOTH'] };
+    }
+
+    return undefined;
+  }
+
+  private resolveOfferSort(sort?: 'featured' | 'newest' | 'price-asc' | 'price-desc'): Prisma.OfferOrderByWithRelationInput {
+    if (sort === 'price-asc') {
+      return { price: 'asc' };
+    }
+    if (sort === 'price-desc') {
+      return { price: 'desc' };
+    }
+
+    return { createdAt: 'desc' };
   }
 
   findOfferById(id: string) {
@@ -233,13 +319,13 @@ export class ProductRepository {
       where: { id },
       include: {
         shop: {
-          select: { shopName: true },
+          select: { shopName: true, registrationType: true },
         },
         category: {
           select: { name: true },
         },
         productModel: {
-          select: { modelName: true },
+          select: { modelName: true, brandId: true },
         },
         distributionNode: {
           select: { networkId: true },
@@ -317,13 +403,13 @@ export class ProductRepository {
       data,
       include: {
         shop: {
-          select: { shopName: true },
+          select: { shopName: true, registrationType: true },
         },
         category: {
           select: { name: true },
         },
         productModel: {
-          select: { modelName: true },
+          select: { modelName: true, brandId: true },
         },
         media: {
           orderBy: { createdAt: 'asc' },
