@@ -11,6 +11,7 @@ const RISK_LEVELS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
 const MODERATION_TARGET_TYPES = ['KYC', 'SHOP', 'OFFER', 'BATCH', 'REPORT', 'DISPUTE'] as const;
 const MODERATION_CASE_STATUSES = ['ASSIGNED', 'IN_REVIEW', 'ESCALATED', 'RESOLVED', 'CLOSED'] as const;
 const SORT_ORDERS = ['asc', 'desc'] as const;
+const FINANCE_ESCROW_STATUSES = ['PENDING', 'HELD', 'FROZEN', 'RELEASED', 'CANCELLED', 'REFUNDED'] as const;
 
 export class CartItemResponseDto {
   @ApiProperty({ example: 'cart-item-id' })
@@ -240,6 +241,151 @@ export class OrderResponseDto {
 
   @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
   createdAt!: Date;
+}
+
+export class AdminFinanceReconciliationQueryDto {
+  @ApiPropertyOptional({ example: '2026-05-01T00:00:00.000Z' })
+  @IsOptional()
+  @IsString()
+  fromDate?: string;
+
+  @ApiPropertyOptional({ example: '2026-05-31T23:59:59.999Z' })
+  @IsOptional()
+  @IsString()
+  toDate?: string;
+
+  @ApiPropertyOptional({ example: 'shop-id' })
+  @IsOptional()
+  @IsString()
+  shopId?: string;
+
+  @ApiPropertyOptional({ example: 'order-id' })
+  @IsOptional()
+  @IsString()
+  orderId?: string;
+
+  @ApiPropertyOptional({ example: 'PAID' })
+  @IsOptional()
+  @IsString()
+  paymentStatus?: string;
+
+  @ApiPropertyOptional({ enum: FINANCE_ESCROW_STATUSES })
+  @IsOptional()
+  @IsIn(FINANCE_ESCROW_STATUSES)
+  escrowStatus?: (typeof FINANCE_ESCROW_STATUSES)[number];
+
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  pageSize?: number;
+
+  @ApiPropertyOptional({ enum: SORT_ORDERS })
+  @IsOptional()
+  @IsIn(SORT_ORDERS)
+  sortOrder?: (typeof SORT_ORDERS)[number];
+}
+
+export class AdminFinanceReconciliationSummaryDto {
+  @ApiProperty({ example: 10 })
+  orderCount!: number;
+
+  @ApiProperty({ example: 18427500 })
+  buyerPayableTotal!: number;
+
+  @ApiProperty({ example: 127500 })
+  platformFeeTotal!: number;
+
+  @ApiProperty({ example: 18300000 })
+  sellerReceivableTotal!: number;
+
+  @ApiProperty({ example: 9000000 })
+  sellerPayoutReadyTotal!: number;
+
+  @ApiProperty({ example: 5000000 })
+  escrowHeldTotal!: number;
+
+  @ApiProperty({ example: 1200000 })
+  escrowFrozenTotal!: number;
+
+  @ApiProperty({ example: 800000 })
+  refundTotal!: number;
+
+  @ApiProperty({ example: 250000 })
+  affiliatePendingLiabilityTotal!: number;
+
+  @ApiProperty({ example: 100000 })
+  affiliatePaidTotal!: number;
+}
+
+export class AdminFinanceReconciliationRecordDto {
+  @ApiProperty({ example: 'order-id' })
+  orderId!: string;
+
+  @ApiProperty({ example: 'shop-id' })
+  shopId!: string;
+
+  @ApiProperty({ example: 'Cong ty TNHH ABC' })
+  shopName!: string;
+
+  @ApiProperty({ example: 'PAID' })
+  paymentStatus!: string | null;
+
+  @ApiProperty({ example: 'RELEASED' })
+  escrowStatus!: string | null;
+
+  @ApiProperty({ example: 'READY_FOR_PAYOUT' })
+  payoutStatus!: string;
+
+  @ApiProperty({ example: 1842750 })
+  buyerPayableAmount!: number;
+
+  @ApiProperty({ example: 12750 })
+  platformFeeAmount!: number;
+
+  @ApiProperty({ example: 1830000 })
+  sellerReceivableAmount!: number;
+
+  @ApiProperty({ example: 1830000 })
+  sellerPayoutReadyAmount!: number;
+
+  @ApiProperty({ example: 0 })
+  refundAmount!: number;
+
+  @ApiProperty({ example: 25000 })
+  affiliatePendingLiabilityAmount!: number;
+
+  @ApiProperty({ example: 0 })
+  affiliatePaidAmount!: number;
+
+  @ApiProperty({ example: '2026-05-21T10:00:00.000Z' })
+  createdAt!: Date;
+}
+
+export class PaginatedAdminFinanceReconciliationResponseDto {
+  @ApiProperty({ example: 100 })
+  total!: number;
+
+  @ApiProperty({ example: 1 })
+  page!: number;
+
+  @ApiProperty({ example: 20 })
+  pageSize!: number;
+
+  @ApiProperty({ type: AdminFinanceReconciliationSummaryDto })
+  summary!: AdminFinanceReconciliationSummaryDto;
+
+  @ApiProperty({ type: AdminFinanceReconciliationRecordDto, isArray: true })
+  items!: AdminFinanceReconciliationRecordDto[];
 }
 
 export class WholesaleInventoryBatchResponseDto {

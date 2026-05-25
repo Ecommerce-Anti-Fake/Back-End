@@ -142,6 +142,97 @@ describe('OrdersRepository', () => {
     });
   });
 
+  it('should aggregate admin finance reconciliation records', async () => {
+    const releasedOrder = {
+      id: 'order-1',
+      shopId: 'shop-1',
+      shop: {
+        id: 'shop-1',
+        shopName: 'Factory Shop',
+      },
+      paymentIntent: {
+        paymentStatus: 'PAID',
+      },
+      escrow: {
+        escrowStatus: 'RELEASED',
+        heldAmount: { toString: () => '100' },
+      },
+      buyerPayableAmount: { toString: () => '100' },
+      platformFeeAmount: { toString: () => '20' },
+      sellerReceivableAmount: { toString: () => '80' },
+      affiliateConversion: {
+        commissionEntries: [
+          { commissionStatus: 'LOCKED', amount: { toString: () => '5' } },
+          { commissionStatus: 'PAID', amount: { toString: () => '3' } },
+        ],
+      },
+      createdAt: new Date('2026-05-21T10:00:00.000Z'),
+    };
+    const refundedOrder = {
+      id: 'order-2',
+      shopId: 'shop-1',
+      shop: {
+        id: 'shop-1',
+        shopName: 'Factory Shop',
+      },
+      paymentIntent: {
+        paymentStatus: 'REFUNDED',
+      },
+      escrow: {
+        escrowStatus: 'REFUNDED',
+        heldAmount: { toString: () => '50' },
+      },
+      buyerPayableAmount: { toString: () => '50' },
+      platformFeeAmount: { toString: () => '10' },
+      sellerReceivableAmount: { toString: () => '40' },
+      affiliateConversion: null,
+      createdAt: new Date('2026-05-22T10:00:00.000Z'),
+    };
+    const prisma = {
+      $transaction: jest.fn().mockResolvedValue([2, [releasedOrder, refundedOrder], [releasedOrder]]),
+      order: {
+        count: jest.fn(),
+        findMany: jest.fn(),
+      },
+    };
+    const repository = new OrdersRepository(prisma as never);
+
+    const result = await repository.findAdminFinanceReconciliation({
+      shopId: 'shop-1',
+      paymentStatus: 'PAID',
+      page: 1,
+      pageSize: 1,
+    });
+
+    expect(prisma.order.count).toHaveBeenCalledWith({
+      where: {
+        shopId: 'shop-1',
+        paymentIntent: {
+          is: {
+            paymentStatus: 'PAID',
+          },
+        },
+      },
+    });
+    expect(result.summary).toMatchObject({
+      orderCount: 2,
+      buyerPayableTotal: 150,
+      platformFeeTotal: 30,
+      sellerReceivableTotal: 120,
+      sellerPayoutReadyTotal: 80,
+      refundTotal: 50,
+      affiliatePendingLiabilityTotal: 5,
+      affiliatePaidTotal: 3,
+    });
+    expect(result.items).toMatchObject([
+      {
+        orderId: 'order-1',
+        payoutStatus: 'READY_FOR_PAYOUT',
+        sellerPayoutReadyAmount: 80,
+      },
+    ]);
+  });
+
   it('should consume the resale offer attached batch during fulfillment allocation', async () => {
     const updatedOrder = {
       id: 'order-1',

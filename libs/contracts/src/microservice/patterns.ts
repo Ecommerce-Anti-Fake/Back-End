@@ -103,6 +103,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   findMine: 'orders.find-mine',
   findSellerShopOrders: 'orders.find-seller-shop-orders',
   findAdminOrders: 'orders.find-admin-orders',
+  getAdminFinanceReconciliation: 'orders.get-admin-finance-reconciliation',
   findById: 'orders.find-by-id',
   getFulfillmentAudit: 'orders.get-fulfillment-audit',
   getAdminOpenDisputeCount: 'orders.get-admin-open-dispute-count',
@@ -699,6 +700,18 @@ export type AdminOrdersLookupMessage = {
   orderStatus?: string;
   paymentStatus?: string;
   search?: string;
+  page?: number;
+  pageSize?: number;
+  sortOrder?: 'asc' | 'desc';
+};
+
+export type AdminFinanceReconciliationMessage = {
+  fromDate?: string;
+  toDate?: string;
+  shopId?: string;
+  orderId?: string;
+  paymentStatus?: string;
+  escrowStatus?: string;
   page?: number;
   pageSize?: number;
   sortOrder?: 'asc' | 'desc';

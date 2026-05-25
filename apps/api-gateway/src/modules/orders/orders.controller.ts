@@ -13,6 +13,7 @@ import {
 import {
   AddCartItemDto,
   AddDisputeEvidenceBatchDto,
+  AdminFinanceReconciliationQueryDto,
   AdminModerationCaseQueryDto,
   AdminReportQueryDto,
   AdminRiskScoreQueryDto,
@@ -23,6 +24,7 @@ import {
   CreateReportDto,
   CalculateRiskScoreDto,
   PaginatedAdminModerationCaseResponseDto,
+  PaginatedAdminFinanceReconciliationResponseDto,
   PaginatedAdminOpenDisputeResponseDto,
   PaginatedAdminReportResponseDto,
   PaginatedAdminRiskScoreResponseDto,
@@ -259,6 +261,22 @@ export class OrdersController {
       pageSize: pageSize ? Number(pageSize) : undefined,
       sortOrder,
     });
+  }
+
+  @ApiOperation({ summary: 'Admin doi soat tai chinh don hang, escrow va affiliate' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Bang doi soat tai chinh cho admin.',
+    type: PaginatedAdminFinanceReconciliationResponseDto,
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi admin moi co quyen truy cap.',
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Get('admin/finance-reconciliation')
+  getAdminFinanceReconciliation(@Query() query: AdminFinanceReconciliationQueryDto) {
+    return this.ordersRpcService.getAdminFinanceReconciliation(query);
   }
 
   @ApiOperation({ summary: 'Lay chi tiet mot don hang' })

@@ -221,6 +221,65 @@ const cartWithItemsArgs = Prisma.validator<Prisma.CartDefaultArgs>()({
 
 export type OfferForOrdering = Prisma.OfferGetPayload<typeof offerForOrderingArgs>;
 export type OrderWithRelations = Prisma.OrderGetPayload<typeof orderWithRelationsArgs>;
+type FinanceOrderRecord = Prisma.OrderGetPayload<{
+  include: {
+    shop: {
+      select: {
+        id: true;
+        shopName: true;
+      };
+    };
+    paymentIntent: true;
+    escrow: true;
+    affiliateConversion: {
+      include: {
+        commissionEntries: true;
+      };
+    };
+  };
+}>;
+
+export type AdminFinanceReconciliationResult = {
+  total: number;
+  page: number;
+  pageSize: number;
+  summary: {
+    orderCount: number;
+    buyerPayableTotal: number;
+    platformFeeTotal: number;
+    sellerReceivableTotal: number;
+    sellerPayoutReadyTotal: number;
+    escrowHeldTotal: number;
+    escrowFrozenTotal: number;
+    refundTotal: number;
+    affiliatePendingLiabilityTotal: number;
+    affiliatePaidTotal: number;
+  };
+  items: Array<{
+    orderId: string;
+    shopId: string;
+    shopName: string;
+    paymentStatus: string | null;
+    escrowStatus: string | null;
+    payoutStatus: string;
+    buyerPayableAmount: number;
+    platformFeeAmount: number;
+    sellerReceivableAmount: number;
+    sellerPayoutReadyAmount: number;
+    refundAmount: number;
+    affiliatePendingLiabilityAmount: number;
+    affiliatePaidAmount: number;
+    createdAt: Date;
+  }>;
+};
+
+function decimalToNumber(value: Prisma.Decimal | number | string | null | undefined): number {
+  if (value === null || value === undefined) {
+    return 0;
+  }
+
+  return Number(value.toString());
+}
 export type CartWithItems = Prisma.CartGetPayload<typeof cartWithItemsArgs>;
 export type OrderBatchAllocation = {
   batchId: string;
@@ -1018,6 +1077,172 @@ export class OrdersRepository {
       pageSize,
       items,
     };
+  }
+
+  async findAdminFinanceReconciliation(input?: {
+    fromDate?: string;
+    toDate?: string;
+    shopId?: string;
+    orderId?: string;
+    paymentStatus?: string;
+    escrowStatus?: string;
+    page?: number;
+    pageSize?: number;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<AdminFinanceReconciliationResult> {
+    const page = Math.max(1, Number(input?.page ?? 1));
+    const pageSize = Math.min(50, Math.max(1, Number(input?.pageSize ?? 20)));
+    const createdAt: Prisma.DateTimeFilter = {
+      ...(input?.fromDate ? { gte: new Date(input.fromDate) } : {}),
+      ...(input?.toDate ? { lte: new Date(input.toDate) } : {}),
+    };
+    const where: Prisma.OrderWhereInput = {
+      ...(Object.keys(createdAt).length ? { createdAt } : {}),
+      ...(input?.shopId ? { shopId: input.shopId } : {}),
+      ...(input?.orderId ? { id: { contains: input.orderId, mode: 'insensitive' } } : {}),
+      ...(input?.paymentStatus
+        ? {
+            paymentIntent: {
+              is: {
+                paymentStatus: input.paymentStatus,
+              },
+            },
+          }
+        : {}),
+      ...(input?.escrowStatus
+        ? {
+            escrow: {
+              is: {
+                escrowStatus: input.escrowStatus,
+              },
+            },
+          }
+        : {}),
+    };
+
+    const include = {
+      shop: {
+        select: {
+          id: true,
+          shopName: true,
+        },
+      },
+      paymentIntent: true,
+      escrow: true,
+      affiliateConversion: {
+        include: {
+          commissionEntries: true,
+        },
+      },
+    } satisfies Prisma.OrderInclude;
+
+    const [total, summaryOrders, pageOrders] = await this.prisma.$transaction([
+      this.prisma.order.count({ where }),
+      this.prisma.order.findMany({
+        where,
+        include,
+      }),
+      this.prisma.order.findMany({
+        where,
+        orderBy: {
+          createdAt: input?.sortOrder ?? 'desc',
+        },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include,
+      }),
+    ]);
+
+    return {
+      total,
+      page,
+      pageSize,
+      summary: this.buildFinanceSummary(summaryOrders),
+      items: pageOrders.map((order) => this.toFinanceReconciliationRecord(order)),
+    };
+  }
+
+  private buildFinanceSummary(orders: FinanceOrderRecord[]): AdminFinanceReconciliationResult['summary'] {
+    return orders.reduce(
+      (summary, order) => {
+        const record = this.toFinanceReconciliationRecord(order);
+
+        summary.buyerPayableTotal += record.buyerPayableAmount;
+        summary.platformFeeTotal += record.platformFeeAmount;
+        summary.sellerReceivableTotal += record.sellerReceivableAmount;
+        summary.sellerPayoutReadyTotal += record.sellerPayoutReadyAmount;
+        summary.escrowHeldTotal += order.escrow?.escrowStatus === 'HELD' ? decimalToNumber(order.escrow.heldAmount) : 0;
+        summary.escrowFrozenTotal += order.escrow?.escrowStatus === 'FROZEN' ? decimalToNumber(order.escrow.heldAmount) : 0;
+        summary.refundTotal += record.refundAmount;
+        summary.affiliatePendingLiabilityTotal += record.affiliatePendingLiabilityAmount;
+        summary.affiliatePaidTotal += record.affiliatePaidAmount;
+
+        return summary;
+      },
+      {
+        orderCount: orders.length,
+        buyerPayableTotal: 0,
+        platformFeeTotal: 0,
+        sellerReceivableTotal: 0,
+        sellerPayoutReadyTotal: 0,
+        escrowHeldTotal: 0,
+        escrowFrozenTotal: 0,
+        refundTotal: 0,
+        affiliatePendingLiabilityTotal: 0,
+        affiliatePaidTotal: 0,
+      },
+    );
+  }
+
+  private toFinanceReconciliationRecord(order: FinanceOrderRecord): AdminFinanceReconciliationResult['items'][number] {
+    const paymentStatus = order.paymentIntent?.paymentStatus ?? null;
+    const escrowStatus = order.escrow?.escrowStatus ?? null;
+    const sellerReceivableAmount = decimalToNumber(order.sellerReceivableAmount);
+    const payoutStatus = this.resolveSellerPayoutStatus(paymentStatus, escrowStatus);
+    const commissionEntries = order.affiliateConversion?.commissionEntries ?? [];
+    const affiliatePendingLiabilityAmount = commissionEntries
+      .filter((entry) => ['PENDING', 'APPROVED', 'LOCKED'].includes(entry.commissionStatus))
+      .reduce((total, entry) => total + decimalToNumber(entry.amount), 0);
+    const affiliatePaidAmount = commissionEntries
+      .filter((entry) => entry.commissionStatus === 'PAID')
+      .reduce((total, entry) => total + decimalToNumber(entry.amount), 0);
+
+    return {
+      orderId: order.id,
+      shopId: order.shopId,
+      shopName: order.shop.shopName,
+      paymentStatus,
+      escrowStatus,
+      payoutStatus,
+      buyerPayableAmount: decimalToNumber(order.buyerPayableAmount),
+      platformFeeAmount: decimalToNumber(order.platformFeeAmount),
+      sellerReceivableAmount,
+      sellerPayoutReadyAmount: payoutStatus === 'READY_FOR_PAYOUT' ? sellerReceivableAmount : 0,
+      refundAmount: paymentStatus === 'REFUNDED' || escrowStatus === 'REFUNDED' ? decimalToNumber(order.buyerPayableAmount) : 0,
+      affiliatePendingLiabilityAmount,
+      affiliatePaidAmount,
+      createdAt: order.createdAt,
+    };
+  }
+
+  private resolveSellerPayoutStatus(paymentStatus: string | null, escrowStatus: string | null): string {
+    if (paymentStatus === 'REFUNDED' || escrowStatus === 'REFUNDED') {
+      return 'REFUNDED';
+    }
+    if (paymentStatus === 'CANCELLED' || escrowStatus === 'CANCELLED') {
+      return 'CANCELLED';
+    }
+    if (escrowStatus === 'FROZEN') {
+      return 'FROZEN';
+    }
+    if (escrowStatus === 'RELEASED') {
+      return 'READY_FOR_PAYOUT';
+    }
+    if (escrowStatus === 'HELD') {
+      return 'HELD_IN_ESCROW';
+    }
+
+    return 'NOT_READY';
   }
 
   countOpenDisputes() {

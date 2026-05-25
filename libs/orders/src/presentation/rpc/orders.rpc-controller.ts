@@ -6,6 +6,7 @@ import type {
   AddCartItemMessage,
   AdminDisputeDetailMessage,
   AdminDisputeSummaryMessage,
+  AdminFinanceReconciliationMessage,
   AdminOrdersLookupMessage,
   AdminOpenDisputeCountMessage,
   AdminOpenDisputesLookupMessage,
@@ -55,6 +56,7 @@ import {
   CreateWholesaleOrderUseCase,
   GetAdminDisputeDetailUseCase,
   GetAdminDisputeSummaryUseCase,
+  GetAdminFinanceReconciliationUseCase,
   GetAdminOpenDisputeCountUseCase,
   GetActiveCartUseCase,
   GetOrderByIdUseCase,
@@ -99,6 +101,7 @@ export class OrdersRpcController {
     private readonly createWholesaleOrderUseCase: CreateWholesaleOrderUseCase,
     private readonly listMyOrdersUseCase: ListMyOrdersUseCase,
     private readonly listAdminOrdersUseCase: ListAdminOrdersUseCase,
+    private readonly getAdminFinanceReconciliationUseCase: GetAdminFinanceReconciliationUseCase,
     private readonly listSellerShopOrdersUseCase: ListSellerShopOrdersUseCase,
     private readonly getAdminDisputeDetailUseCase: GetAdminDisputeDetailUseCase,
     private readonly getAdminDisputeSummaryUseCase: GetAdminDisputeSummaryUseCase,
@@ -224,6 +227,15 @@ export class OrdersRpcController {
   async findAdminOrders(@Payload() payload?: AdminOrdersLookupMessage) {
     try {
       return await this.listAdminOrdersUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.getAdminFinanceReconciliation)
+  async getAdminFinanceReconciliation(@Payload() payload?: AdminFinanceReconciliationMessage) {
+    try {
+      return await this.getAdminFinanceReconciliationUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }
