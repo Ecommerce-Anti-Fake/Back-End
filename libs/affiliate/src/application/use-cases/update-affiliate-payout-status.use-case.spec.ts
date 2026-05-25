@@ -50,6 +50,8 @@ describe('UpdateAffiliatePayoutStatusUseCase', () => {
 
     expect(repositoryMock.updatePayoutStatus).toHaveBeenCalledWith({
       payoutId: 'payout-1',
+      actorUserId: 'owner-1',
+      fromStatus: 'PENDING',
       payoutStatus: 'PAID',
     });
     expect(result).toMatchObject({

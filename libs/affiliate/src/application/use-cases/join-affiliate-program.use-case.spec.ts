@@ -29,6 +29,9 @@ describe('JoinAffiliateProgramUseCase', () => {
     repositoryMock.findProgramForJoin.mockResolvedValueOnce({
       id: 'program-1',
       programStatus: 'ACTIVE',
+      ownerShop: {
+        ownerUserId: 'owner-1',
+      },
     });
     repositoryMock.findAffiliateAccountByProgramAndUser.mockResolvedValueOnce(null);
     repositoryMock.findAffiliateCodeByCode.mockResolvedValueOnce({
@@ -37,6 +40,7 @@ describe('JoinAffiliateProgramUseCase', () => {
       accountId: 'parent-account-1',
       expiresAt: null,
       account: {
+        id: 'parent-account-1',
         accountStatus: 'ACTIVE',
         referralPath: 'grand-parent-1',
       },
@@ -79,6 +83,9 @@ describe('JoinAffiliateProgramUseCase', () => {
     repositoryMock.findProgramForJoin.mockResolvedValueOnce({
       id: 'program-1',
       programStatus: 'ACTIVE',
+      ownerShop: {
+        ownerUserId: 'owner-1',
+      },
     });
     repositoryMock.findAffiliateAccountByProgramAndUser.mockResolvedValueOnce({
       id: 'account-existing',
@@ -90,5 +97,54 @@ describe('JoinAffiliateProgramUseCase', () => {
         programId: 'program-1',
       }),
     ).rejects.toThrow('User has already joined this affiliate program');
+  });
+
+  it('should reject when program owner joins their own program', async () => {
+    repositoryMock.findProgramForJoin.mockResolvedValueOnce({
+      id: 'program-1',
+      programStatus: 'ACTIVE',
+      ownerShop: {
+        ownerUserId: 'owner-1',
+      },
+    });
+
+    await expect(
+      useCase.execute({
+        requesterUserId: 'owner-1',
+        programId: 'program-1',
+      }),
+    ).rejects.toThrow('Program owner cannot join their own affiliate program');
+    expect(repositoryMock.findAffiliateAccountByProgramAndUser).not.toHaveBeenCalled();
+  });
+
+  it('should reject a circular referral path', async () => {
+    repositoryMock.findProgramForJoin.mockResolvedValueOnce({
+      id: 'program-1',
+      programStatus: 'ACTIVE',
+      ownerShop: {
+        ownerUserId: 'owner-1',
+      },
+    });
+    repositoryMock.findAffiliateAccountByProgramAndUser.mockResolvedValueOnce(null);
+    repositoryMock.findAffiliateCodeByCode.mockResolvedValueOnce({
+      id: 'code-1',
+      programId: 'program-1',
+      accountId: 'parent-account-1',
+      expiresAt: null,
+      account: {
+        id: 'parent-account-1',
+        accountStatus: 'ACTIVE',
+        referralPath: 'grand-parent-1/parent-account-1',
+      },
+    });
+
+    await expect(
+      useCase.execute({
+        requesterUserId: 'user-2',
+        programId: 'program-1',
+        referralCode: 'spring-aff-001',
+      }),
+    ).rejects.toThrow('Referral path is circular');
+    expect(repositoryMock.createAffiliateAccount).not.toHaveBeenCalled();
   });
 });

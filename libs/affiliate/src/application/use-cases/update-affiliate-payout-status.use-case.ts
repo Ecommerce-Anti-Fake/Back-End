@@ -22,6 +22,8 @@ export class UpdateAffiliatePayoutStatusUseCase {
 
     const updated = await this.repository.updatePayoutStatus({
       payoutId: input.payoutId,
+      actorUserId: input.requesterUserId,
+      fromStatus: payout.payoutStatus,
       payoutStatus: input.payoutStatus,
     });
 

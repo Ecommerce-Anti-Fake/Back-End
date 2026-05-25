@@ -137,6 +137,11 @@ export class AffiliateRepository {
       select: {
         id: true,
         programStatus: true,
+        ownerShop: {
+          select: {
+            ownerUserId: true,
+          },
+        },
       },
     });
   }
@@ -165,6 +170,7 @@ export class AffiliateRepository {
         expiresAt: true,
         account: {
           select: {
+            id: true,
             accountStatus: true,
             referralPath: true,
           },
@@ -519,6 +525,8 @@ export class AffiliateRepository {
 
   async updatePayoutStatus(input: {
     payoutId: string;
+    actorUserId: string;
+    fromStatus: string;
     payoutStatus: 'PROCESSING' | 'PAID' | 'FAILED' | 'CANCELLED';
   }): Promise<AffiliatePayoutWithRelations> {
     return this.prisma.$transaction(async (tx) => {
@@ -534,6 +542,21 @@ export class AffiliateRepository {
         where: { id: input.payoutId },
         data: updateData,
         ...affiliatePayoutArgs,
+      });
+
+      await tx.auditLog.create({
+        data: {
+          targetType: 'AFFILIATE_PAYOUT',
+          targetId: input.payoutId,
+          actorUserId: input.actorUserId,
+          action: 'AFFILIATE_PAYOUT_STATUS_CHANGED',
+          fromStatus: input.fromStatus,
+          toStatus: input.payoutStatus,
+          note: `Affiliate payout moved from ${input.fromStatus} to ${input.payoutStatus}`,
+          metadata: {
+            payoutId: input.payoutId,
+          },
+        },
       });
 
       if (input.payoutStatus === 'PAID') {

@@ -20,6 +20,10 @@ export class JoinAffiliateProgramUseCase {
       throw new BadRequestException('Affiliate program is not active');
     }
 
+    if (program.ownerShop?.ownerUserId === input.requesterUserId) {
+      throw new BadRequestException('Program owner cannot join their own affiliate program');
+    }
+
     const existingAccount = await this.repository.findAffiliateAccountByProgramAndUser(
       input.programId,
       input.requesterUserId,
@@ -43,6 +47,11 @@ export class JoinAffiliateProgramUseCase {
 
       if (referral.account.accountStatus !== 'ACTIVE') {
         throw new BadRequestException('Referral code owner is not active');
+      }
+
+      const referralPathSegments = referral.account.referralPath?.split('/').filter(Boolean) ?? [];
+      if (referralPathSegments.includes(referral.account.id)) {
+        throw new BadRequestException('Referral path is circular');
       }
 
       parentAccountId = referral.accountId;
