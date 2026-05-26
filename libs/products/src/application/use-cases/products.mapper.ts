@@ -132,6 +132,36 @@ type ReviewWithAuthor = {
   media?: ReviewMediaWithAsset[];
 };
 
+type ChatUserRecord = {
+  displayName: string | null;
+  email: string | null;
+  phone: string | null;
+};
+
+type ChatMessageWithSender = {
+  id: string;
+  threadId: string;
+  senderUserId: string;
+  messageType: string;
+  body: string;
+  sentAt: Date;
+  sender: ChatUserRecord;
+};
+
+type ChatThreadWithRelations = {
+  id: string;
+  shopId: string;
+  buyerUserId: string;
+  sellerUserId: string;
+  createdAt: Date;
+  shop: {
+    shopName: string;
+  };
+  buyer: ChatUserRecord;
+  seller: ChatUserRecord;
+  messages?: ChatMessageWithSender[];
+};
+
 export function toProductModelResponse(model: ProductModelWithBrand) {
   return {
     id: model.id,
@@ -193,6 +223,35 @@ export function toOfferResponse(offer: OfferWithRelations) {
     productModelName: offer.productModel.modelName,
     thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
     createdAt: offer.createdAt,
+  };
+}
+
+export function toChatThreadResponse(thread: ChatThreadWithRelations) {
+  const messages = (thread.messages ?? []).map(toChatMessageResponse);
+
+  return {
+    id: thread.id,
+    shopId: thread.shopId,
+    shopName: thread.shop.shopName,
+    buyerUserId: thread.buyerUserId,
+    buyerName: chatDisplayName(thread.buyer),
+    sellerUserId: thread.sellerUserId,
+    sellerName: chatDisplayName(thread.seller),
+    lastMessage: messages.at(-1) ?? null,
+    messages,
+    createdAt: thread.createdAt,
+  };
+}
+
+export function toChatMessageResponse(message: ChatMessageWithSender) {
+  return {
+    id: message.id,
+    threadId: message.threadId,
+    senderUserId: message.senderUserId,
+    senderName: chatDisplayName(message.sender),
+    messageType: message.messageType,
+    body: message.body,
+    sentAt: message.sentAt,
   };
 }
 
@@ -278,4 +337,8 @@ export function toOfferBatchLinkResponse(link: OfferBatchLinkWithBatch) {
 
 function decimalToNumber(value: Prisma.Decimal) {
   return Number(value.toString());
+}
+
+function chatDisplayName(user: ChatUserRecord) {
+  return user.displayName || user.email || user.phone || 'Nguoi dung';
 }

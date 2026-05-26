@@ -13,6 +13,8 @@ import {
   CreateProductModelMessage,
   DeleteOfferDocumentMessage,
   DeleteOfferMediaMessage,
+  ChatRequesterMessage,
+  ChatThreadLookupMessage,
   ListOffersMessage,
   OfferDocumentUploadSignaturesMessage,
   OfferBatchLinksLookupMessage,
@@ -23,7 +25,9 @@ import {
   PRODUCTS_MESSAGE_PATTERNS,
   ProductModelLookupMessage,
   ReviewMediaUploadSignaturesMessage,
+  SendChatMessageMessage,
   SetOfferPrimaryMediaMessage,
+  StartChatThreadMessage,
   UpdateOfferMessage,
   CATALOG_SERVICE_CLIENT,
 } from '@contracts';
@@ -143,6 +147,22 @@ export class ProductsRpcService {
 
   findOfferById(payload: ProductModelLookupMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.findOfferById, payload);
+  }
+
+  findChatThreads(payload: ChatRequesterMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.findChatThreads, payload);
+  }
+
+  getChatThread(payload: ChatThreadLookupMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.getChatThread, payload);
+  }
+
+  startChatThread(payload: StartChatThreadMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.startChatThread, payload);
+  }
+
+  sendChatMessage(payload: SendChatMessageMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.sendChatMessage, payload);
   }
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {

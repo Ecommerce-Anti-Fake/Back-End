@@ -74,6 +74,10 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   updateOffer: 'products.update-offer',
   findOffers: 'products.find-offers',
   findOfferById: 'products.find-offer-by-id',
+  findChatThreads: 'products.find-chat-threads',
+  getChatThread: 'products.get-chat-thread',
+  startChatThread: 'products.start-chat-thread',
+  sendChatMessage: 'products.send-chat-message',
   allocateOfferBatches: 'products.allocate-offer-batches',
   findOfferBatchLinks: 'products.find-offer-batch-links',
   getOfferMediaUploadSignatures: 'products.get-offer-media-upload-signatures',
@@ -493,6 +497,25 @@ export type ListOffersMessage = {
   shopType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
   salesChannel?: 'retail' | 'wholesale' | 'all';
   sort?: 'featured' | 'newest' | 'price-asc' | 'price-desc';
+};
+
+export type ChatRequesterMessage = {
+  requesterUserId: string;
+  requesterRole?: string | null;
+};
+
+export type StartChatThreadMessage = ChatRequesterMessage & {
+  shopId: string;
+  initialMessage?: string | null;
+};
+
+export type ChatThreadLookupMessage = ChatRequesterMessage & {
+  threadId: string;
+};
+
+export type SendChatMessageMessage = ChatThreadLookupMessage & {
+  body: string;
+  messageType?: 'TEXT';
 };
 
 export type CreateOfferMessage = {

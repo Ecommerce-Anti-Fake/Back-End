@@ -19,8 +19,10 @@ import {
   GetOfferMediaUploadSignaturesUseCase,
   GetProductModelByIdUseCase,
   GetReviewMediaUploadSignaturesUseCase,
+  GetChatThreadUseCase,
   ListBrandsUseCase,
   ListCategoriesUseCase,
+  ListChatThreadsUseCase,
   ListOfferBatchLinksUseCase,
   ListOfferDocumentsUseCase,
   ListOfferMediaUseCase,
@@ -28,6 +30,8 @@ import {
   ListOffersUseCase,
   ListProductModelsUseCase,
   SetOfferPrimaryMediaUseCase,
+  SendChatMessageUseCase,
+  StartChatThreadUseCase,
   UpdateOfferUseCase,
 } from './application/use-cases';
 import { ProductRepository } from './infrastructure/persistence/product-repository';
@@ -65,6 +69,10 @@ import { ProductsRpcController } from './presentation/rpc/products.rpc-controlle
     DeleteOfferDocumentUseCase,
     ListOffersUseCase,
     GetOfferByIdUseCase,
+    ListChatThreadsUseCase,
+    GetChatThreadUseCase,
+    StartChatThreadUseCase,
+    SendChatMessageUseCase,
   ],
   exports: [
     ProductRepository,
@@ -95,6 +103,10 @@ import { ProductsRpcController } from './presentation/rpc/products.rpc-controlle
     DeleteOfferDocumentUseCase,
     ListOffersUseCase,
     GetOfferByIdUseCase,
+    ListChatThreadsUseCase,
+    GetChatThreadUseCase,
+    StartChatThreadUseCase,
+    SendChatMessageUseCase,
   ],
 })
 export class ProductsModule {}

@@ -16,6 +16,8 @@ import type {
   CreateProductModelMessage,
   DeleteOfferDocumentMessage,
   DeleteOfferMediaMessage,
+  ChatRequesterMessage,
+  ChatThreadLookupMessage,
   ListOffersMessage,
   OfferDocumentUploadSignaturesMessage,
   OfferBatchLinksLookupMessage,
@@ -25,7 +27,9 @@ import type {
   OfferReviewsLookupMessage,
   ProductModelLookupMessage,
   ReviewMediaUploadSignaturesMessage,
+  SendChatMessageMessage,
   SetOfferPrimaryMediaMessage,
+  StartChatThreadMessage,
   UpdateOfferMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
@@ -45,10 +49,12 @@ import {
   GetOfferDocumentUploadSignaturesUseCase,
   GetOfferByIdUseCase,
   GetOfferMediaUploadSignaturesUseCase,
+  GetChatThreadUseCase,
   GetProductModelByIdUseCase,
   GetReviewMediaUploadSignaturesUseCase,
   ListBrandsUseCase,
   ListCategoriesUseCase,
+  ListChatThreadsUseCase,
   ListOfferBatchLinksUseCase,
   ListOfferDocumentsUseCase,
   ListOfferMediaUseCase,
@@ -56,6 +62,8 @@ import {
   ListOffersUseCase,
   ListProductModelsUseCase,
   SetOfferPrimaryMediaUseCase,
+  SendChatMessageUseCase,
+  StartChatThreadUseCase,
   UpdateOfferUseCase,
 } from '../../application/use-cases';
 
@@ -89,6 +97,10 @@ export class ProductsRpcController {
     private readonly deleteOfferDocumentUseCase: DeleteOfferDocumentUseCase,
     private readonly listOffersUseCase: ListOffersUseCase,
     private readonly getOfferByIdUseCase: GetOfferByIdUseCase,
+    private readonly listChatThreadsUseCase: ListChatThreadsUseCase,
+    private readonly getChatThreadUseCase: GetChatThreadUseCase,
+    private readonly startChatThreadUseCase: StartChatThreadUseCase,
+    private readonly sendChatMessageUseCase: SendChatMessageUseCase,
   ) {}
 
   @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findModels)
@@ -329,6 +341,42 @@ export class ProductsRpcController {
   async findOfferById(@Payload() payload: ProductModelLookupMessage) {
     try {
       return await this.getOfferByIdUseCase.execute(payload.id);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findChatThreads)
+  async findChatThreads(@Payload() payload: ChatRequesterMessage) {
+    try {
+      return await this.listChatThreadsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.getChatThread)
+  async getChatThread(@Payload() payload: ChatThreadLookupMessage) {
+    try {
+      return await this.getChatThreadUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.startChatThread)
+  async startChatThread(@Payload() payload: StartChatThreadMessage) {
+    try {
+      return await this.startChatThreadUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.sendChatMessage)
+  async sendChatMessage(@Payload() payload: SendChatMessageMessage) {
+    try {
+      return await this.sendChatMessageUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

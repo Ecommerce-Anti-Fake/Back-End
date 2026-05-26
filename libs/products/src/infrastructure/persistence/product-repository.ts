@@ -384,6 +384,96 @@ export class ProductRepository {
     });
   }
 
+  findShopForChat(shopId: string) {
+    return this.prisma.shop.findUnique({
+      where: { id: shopId },
+      select: {
+        id: true,
+        shopName: true,
+        ownerUserId: true,
+      },
+    });
+  }
+
+  findChatThreadByShopAndBuyer(shopId: string, buyerUserId: string) {
+    return this.prisma.chatThread.findFirst({
+      where: { shopId, buyerUserId },
+      include: this.chatThreadInclude(),
+    });
+  }
+
+  findChatThreadById(threadId: string) {
+    return this.prisma.chatThread.findUnique({
+      where: { id: threadId },
+      include: this.chatThreadInclude(),
+    });
+  }
+
+  findChatThreadsForUser(input: { requesterUserId: string; requesterRole?: string | null }) {
+    return this.prisma.chatThread.findMany({
+      where:
+        input.requesterRole === 'admin'
+          ? {}
+          : {
+              OR: [{ buyerUserId: input.requesterUserId }, { sellerUserId: input.requesterUserId }],
+            },
+      include: this.chatThreadInclude(1),
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  createChatThread(input: { shopId: string; buyerUserId: string; sellerUserId: string }) {
+    return this.prisma.chatThread.create({
+      data: input,
+      include: this.chatThreadInclude(),
+    });
+  }
+
+  async createChatMessage(input: { threadId: string; senderUserId: string; body: string; messageType: 'TEXT' }) {
+    await this.prisma.chatMessage.create({
+      data: input,
+    });
+
+    return this.findChatThreadById(input.threadId);
+  }
+
+  private chatThreadInclude(messageTake?: number) {
+    return {
+      shop: {
+        select: {
+          shopName: true,
+        },
+      },
+      buyer: {
+        select: {
+          displayName: true,
+          email: true,
+          phone: true,
+        },
+      },
+      seller: {
+        select: {
+          displayName: true,
+          email: true,
+          phone: true,
+        },
+      },
+      messages: {
+        ...(messageTake ? { take: messageTake } : {}),
+        orderBy: { sentAt: 'asc' as const },
+        include: {
+          sender: {
+            select: {
+              displayName: true,
+              email: true,
+              phone: true,
+            },
+          },
+        },
+      },
+    };
+  }
+
   updateOwnedOffer(
     offerId: string,
     sellerUserId: string,

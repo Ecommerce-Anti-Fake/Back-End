@@ -338,6 +338,7 @@ model Shop {
   distributionNetworksAsRoot DistributionNetwork[]  @relation("DistributionManufacturerShop")
   distributionNodes          DistributionNode[]
   affiliatePrograms          AffiliateProgram[]
+  chatThreads                ChatThread[]
 
   @@index([shopTypeId])
   @@map("shop")
@@ -561,7 +562,6 @@ model Offer {
   batchLinks           OfferBatchLink[]
   orderItems           OrderItem[]
   cartItems            CartItem[]
-  chatThreads          ChatThread[]
   affiliatePrograms    AffiliateProgram[]
   affiliateConversions AffiliateConversion[]
 
@@ -904,15 +904,17 @@ model ReviewMedia {
 
 model ChatThread {
   id           String        @id @default(uuid())
-  offerId      String        @map("offer_id")
+  shopId       String        @map("shop_id")
   buyerUserId  String        @map("buyer_user_id")
   sellerUserId String        @map("seller_user_id")
   createdAt    DateTime      @default(now()) @map("created_at")
-  offer        Offer         @relation(fields: [offerId], references: [id])
+  shop         Shop          @relation(fields: [shopId], references: [id])
   buyer        User          @relation("ChatThreadBuyer", fields: [buyerUserId], references: [id])
   seller       User          @relation("ChatThreadSeller", fields: [sellerUserId], references: [id])
   messages     ChatMessage[]
 
+  @@unique([buyerUserId, shopId])
+  @@index([shopId])
   @@map("chat_thread")
 }
 
