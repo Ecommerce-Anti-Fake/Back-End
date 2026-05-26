@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
-import { OrderPlacementService, PayOSPaymentService } from '../services';
+import { OrderPlacementService, PayOSPaymentService, ShippingCarrierAdapterService } from '../services';
 import { CreateRetailOrderUseCase } from './create-retail-order.use-case';
 
 describe('CreateRetailOrderUseCase', () => {
@@ -17,6 +17,9 @@ describe('CreateRetailOrderUseCase', () => {
   const payOSPaymentServiceMock = {
     createPaymentLink: jest.fn(),
   };
+  const shippingCarrierAdapterMock = {
+    quoteShipment: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -27,6 +30,7 @@ describe('CreateRetailOrderUseCase', () => {
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
         { provide: OrderPlacementService, useValue: orderPlacementServiceMock },
         { provide: PayOSPaymentService, useValue: payOSPaymentServiceMock },
+        { provide: ShippingCarrierAdapterService, useValue: shippingCarrierAdapterMock },
       ],
     }).compile();
 
@@ -59,6 +63,10 @@ describe('CreateRetailOrderUseCase', () => {
       productModel: {
         brandId: 'brand-1',
       },
+      parcelWeightGrams: 500,
+      parcelLengthCm: 20,
+      parcelWidthCm: 12,
+      parcelHeightCm: 8,
       shippingMethods: [
         {
           providerCode: 'SELF_DELIVERY',
@@ -77,6 +85,11 @@ describe('CreateRetailOrderUseCase', () => {
       ],
       distributionNode: null,
     });
+    shippingCarrierAdapterMock.quoteShipment.mockResolvedValueOnce({
+      shippingFeeAmount: 25000,
+      serviceId: null,
+      serviceTypeId: 2,
+    });
     orderPlacementServiceMock.createOrder.mockResolvedValueOnce({
       id: 'order-1',
       orderMode: 'RETAIL',
@@ -93,7 +106,12 @@ describe('CreateRetailOrderUseCase', () => {
       totalAmount: new Prisma.Decimal(25200),
       shippingProviderCode: 'GHN',
       shippingProviderName: 'Giao Hang Nhanh',
+      shippingServiceTypeId: 2,
       shippingFeeAmount: new Prisma.Decimal(25000),
+      parcelWeightGrams: 500,
+      parcelLengthCm: 20,
+      parcelWidthCm: 12,
+      parcelHeightCm: 8,
       createdAt: new Date('2026-04-14T10:00:00.000Z'),
       shop: {
         shopName: 'Seller Shop',
@@ -121,9 +139,21 @@ describe('CreateRetailOrderUseCase', () => {
       quantity: 2,
       affiliateCode: 'spring-aff-001',
       shippingAddress: '12 Nguyen Trai, Quan 1, TP.HCM',
+      shippingDistrictId: 1450,
+      shippingDistrictName: 'Quan 1',
+      shippingWardCode: '21211',
+      shippingWardName: 'Phuong Ben Nghe',
       shippingProviderCode: 'GHN',
     });
 
+    expect(shippingCarrierAdapterMock.quoteShipment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        providerCode: 'GHN',
+        shippingDistrictId: 1450,
+        shippingWardCode: '21211',
+        parcelWeightGrams: 500,
+      }),
+    );
     expect(orderPlacementServiceMock.createOrder).toHaveBeenCalledWith(
       expect.objectContaining({
         order: expect.objectContaining({
@@ -133,7 +163,11 @@ describe('CreateRetailOrderUseCase', () => {
           platformFeeAmount: 40,
           shippingProviderCode: 'GHN',
           shippingProviderName: 'Giao Hang Nhanh',
+          shippingDistrictId: 1450,
+          shippingWardCode: '21211',
+          shippingServiceTypeId: 2,
           shippingFeeAmount: 25000,
+          parcelWeightGrams: 500,
         }),
         affiliateAttribution: {
           affiliateCode: 'spring-aff-001',

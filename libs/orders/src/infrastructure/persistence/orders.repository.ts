@@ -338,9 +338,19 @@ export type CreateOrderRecordInput = {
   shippingName?: string | null;
   shippingPhone?: string | null;
   shippingAddress?: string | null;
+  shippingDistrictId?: number | null;
+  shippingDistrictName?: string | null;
+  shippingWardCode?: string | null;
+  shippingWardName?: string | null;
   shippingProviderCode?: string | null;
   shippingProviderName?: string | null;
+  shippingServiceId?: number | null;
+  shippingServiceTypeId?: number | null;
   shippingFeeAmount?: number;
+  parcelWeightGrams?: number | null;
+  parcelLengthCm?: number | null;
+  parcelWidthCm?: number | null;
+  parcelHeightCm?: number | null;
   paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'manual_confirmation' | null;
   item: {
     offerId: string;
@@ -701,9 +711,19 @@ export class OrdersRepository {
         shippingName: data.shippingName ?? null,
         shippingPhone: data.shippingPhone ?? null,
         shippingAddress: data.shippingAddress ?? null,
+        shippingDistrictId: data.shippingDistrictId ?? null,
+        shippingDistrictName: data.shippingDistrictName ?? null,
+        shippingWardCode: data.shippingWardCode ?? null,
+        shippingWardName: data.shippingWardName ?? null,
         shippingProviderCode: data.shippingProviderCode ?? null,
         shippingProviderName: data.shippingProviderName ?? null,
+        shippingServiceId: data.shippingServiceId ?? null,
+        shippingServiceTypeId: data.shippingServiceTypeId ?? null,
         shippingFeeAmount: data.shippingFeeAmount ?? 0,
+        parcelWeightGrams: data.parcelWeightGrams ?? null,
+        parcelLengthCm: data.parcelLengthCm ?? null,
+        parcelWidthCm: data.parcelWidthCm ?? null,
+        parcelHeightCm: data.parcelHeightCm ?? null,
         items: {
           create: {
             ...data.item,
@@ -955,6 +975,52 @@ export class OrdersRepository {
     return this.prisma.order.findUnique({
       where: { id },
       ...orderWithRelationsArgs,
+    });
+  }
+
+  bookOrderShipping(input: {
+    id: string;
+    actorUserId: string;
+    trackingCode: string;
+    providerStatus: string;
+  }): Promise<OrderWithRelations> {
+    return this.prisma.$transaction(async (tx) => {
+      const currentOrder = await tx.order.findUnique({
+        where: { id: input.id },
+        select: {
+          fulfillmentStatus: true,
+          shippingTrackingCode: true,
+          shippingProviderCode: true,
+        },
+      });
+      const fromStatus = currentOrder?.fulfillmentStatus ?? 'PROCESSING';
+
+      await tx.auditLog.create({
+        data: {
+          targetType: 'ORDER',
+          targetId: input.id,
+          actorUserId: input.actorUserId,
+          action: 'SHIPPING_BOOKED',
+          fromStatus,
+          toStatus: 'SHIPPING',
+          note: `Shipping booked with tracking ${input.trackingCode}`,
+          metadata: {
+            domain: 'FULFILLMENT',
+            shippingProviderCode: currentOrder?.shippingProviderCode ?? null,
+            previousTrackingCode: currentOrder?.shippingTrackingCode ?? null,
+            providerStatus: input.providerStatus,
+          },
+        },
+      });
+
+      return tx.order.update({
+        where: { id: input.id },
+        data: {
+          fulfillmentStatus: 'SHIPPING',
+          shippingTrackingCode: input.trackingCode,
+        },
+        ...orderWithRelationsArgs,
+      });
     });
   }
 

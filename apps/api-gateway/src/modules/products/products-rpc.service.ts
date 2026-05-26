@@ -13,6 +13,8 @@ import {
   CreateProductModelMessage,
   DeleteOfferDocumentMessage,
   DeleteOfferMediaMessage,
+  FavoriteOfferMessage,
+  FavoriteOffersLookupMessage,
   ChatRequesterMessage,
   ChatThreadLookupMessage,
   ListOffersMessage,
@@ -151,6 +153,18 @@ export class ProductsRpcService {
 
   findOfferById(payload: ProductModelLookupMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.findOfferById, payload);
+  }
+
+  findFavoriteOffers(payload: FavoriteOffersLookupMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.findFavoriteOffers, payload);
+  }
+
+  addFavoriteOffer(payload: FavoriteOfferMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.addFavoriteOffer, payload);
+  }
+
+  removeFavoriteOffer(payload: FavoriteOfferMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.removeFavoriteOffer, payload);
   }
 
   findChatThreads(payload: ChatRequesterMessage) {

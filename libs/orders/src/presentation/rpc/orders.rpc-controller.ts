@@ -16,6 +16,7 @@ import type {
   AssignAdminDisputeMessage,
   CalculateRiskScoreMessage,
   CheckoutCartItemMessage,
+  QuoteCartItemShippingOptionsMessage,
   CreateRetailOrderMessage,
   CreateReportMessage,
   CreateWholesaleOrderMessage,
@@ -43,19 +44,26 @@ import type {
   UpdateCartItemMessage,
   UpdateAdminDisputeCaseMessage,
   UpdateOrderFulfillmentMessage,
+  BookOrderShippingMessage,
+  GhnDistrictsLookupMessage,
+  GhnServicesLookupMessage,
+  GhnWardsLookupMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
 import {
   AddDisputeEvidenceBatchUseCase,
   AddCartItemUseCase,
+  BookOrderShippingUseCase,
   AssignAdminDisputeUseCase,
   CheckoutCartItemUseCase,
+  QuoteCartItemShippingOptionsUseCase,
   CalculateRiskScoreUseCase,
   CreateRetailOrderUseCase,
   CreateReportUseCase,
   CreateWholesaleOrderUseCase,
   GetAdminDisputeDetailUseCase,
   GetAdminDisputeSummaryUseCase,
+  ListGhnShippingLocationsUseCase,
   GetAdminFinanceReconciliationUseCase,
   GetAdminOpenDisputeCountUseCase,
   GetActiveCartUseCase,
@@ -97,6 +105,7 @@ export class OrdersRpcController {
     private readonly updateCartItemUseCase: UpdateCartItemUseCase,
     private readonly removeCartItemUseCase: RemoveCartItemUseCase,
     private readonly checkoutCartItemUseCase: CheckoutCartItemUseCase,
+    private readonly quoteCartItemShippingOptionsUseCase: QuoteCartItemShippingOptionsUseCase,
     private readonly createRetailOrderUseCase: CreateRetailOrderUseCase,
     private readonly createWholesaleOrderUseCase: CreateWholesaleOrderUseCase,
     private readonly listMyOrdersUseCase: ListMyOrdersUseCase,
@@ -132,7 +141,9 @@ export class OrdersRpcController {
     private readonly updateAdminReportUseCase: UpdateAdminReportUseCase,
     private readonly updateAdminModerationCaseUseCase: UpdateAdminModerationCaseUseCase,
     private readonly updateAdminDisputeCaseUseCase: UpdateAdminDisputeCaseUseCase,
+    private readonly bookOrderShippingUseCase: BookOrderShippingUseCase,
     private readonly updateOrderFulfillmentUseCase: UpdateOrderFulfillmentUseCase,
+    private readonly listGhnShippingLocationsUseCase: ListGhnShippingLocationsUseCase,
   ) {}
 
   @MessagePattern(ORDERS_MESSAGE_PATTERNS.getActiveCart)
@@ -182,6 +193,15 @@ export class OrdersRpcController {
   async checkoutCartItem(@Payload() payload: CheckoutCartItemMessage) {
     try {
       return await this.checkoutCartItemUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.quoteCartItemShippingOptions)
+  async quoteCartItemShippingOptions(@Payload() payload: QuoteCartItemShippingOptionsMessage) {
+    try {
+      return await this.quoteCartItemShippingOptionsUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }
@@ -362,6 +382,51 @@ export class OrdersRpcController {
   async updateFulfillment(@Payload() payload: UpdateOrderFulfillmentMessage) {
     try {
       return await this.updateOrderFulfillmentUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.bookShipping)
+  async bookShipping(@Payload() payload: BookOrderShippingMessage) {
+    try {
+      return await this.bookOrderShippingUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.listGhnProvinces)
+  async listGhnProvinces() {
+    try {
+      return await this.listGhnShippingLocationsUseCase.listProvinces();
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.listGhnDistricts)
+  async listGhnDistricts(@Payload() payload: GhnDistrictsLookupMessage) {
+    try {
+      return await this.listGhnShippingLocationsUseCase.listDistricts(payload.provinceId);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.listGhnWards)
+  async listGhnWards(@Payload() payload: GhnWardsLookupMessage) {
+    try {
+      return await this.listGhnShippingLocationsUseCase.listWards(payload.districtId);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.listGhnServices)
+  async listGhnServices(@Payload() payload: GhnServicesLookupMessage) {
+    try {
+      return await this.listGhnShippingLocationsUseCase.listServices(payload.districtId);
     } catch (error) {
       throwRpcException(error);
     }

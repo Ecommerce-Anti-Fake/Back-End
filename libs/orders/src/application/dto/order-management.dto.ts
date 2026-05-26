@@ -259,14 +259,47 @@ export class OrderResponseDto {
   @ApiPropertyOptional({ example: '12 Nguyen Trai, Quan 1, TP.HCM', nullable: true })
   shippingAddress!: string | null;
 
+  @ApiPropertyOptional({ example: 1450, nullable: true })
+  shippingDistrictId!: number | null;
+
+  @ApiPropertyOptional({ example: 'Quan 1', nullable: true })
+  shippingDistrictName!: string | null;
+
+  @ApiPropertyOptional({ example: '21211', nullable: true })
+  shippingWardCode!: string | null;
+
+  @ApiPropertyOptional({ example: 'Phuong Ben Nghe', nullable: true })
+  shippingWardName!: string | null;
+
   @ApiPropertyOptional({ example: 'GHN', nullable: true })
   shippingProviderCode!: string | null;
 
   @ApiPropertyOptional({ example: 'Giao Hang Nhanh', nullable: true })
   shippingProviderName!: string | null;
 
+  @ApiPropertyOptional({ example: 53320, nullable: true })
+  shippingServiceId!: number | null;
+
+  @ApiPropertyOptional({ example: 2, nullable: true })
+  shippingServiceTypeId!: number | null;
+
   @ApiProperty({ example: 25000 })
   shippingFeeAmount!: number;
+
+  @ApiPropertyOptional({ example: 'GHN-ABC12345', nullable: true })
+  shippingTrackingCode!: string | null;
+
+  @ApiPropertyOptional({ example: 500, nullable: true })
+  parcelWeightGrams!: number | null;
+
+  @ApiPropertyOptional({ example: 20, nullable: true })
+  parcelLengthCm!: number | null;
+
+  @ApiPropertyOptional({ example: 12, nullable: true })
+  parcelWidthCm!: number | null;
+
+  @ApiPropertyOptional({ example: 8, nullable: true })
+  parcelHeightCm!: number | null;
 
   @ApiProperty({ type: OrderItemResponseDto, isArray: true })
   items!: OrderItemResponseDto[];
@@ -1204,10 +1237,46 @@ export class CreateRetailOrderDto {
   @IsString()
   shippingAddress?: string;
 
+  @ApiPropertyOptional({ example: 1450 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  shippingDistrictId?: number;
+
+  @ApiPropertyOptional({ example: 'Quan 1' })
+  @IsOptional()
+  @IsString()
+  shippingDistrictName?: string;
+
+  @ApiPropertyOptional({ example: '21211' })
+  @IsOptional()
+  @IsString()
+  shippingWardCode?: string;
+
+  @ApiPropertyOptional({ example: 'Phuong Ben Nghe' })
+  @IsOptional()
+  @IsString()
+  shippingWardName?: string;
+
   @ApiPropertyOptional({ example: 'GHN' })
   @IsOptional()
   @IsString()
   shippingProviderCode?: string;
+
+  @ApiPropertyOptional({ example: 53320 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  shippingServiceId?: number;
+
+  @ApiPropertyOptional({ example: 2 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  shippingServiceTypeId?: number;
 }
 
 export class AddCartItemDto {
@@ -1256,10 +1325,147 @@ export class CheckoutCartItemDto {
   @IsString()
   shippingAddress?: string;
 
+  @ApiPropertyOptional({ example: 1450 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  shippingDistrictId?: number;
+
+  @ApiPropertyOptional({ example: 'Quan 1' })
+  @IsOptional()
+  @IsString()
+  shippingDistrictName?: string;
+
+  @ApiPropertyOptional({ example: '21211' })
+  @IsOptional()
+  @IsString()
+  shippingWardCode?: string;
+
+  @ApiPropertyOptional({ example: 'Phuong Ben Nghe' })
+  @IsOptional()
+  @IsString()
+  shippingWardName?: string;
+
   @ApiPropertyOptional({ example: 'GHN' })
   @IsOptional()
   @IsString()
   shippingProviderCode?: string;
+
+  @ApiPropertyOptional({ example: 53320 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  shippingServiceId?: number;
+
+  @ApiPropertyOptional({ example: 2 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  shippingServiceTypeId?: number;
+}
+
+export class QuoteCartItemShippingOptionsDto {
+  @ApiPropertyOptional({ example: '12 Nguyen Trai, Phuong Ben Nghe, Quan 1, TP.HCM' })
+  @IsOptional()
+  @IsString()
+  shippingAddress?: string;
+
+  @ApiPropertyOptional({ example: 1450 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  shippingDistrictId?: number;
+
+  @ApiPropertyOptional({ example: '21211' })
+  @IsOptional()
+  @IsString()
+  shippingWardCode?: string;
+}
+
+export class CartItemShippingOptionResponseDto {
+  @ApiProperty({ example: 'GHN' })
+  providerCode!: string;
+
+  @ApiProperty({ example: 'Giao Hang Nhanh' })
+  providerName!: string;
+
+  @ApiProperty({ example: 'Giao hang tieu chuan' })
+  label!: string;
+
+  @ApiPropertyOptional({ example: 'Service 53320', nullable: true })
+  description!: string | null;
+
+  @ApiProperty({ example: 30000 })
+  shippingFee!: number;
+
+  @ApiPropertyOptional({ example: 53320, nullable: true })
+  shippingServiceId!: number | null;
+
+  @ApiPropertyOptional({ example: 2, nullable: true })
+  shippingServiceTypeId!: number | null;
+}
+
+export class GhnDistrictsQueryDto {
+  @ApiProperty({ example: 202 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  provinceId!: number;
+}
+
+export class GhnWardsQueryDto {
+  @ApiProperty({ example: 1450 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  districtId!: number;
+}
+
+export class GhnServicesQueryDto {
+  @ApiProperty({ example: 1450 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  districtId!: number;
+}
+
+export class GhnProvinceResponseDto {
+  @ApiProperty({ example: 202 })
+  provinceId!: number;
+
+  @ApiProperty({ example: 'Ho Chi Minh' })
+  provinceName!: string;
+}
+
+export class GhnDistrictResponseDto {
+  @ApiProperty({ example: 1450 })
+  districtId!: number;
+
+  @ApiProperty({ example: 'Quan 1' })
+  districtName!: string;
+}
+
+export class GhnWardResponseDto {
+  @ApiProperty({ example: '21211' })
+  wardCode!: string;
+
+  @ApiProperty({ example: 'Phuong Ben Nghe' })
+  wardName!: string;
+}
+
+export class GhnServiceResponseDto {
+  @ApiPropertyOptional({ example: 53320, nullable: true })
+  serviceId!: number | null;
+
+  @ApiProperty({ example: 2 })
+  serviceTypeId!: number;
+
+  @ApiProperty({ example: 'Hang nhe' })
+  shortName!: string;
 }
 
 export class CreateWholesaleOrderDto {

@@ -48,6 +48,10 @@ type OfferWithRelations = Offer & {
   batchLinks?: Array<{
     allocatedQuantity: number;
   }>;
+  parcelWeightGrams?: number | null;
+  parcelLengthCm?: number | null;
+  parcelWidthCm?: number | null;
+  parcelHeightCm?: number | null;
   shippingMethods?: Array<{
     providerCode: string;
     providerName: string;
@@ -240,6 +244,10 @@ export function toOfferResponse(offer: OfferWithRelations) {
     itemCondition: offer.itemCondition,
     availableQuantity: offer.availableQuantity,
     soldQuantity,
+    parcelWeightGrams: offer.parcelWeightGrams ?? null,
+    parcelLengthCm: offer.parcelLengthCm ?? null,
+    parcelWidthCm: offer.parcelWidthCm ?? null,
+    parcelHeightCm: offer.parcelHeightCm ?? null,
     verificationLevel: offer.verificationLevel,
     offerStatus: offer.offerStatus,
     shopId: offer.shopId,

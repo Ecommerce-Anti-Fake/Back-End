@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { OfferForOrdering, OrdersRepository } from '../../infrastructure/persistence/orders.repository';
-import { OrderPlacementService, PayOSPaymentService } from '../services';
+import { OrderPlacementService, PayOSPaymentService, ShippingCarrierAdapterService } from '../services';
 import { toOrderResponse } from './orders.mapper';
 
 @Injectable()
@@ -9,6 +9,7 @@ export class CreateRetailOrderUseCase {
     private readonly ordersRepository: OrdersRepository,
     private readonly orderPlacementService: OrderPlacementService,
     private readonly payOSPaymentService: PayOSPaymentService,
+    private readonly shippingCarrierAdapterService: ShippingCarrierAdapterService,
   ) {}
 
   async execute(input: {
@@ -20,7 +21,13 @@ export class CreateRetailOrderUseCase {
     shippingName?: string | null;
     shippingPhone?: string | null;
     shippingAddress?: string | null;
+    shippingDistrictId?: number | null;
+    shippingDistrictName?: string | null;
+    shippingWardCode?: string | null;
+    shippingWardName?: string | null;
     shippingProviderCode?: string | null;
+    shippingServiceId?: number | null;
+    shippingServiceTypeId?: number | null;
   }) {
     const buyer = await this.ordersRepository.findUserById(input.buyerUserId);
     if (!buyer) {
@@ -47,10 +54,25 @@ export class CreateRetailOrderUseCase {
     }
 
     const shippingMethod = this.resolveShippingMethod(input.shippingProviderCode, offer);
-    const shippingFeeAmount = Number(shippingMethod.shippingFee.toString());
+    const shippingParcel = this.resolveShippingParcel(offer, shippingMethod.providerCode);
     const baseAmount = Number(offer.price.toString()) * input.quantity;
     const discountAmount = 0;
     const platformFeeAmount = this.roundMoney(baseAmount * 0.2);
+    const shippingQuote = await this.shippingCarrierAdapterService.quoteShipment({
+      providerCode: shippingMethod.providerCode,
+      shippingName: shipping.name,
+      shippingPhone: shipping.phone,
+      shippingAddress: shipping.address,
+      shippingDistrictId: shipping.districtId,
+      shippingWardCode: shipping.wardCode,
+      shippingServiceId: input.shippingServiceId ?? null,
+      shippingServiceTypeId: input.shippingServiceTypeId ?? null,
+      ...shippingParcel,
+      itemName: offer.title,
+      declaredValue: baseAmount,
+      fallbackFee: Number(shippingMethod.shippingFee.toString()),
+    });
+    const shippingFeeAmount = this.roundMoney(shippingQuote.shippingFeeAmount);
     const buyerPayableAmount = this.roundMoney(baseAmount + shippingFeeAmount);
     const sellerReceivableAmount = this.roundMoney(baseAmount - platformFeeAmount);
 
@@ -73,9 +95,16 @@ export class CreateRetailOrderUseCase {
         shippingName: shipping.name,
         shippingPhone: shipping.phone,
         shippingAddress: shipping.address,
+        shippingDistrictId: shipping.districtId,
+        shippingDistrictName: shipping.districtName,
+        shippingWardCode: shipping.wardCode,
+        shippingWardName: shipping.wardName,
         shippingProviderCode: shippingMethod.providerCode,
         shippingProviderName: shippingMethod.providerName,
+        shippingServiceId: shippingQuote.serviceId,
+        shippingServiceTypeId: shippingQuote.serviceTypeId,
         shippingFeeAmount,
+        ...shippingParcel,
         paymentMethod,
         item: {
           offerId: offer.id,
@@ -134,6 +163,10 @@ export class CreateRetailOrderUseCase {
       shippingName?: string | null;
       shippingPhone?: string | null;
       shippingAddress?: string | null;
+      shippingDistrictId?: number | null;
+      shippingDistrictName?: string | null;
+      shippingWardCode?: string | null;
+      shippingWardName?: string | null;
     },
     buyer: {
       displayName: string | null;
@@ -143,6 +176,10 @@ export class CreateRetailOrderUseCase {
     const name = input.shippingName?.trim() || buyer.displayName?.trim() || null;
     const phone = input.shippingPhone?.trim() || buyer.phone?.trim() || null;
     const address = input.shippingAddress?.trim() || null;
+    const districtId = input.shippingDistrictId ?? null;
+    const districtName = input.shippingDistrictName?.trim() || null;
+    const wardCode = input.shippingWardCode?.trim() || null;
+    const wardName = input.shippingWardName?.trim() || null;
 
     if (!phone) {
       throw new BadRequestException('Shipping contact phone is required before creating an order');
@@ -156,6 +193,10 @@ export class CreateRetailOrderUseCase {
       name,
       phone,
       address,
+      districtId,
+      districtName,
+      wardCode,
+      wardName,
     };
   }
 
@@ -176,5 +217,20 @@ export class CreateRetailOrderUseCase {
     }
 
     return selected;
+  }
+
+  private resolveShippingParcel(offer: OfferForOrdering, providerCode: string) {
+    const parcel = {
+      parcelWeightGrams: offer.parcelWeightGrams ?? null,
+      parcelLengthCm: offer.parcelLengthCm ?? null,
+      parcelWidthCm: offer.parcelWidthCm ?? null,
+      parcelHeightCm: offer.parcelHeightCm ?? null,
+    };
+
+    if (providerCode !== 'SELF_DELIVERY' && Object.values(parcel).some((value) => !value || value < 1)) {
+      throw new BadRequestException('Offer parcel weight and dimensions are required for integrated shipping');
+    }
+
+    return parcel;
   }
 }

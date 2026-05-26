@@ -78,6 +78,9 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   findShippingCarriers: 'products.find-shipping-carriers',
   findOffers: 'products.find-offers',
   findOfferById: 'products.find-offer-by-id',
+  findFavoriteOffers: 'products.find-favorite-offers',
+  addFavoriteOffer: 'products.add-favorite-offer',
+  removeFavoriteOffer: 'products.remove-favorite-offer',
   findChatThreads: 'products.find-chat-threads',
   getChatThread: 'products.get-chat-thread',
   startChatThread: 'products.start-chat-thread',
@@ -106,6 +109,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   updateCartItem: 'orders.update-cart-item',
   removeCartItem: 'orders.remove-cart-item',
   checkoutCartItem: 'orders.checkout-cart-item',
+  quoteCartItemShippingOptions: 'orders.quote-cart-item-shipping-options',
   createRetail: 'orders.create-retail',
   createWholesale: 'orders.create-wholesale',
   findMine: 'orders.find-mine',
@@ -133,6 +137,11 @@ export const ORDERS_MESSAGE_PATTERNS = {
   handlePayOSWebhook: 'orders.handle-payos-webhook',
   retryPayOSPayment: 'orders.retry-payos-payment',
   receiveWholesaleInventory: 'orders.receive-wholesale-inventory',
+  bookShipping: 'orders.book-shipping',
+  listGhnProvinces: 'orders.list-ghn-provinces',
+  listGhnDistricts: 'orders.list-ghn-districts',
+  listGhnWards: 'orders.list-ghn-wards',
+  listGhnServices: 'orders.list-ghn-services',
   complete: 'orders.complete',
   cancel: 'orders.cancel',
   openDispute: 'orders.open-dispute',
@@ -479,6 +488,15 @@ export type ProductModelLookupMessage = {
   id: string;
 };
 
+export type FavoriteOfferMessage = {
+  userId: string;
+  offerId: string;
+};
+
+export type FavoriteOffersLookupMessage = {
+  userId: string;
+};
+
 export type CreateBrandMessage = {
   name: string;
   registryStatus?: string;
@@ -551,6 +569,10 @@ export type CreateOfferMessage = {
   verificationLevel?: string;
   offerStatus?: 'active' | 'inactive' | 'draft';
   shippingProviderCodes?: string[];
+  parcelWeightGrams?: number | null;
+  parcelLengthCm?: number | null;
+  parcelWidthCm?: number | null;
+  parcelHeightCm?: number | null;
 };
 
 export type UpdateOfferMessage = {
@@ -562,6 +584,10 @@ export type UpdateOfferMessage = {
   availableQuantity?: number;
   offerStatus?: 'active' | 'inactive' | 'draft';
   shippingProviderCodes?: string[];
+  parcelWeightGrams?: number | null;
+  parcelLengthCm?: number | null;
+  parcelWidthCm?: number | null;
+  parcelHeightCm?: number | null;
 };
 
 export type OfferMediaUploadSignaturesMessage = {
@@ -693,7 +719,13 @@ export type CreateRetailOrderMessage = {
   shippingName?: string | null;
   shippingPhone?: string | null;
   shippingAddress?: string | null;
+  shippingDistrictId?: number | null;
+  shippingDistrictName?: string | null;
+  shippingWardCode?: string | null;
+  shippingWardName?: string | null;
   shippingProviderCode?: string | null;
+  shippingServiceId?: number | null;
+  shippingServiceTypeId?: number | null;
 };
 
 export type ActiveCartMessage = {
@@ -725,7 +757,21 @@ export type CheckoutCartItemMessage = {
   shippingName?: string | null;
   shippingPhone?: string | null;
   shippingAddress?: string | null;
+  shippingDistrictId?: number | null;
+  shippingDistrictName?: string | null;
+  shippingWardCode?: string | null;
+  shippingWardName?: string | null;
   shippingProviderCode?: string | null;
+  shippingServiceId?: number | null;
+  shippingServiceTypeId?: number | null;
+};
+
+export type QuoteCartItemShippingOptionsMessage = {
+  buyerUserId: string;
+  cartItemId: string;
+  shippingAddress?: string | null;
+  shippingDistrictId?: number | null;
+  shippingWardCode?: string | null;
 };
 
 export type CreateWholesaleOrderMessage = {
@@ -960,6 +1006,23 @@ export type UpdateOrderFulfillmentMessage = {
   id: string;
   requesterUserId: string;
   fulfillmentStatus: 'PROCESSING' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED';
+};
+
+export type BookOrderShippingMessage = {
+  id: string;
+  requesterUserId: string;
+};
+
+export type GhnDistrictsLookupMessage = {
+  provinceId: number;
+};
+
+export type GhnWardsLookupMessage = {
+  districtId: number;
+};
+
+export type GhnServicesLookupMessage = {
+  districtId: number;
 };
 
 export type OrderFulfillmentAuditMessage = {

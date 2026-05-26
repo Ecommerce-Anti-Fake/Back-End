@@ -15,6 +15,10 @@ export class UpdateOfferUseCase {
     availableQuantity?: number;
     offerStatus?: 'active' | 'inactive' | 'draft';
     shippingProviderCodes?: string[];
+    parcelWeightGrams?: number | null;
+    parcelLengthCm?: number | null;
+    parcelWidthCm?: number | null;
+    parcelHeightCm?: number | null;
   }) {
     const offer = await this.productRepository.findOwnedOffer(input.offerId, input.sellerUserId);
     if (!offer) {
@@ -27,6 +31,10 @@ export class UpdateOfferUseCase {
       price?: number;
       availableQuantity?: number;
       offerStatus?: string;
+      parcelWeightGrams?: number | null;
+      parcelLengthCm?: number | null;
+      parcelWidthCm?: number | null;
+      parcelHeightCm?: number | null;
     } = {};
 
     if (input.title !== undefined) {
@@ -69,8 +77,19 @@ export class UpdateOfferUseCase {
       data.offerStatus = input.offerStatus;
     }
 
+    for (const key of ['parcelWeightGrams', 'parcelLengthCm', 'parcelWidthCm', 'parcelHeightCm'] as const) {
+      if (input[key] !== undefined) {
+        const value = input[key];
+        if (value !== null && value < 1) {
+          throw new BadRequestException('Parcel values must be greater than 0');
+        }
+        data[key] = value ?? null;
+      }
+    }
+
     if (input.shippingProviderCodes !== undefined) {
       const shippingProviderCodes = this.normalizeShippingProviderCodes(input.shippingProviderCodes);
+      this.assertParcelReadyForProviders({ ...offer, ...data }, shippingProviderCodes);
       await this.assertShippingProvidersExist(shippingProviderCodes);
       const updatedOffer = Object.keys(data).length
         ? await this.productRepository.updateOwnedOffer(input.offerId, input.sellerUserId, data)
@@ -81,6 +100,8 @@ export class UpdateOfferUseCase {
     if (Object.keys(data).length === 0) {
       return toOfferResponse(await this.productRepository.updateOwnedOffer(input.offerId, input.sellerUserId, {}));
     }
+
+    this.assertParcelReadyForProviders({ ...offer, ...data }, offer.shippingMethods?.map((method) => method.providerCode) ?? []);
 
     const updatedOffer = await this.productRepository.updateOwnedOffer(input.offerId, input.sellerUserId, data);
     return toOfferResponse(updatedOffer);
@@ -95,6 +116,24 @@ export class UpdateOfferUseCase {
     const carriers = await this.productRepository.findActiveShippingCarriersByCodes(providerCodes);
     if (carriers.length !== providerCodes.length) {
       throw new BadRequestException('One or more shipping providers are invalid');
+    }
+  }
+
+  private assertParcelReadyForProviders(
+    offer: {
+      parcelWeightGrams?: number | null;
+      parcelLengthCm?: number | null;
+      parcelWidthCm?: number | null;
+      parcelHeightCm?: number | null;
+    },
+    providerCodes: string[],
+  ) {
+    if (!providerCodes.some((code) => code !== 'SELF_DELIVERY')) {
+      return;
+    }
+
+    if (!offer.parcelWeightGrams || !offer.parcelLengthCm || !offer.parcelWidthCm || !offer.parcelHeightCm) {
+      throw new BadRequestException('Parcel weight and dimensions are required for integrated shipping providers');
     }
   }
 

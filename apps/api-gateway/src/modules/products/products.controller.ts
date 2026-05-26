@@ -214,6 +214,10 @@ export class ProductsController {
       verificationLevel: dto.verificationLevel,
       offerStatus: dto.offerStatus,
       shippingProviderCodes: dto.shippingProviderCodes,
+      parcelWeightGrams: dto.parcelWeightGrams,
+      parcelLengthCm: dto.parcelLengthCm,
+      parcelWidthCm: dto.parcelWidthCm,
+      parcelHeightCm: dto.parcelHeightCm,
     });
   }
 
@@ -242,6 +246,10 @@ export class ProductsController {
       availableQuantity: dto.availableQuantity,
       offerStatus: dto.offerStatus,
       shippingProviderCodes: dto.shippingProviderCodes,
+      parcelWeightGrams: dto.parcelWeightGrams,
+      parcelLengthCm: dto.parcelLengthCm,
+      parcelWidthCm: dto.parcelWidthCm,
+      parcelHeightCm: dto.parcelHeightCm,
     });
   }
 
@@ -297,6 +305,39 @@ export class ProductsController {
   @Get('offers/:id')
   findOfferById(@Param('id') id: string) {
     return this.productsRpcService.findOfferById({ id });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach offer yeu thich cua user hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach ID offer da yeu thich.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('favorites')
+  findFavoriteOffers(@CurrentUserId() userId: string) {
+    return this.productsRpcService.findFavoriteOffers({ userId });
+  }
+
+  @ApiOperation({ summary: 'Them offer vao danh muc yeu thich' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Offer da duoc them vao yeu thich.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('offers/:offerId/favorite')
+  addFavoriteOffer(@Param('offerId') offerId: string, @CurrentUserId() userId: string) {
+    return this.productsRpcService.addFavoriteOffer({ userId, offerId });
+  }
+
+  @ApiOperation({ summary: 'Xoa offer khoi danh muc yeu thich' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Offer da duoc xoa khoi yeu thich.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Delete('offers/:offerId/favorite')
+  removeFavoriteOffer(@Param('offerId') offerId: string, @CurrentUserId() userId: string) {
+    return this.productsRpcService.removeFavoriteOffer({ userId, offerId });
   }
 
   @ApiOperation({ summary: 'Lay danh sach chat thread cua user hien tai' })

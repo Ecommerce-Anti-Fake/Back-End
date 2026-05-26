@@ -191,6 +191,10 @@ export class ProductRepository {
     availableQuantity: number;
     verificationLevel: string;
     offerStatus: string;
+    parcelWeightGrams?: number | null;
+    parcelLengthCm?: number | null;
+    parcelWidthCm?: number | null;
+    parcelHeightCm?: number | null;
     shippingProviderCodes?: string[];
   }) {
     const { shippingProviderCodes, ...offerData } = data;
@@ -454,6 +458,50 @@ export class ProductRepository {
     });
   }
 
+  async listFavoriteOfferIds(userId: string) {
+    const favorites = await this.prisma.userFavoriteOffer.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      select: { offerId: true },
+    });
+
+    return favorites.map((favorite) => favorite.offerId);
+  }
+
+  async addFavoriteOffer(userId: string, offerId: string) {
+    await this.prisma.offer.findUniqueOrThrow({
+      where: { id: offerId },
+      select: { id: true },
+    });
+
+    await this.prisma.userFavoriteOffer.upsert({
+      where: {
+        userId_offerId: {
+          userId,
+          offerId,
+        },
+      },
+      update: {},
+      create: {
+        userId,
+        offerId,
+      },
+    });
+
+    return { offerId, isFavorite: true };
+  }
+
+  async removeFavoriteOffer(userId: string, offerId: string) {
+    await this.prisma.userFavoriteOffer.deleteMany({
+      where: {
+        userId,
+        offerId,
+      },
+    });
+
+    return { offerId, isFavorite: false };
+  }
+
   findOwnedOffer(offerId: string, sellerUserId: string) {
     return this.prisma.offer.findFirst({
       where: {
@@ -489,6 +537,10 @@ export class ProductRepository {
               },
             },
           },
+        },
+        shippingMethods: {
+          where: { isEnabled: true },
+          orderBy: { createdAt: 'asc' },
         },
       },
     });

@@ -20,6 +20,7 @@ import {
   CreateReportMessage,
   CreateWholesaleOrderMessage,
   CheckoutCartItemMessage,
+  QuoteCartItemShippingOptionsMessage,
   MarkOrderPaidMessage,
   MyOrdersLookupMessage,
   MyReportsLookupMessage,
@@ -36,6 +37,10 @@ import {
   OpenOrderDisputeMessage,
   ORDERS_SERVICE_CLIENT,
   PayOSWebhookMessage,
+  BookOrderShippingMessage,
+  GhnDistrictsLookupMessage,
+  GhnServicesLookupMessage,
+  GhnWardsLookupMessage,
   ReceiveWholesaleInventoryMessage,
   ResolveOrderDisputeMessage,
   UpdateAdminReportMessage,
@@ -73,6 +78,10 @@ export class OrdersRpcService {
 
   checkoutCartItem(payload: CheckoutCartItemMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.checkoutCartItem, payload);
+  }
+
+  quoteCartItemShippingOptions(payload: QuoteCartItemShippingOptionsMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.quoteCartItemShippingOptions, payload);
   }
 
   createRetail(payload: CreateRetailOrderMessage) {
@@ -177,6 +186,26 @@ export class OrdersRpcService {
 
   receiveWholesaleInventory(payload: ReceiveWholesaleInventoryMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.receiveWholesaleInventory, payload);
+  }
+
+  bookShipping(payload: BookOrderShippingMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.bookShipping, payload);
+  }
+
+  listGhnProvinces() {
+    return this.send(ORDERS_MESSAGE_PATTERNS.listGhnProvinces, {});
+  }
+
+  listGhnDistricts(payload: GhnDistrictsLookupMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.listGhnDistricts, payload);
+  }
+
+  listGhnWards(payload: GhnWardsLookupMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.listGhnWards, payload);
+  }
+
+  listGhnServices(payload: GhnServicesLookupMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.listGhnServices, payload);
   }
 
   handlePayOSWebhook(payload: PayOSWebhookMessage) {

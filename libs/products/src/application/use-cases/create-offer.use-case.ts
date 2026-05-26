@@ -23,6 +23,10 @@ export class CreateOfferUseCase {
     verificationLevel?: string;
     offerStatus?: 'active' | 'inactive' | 'draft';
     shippingProviderCodes?: string[];
+    parcelWeightGrams?: number | null;
+    parcelLengthCm?: number | null;
+    parcelWidthCm?: number | null;
+    parcelHeightCm?: number | null;
   }) {
     const ownedShop = await this.productRepository.findOwnedShop(input.shopId, input.sellerUserId);
     if (!ownedShop) {
@@ -114,6 +118,7 @@ export class CreateOfferUseCase {
 
     const shippingProviderCodes = this.normalizeShippingProviderCodes(input.shippingProviderCodes);
     await this.assertShippingProvidersExist(shippingProviderCodes);
+    const parcel = this.resolveParcelSnapshot(input, shippingProviderCodes);
 
     const offer = await this.productRepository.createOffer({
       sellerUserId: input.sellerUserId,
@@ -132,6 +137,7 @@ export class CreateOfferUseCase {
       verificationLevel,
       offerStatus,
       shippingProviderCodes,
+      ...parcel,
     });
 
     return toOfferResponse(offer);
@@ -147,5 +153,28 @@ export class CreateOfferUseCase {
     if (carriers.length !== providerCodes.length) {
       throw new BadRequestException('One or more shipping providers are invalid');
     }
+  }
+
+  private resolveParcelSnapshot(
+    input: {
+      parcelWeightGrams?: number | null;
+      parcelLengthCm?: number | null;
+      parcelWidthCm?: number | null;
+      parcelHeightCm?: number | null;
+    },
+    providerCodes: string[],
+  ) {
+    const parcel = {
+      parcelWeightGrams: input.parcelWeightGrams ?? null,
+      parcelLengthCm: input.parcelLengthCm ?? null,
+      parcelWidthCm: input.parcelWidthCm ?? null,
+      parcelHeightCm: input.parcelHeightCm ?? null,
+    };
+
+    if (providerCodes.some((code) => code !== 'SELF_DELIVERY') && Object.values(parcel).some((value) => !value || value < 1)) {
+      throw new BadRequestException('Parcel weight and dimensions are required for integrated shipping providers');
+    }
+
+    return parcel;
   }
 }

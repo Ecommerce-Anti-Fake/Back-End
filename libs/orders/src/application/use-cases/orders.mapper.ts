@@ -40,9 +40,20 @@ export function toOrderResponse(order: OrderWithRelations) {
     shippingName: order.shippingName,
     shippingPhone: order.shippingPhone,
     shippingAddress: order.shippingAddress,
+    shippingDistrictId: order.shippingDistrictId,
+    shippingDistrictName: order.shippingDistrictName,
+    shippingWardCode: order.shippingWardCode,
+    shippingWardName: order.shippingWardName,
     shippingProviderCode: order.shippingProviderCode,
     shippingProviderName: order.shippingProviderName,
+    shippingServiceId: order.shippingServiceId,
+    shippingServiceTypeId: order.shippingServiceTypeId,
     shippingFeeAmount: decimalToNumber(order.shippingFeeAmount),
+    shippingTrackingCode: order.shippingTrackingCode,
+    parcelWeightGrams: order.parcelWeightGrams,
+    parcelLengthCm: order.parcelLengthCm,
+    parcelWidthCm: order.parcelWidthCm,
+    parcelHeightCm: order.parcelHeightCm,
     items: order.items.map((item) => {
       const offerMedia = item.offer?.media ?? [];
       const thumbnailMedia =
@@ -116,6 +127,10 @@ export function toCartResponse(cart: CartWithItems) {
   };
 }
 
-function decimalToNumber(value: Prisma.Decimal) {
+function decimalToNumber(value: Prisma.Decimal | number | string | null | undefined) {
+  if (value === null || value === undefined) {
+    return 0;
+  }
+
   return Number(value.toString());
 }

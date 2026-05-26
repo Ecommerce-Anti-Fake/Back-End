@@ -203,6 +203,18 @@ export class OfferResponseDto {
   @ApiProperty({ example: 500 })
   availableQuantity!: number;
 
+  @ApiPropertyOptional({ example: 500, nullable: true })
+  parcelWeightGrams!: number | null;
+
+  @ApiPropertyOptional({ example: 20, nullable: true })
+  parcelLengthCm!: number | null;
+
+  @ApiPropertyOptional({ example: 12, nullable: true })
+  parcelWidthCm!: number | null;
+
+  @ApiPropertyOptional({ example: 8, nullable: true })
+  parcelHeightCm!: number | null;
+
   @ApiProperty({ example: 120 })
   soldQuantity!: number;
 
@@ -802,6 +814,34 @@ export class CreateOfferDto {
   @IsArray()
   @IsString({ each: true })
   shippingProviderCodes?: string[];
+
+  @ApiPropertyOptional({ example: 500 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  parcelWeightGrams?: number;
+
+  @ApiPropertyOptional({ example: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  parcelLengthCm?: number;
+
+  @ApiPropertyOptional({ example: 12 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  parcelWidthCm?: number;
+
+  @ApiPropertyOptional({ example: 8 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  parcelHeightCm?: number;
 }
 
 export class UpdateOfferDto {
@@ -831,6 +871,34 @@ export class UpdateOfferDto {
   @IsInt()
   @Min(0)
   availableQuantity?: number;
+
+  @ApiPropertyOptional({ example: 500 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  parcelWeightGrams?: number;
+
+  @ApiPropertyOptional({ example: 20 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  parcelLengthCm?: number;
+
+  @ApiPropertyOptional({ example: 12 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  parcelWidthCm?: number;
+
+  @ApiPropertyOptional({ example: 8 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  parcelHeightCm?: number;
 
   @ApiPropertyOptional({ enum: OFFER_STATUSES, example: 'active' })
   @IsOptional()

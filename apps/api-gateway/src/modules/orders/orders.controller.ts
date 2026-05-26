@@ -20,6 +20,7 @@ import {
   AdminDisputeDetailResponseDto,
   AdminOpenDisputeQueryDto,
   CartResponseDto,
+  CartItemShippingOptionResponseDto,
   CheckoutCartItemDto,
   CreateReportDto,
   CalculateRiskScoreDto,
@@ -30,10 +31,18 @@ import {
   PaginatedAdminRiskScoreResponseDto,
   AssignAdminDisputeDto,
   CreateRetailOrderDto,
+  QuoteCartItemShippingOptionsDto,
   CreateWholesaleOrderDto,
   DisputeEvidenceResponseDto,
   GetDisputeEvidenceUploadSignaturesDto,
   DisputeEvidenceUploadSignatureResponseDto,
+  GhnDistrictResponseDto,
+  GhnDistrictsQueryDto,
+  GhnProvinceResponseDto,
+  GhnServiceResponseDto,
+  GhnServicesQueryDto,
+  GhnWardResponseDto,
+  GhnWardsQueryDto,
   MarkOrderPaidDto,
   OpenOrderDisputeDto,
   OrderFulfillmentAuditEntryDto,
@@ -122,6 +131,42 @@ export class OrdersController {
     });
   }
 
+  @ApiOperation({ summary: 'Lay danh sach tinh/thanh GHN cho checkout' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ description: 'Danh sach tinh/thanh GHN.', type: GhnProvinceResponseDto, isArray: true })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('shipping/ghn/provinces')
+  listGhnProvinces() {
+    return this.ordersRpcService.listGhnProvinces();
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach quan/huyen GHN theo tinh/thanh' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ description: 'Danh sach quan/huyen GHN.', type: GhnDistrictResponseDto, isArray: true })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('shipping/ghn/districts')
+  listGhnDistricts(@Query() query: GhnDistrictsQueryDto) {
+    return this.ordersRpcService.listGhnDistricts({ provinceId: query.provinceId });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach phuong/xa GHN theo quan/huyen' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ description: 'Danh sach phuong/xa GHN.', type: GhnWardResponseDto, isArray: true })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('shipping/ghn/wards')
+  listGhnWards(@Query() query: GhnWardsQueryDto) {
+    return this.ordersRpcService.listGhnWards({ districtId: query.districtId });
+  }
+
+  @ApiOperation({ summary: 'Lay dich vu GHN kha dung theo quan/huyen nhan hang' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ description: 'Danh sach dich vu GHN kha dung.', type: GhnServiceResponseDto, isArray: true })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('shipping/ghn/services')
+  listGhnServices(@Query() query: GhnServicesQueryDto) {
+    return this.ordersRpcService.listGhnServices({ districtId: query.districtId });
+  }
+
   @ApiOperation({ summary: 'Checkout mot cart item thanh retail order' })
   @ApiBearerAuth('access-token')
   @ApiCreatedResponse({
@@ -143,7 +188,36 @@ export class OrdersController {
       shippingName: dto.shippingName ?? null,
       shippingPhone: dto.shippingPhone ?? null,
       shippingAddress: dto.shippingAddress ?? null,
+      shippingDistrictId: dto.shippingDistrictId ?? null,
+      shippingDistrictName: dto.shippingDistrictName ?? null,
+      shippingWardCode: dto.shippingWardCode ?? null,
+      shippingWardName: dto.shippingWardName ?? null,
       shippingProviderCode: dto.shippingProviderCode ?? null,
+      shippingServiceId: dto.shippingServiceId ?? null,
+      shippingServiceTypeId: dto.shippingServiceTypeId ?? null,
+    });
+  }
+
+  @ApiOperation({ summary: 'Bao gia cac phuong thuc van chuyen cho mot cart item' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach phuong thuc van chuyen kha dung.',
+    type: CartItemShippingOptionResponseDto,
+    isArray: true,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('cart/items/:cartItemId/shipping-options')
+  quoteCartItemShippingOptions(
+    @CurrentUserId() buyerUserId: string,
+    @Param('cartItemId') cartItemId: string,
+    @Body() dto: QuoteCartItemShippingOptionsDto,
+  ) {
+    return this.ordersRpcService.quoteCartItemShippingOptions({
+      buyerUserId,
+      cartItemId,
+      shippingAddress: dto.shippingAddress ?? null,
+      shippingDistrictId: dto.shippingDistrictId ?? null,
+      shippingWardCode: dto.shippingWardCode ?? null,
     });
   }
 
@@ -171,7 +245,13 @@ export class OrdersController {
       shippingName: dto.shippingName ?? null,
       shippingPhone: dto.shippingPhone ?? null,
       shippingAddress: dto.shippingAddress ?? null,
+      shippingDistrictId: dto.shippingDistrictId ?? null,
+      shippingDistrictName: dto.shippingDistrictName ?? null,
+      shippingWardCode: dto.shippingWardCode ?? null,
+      shippingWardName: dto.shippingWardName ?? null,
       shippingProviderCode: dto.shippingProviderCode ?? null,
+      shippingServiceId: dto.shippingServiceId ?? null,
+      shippingServiceTypeId: dto.shippingServiceTypeId ?? null,
     });
   }
 
@@ -727,6 +807,28 @@ export class OrdersController {
       id,
       requesterUserId,
       fulfillmentStatus: dto.fulfillmentStatus,
+    });
+  }
+
+  @ApiOperation({ summary: 'Seller tao van don voi don vi van chuyen da chon' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'id', description: 'ID don hang.' })
+  @ApiOkResponse({
+    description: 'Tao van don thanh cong.',
+    type: OrderResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Don hang chua san sang de tao van don.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi seller cua don moi co quyen tao van don.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post(':id/shipping/book')
+  bookShipping(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
+    return this.ordersRpcService.bookShipping({
+      id,
+      requesterUserId,
     });
   }
 
