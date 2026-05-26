@@ -147,6 +147,34 @@ export class ProductModelResponseDto {
   createdAt!: Date;
 }
 
+export class ShippingCarrierResponseDto {
+  @ApiProperty({ example: 'GHN' })
+  providerCode!: string;
+
+  @ApiProperty({ example: 'Giao Hang Nhanh' })
+  providerName!: string;
+
+  @ApiProperty({ example: true })
+  isIntegrated!: boolean;
+}
+
+export class OfferShippingMethodResponseDto {
+  @ApiProperty({ example: 'GHN' })
+  providerCode!: string;
+
+  @ApiProperty({ example: 'Giao Hang Nhanh' })
+  providerName!: string;
+
+  @ApiProperty({ example: 25000 })
+  shippingFee!: number;
+
+  @ApiPropertyOptional({ example: '2-3 ngay', nullable: true })
+  estimatedDays!: string | null;
+
+  @ApiProperty({ example: true })
+  isEnabled!: boolean;
+}
+
 export class OfferResponseDto {
   @ApiProperty({ example: '06b5f15b-4c48-4f57-a2d6-0f2eb45fd001' })
   id!: string;
@@ -216,6 +244,9 @@ export class OfferResponseDto {
 
   @ApiPropertyOptional({ example: 'https://res.cloudinary.com/demo/image/upload/product.jpg', nullable: true })
   thumbnailUrl!: string | null;
+
+  @ApiProperty({ type: OfferShippingMethodResponseDto, isArray: true })
+  shippingMethods!: OfferShippingMethodResponseDto[];
 
   @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
   createdAt!: Date;
@@ -765,6 +796,12 @@ export class CreateOfferDto {
   @IsOptional()
   @IsString()
   verificationLevel?: string;
+
+  @ApiPropertyOptional({ example: ['SELF_DELIVERY', 'GHN'], isArray: true })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  shippingProviderCodes?: string[];
 }
 
 export class UpdateOfferDto {
@@ -800,6 +837,12 @@ export class UpdateOfferDto {
   @IsString()
   @IsIn(OFFER_STATUSES)
   offerStatus?: 'active' | 'inactive' | 'draft';
+
+  @ApiPropertyOptional({ example: ['SELF_DELIVERY', 'GHN'], isArray: true })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  shippingProviderCodes?: string[];
 }
 
 export class ListOffersQueryDto {

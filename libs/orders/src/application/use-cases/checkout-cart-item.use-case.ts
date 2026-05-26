@@ -17,6 +17,7 @@ export class CheckoutCartItemUseCase {
     shippingName?: string | null;
     shippingPhone?: string | null;
     shippingAddress?: string | null;
+    shippingProviderCode?: string | null;
   }) {
     const cartItem = await this.ordersRepository.findCartItemById(input.cartItemId);
     if (!cartItem || cartItem.cart.buyerUserId !== input.buyerUserId || cartItem.cart.cartStatus !== 'ACTIVE') {
@@ -32,6 +33,7 @@ export class CheckoutCartItemUseCase {
       shippingName: input.shippingName ?? null,
       shippingPhone: input.shippingPhone ?? null,
       shippingAddress: input.shippingAddress ?? null,
+      shippingProviderCode: input.shippingProviderCode ?? null,
     });
 
     await this.ordersRepository.removeCartItem({

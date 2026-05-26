@@ -61,6 +61,7 @@ import {
   ListOfferReviewsUseCase,
   ListOffersUseCase,
   ListProductModelsUseCase,
+  ListShippingCarriersUseCase,
   SetOfferPrimaryMediaUseCase,
   SendChatMessageUseCase,
   StartChatThreadUseCase,
@@ -77,6 +78,7 @@ export class ProductsRpcController {
     private readonly createCategoryUseCase: CreateCategoryUseCase,
     private readonly getProductModelByIdUseCase: GetProductModelByIdUseCase,
     private readonly createProductModelUseCase: CreateProductModelUseCase,
+    private readonly listShippingCarriersUseCase: ListShippingCarriersUseCase,
     private readonly createOfferUseCase: CreateOfferUseCase,
     private readonly updateOfferUseCase: UpdateOfferUseCase,
     private readonly allocateOfferBatchesUseCase: AllocateOfferBatchesUseCase,
@@ -161,6 +163,15 @@ export class ProductsRpcController {
   async createModel(@Payload() payload: CreateProductModelMessage) {
     try {
       return await this.createProductModelUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findShippingCarriers)
+  async findShippingCarriers() {
+    try {
+      return await this.listShippingCarriersUseCase.execute();
     } catch (error) {
       throwRpcException(error);
     }

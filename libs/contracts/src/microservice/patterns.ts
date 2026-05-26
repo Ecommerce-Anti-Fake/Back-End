@@ -75,6 +75,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   createModel: 'products.create-model',
   createOffer: 'products.create-offer',
   updateOffer: 'products.update-offer',
+  findShippingCarriers: 'products.find-shipping-carriers',
   findOffers: 'products.find-offers',
   findOfferById: 'products.find-offer-by-id',
   findChatThreads: 'products.find-chat-threads',
@@ -549,6 +550,7 @@ export type CreateOfferMessage = {
   availableQuantity: number;
   verificationLevel?: string;
   offerStatus?: 'active' | 'inactive' | 'draft';
+  shippingProviderCodes?: string[];
 };
 
 export type UpdateOfferMessage = {
@@ -559,6 +561,7 @@ export type UpdateOfferMessage = {
   price?: number;
   availableQuantity?: number;
   offerStatus?: 'active' | 'inactive' | 'draft';
+  shippingProviderCodes?: string[];
 };
 
 export type OfferMediaUploadSignaturesMessage = {
@@ -690,6 +693,7 @@ export type CreateRetailOrderMessage = {
   shippingName?: string | null;
   shippingPhone?: string | null;
   shippingAddress?: string | null;
+  shippingProviderCode?: string | null;
 };
 
 export type ActiveCartMessage = {
@@ -721,6 +725,7 @@ export type CheckoutCartItemMessage = {
   shippingName?: string | null;
   shippingPhone?: string | null;
   shippingAddress?: string | null;
+  shippingProviderCode?: string | null;
 };
 
 export type CreateWholesaleOrderMessage = {

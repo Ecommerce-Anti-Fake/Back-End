@@ -48,6 +48,13 @@ type OfferWithRelations = Offer & {
   batchLinks?: Array<{
     allocatedQuantity: number;
   }>;
+  shippingMethods?: Array<{
+    providerCode: string;
+    providerName: string;
+    shippingFee: Prisma.Decimal | number;
+    estimatedDays: string | null;
+    isEnabled: boolean;
+  }>;
 };
 
 type OfferMediaWithAsset = {
@@ -197,6 +204,24 @@ export function toCategoryResponse(category: CategoryRecord) {
   };
 }
 
+export function toShippingCarrierResponse(carrier: {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  isActive: boolean;
+  sortOrder: number;
+}) {
+  return {
+    providerCode: carrier.code,
+    providerName: carrier.name,
+    isIntegrated: carrier.code !== 'SELF_DELIVERY',
+    description: carrier.description,
+    isActive: carrier.isActive,
+    sortOrder: carrier.sortOrder,
+  };
+}
+
 export function toOfferResponse(offer: OfferWithRelations) {
   const thumbnailMedia =
     offer.media?.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
@@ -228,6 +253,13 @@ export function toOfferResponse(offer: OfferWithRelations) {
     categoryName: offer.category.name,
     productModelName: offer.productModel.modelName,
     thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
+    shippingMethods: (offer.shippingMethods ?? []).map((method) => ({
+      providerCode: method.providerCode,
+      providerName: method.providerName,
+      shippingFee: decimalToNumber(method.shippingFee),
+      estimatedDays: method.estimatedDays,
+      isEnabled: method.isEnabled,
+    })),
     createdAt: offer.createdAt,
   };
 }
@@ -341,7 +373,11 @@ export function toOfferBatchLinkResponse(link: OfferBatchLinkWithBatch) {
   };
 }
 
-function decimalToNumber(value: Prisma.Decimal) {
+function decimalToNumber(value: Prisma.Decimal | number | string | null | undefined) {
+  if (value === null || value === undefined) {
+    return 0;
+  }
+
   return Number(value.toString());
 }
 

@@ -59,6 +59,22 @@ describe('CreateRetailOrderUseCase', () => {
       productModel: {
         brandId: 'brand-1',
       },
+      shippingMethods: [
+        {
+          providerCode: 'SELF_DELIVERY',
+          providerName: 'Seller tu giao',
+          shippingFee: new Prisma.Decimal(0),
+          estimatedDays: null,
+          isEnabled: true,
+        },
+        {
+          providerCode: 'GHN',
+          providerName: 'Giao Hang Nhanh',
+          shippingFee: new Prisma.Decimal(25000),
+          estimatedDays: '2-3 ngay',
+          isEnabled: true,
+        },
+      ],
       distributionNode: null,
     });
     orderPlacementServiceMock.createOrder.mockResolvedValueOnce({
@@ -74,7 +90,10 @@ describe('CreateRetailOrderUseCase', () => {
       platformFeeAmount: new Prisma.Decimal(40),
       buyerPayableAmount: new Prisma.Decimal(200),
       sellerReceivableAmount: new Prisma.Decimal(160),
-      totalAmount: new Prisma.Decimal(200),
+      totalAmount: new Prisma.Decimal(25200),
+      shippingProviderCode: 'GHN',
+      shippingProviderName: 'Giao Hang Nhanh',
+      shippingFeeAmount: new Prisma.Decimal(25000),
       createdAt: new Date('2026-04-14T10:00:00.000Z'),
       shop: {
         shopName: 'Seller Shop',
@@ -83,11 +102,15 @@ describe('CreateRetailOrderUseCase', () => {
       buyerShop: null,
       items: [
         {
+          id: 'order-item-1',
           offerId: 'offer-1',
           offerTitleSnapshot: 'Offer 1',
           unitPrice: new Prisma.Decimal(100),
           quantity: 2,
           verificationLevelSnapshot: 'SERIALIZED',
+          batchAllocations: [],
+          reviews: [],
+          offer: { media: [] },
         },
       ],
     });
@@ -98,6 +121,7 @@ describe('CreateRetailOrderUseCase', () => {
       quantity: 2,
       affiliateCode: 'spring-aff-001',
       shippingAddress: '12 Nguyen Trai, Quan 1, TP.HCM',
+      shippingProviderCode: 'GHN',
     });
 
     expect(orderPlacementServiceMock.createOrder).toHaveBeenCalledWith(
@@ -105,7 +129,11 @@ describe('CreateRetailOrderUseCase', () => {
         order: expect.objectContaining({
           buyerUserId: 'buyer-user-1',
           baseAmount: 200,
+          buyerPayableAmount: 25200,
           platformFeeAmount: 40,
+          shippingProviderCode: 'GHN',
+          shippingProviderName: 'Giao Hang Nhanh',
+          shippingFeeAmount: 25000,
         }),
         affiliateAttribution: {
           affiliateCode: 'spring-aff-001',
@@ -114,16 +142,58 @@ describe('CreateRetailOrderUseCase', () => {
           sellerShopId: 'seller-shop-1',
           brandId: 'brand-1',
           productModelId: 'product-model-1',
-          orderAmount: 200,
+          orderAmount: 25200,
           commissionBase: 40,
         },
       }),
     );
     expect(result).toMatchObject({
       id: 'order-1',
-      totalAmount: 200,
+      totalAmount: 25200,
       platformFeeAmount: 40,
+      shippingProviderCode: 'GHN',
     });
+  });
+
+  it('should reject shipping providers that are not enabled for the offer', async () => {
+    ordersRepositoryMock.findUserById.mockResolvedValueOnce({
+      id: 'buyer-user-1',
+      phone: '0987654321',
+      displayName: 'Buyer',
+    });
+    ordersRepositoryMock.findOfferForOrdering.mockResolvedValueOnce({
+      id: 'offer-1',
+      title: 'Offer 1',
+      price: new Prisma.Decimal(100),
+      availableQuantity: 20,
+      salesMode: 'RETAIL',
+      minWholesaleQty: null,
+      verificationLevel: 'SERIALIZED',
+      productModelId: 'product-model-1',
+      categoryId: 'category-1',
+      shopId: 'seller-shop-1',
+      productModel: { brandId: 'brand-1' },
+      shippingMethods: [
+        {
+          providerCode: 'SELF_DELIVERY',
+          providerName: 'Seller tu giao',
+          shippingFee: new Prisma.Decimal(0),
+          estimatedDays: null,
+          isEnabled: true,
+        },
+      ],
+      distributionNode: null,
+    });
+
+    await expect(
+      useCase.execute({
+        buyerUserId: 'buyer-user-1',
+        offerId: 'offer-1',
+        quantity: 1,
+        shippingAddress: '12 Nguyen Trai, Quan 1, TP.HCM',
+        shippingProviderCode: 'GHN',
+      }),
+    ).rejects.toThrow('Shipping provider is not enabled for this offer');
   });
 
   it('should require buyer phone before creating order', async () => {

@@ -55,6 +55,15 @@ describe('Retail order lifecycle', () => {
       productModel: {
         brandId: 'brand-1',
       },
+      shippingMethods: [
+        {
+          providerCode: 'SELF_DELIVERY',
+          providerName: 'Seller tu giao',
+          shippingFee: new Prisma.Decimal(0),
+          estimatedDays: null,
+          isEnabled: true,
+        },
+      ],
       distributionNode: null,
     });
 
@@ -74,6 +83,9 @@ describe('Retail order lifecycle', () => {
         buyerPayableAmount: new Prisma.Decimal(orderPayload.buyerPayableAmount),
         sellerReceivableAmount: new Prisma.Decimal(orderPayload.sellerReceivableAmount),
         totalAmount: new Prisma.Decimal(orderPayload.totalAmount),
+        shippingProviderCode: orderPayload.shippingProviderCode,
+        shippingProviderName: orderPayload.shippingProviderName,
+        shippingFeeAmount: new Prisma.Decimal(orderPayload.shippingFeeAmount ?? 0),
         createdAt: new Date('2026-04-20T10:00:00.000Z'),
         shop: {
           shopName: 'Seller Shop',
@@ -106,6 +118,8 @@ describe('Retail order lifecycle', () => {
             quantity: orderPayload.item.quantity,
             verificationLevelSnapshot: orderPayload.item.verificationLevelSnapshot,
             batchAllocations: [],
+            reviews: [],
+            offer: { media: [] },
           },
         ],
       };
@@ -146,7 +160,7 @@ describe('Retail order lifecycle', () => {
       return storedOrder;
     });
 
-    ordersRepositoryMock.completeOrder.mockImplementation(async (id: string) => {
+    ordersRepositoryMock.completeOrder.mockImplementation(async ({ id }) => {
       if (!storedOrder || storedOrder.id !== id) {
         return null;
       }
@@ -239,6 +253,9 @@ describe('Retail order lifecycle', () => {
       paymentStatus: 'PAID',
       escrowStatus: 'RELEASED',
     });
-    expect(ordersRepositoryMock.completeOrder).toHaveBeenCalledWith('order-1');
+    expect(ordersRepositoryMock.completeOrder).toHaveBeenCalledWith({
+      id: 'order-1',
+      actorUserId: 'seller-user-1',
+    });
   });
 });

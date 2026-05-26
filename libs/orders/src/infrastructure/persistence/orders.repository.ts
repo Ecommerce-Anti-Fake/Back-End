@@ -19,6 +19,14 @@ const offerForOrderingArgs = Prisma.validator<Prisma.OfferDefaultArgs>()({
         brandId: true,
       },
     },
+    shippingMethods: {
+      where: {
+        isEnabled: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    },
     distributionNode: {
       select: {
         id: true,
@@ -156,6 +164,14 @@ const disputeWithOrderArgs = Prisma.validator<Prisma.DisputeDefaultArgs>()({
             },
             offer: {
               include: {
+                shippingMethods: {
+                  where: {
+                    isEnabled: true,
+                  },
+                  orderBy: {
+                    createdAt: 'asc',
+                  },
+                },
                 media: {
                   orderBy: {
                     createdAt: 'asc',
@@ -215,6 +231,14 @@ const cartWithItemsArgs = Prisma.validator<Prisma.CartDefaultArgs>()({
       include: {
         offer: {
           include: {
+            shippingMethods: {
+              where: {
+                isEnabled: true,
+              },
+              orderBy: {
+                createdAt: 'asc',
+              },
+            },
             media: {
               include: {
                 mediaAsset: true,
@@ -314,6 +338,9 @@ export type CreateOrderRecordInput = {
   shippingName?: string | null;
   shippingPhone?: string | null;
   shippingAddress?: string | null;
+  shippingProviderCode?: string | null;
+  shippingProviderName?: string | null;
+  shippingFeeAmount?: number;
   paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'manual_confirmation' | null;
   item: {
     offerId: string;
@@ -674,6 +701,9 @@ export class OrdersRepository {
         shippingName: data.shippingName ?? null,
         shippingPhone: data.shippingPhone ?? null,
         shippingAddress: data.shippingAddress ?? null,
+        shippingProviderCode: data.shippingProviderCode ?? null,
+        shippingProviderName: data.shippingProviderName ?? null,
+        shippingFeeAmount: data.shippingFeeAmount ?? 0,
         items: {
           create: {
             ...data.item,

@@ -1138,12 +1138,77 @@ async function seedDemoOrders() {
   }
 }
 
+async function seedShippingCarriers() {
+  const carriers = [
+    { code: 'SELF_DELIVERY', name: 'Tu van chuyen', description: 'Seller tu giao hoac tu sap xep van chuyen.', sortOrder: 0 },
+    { code: 'GHN', name: 'Giao Hang Nhanh', description: 'Carrier tich hop du kien qua API GHN.', sortOrder: 10 },
+    { code: 'GHTK', name: 'Giao Hang Tiet Kiem', description: 'Carrier tich hop du kien qua API GHTK.', sortOrder: 20 },
+    { code: 'VIETTEL_POST', name: 'Viettel Post', description: 'Carrier tich hop du kien qua API Viettel Post.', sortOrder: 30 },
+    { code: 'JNT', name: 'J&T Express', description: 'Carrier tich hop du kien qua API J&T Express.', sortOrder: 40 },
+  ];
+
+  for (const carrier of carriers) {
+    await prisma.shippingCarrier.upsert({
+      where: { code: carrier.code },
+      update: {
+        name: carrier.name,
+        description: carrier.description,
+        isActive: true,
+        sortOrder: carrier.sortOrder,
+      },
+      create: {
+        code: carrier.code,
+        name: carrier.name,
+        description: carrier.description,
+        isActive: true,
+        sortOrder: carrier.sortOrder,
+      },
+    });
+  }
+}
+
+async function seedOfferShippingMethods() {
+  const selfDelivery = await prisma.shippingCarrier.findUnique({
+    where: { providerCode: 'SELF_DELIVERY' },
+  });
+  if (!selfDelivery) return;
+
+  const offers = await prisma.offer.findMany({
+    select: { id: true },
+  });
+
+  for (const offer of offers) {
+    await prisma.offerShippingMethod.upsert({
+      where: {
+        offerId_providerCode: {
+          offerId: offer.id,
+          providerCode: selfDelivery.providerCode,
+        },
+      },
+      update: {
+        providerName: selfDelivery.providerName,
+        carrierId: selfDelivery.id,
+        isEnabled: true,
+      },
+      create: {
+        offerId: offer.id,
+        carrierId: selfDelivery.id,
+        providerCode: selfDelivery.providerCode,
+        providerName: selfDelivery.providerName,
+        isEnabled: true,
+      },
+    });
+  }
+}
+
 async function main() {
   await seedShopTypesAndRequirements();
   await seedCatalog();
+  await seedShippingCarriers();
   await seedUsersAndShops();
   await seedOffers();
   await seedDemoProductsAndOffers();
+  await seedOfferShippingMethods();
   await seedDistributorOnboardingFixtures();
   await seedDemoOrders();
 }

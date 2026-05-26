@@ -37,6 +37,7 @@ import {
   ProductModelResponseDto,
   ReviewMediaResponseDto,
   SendChatMessageDto,
+  ShippingCarrierResponseDto,
   StartChatThreadDto,
   UpdateOfferDto,
 } from '@products';
@@ -80,6 +81,17 @@ export class ProductsController {
   @Get('categories')
   findCategories() {
     return this.productsRpcService.findCategories();
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach don vi van chuyen co the chon cho offer' })
+  @ApiOkResponse({
+    description: 'Danh sach don vi van chuyen.',
+    type: ShippingCarrierResponseDto,
+    isArray: true,
+  })
+  @Get('shipping-carriers')
+  findShippingCarriers() {
+    return this.productsRpcService.findShippingCarriers();
   }
 
   @ApiOperation({ summary: 'Admin tao brand moi' })
@@ -201,6 +213,7 @@ export class ProductsController {
       availableQuantity: dto.availableQuantity,
       verificationLevel: dto.verificationLevel,
       offerStatus: dto.offerStatus,
+      shippingProviderCodes: dto.shippingProviderCodes,
     });
   }
 
@@ -228,6 +241,7 @@ export class ProductsController {
       price: dto.price,
       availableQuantity: dto.availableQuantity,
       offerStatus: dto.offerStatus,
+      shippingProviderCodes: dto.shippingProviderCodes,
     });
   }
 

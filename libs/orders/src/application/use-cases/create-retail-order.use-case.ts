@@ -20,6 +20,7 @@ export class CreateRetailOrderUseCase {
     shippingName?: string | null;
     shippingPhone?: string | null;
     shippingAddress?: string | null;
+    shippingProviderCode?: string | null;
   }) {
     const buyer = await this.ordersRepository.findUserById(input.buyerUserId);
     if (!buyer) {
@@ -45,10 +46,12 @@ export class CreateRetailOrderUseCase {
       throw new BadRequestException('Quantity exceeds available stock');
     }
 
+    const shippingMethod = this.resolveShippingMethod(input.shippingProviderCode, offer);
+    const shippingFeeAmount = Number(shippingMethod.shippingFee.toString());
     const baseAmount = Number(offer.price.toString()) * input.quantity;
     const discountAmount = 0;
     const platformFeeAmount = this.roundMoney(baseAmount * 0.2);
-    const buyerPayableAmount = baseAmount;
+    const buyerPayableAmount = this.roundMoney(baseAmount + shippingFeeAmount);
     const sellerReceivableAmount = this.roundMoney(baseAmount - platformFeeAmount);
 
     const paymentMethod = input.paymentMethod ?? 'COD';
@@ -70,6 +73,9 @@ export class CreateRetailOrderUseCase {
         shippingName: shipping.name,
         shippingPhone: shipping.phone,
         shippingAddress: shipping.address,
+        shippingProviderCode: shippingMethod.providerCode,
+        shippingProviderName: shippingMethod.providerName,
+        shippingFeeAmount,
         paymentMethod,
         item: {
           offerId: offer.id,
@@ -151,5 +157,24 @@ export class CreateRetailOrderUseCase {
       phone,
       address,
     };
+  }
+
+  private resolveShippingMethod(providerCode: string | null | undefined, offer: OfferForOrdering) {
+    const methods = offer.shippingMethods ?? [];
+    if (!methods.length) {
+      throw new BadRequestException('Offer does not have any enabled shipping method');
+    }
+
+    const requestedCode = providerCode?.trim() || null;
+    const selected =
+      (requestedCode ? methods.find((method) => method.providerCode === requestedCode) : null) ??
+      methods.find((method) => method.providerCode === 'SELF_DELIVERY') ??
+      methods[0];
+
+    if (requestedCode && selected.providerCode !== requestedCode) {
+      throw new BadRequestException('Shipping provider is not enabled for this offer');
+    }
+
+    return selected;
   }
 }

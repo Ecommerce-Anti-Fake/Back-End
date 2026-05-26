@@ -13,6 +13,23 @@ const MODERATION_CASE_STATUSES = ['ASSIGNED', 'IN_REVIEW', 'ESCALATED', 'RESOLVE
 const SORT_ORDERS = ['asc', 'desc'] as const;
 const FINANCE_ESCROW_STATUSES = ['PENDING', 'HELD', 'FROZEN', 'RELEASED', 'CANCELLED', 'REFUNDED'] as const;
 
+export class ShippingMethodResponseDto {
+  @ApiProperty({ example: 'GHN' })
+  providerCode!: string;
+
+  @ApiProperty({ example: 'Giao Hang Nhanh' })
+  providerName!: string;
+
+  @ApiProperty({ example: 25000 })
+  shippingFee!: number;
+
+  @ApiPropertyOptional({ example: '2-3 ngay', nullable: true })
+  estimatedDays!: string | null;
+
+  @ApiProperty({ example: true })
+  isEnabled!: boolean;
+}
+
 export class CartItemResponseDto {
   @ApiProperty({ example: 'cart-item-id' })
   id!: string;
@@ -34,6 +51,9 @@ export class CartItemResponseDto {
 
   @ApiProperty({ example: 'Cong ty TNHH San Xuat ABC' })
   shopNameSnapshot!: string;
+
+  @ApiProperty({ type: ShippingMethodResponseDto, isArray: true })
+  shippingMethods!: ShippingMethodResponseDto[];
 
   @ApiProperty({ example: 2 })
   quantity!: number;
@@ -238,6 +258,15 @@ export class OrderResponseDto {
 
   @ApiPropertyOptional({ example: '12 Nguyen Trai, Quan 1, TP.HCM', nullable: true })
   shippingAddress!: string | null;
+
+  @ApiPropertyOptional({ example: 'GHN', nullable: true })
+  shippingProviderCode!: string | null;
+
+  @ApiPropertyOptional({ example: 'Giao Hang Nhanh', nullable: true })
+  shippingProviderName!: string | null;
+
+  @ApiProperty({ example: 25000 })
+  shippingFeeAmount!: number;
 
   @ApiProperty({ type: OrderItemResponseDto, isArray: true })
   items!: OrderItemResponseDto[];
@@ -1174,6 +1203,11 @@ export class CreateRetailOrderDto {
   @IsOptional()
   @IsString()
   shippingAddress?: string;
+
+  @ApiPropertyOptional({ example: 'GHN' })
+  @IsOptional()
+  @IsString()
+  shippingProviderCode?: string;
 }
 
 export class AddCartItemDto {
@@ -1221,6 +1255,11 @@ export class CheckoutCartItemDto {
   @IsOptional()
   @IsString()
   shippingAddress?: string;
+
+  @ApiPropertyOptional({ example: 'GHN' })
+  @IsOptional()
+  @IsString()
+  shippingProviderCode?: string;
 }
 
 export class CreateWholesaleOrderDto {

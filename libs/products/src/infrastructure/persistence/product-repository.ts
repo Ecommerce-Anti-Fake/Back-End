@@ -28,6 +28,23 @@ export class ProductRepository {
     });
   }
 
+  findActiveShippingCarriers() {
+    return this.prisma.shippingCarrier.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    });
+  }
+
+  findActiveShippingCarriersByCodes(codes: string[]) {
+    return this.prisma.shippingCarrier.findMany({
+      where: {
+        code: { in: codes },
+        isActive: true,
+      },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    });
+  }
+
   createCategory(data: {
     name: string;
     parentId: string | null;
@@ -174,9 +191,90 @@ export class ProductRepository {
     availableQuantity: number;
     verificationLevel: string;
     offerStatus: string;
+    shippingProviderCodes?: string[];
   }) {
-    return this.prisma.offer.create({
-      data,
+    const { shippingProviderCodes, ...offerData } = data;
+    return this.prisma.$transaction(async (tx) => {
+      const offer = await tx.offer.create({
+        data: offerData,
+      });
+
+      await this.replaceOfferShippingMethodsTx(tx, offer.id, shippingProviderCodes?.length ? shippingProviderCodes : ['SELF_DELIVERY']);
+
+      return tx.offer.findUniqueOrThrow({
+        where: { id: offer.id },
+        include: this.offerResponseInclude(),
+      });
+    });
+  }
+
+  private offerResponseInclude() {
+    return {
+      shop: {
+        select: { shopName: true, registrationType: true },
+      },
+      category: {
+        select: { name: true },
+      },
+      productModel: {
+        select: { modelName: true, brandId: true },
+      },
+      distributionNode: {
+        select: { networkId: true },
+      },
+      media: {
+        orderBy: { createdAt: 'asc' as const },
+        select: {
+          mediaType: true,
+          fileUrl: true,
+          mediaAsset: {
+            select: { secureUrl: true },
+          },
+        },
+      },
+      shippingMethods: {
+        where: { isEnabled: true },
+        orderBy: { createdAt: 'asc' as const },
+      },
+    };
+  }
+
+  private async replaceOfferShippingMethodsTx(tx: Prisma.TransactionClient, offerId: string, providerCodes: string[]) {
+    const normalizedCodes = Array.from(new Set(providerCodes.map((code) => code.trim().toUpperCase()).filter(Boolean)));
+    const effectiveCodes = normalizedCodes.length ? normalizedCodes : ['SELF_DELIVERY'];
+    const carriers = await tx.shippingCarrier.findMany({
+      where: {
+        code: { in: effectiveCodes },
+        isActive: true,
+      },
+    });
+
+    await tx.offerShippingMethod.deleteMany({ where: { offerId } });
+    await tx.offerShippingMethod.createMany({
+      data: carriers.map((carrier) => ({
+        offerId,
+        carrierId: carrier.id,
+        providerCode: carrier.code,
+        providerName: carrier.name,
+        shippingFee: 0,
+      })),
+    });
+  }
+
+  replaceOfferShippingMethods(offerId: string, providerCodes: string[]) {
+    return this.prisma.$transaction(async (tx) => {
+      await this.replaceOfferShippingMethodsTx(tx, offerId, providerCodes);
+
+      return tx.offer.findUniqueOrThrow({
+        where: { id: offerId },
+        include: this.offerResponseInclude(),
+      });
+    });
+  }
+
+  getOfferWithRelations(offerId: string) {
+    return this.prisma.offer.findUnique({
+      where: { id: offerId },
       include: {
         shop: {
           select: { shopName: true, registrationType: true },
@@ -189,6 +287,10 @@ export class ProductRepository {
         },
         distributionNode: {
           select: { networkId: true },
+        },
+        shippingMethods: {
+          where: { isEnabled: true },
+          orderBy: { createdAt: 'asc' },
         },
       },
     });
@@ -287,6 +389,10 @@ export class ProductRepository {
             },
           },
         },
+        shippingMethods: {
+          where: { isEnabled: true },
+          orderBy: { createdAt: 'asc' },
+        },
       },
       orderBy: this.resolveOfferSort(input.sort),
     });
@@ -339,6 +445,10 @@ export class ProductRepository {
               select: { secureUrl: true },
             },
           },
+        },
+        shippingMethods: {
+          where: { isEnabled: true },
+          orderBy: { createdAt: 'asc' },
         },
       },
     });
@@ -553,6 +663,10 @@ export class ProductRepository {
               select: { secureUrl: true },
             },
           },
+        },
+        shippingMethods: {
+          where: { isEnabled: true },
+          orderBy: { createdAt: 'asc' },
         },
       },
     });

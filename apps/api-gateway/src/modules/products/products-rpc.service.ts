@@ -69,6 +69,10 @@ export class ProductsRpcService {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.createModel, payload);
   }
 
+  findShippingCarriers() {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.findShippingCarriers, {});
+  }
+
   createOffer(payload: CreateOfferMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.createOffer, payload);
   }

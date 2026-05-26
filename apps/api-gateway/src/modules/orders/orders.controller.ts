@@ -143,6 +143,7 @@ export class OrdersController {
       shippingName: dto.shippingName ?? null,
       shippingPhone: dto.shippingPhone ?? null,
       shippingAddress: dto.shippingAddress ?? null,
+      shippingProviderCode: dto.shippingProviderCode ?? null,
     });
   }
 
@@ -170,6 +171,7 @@ export class OrdersController {
       shippingName: dto.shippingName ?? null,
       shippingPhone: dto.shippingPhone ?? null,
       shippingAddress: dto.shippingAddress ?? null,
+      shippingProviderCode: dto.shippingProviderCode ?? null,
     });
   }
 

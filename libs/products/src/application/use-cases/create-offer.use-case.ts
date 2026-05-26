@@ -22,6 +22,7 @@ export class CreateOfferUseCase {
     availableQuantity: number;
     verificationLevel?: string;
     offerStatus?: 'active' | 'inactive' | 'draft';
+    shippingProviderCodes?: string[];
   }) {
     const ownedShop = await this.productRepository.findOwnedShop(input.shopId, input.sellerUserId);
     if (!ownedShop) {
@@ -111,6 +112,9 @@ export class CreateOfferUseCase {
       throw new BadRequestException('Only manufacturer or distributor shops can create wholesale offers');
     }
 
+    const shippingProviderCodes = this.normalizeShippingProviderCodes(input.shippingProviderCodes);
+    await this.assertShippingProvidersExist(shippingProviderCodes);
+
     const offer = await this.productRepository.createOffer({
       sellerUserId: input.sellerUserId,
       shopId: input.shopId,
@@ -127,8 +131,21 @@ export class CreateOfferUseCase {
       availableQuantity: input.availableQuantity,
       verificationLevel,
       offerStatus,
+      shippingProviderCodes,
     });
 
     return toOfferResponse(offer);
+  }
+
+  private normalizeShippingProviderCodes(providerCodes?: string[]) {
+    const codes = Array.from(new Set((providerCodes ?? []).map((code) => code.trim().toUpperCase()).filter(Boolean)));
+    return codes.length ? codes : ['SELF_DELIVERY'];
+  }
+
+  private async assertShippingProvidersExist(providerCodes: string[]) {
+    const carriers = await this.productRepository.findActiveShippingCarriersByCodes(providerCodes);
+    if (carriers.length !== providerCodes.length) {
+      throw new BadRequestException('One or more shipping providers are invalid');
+    }
   }
 }

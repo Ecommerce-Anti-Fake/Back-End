@@ -24,6 +24,7 @@ export * from './add-offer-documents-batch.use-case';
 export * from './list-offer-documents.use-case';
 export * from './delete-offer-document.use-case';
 export * from './list-offers.use-case';
+export * from './list-shipping-carriers.use-case';
 export * from './get-offer-by-id.use-case';
 export * from './list-chat-threads.use-case';
 export * from './get-chat-thread.use-case';

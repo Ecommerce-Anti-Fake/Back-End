@@ -40,6 +40,9 @@ export function toOrderResponse(order: OrderWithRelations) {
     shippingName: order.shippingName,
     shippingPhone: order.shippingPhone,
     shippingAddress: order.shippingAddress,
+    shippingProviderCode: order.shippingProviderCode,
+    shippingProviderName: order.shippingProviderName,
+    shippingFeeAmount: decimalToNumber(order.shippingFeeAmount),
     items: order.items.map((item) => {
       const offerMedia = item.offer?.media ?? [];
       const thumbnailMedia =
@@ -96,6 +99,13 @@ export function toCartResponse(cart: CartWithItems) {
         unitPriceSnapshot: decimalToNumber(item.unitPriceSnapshot),
         currencySnapshot: item.currencySnapshot,
         shopNameSnapshot: item.shopNameSnapshot,
+        shippingMethods: (item.offer?.shippingMethods ?? []).map((method) => ({
+          providerCode: method.providerCode,
+          providerName: method.providerName,
+          shippingFee: decimalToNumber(method.shippingFee),
+          estimatedDays: method.estimatedDays,
+          isEnabled: method.isEnabled,
+        })),
         quantity: item.quantity,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt,
