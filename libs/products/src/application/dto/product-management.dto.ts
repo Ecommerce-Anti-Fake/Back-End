@@ -175,6 +175,9 @@ export class OfferResponseDto {
   @ApiProperty({ example: 500 })
   availableQuantity!: number;
 
+  @ApiProperty({ example: 120 })
+  soldQuantity!: number;
+
   @ApiProperty({ example: 'standard' })
   verificationLevel!: string;
 

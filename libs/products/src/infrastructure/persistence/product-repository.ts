@@ -430,11 +430,54 @@ export class ProductRepository {
   }
 
   async createChatMessage(input: { threadId: string; senderUserId: string; body: string; messageType: 'TEXT' }) {
-    await this.prisma.chatMessage.create({
+    const message = await this.prisma.chatMessage.create({
       data: input,
+      include: {
+        sender: {
+          select: {
+            displayName: true,
+            email: true,
+            phone: true,
+          },
+        },
+        thread: {
+          select: {
+            buyerUserId: true,
+            sellerUserId: true,
+          },
+        },
+      },
+    });
+
+    const recipientUserId =
+      message.senderUserId === message.thread.buyerUserId ? message.thread.sellerUserId : message.thread.buyerUserId;
+    await this.createNotification({
+      userId: recipientUserId,
+      notificationType: 'CHAT_MESSAGE',
+      title: `Tin nhan moi tu ${message.sender.displayName || message.sender.email || message.sender.phone || 'nguoi dung'}`,
+      body: message.body.length > 120 ? `${message.body.slice(0, 117)}...` : message.body,
+      targetType: 'CHAT_THREAD',
+      targetId: input.threadId,
+      dedupeKey: `CHAT_MESSAGE:${message.id}:${recipientUserId}`,
     });
 
     return this.findChatThreadById(input.threadId);
+  }
+
+  private createNotification(input: {
+    userId: string;
+    notificationType: string;
+    title: string;
+    body: string;
+    targetType: string;
+    targetId: string;
+    dedupeKey: string;
+  }) {
+    return this.prisma.notification.upsert({
+      where: { dedupeKey: input.dedupeKey },
+      create: input,
+      update: {},
+    });
   }
 
   private chatThreadInclude(messageTake?: number) {

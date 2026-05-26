@@ -23,6 +23,9 @@ export class CartItemResponseDto {
   @ApiProperty({ example: 'Kem chong nang SPF50 - lo 2026' })
   offerTitleSnapshot!: string;
 
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/offer.jpg', nullable: true })
+  thumbnailUrl!: string | null;
+
   @ApiProperty({ example: 150000 })
   unitPriceSnapshot!: number;
 

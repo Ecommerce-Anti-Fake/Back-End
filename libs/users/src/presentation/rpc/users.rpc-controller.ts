@@ -11,7 +11,9 @@ import type {
   CurrentUserProfileCompletionMessage,
   CurrentUserKycMessage,
   KycUploadSignaturesMessage,
+  ListNotificationsMessage,
   ListUsersMessage,
+  NotificationLookupMessage,
   PendingKycsLookupMessage,
   ReviewKycMessage,
   SubmitKycMessage,
@@ -34,8 +36,11 @@ import {
   CreateUserAddressUseCase,
   DeleteUserAddressUseCase,
   ListUserAddressesUseCase,
+  ListNotificationsUseCase,
   ListPendingKycsUseCase,
   ListUsersUseCase,
+  MarkAllNotificationsReadUseCase,
+  MarkNotificationReadUseCase,
   ReviewUserKycUseCase,
   SetDefaultUserAddressUseCase,
   SubmitUserKycUseCase,
@@ -60,6 +65,9 @@ export class UsersRpcController {
     private readonly updateUserAddressUseCase: UpdateUserAddressUseCase,
     private readonly setDefaultUserAddressUseCase: SetDefaultUserAddressUseCase,
     private readonly deleteUserAddressUseCase: DeleteUserAddressUseCase,
+    private readonly listNotificationsUseCase: ListNotificationsUseCase,
+    private readonly markNotificationReadUseCase: MarkNotificationReadUseCase,
+    private readonly markAllNotificationsReadUseCase: MarkAllNotificationsReadUseCase,
     private readonly getCurrentUserKycUseCase: GetCurrentUserKycUseCase,
     private readonly listPendingKycsUseCase: ListPendingKycsUseCase,
     private readonly getKycUploadSignaturesUseCase: GetKycUploadSignaturesUseCase,
@@ -254,6 +262,33 @@ export class UsersRpcController {
   async deleteUser(@Payload() payload: UserLookupMessage) {
     try {
       return await this.deleteUserUseCase.execute(payload.id);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(USERS_MESSAGE_PATTERNS.listNotifications)
+  async listNotifications(@Payload() payload: ListNotificationsMessage) {
+    try {
+      return await this.listNotificationsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(USERS_MESSAGE_PATTERNS.markNotificationRead)
+  async markNotificationRead(@Payload() payload: NotificationLookupMessage) {
+    try {
+      return await this.markNotificationReadUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(USERS_MESSAGE_PATTERNS.markAllNotificationsRead)
+  async markAllNotificationsRead(@Payload() payload: CurrentUserProfileMessage) {
+    try {
+      return await this.markAllNotificationsReadUseCase.execute(payload.userId);
     } catch (error) {
       throwRpcException(error);
     }

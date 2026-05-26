@@ -212,6 +212,17 @@ const disputeEvidenceArgs = Prisma.validator<Prisma.DisputeEvidenceDefaultArgs>(
 const cartWithItemsArgs = Prisma.validator<Prisma.CartDefaultArgs>()({
   include: {
     items: {
+      include: {
+        offer: {
+          include: {
+            media: {
+              include: {
+                mediaAsset: true,
+              },
+            },
+          },
+        },
+      },
       orderBy: {
         createdAt: 'asc',
       },
@@ -1963,6 +1974,22 @@ export class OrdersRepository {
         assignedAdminUserId: input.assignedAdminUserId ?? existing.assignedAdminUserId,
         resolvedAt: input.resolvedAt ?? existing.resolvedAt,
       },
+    });
+  }
+
+  createNotification(input: {
+    userId: string;
+    notificationType: string;
+    title: string;
+    body: string;
+    targetType: string;
+    targetId: string;
+    dedupeKey: string;
+  }) {
+    return this.prisma.notification.upsert({
+      where: { dedupeKey: input.dedupeKey },
+      create: input,
+      update: {},
     });
   }
 

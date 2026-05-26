@@ -168,6 +168,7 @@ model User {
   affiliateAccounts    AffiliateAccount[]
   affiliateConversions AffiliateConversion[] @relation("AffiliateConversionCustomer")
   addresses            UserAddress[]
+  notifications        Notification[]
 
   @@map("user")
 }
@@ -929,6 +930,24 @@ model ChatMessage {
   sender       User       @relation("ChatMessageSender", fields: [senderUserId], references: [id])
 
   @@map("chat_message")
+}
+
+model Notification {
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  notificationType String    @map("notification_type")
+  title            String
+  body             String
+  targetType       String?   @map("target_type")
+  targetId         String?   @map("target_id")
+  dedupeKey        String    @unique @map("dedupe_key")
+  readAt           DateTime? @map("read_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@index([targetType, targetId])
+  @@map("notification")
 }
 
 model Report {

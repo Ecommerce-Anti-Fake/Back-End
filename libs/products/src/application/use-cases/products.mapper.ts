@@ -45,6 +45,9 @@ type OfferWithRelations = Offer & {
       secureUrl: string;
     } | null;
   }>;
+  batchLinks?: Array<{
+    allocatedQuantity: number;
+  }>;
 };
 
 type OfferMediaWithAsset = {
@@ -198,6 +201,8 @@ export function toOfferResponse(offer: OfferWithRelations) {
   const thumbnailMedia =
     offer.media?.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
     offer.media?.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
+  const allocatedQuantity = offer.batchLinks?.reduce((sum, link) => sum + link.allocatedQuantity, 0) ?? offer.availableQuantity;
+  const soldQuantity = Math.max(allocatedQuantity - offer.availableQuantity, 0);
 
   return {
     id: offer.id,
@@ -209,6 +214,7 @@ export function toOfferResponse(offer: OfferWithRelations) {
     minWholesaleQty: offer.minWholesaleQty,
     itemCondition: offer.itemCondition,
     availableQuantity: offer.availableQuantity,
+    soldQuantity,
     verificationLevel: offer.verificationLevel,
     offerStatus: offer.offerStatus,
     shopId: offer.shopId,

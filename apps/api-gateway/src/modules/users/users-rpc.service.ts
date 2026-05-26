@@ -7,7 +7,9 @@ import type {
   CurrentUserKycMessage,
   CurrentUserProfileCompletionMessage,
   KycUploadSignaturesMessage,
+  ListNotificationsMessage,
   ListUsersMessage,
+  NotificationLookupMessage,
   PendingKycsLookupMessage,
   ReviewKycMessage,
   SubmitKycMessage,
@@ -106,6 +108,18 @@ export class UsersRpcService {
 
   deleteUser(payload: UserLookupMessage) {
     return this.send(USERS_MESSAGE_PATTERNS.deleteUser, payload);
+  }
+
+  listNotifications(payload: ListNotificationsMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.listNotifications, payload);
+  }
+
+  markNotificationRead(payload: NotificationLookupMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.markNotificationRead, payload);
+  }
+
+  markAllNotificationsRead(payload: CurrentUserProfileMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.markAllNotificationsRead, payload);
   }
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {

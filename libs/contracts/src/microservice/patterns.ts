@@ -34,6 +34,9 @@ export const USERS_MESSAGE_PATTERNS = {
   getUserById: 'users.get-user-by-id',
   updateUser: 'users.update-user',
   deleteUser: 'users.delete-user',
+  listNotifications: 'users.list-notifications',
+  markNotificationRead: 'users.mark-notification-read',
+  markAllNotificationsRead: 'users.mark-all-notifications-read',
 } as const;
 
 export const SHOPS_MESSAGE_PATTERNS = {
@@ -196,6 +199,18 @@ export type CurrentUserProfileMessage = {
 
 export type CurrentUserProfileCompletionMessage = {
   userId: string;
+};
+
+export type ListNotificationsMessage = {
+  userId: string;
+  unreadOnly?: boolean;
+  page?: number;
+  pageSize?: number;
+};
+
+export type NotificationLookupMessage = {
+  userId: string;
+  notificationId: string;
 };
 
 export type UserAddressLookupMessage = {

@@ -44,6 +44,7 @@ export class UpdateOrderFulfillmentUseCase {
       }
       const updatedOrder = await this.ordersRepository.allocateOrderBatchesAndUpdateFulfillment(order.id, 'PROCESSING');
       await this.createFulfillmentAudit(order.id, input.requesterUserId, currentFulfillmentStatus, 'PROCESSING');
+      await this.createFulfillmentNotification(updatedOrder, 'PROCESSING');
       return toOrderResponse(updatedOrder);
     }
 
@@ -53,6 +54,7 @@ export class UpdateOrderFulfillmentUseCase {
       }
       const updatedOrder = await this.ordersRepository.updateFulfillmentStatus(order.id, 'SHIPPING');
       await this.createFulfillmentAudit(order.id, input.requesterUserId, currentFulfillmentStatus, 'SHIPPING');
+      await this.createFulfillmentNotification(updatedOrder, 'SHIPPING');
       return toOrderResponse(updatedOrder);
     }
 
@@ -78,6 +80,7 @@ export class UpdateOrderFulfillmentUseCase {
 
       const updatedOrder = await this.ordersRepository.updateFulfillmentStatus(order.id, 'DELIVERED');
       await this.createFulfillmentAudit(order.id, input.requesterUserId, currentFulfillmentStatus, 'DELIVERED');
+      await this.createFulfillmentNotification(updatedOrder, 'DELIVERED');
       return toOrderResponse(updatedOrder);
     }
 
@@ -87,6 +90,7 @@ export class UpdateOrderFulfillmentUseCase {
       }
       const cancelledOrder = await this.orderReversalService.cancelOrder(order.id, input.requesterUserId);
       await this.createFulfillmentAudit(order.id, input.requesterUserId, currentFulfillmentStatus, 'CANCELLED');
+      await this.createFulfillmentNotification(cancelledOrder, 'CANCELLED');
       return toOrderResponse(cancelledOrder);
     }
     throw new BadRequestException('Unsupported fulfillment status');
@@ -104,6 +108,22 @@ export class UpdateOrderFulfillmentUseCase {
       metadata: {
         domain: 'FULFILLMENT',
       },
+    });
+  }
+
+  private createFulfillmentNotification(order: { id: string; buyerUserId: string | null }, toStatus: string) {
+    if (!order.buyerUserId) {
+      return null;
+    }
+
+    return this.ordersRepository.createNotification({
+      userId: order.buyerUserId,
+      notificationType: 'ORDER_FULFILLMENT',
+      title: 'Cap nhat don hang',
+      body: `Don hang ${order.id.slice(0, 8)} da chuyen sang ${toStatus}.`,
+      targetType: 'ORDER',
+      targetId: order.id,
+      dedupeKey: `ORDER_FULFILLMENT:${order.id}:${toStatus}:${order.buyerUserId}`,
     });
   }
 }

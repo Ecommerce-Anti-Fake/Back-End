@@ -82,17 +82,25 @@ export function toCartResponse(cart: CartWithItems) {
     id: cart.id,
     buyerUserId: cart.buyerUserId,
     cartStatus: cart.cartStatus,
-    items: cart.items.map((item) => ({
-      id: item.id,
-      offerId: item.offerId,
-      offerTitleSnapshot: item.offerTitleSnapshot,
-      unitPriceSnapshot: decimalToNumber(item.unitPriceSnapshot),
-      currencySnapshot: item.currencySnapshot,
-      shopNameSnapshot: item.shopNameSnapshot,
-      quantity: item.quantity,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-    })),
+    items: cart.items.map((item) => {
+      const offerMedia = item.offer?.media ?? [];
+      const thumbnailMedia =
+        offerMedia.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
+        offerMedia.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
+
+      return {
+        id: item.id,
+        offerId: item.offerId,
+        offerTitleSnapshot: item.offerTitleSnapshot,
+        thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
+        unitPriceSnapshot: decimalToNumber(item.unitPriceSnapshot),
+        currencySnapshot: item.currencySnapshot,
+        shopNameSnapshot: item.shopNameSnapshot,
+        quantity: item.quantity,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      };
+    }),
     createdAt: cart.createdAt,
     updatedAt: cart.updatedAt,
   };

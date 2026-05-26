@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, IsUrl, Max, Min, ValidateNested } from 'class-validator';
 
 const USER_MANAGEMENT_ROLES = ['user'] as const;
@@ -120,6 +120,78 @@ export class ProfileCompletionResponseDto {
     example: false,
   })
   isOrderReady!: boolean;
+}
+
+export class NotificationResponseDto {
+  @ApiProperty({ example: 'notification-id' })
+  id!: string;
+
+  @ApiProperty({ example: 'user-id' })
+  userId!: string;
+
+  @ApiProperty({ example: 'CHAT_MESSAGE' })
+  notificationType!: string;
+
+  @ApiProperty({ example: 'Tin nhan moi' })
+  title!: string;
+
+  @ApiProperty({ example: 'Shop vua gui tin nhan cho ban.' })
+  body!: string;
+
+  @ApiPropertyOptional({ example: 'CHAT_THREAD', nullable: true })
+  targetType!: string | null;
+
+  @ApiPropertyOptional({ example: 'thread-id', nullable: true })
+  targetId!: string | null;
+
+  @ApiProperty({ example: 'CHAT_MESSAGE:message-id:user-id' })
+  dedupeKey!: string;
+
+  @ApiPropertyOptional({ example: '2026-05-26T09:00:00.000Z', nullable: true })
+  readAt!: Date | null;
+
+  @ApiProperty({ example: '2026-05-26T09:00:00.000Z' })
+  createdAt!: Date;
+}
+
+export class NotificationsResponseDto {
+  @ApiProperty({ example: 12 })
+  total!: number;
+
+  @ApiProperty({ example: 3 })
+  unreadCount!: number;
+
+  @ApiProperty({ example: 1 })
+  page!: number;
+
+  @ApiProperty({ example: 20 })
+  pageSize!: number;
+
+  @ApiProperty({ type: NotificationResponseDto, isArray: true })
+  items!: NotificationResponseDto[];
+}
+
+export class ListNotificationsQueryDto {
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === true || value === 'true')
+  unreadOnly?: boolean;
+
+  @ApiPropertyOptional({ example: 1, minimum: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 20, minimum: 1, maximum: 100 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize?: number;
 }
 
 export class UserAddressResponseDto {

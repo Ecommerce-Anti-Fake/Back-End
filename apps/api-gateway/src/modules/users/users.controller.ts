@@ -20,6 +20,9 @@ import {
   KycUploadSignatureResponseDto,
   AdminUserKycItemResponseDto,
   ListUsersQueryDto,
+  ListNotificationsQueryDto,
+  NotificationResponseDto,
+  NotificationsResponseDto,
   ProfileCompletionResponseDto,
   ReviewUserKycDto,
   SubmitKycDto,
@@ -129,6 +132,48 @@ export class UsersController {
   @Get('profile-completion')
   getProfileCompletion(@CurrentUserId() userId: string) {
     return this.usersRpcService.getProfileCompletion({ userId });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach thong bao cua user hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach thong bao va so luong chua doc.',
+    type: NotificationsResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('notifications')
+  listNotifications(@CurrentUserId() userId: string, @Query() query: ListNotificationsQueryDto) {
+    return this.usersRpcService.listNotifications({
+      userId,
+      unreadOnly: query.unreadOnly,
+      page: query.page,
+      pageSize: query.pageSize,
+    });
+  }
+
+  @ApiOperation({ summary: 'Danh dau mot thong bao da doc' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'notificationId', description: 'ID thong bao can danh dau da doc.' })
+  @ApiOkResponse({
+    description: 'Thong bao sau khi cap nhat.',
+    type: NotificationResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('notifications/:notificationId/read')
+  markNotificationRead(@CurrentUserId() userId: string, @Param('notificationId') notificationId: string) {
+    return this.usersRpcService.markNotificationRead({ userId, notificationId });
+  }
+
+  @ApiOperation({ summary: 'Danh dau tat ca thong bao la da doc' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach thong bao sau khi cap nhat.',
+    type: NotificationsResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('notifications/read-all')
+  markAllNotificationsRead(@CurrentUserId() userId: string) {
+    return this.usersRpcService.markAllNotificationsRead({ userId });
   }
 
   @ApiOperation({ summary: 'Lay danh sach dia chi giao hang cua user hien tai' })

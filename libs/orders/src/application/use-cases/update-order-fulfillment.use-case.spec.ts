@@ -13,6 +13,7 @@ describe('UpdateOrderFulfillmentUseCase', () => {
     markOrderPaid: jest.fn(),
     updateFulfillmentStatus: jest.fn(),
     createAuditLog: jest.fn(),
+    createNotification: jest.fn(),
   };
   const orderReversalServiceMock = {
     cancelOrder: jest.fn(),
@@ -56,6 +57,15 @@ describe('UpdateOrderFulfillmentUseCase', () => {
       metadata: {
         domain: 'FULFILLMENT',
       },
+    });
+    expect(ordersRepositoryMock.createNotification).toHaveBeenCalledWith({
+      userId: 'buyer-user-1',
+      notificationType: 'ORDER_FULFILLMENT',
+      title: 'Cap nhat don hang',
+      body: 'Don hang order-1 da chuyen sang PROCESSING.',
+      targetType: 'ORDER',
+      targetId: 'order-1',
+      dedupeKey: 'ORDER_FULFILLMENT:order-1:PROCESSING:buyer-user-1',
     });
     expect(result.fulfillmentStatus).toBe('PROCESSING');
   });

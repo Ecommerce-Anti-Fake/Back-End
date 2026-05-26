@@ -111,6 +111,50 @@ export class UsersRepository {
     });
   }
 
+  async listNotifications(input: { userId: string; unreadOnly?: boolean; page?: number; pageSize?: number }) {
+    const page = Math.max(1, Number(input.page || 1));
+    const pageSize = Math.min(100, Math.max(1, Number(input.pageSize || 20)));
+    const where: Prisma.NotificationWhereInput = {
+      userId: input.userId,
+      ...(input.unreadOnly ? { readAt: null } : {}),
+    };
+
+    const [total, unreadCount, items] = await this.prisma.$transaction([
+      this.prisma.notification.count({ where }),
+      this.prisma.notification.count({ where: { userId: input.userId, readAt: null } }),
+      this.prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    return { total, unreadCount, page, pageSize, items };
+  }
+
+  async markNotificationRead(userId: string, notificationId: string) {
+    const notification = await this.prisma.notification.findFirst({
+      where: { id: notificationId, userId },
+    });
+
+    if (!notification) {
+      return null;
+    }
+
+    return this.prisma.notification.update({
+      where: { id: notification.id },
+      data: { readAt: notification.readAt ?? new Date() },
+    });
+  }
+
+  markAllNotificationsRead(userId: string) {
+    return this.prisma.notification.updateMany({
+      where: { userId, readAt: null },
+      data: { readAt: new Date() },
+    });
+  }
+
   listUserAddresses(userId: string) {
     return this.prisma.userAddress.findMany({
       where: { userId },
