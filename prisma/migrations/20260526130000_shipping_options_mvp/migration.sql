@@ -29,6 +29,11 @@ ADD COLUMN "shipping_provider_name" TEXT,
 ADD COLUMN "shipping_fee_amount" DECIMAL(18,2) NOT NULL DEFAULT 0,
 ADD COLUMN "shipping_tracking_code" TEXT;
 
+CREATE UNIQUE INDEX "shipping_carrier_code_key" ON "shipping_carrier"("code");
+CREATE INDEX "shipping_carrier_is_active_sort_order_idx" ON "shipping_carrier"("is_active", "sort_order");
+CREATE UNIQUE INDEX "offer_shipping_method_offer_id_provider_code_key" ON "offer_shipping_method"("offer_id", "provider_code");
+CREATE INDEX "offer_shipping_method_carrier_id_idx" ON "offer_shipping_method"("carrier_id");
+
 INSERT INTO "shipping_carrier" ("id", "code", "name", "description", "is_active", "sort_order", "updated_at")
 VALUES
   ('carrier-self-delivery', 'SELF_DELIVERY', 'Tu van chuyen', 'Seller tu giao hoac tu sap xep van chuyen.', true, 0, CURRENT_TIMESTAMP),
@@ -42,11 +47,6 @@ INSERT INTO "offer_shipping_method" ("id", "offer_id", "carrier_id", "provider_c
 SELECT CONCAT('offer-shipping-self-', o."id"), o."id", 'carrier-self-delivery', 'SELF_DELIVERY', 'Tu van chuyen', 0, true
 FROM "offer" o
 ON CONFLICT ("offer_id", "provider_code") DO NOTHING;
-
-CREATE UNIQUE INDEX "shipping_carrier_code_key" ON "shipping_carrier"("code");
-CREATE INDEX "shipping_carrier_is_active_sort_order_idx" ON "shipping_carrier"("is_active", "sort_order");
-CREATE UNIQUE INDEX "offer_shipping_method_offer_id_provider_code_key" ON "offer_shipping_method"("offer_id", "provider_code");
-CREATE INDEX "offer_shipping_method_carrier_id_idx" ON "offer_shipping_method"("carrier_id");
 
 ALTER TABLE "offer_shipping_method"
 ADD CONSTRAINT "offer_shipping_method_offer_id_fkey"
