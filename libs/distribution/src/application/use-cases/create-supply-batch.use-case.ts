@@ -2,6 +2,14 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { DistributionPricingRepository } from '../../infrastructure/persistence/distribution-pricing.repository';
 import { toSupplyBatchResponse } from './network.mapper';
 
+type BatchProductIdentity = {
+  brandId: string;
+  categoryId: string;
+  modelName: string;
+  gtin: string | null;
+  verificationPolicy: string;
+};
+
 @Injectable()
 export class CreateSupplyBatchUseCase {
   constructor(private readonly repository: DistributionPricingRepository) {}
@@ -9,7 +17,12 @@ export class CreateSupplyBatchUseCase {
   async execute(input: {
     requesterUserId: string;
     shopId: string;
-    productModelId: string;
+    offerId?: string | null;
+    brandId?: string | null;
+    categoryId?: string | null;
+    modelName?: string | null;
+    gtin?: string | null;
+    verificationPolicy?: string | null;
     distributionNodeId?: string | null;
     batchNumber: string;
     quantity: number;
@@ -25,11 +38,6 @@ export class CreateSupplyBatchUseCase {
 
     if (!['MANUFACTURER', 'DISTRIBUTOR'].includes(shop.registrationType)) {
       throw new BadRequestException('Only manufacturer or distributor shops can create supply batches');
-    }
-
-    const productModel = await this.repository.findProductModelById(input.productModelId);
-    if (!productModel) {
-      throw new NotFoundException('Product model not found');
     }
 
     const batchNumber = input.batchNumber.trim();
@@ -69,9 +77,15 @@ export class CreateSupplyBatchUseCase {
       }
     }
 
+    const productIdentity = await this.resolveProductIdentity(input, shop.id);
+
     const batch = await this.repository.createBatch({
       shopId: shop.id,
-      productModelId: productModel.id,
+      brandId: productIdentity.brandId,
+      categoryId: productIdentity.categoryId,
+      modelName: productIdentity.modelName,
+      gtin: productIdentity.gtin,
+      verificationPolicy: productIdentity.verificationPolicy,
       distributionNodeId,
       batchNumber,
       quantity: input.quantity,
@@ -82,5 +96,49 @@ export class CreateSupplyBatchUseCase {
     });
 
     return toSupplyBatchResponse(batch);
+  }
+
+  private async resolveProductIdentity(
+    input: {
+      offerId?: string | null;
+      brandId?: string | null;
+      categoryId?: string | null;
+      modelName?: string | null;
+      gtin?: string | null;
+      verificationPolicy?: string | null;
+    },
+    shopId: string,
+  ): Promise<BatchProductIdentity> {
+    const offerId = input.offerId?.trim();
+    if (offerId) {
+      const offer = await this.repository.findOfferIdentityById(offerId);
+      if (!offer || offer.shopId !== shopId) {
+        throw new NotFoundException('Offer not found for selected shop');
+      }
+
+      return {
+        brandId: offer.brandId,
+        categoryId: offer.categoryId,
+        modelName: offer.modelName,
+        gtin: offer.gtin,
+        verificationPolicy: offer.verificationPolicy,
+      };
+    }
+
+    const brandId = input.brandId?.trim();
+    const categoryId = input.categoryId?.trim();
+    const modelName = input.modelName?.trim();
+    const verificationPolicy = input.verificationPolicy?.trim() || 'manual_review';
+    if (!brandId || !categoryId || !modelName) {
+      throw new BadRequestException('Batch product identity requires offerId, or brandId/categoryId/modelName snapshot');
+    }
+
+    return {
+      brandId,
+      categoryId,
+      modelName,
+      gtin: input.gtin?.trim() || null,
+      verificationPolicy,
+    };
   }
 }

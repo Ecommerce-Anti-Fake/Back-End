@@ -120,8 +120,7 @@ export class CreateRetailOrderUseCase {
             customerUserId: input.buyerUserId,
             offerId: offer.id,
             sellerShopId: offer.shopId,
-            brandId: offer.productModel.brandId,
-            productModelId: offer.productModelId,
+            brandId: offer.brandId,
             orderAmount: buyerPayableAmount,
             commissionBase: platformFeeAmount,
           }

@@ -10,7 +10,6 @@ import {
   CreateBrandMessage,
   CreateCategoryMessage,
   CreateOfferMessage,
-  CreateProductModelMessage,
   DeleteOfferDocumentMessage,
   DeleteOfferMediaMessage,
   FavoriteOfferMessage,
@@ -24,8 +23,8 @@ import {
   OfferMediaLookupMessage,
   OfferMediaUploadSignaturesMessage,
   OfferReviewsLookupMessage,
+  OfferLookupMessage,
   PRODUCTS_MESSAGE_PATTERNS,
-  ProductModelLookupMessage,
   ReviewMediaUploadSignaturesMessage,
   SendChatMessageMessage,
   SetOfferPrimaryMediaMessage,
@@ -43,10 +42,6 @@ export class ProductsRpcService {
     private readonly catalogClient: ClientProxy,
   ) {}
 
-  findModels() {
-    return this.send(PRODUCTS_MESSAGE_PATTERNS.findModels, {});
-  }
-
   findBrands() {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.findBrands, {});
   }
@@ -61,14 +56,6 @@ export class ProductsRpcService {
 
   createCategory(payload: CreateCategoryMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.createCategory, payload);
-  }
-
-  findModelById(payload: ProductModelLookupMessage) {
-    return this.send(PRODUCTS_MESSAGE_PATTERNS.findModelById, payload);
-  }
-
-  createModel(payload: CreateProductModelMessage) {
-    return this.send(PRODUCTS_MESSAGE_PATTERNS.createModel, payload);
   }
 
   findShippingCarriers() {
@@ -151,7 +138,7 @@ export class ProductsRpcService {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.findOffers, payload);
   }
 
-  findOfferById(payload: ProductModelLookupMessage) {
+  findOfferById(payload: OfferLookupMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.findOfferById, payload);
   }
 

@@ -10,9 +10,8 @@ export class CreateAffiliateProgramUseCase {
     requesterUserId: string;
     ownerShopId?: string | null;
     brandId?: string | null;
-    productModelId?: string | null;
     offerId?: string | null;
-    scopeType: 'PLATFORM' | 'SHOP' | 'BRAND' | 'PRODUCT_MODEL' | 'OFFER';
+    scopeType: 'PLATFORM' | 'SHOP' | 'BRAND' | 'OFFER';
     name: string;
     slug: string;
     attributionWindowDays?: number;
@@ -23,6 +22,10 @@ export class CreateAffiliateProgramUseCase {
     startedAt?: string | null;
     endedAt?: string | null;
   }) {
+    if ((input.scopeType as string) === 'PRODUCT_MODEL') {
+      throw new BadRequestException('PRODUCT_MODEL affiliate scope is removed; use OFFER, BRAND, or SHOP scope');
+    }
+
     if (input.scopeType === 'PLATFORM') {
       throw new BadRequestException('PLATFORM affiliate scope is not supported yet');
     }
@@ -61,7 +64,6 @@ export class CreateAffiliateProgramUseCase {
       ownerShopId: input.ownerShopId,
       scopeType: input.scopeType,
       brandId: input.brandId ?? null,
-      productModelId: input.productModelId ?? null,
       offerId: input.offerId ?? null,
       requesterUserId: input.requesterUserId,
     });
@@ -69,7 +71,6 @@ export class CreateAffiliateProgramUseCase {
     const program = await this.repository.createProgram({
       ownerShopId: input.ownerShopId,
       brandId: input.brandId ?? null,
-      productModelId: input.productModelId ?? null,
       offerId: input.offerId ?? null,
       scopeType: input.scopeType,
       name: normalizedName,
@@ -88,9 +89,8 @@ export class CreateAffiliateProgramUseCase {
 
   private async validateScopeTarget(input: {
     ownerShopId: string;
-    scopeType: 'SHOP' | 'BRAND' | 'PRODUCT_MODEL' | 'OFFER';
+    scopeType: 'SHOP' | 'BRAND' | 'OFFER';
     brandId: string | null;
-    productModelId: string | null;
     offerId: string | null;
     requesterUserId: string;
   }) {
@@ -106,19 +106,6 @@ export class CreateAffiliateProgramUseCase {
       const brand = await this.repository.findBrandById(input.brandId);
       if (!brand) {
         throw new NotFoundException('Brand not found');
-      }
-
-      return;
-    }
-
-    if (input.scopeType === 'PRODUCT_MODEL') {
-      if (!input.productModelId) {
-        throw new BadRequestException('productModelId is required for PRODUCT_MODEL affiliate scope');
-      }
-
-      const productModel = await this.repository.findProductModelById(input.productModelId);
-      if (!productModel) {
-        throw new NotFoundException('Product model not found');
       }
 
       return;

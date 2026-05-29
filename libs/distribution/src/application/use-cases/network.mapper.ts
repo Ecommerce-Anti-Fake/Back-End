@@ -112,7 +112,11 @@ export function toDistributionShipmentResponse(
     items: shipment.items.map((item) => ({
       id: item.id,
       batchId: item.batchId,
-      productModelId: item.productModelId,
+      brandId: item.brandId,
+      categoryId: item.categoryId,
+      modelName: item.modelName,
+      gtin: item.gtin,
+      verificationPolicy: item.verificationPolicy,
       quantity: item.quantity,
       unitCost: item.unitCost ? Number(item.unitCost.toString()) : null,
     })),
@@ -124,7 +128,11 @@ export function toSupplyBatchResponse(batch: SupplyBatch) {
   return {
     id: batch.id,
     shopId: batch.shopId,
-    productModelId: batch.productModelId,
+    brandId: batch.brandId,
+    categoryId: batch.categoryId,
+    modelName: batch.modelName,
+    gtin: batch.gtin,
+    verificationPolicy: batch.verificationPolicy,
     distributionNodeId: batch.distributionNodeId,
     batchNumber: batch.batchNumber,
     quantity: batch.quantity,
@@ -214,7 +222,6 @@ export function toInventorySummaryResponse(input: {
   batches: Array<{
     id: string;
     batchNumber: string;
-    productModelId: string;
     quantity: number;
     offerLinks: Array<{
       allocatedQuantity: number;
@@ -250,7 +257,6 @@ export function toInventorySummaryResponse(input: {
     return {
       batchId: batch.id,
       batchNumber: batch.batchNumber,
-      productModelId: batch.productModelId,
       quantityOnHand: batch.quantity,
       allocatedQuantity,
       consumedQuantity,

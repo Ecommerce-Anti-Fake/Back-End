@@ -237,4 +237,58 @@ describe('ShippingCarrierAdapterService', () => {
       to_district: 1450,
     });
   });
+
+  it('tracks GHN delivery status from order detail API', async () => {
+    configServiceMock.get.mockImplementation((key: string) => {
+      const values: Record<string, string> = {
+        GHN_BASE_URL: 'https://dev-online-gateway.ghn.vn',
+        GHN_TOKEN: 'token-1',
+        GHN_SHOP_ID: '12345',
+      };
+      return values[key];
+    });
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: {
+          order_code: 'GHN123456',
+          status: 'delivered',
+        },
+      }),
+    } as Response);
+    const service = new ShippingCarrierAdapterService(configServiceMock as unknown as ConfigService);
+
+    const result = await service.trackShipment({
+      providerCode: 'GHN',
+      trackingCode: 'GHN123456',
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://dev-online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/detail',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Token: 'token-1',
+          ShopId: '12345',
+        },
+        body: JSON.stringify({ order_code: 'GHN123456' }),
+      }),
+    );
+    expect(result).toEqual({
+      providerStatus: 'delivered',
+      fulfillmentStatus: 'DELIVERED',
+    });
+  });
+
+  it('rejects tracking sync for non-GHN providers', async () => {
+    const service = new ShippingCarrierAdapterService(configServiceMock as unknown as ConfigService);
+
+    await expect(
+      service.trackShipment({
+        providerCode: 'SELF_DELIVERY',
+        trackingCode: 'SELF_DELIVERY-ORDER12345',
+      }),
+    ).rejects.toThrow('Carrier tracking sync currently supports GHN only');
+  });
 });

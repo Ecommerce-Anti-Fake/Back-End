@@ -33,11 +33,7 @@ describe('ProductRepository', () => {
             gte: 100000,
             lte: 500000,
           },
-          productModel: {
-            is: {
-              brandId: 'brand-1',
-            },
-          },
+          brandId: 'brand-1',
           shop: {
             is: {
               registrationType: 'MANUFACTURER',
@@ -61,7 +57,8 @@ describe('ProductRepository', () => {
     expect(call.where.OR).toEqual(
       expect.arrayContaining([
         { title: { contains: 'spf', mode: 'insensitive' } },
-        { productModel: { is: { brand: { is: { name: { contains: 'spf', mode: 'insensitive' } } } } } },
+        { modelName: { contains: 'spf', mode: 'insensitive' } },
+        { brand: { is: { name: { contains: 'spf', mode: 'insensitive' } } } },
       ]),
     );
   });

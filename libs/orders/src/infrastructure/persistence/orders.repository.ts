@@ -14,11 +14,6 @@ const offerForOrderingArgs = Prisma.validator<Prisma.OfferDefaultArgs>()({
         registrationType: true,
       },
     },
-    productModel: {
-      select: {
-        brandId: true,
-      },
-    },
     shippingMethods: {
       where: {
         isEnabled: true,
@@ -366,7 +361,6 @@ export type AffiliateAttributionInput = {
   offerId: string;
   sellerShopId: string;
   brandId: string;
-  productModelId: string;
   orderAmount: number;
   commissionBase: number;
 };
@@ -419,7 +413,11 @@ export type OrderAuditLogRecord = {
 export type SupplyBatchReceipt = {
   id: string;
   shopId: string;
-  productModelId: string;
+  brandId: string;
+  categoryId: string;
+  modelName: string;
+  gtin: string | null;
+  verificationPolicy: string;
   distributionNodeId: string | null;
   batchNumber: string;
   quantity: number;
@@ -651,7 +649,6 @@ export class OrdersRepository {
     networkId: string;
     nodeId: string;
     appliesToLevel: number;
-    productModelId: string;
     categoryId: string;
     quantity: number;
     now: Date;
@@ -667,9 +664,6 @@ export class OrdersRepository {
           },
           {
             OR: [{ minQuantity: null }, { minQuantity: { lte: input.quantity } }],
-          },
-          {
-            OR: [{ productModelId: null }, { productModelId: input.productModelId }],
           },
           {
             OR: [{ categoryId: null }, { categoryId: input.categoryId }],
@@ -1054,7 +1048,11 @@ export class OrdersRepository {
           await tx.supplyBatch.create({
             data: {
               shopId: buyerShopId,
-              productModelId: item.offer.productModelId,
+              brandId: item.offer.brandId,
+              categoryId: item.offer.categoryId,
+              modelName: item.offer.modelName,
+              gtin: item.offer.gtin,
+              verificationPolicy: item.offer.verificationPolicy,
               distributionNodeId: buyerDistributionNodeId,
               batchNumber,
               quantity: item.quantity,
@@ -2519,7 +2517,6 @@ export class OrdersRepository {
       offerId: string;
       sellerShopId: string;
       brandId: string;
-      productModelId: string;
       orderAmount: number;
       commissionBase: number;
     },
@@ -2540,7 +2537,6 @@ export class OrdersRepository {
             scopeType: true,
             ownerShopId: true,
             brandId: true,
-            productModelId: true,
             offerId: true,
             programStatus: true,
             tier1Rate: true,
@@ -2636,10 +2632,9 @@ export class OrdersRepository {
     referral: {
       expiresAt: Date | null;
       program: {
-        scopeType: 'PLATFORM' | 'SHOP' | 'BRAND' | 'PRODUCT_MODEL' | 'OFFER';
+        scopeType: 'PLATFORM' | 'SHOP' | 'BRAND' | 'OFFER';
         ownerShopId: string | null;
         brandId: string | null;
-        productModelId: string | null;
         offerId: string | null;
         programStatus: string;
         startedAt: Date | null;
@@ -2655,7 +2650,6 @@ export class OrdersRepository {
       offerId: string;
       sellerShopId: string;
       brandId: string;
-      productModelId: string;
     },
   ) {
     const now = new Date();
@@ -2690,10 +2684,6 @@ export class OrdersRepository {
 
     if (referral.program.scopeType === 'BRAND') {
       return referral.program.brandId === input.brandId;
-    }
-
-    if (referral.program.scopeType === 'PRODUCT_MODEL') {
-      return referral.program.productModelId === input.productModelId;
     }
 
     if (referral.program.scopeType === 'OFFER') {

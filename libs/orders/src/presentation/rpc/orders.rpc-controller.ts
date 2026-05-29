@@ -45,6 +45,7 @@ import type {
   UpdateAdminDisputeCaseMessage,
   UpdateOrderFulfillmentMessage,
   BookOrderShippingMessage,
+  SyncOrderShippingStatusMessage,
   GhnDistrictsLookupMessage,
   GhnServicesLookupMessage,
   GhnWardsLookupMessage,
@@ -54,6 +55,7 @@ import {
   AddDisputeEvidenceBatchUseCase,
   AddCartItemUseCase,
   BookOrderShippingUseCase,
+  SyncOrderShippingStatusUseCase,
   AssignAdminDisputeUseCase,
   CheckoutCartItemUseCase,
   QuoteCartItemShippingOptionsUseCase,
@@ -142,6 +144,7 @@ export class OrdersRpcController {
     private readonly updateAdminModerationCaseUseCase: UpdateAdminModerationCaseUseCase,
     private readonly updateAdminDisputeCaseUseCase: UpdateAdminDisputeCaseUseCase,
     private readonly bookOrderShippingUseCase: BookOrderShippingUseCase,
+    private readonly syncOrderShippingStatusUseCase: SyncOrderShippingStatusUseCase,
     private readonly updateOrderFulfillmentUseCase: UpdateOrderFulfillmentUseCase,
     private readonly listGhnShippingLocationsUseCase: ListGhnShippingLocationsUseCase,
   ) {}
@@ -391,6 +394,15 @@ export class OrdersRpcController {
   async bookShipping(@Payload() payload: BookOrderShippingMessage) {
     try {
       return await this.bookOrderShippingUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.syncShippingStatus)
+  async syncShippingStatus(@Payload() payload: SyncOrderShippingStatusMessage) {
+    try {
+      return await this.syncOrderShippingStatusUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

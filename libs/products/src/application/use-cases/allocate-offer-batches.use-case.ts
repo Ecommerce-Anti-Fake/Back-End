@@ -44,11 +44,13 @@ export class AllocateOfferBatchesUseCase {
     );
     const soldQuantity = Math.max(existingAllocatedTotal - ownedOffer.availableQuantity, 0);
 
-    const batches = await this.productRepository.findAllocatableBatches(
-      uniqueBatchIds,
-      ownedOffer.shop.id,
-      ownedOffer.productModelId,
-    );
+    const batches = await this.productRepository.findAllocatableBatches(uniqueBatchIds, ownedOffer.shop.id, {
+      brandId: ownedOffer.brandId,
+      categoryId: ownedOffer.categoryId,
+      modelName: ownedOffer.modelName,
+      gtin: ownedOffer.gtin,
+      verificationPolicy: ownedOffer.verificationPolicy,
+    });
 
     if (batches.length !== uniqueBatchIds.length) {
       throw new BadRequestException('One or more batches do not belong to the same shop and product model as the offer');

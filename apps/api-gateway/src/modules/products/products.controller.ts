@@ -22,7 +22,6 @@ import {
   CreateCategoryDto,
   CreateOfferDto,
   CreateOfferReviewDto,
-  CreateProductModelDto,
   GetOfferDocumentUploadSignaturesDto,
   GetOfferMediaUploadSignaturesDto,
   GetReviewMediaUploadSignaturesDto,
@@ -34,7 +33,6 @@ import {
   OfferReviewResponseDto,
   OfferReviewsResponseDto,
   OfferResponseDto,
-  ProductModelResponseDto,
   ReviewMediaResponseDto,
   SendChatMessageDto,
   ShippingCarrierResponseDto,
@@ -49,17 +47,6 @@ import { ProductsRpcService } from './products-rpc.service';
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsRpcService: ProductsRpcService) {}
-
-  @ApiOperation({ summary: 'Lay danh sach product model' })
-  @ApiOkResponse({
-    description: 'Danh sach product model.',
-    type: ProductModelResponseDto,
-    isArray: true,
-  })
-  @Get('models')
-  findModels() {
-    return this.productsRpcService.findModels();
-  }
 
   @ApiOperation({ summary: 'Lay danh sach brand' })
   @ApiOkResponse({
@@ -145,43 +132,6 @@ export class ProductsController {
     });
   }
 
-  @ApiOperation({ summary: 'Lay chi tiet mot product model' })
-  @ApiParam({ name: 'id', description: 'ID product model can xem.' })
-  @ApiOkResponse({
-    description: 'Thong tin product model.',
-    type: ProductModelResponseDto,
-  })
-  @Get('models/:id')
-  findModelById(@Param('id') id: string) {
-    return this.productsRpcService.findModelById({ id });
-  }
-
-  @ApiOperation({ summary: 'Admin tao product model moi' })
-  @ApiBearerAuth('access-token')
-  @ApiCreatedResponse({
-    description: 'Tao product model thanh cong.',
-    type: ProductModelResponseDto,
-  })
-  @ApiBadRequestResponse({
-    description: 'Brand khong ton tai hoac du lieu product model khong hop le.',
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Thieu access token hoac token khong hop le.',
-  })
-  @Roles('admin')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
-  @Post('models')
-  createModel(@Body() dto: CreateProductModelDto) {
-    return this.productsRpcService.createModel({
-      brandId: dto.brandId,
-      categoryId: dto.categoryId,
-      modelName: dto.modelName,
-      gtin: dto.gtin ?? null,
-      verificationPolicy: dto.verificationPolicy,
-      approvalStatus: dto.approvalStatus,
-    });
-  }
-
   @ApiOperation({ summary: 'Tao offer moi cho shop hien tai' })
   @ApiBearerAuth('access-token')
   @ApiCreatedResponse({
@@ -201,7 +151,7 @@ export class ProductsController {
       sellerUserId,
       shopId: dto.shopId,
       categoryId: dto.categoryId,
-      productModelId: dto.productModelId,
+      brandId: dto.brandId ?? null,
       distributionNodeId: dto.distributionNodeId ?? null,
       title: dto.title,
       description: dto.description,

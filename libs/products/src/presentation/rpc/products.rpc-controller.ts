@@ -13,7 +13,6 @@ import type {
   CreateBrandMessage,
   CreateCategoryMessage,
   CreateOfferMessage,
-  CreateProductModelMessage,
   DeleteOfferDocumentMessage,
   DeleteOfferMediaMessage,
   FavoriteOfferMessage,
@@ -27,7 +26,7 @@ import type {
   OfferMediaLookupMessage,
   OfferMediaUploadSignaturesMessage,
   OfferReviewsLookupMessage,
-  ProductModelLookupMessage,
+  OfferLookupMessage,
   ReviewMediaUploadSignaturesMessage,
   SendChatMessageMessage,
   SetOfferPrimaryMediaMessage,
@@ -46,14 +45,12 @@ import {
   CreateOfferUseCase,
   CreateOfferReviewUseCase,
   CreateOrderItemReviewUseCase,
-  CreateProductModelUseCase,
   DeleteOfferDocumentUseCase,
   DeleteOfferMediaUseCase,
   GetOfferDocumentUploadSignaturesUseCase,
   GetOfferByIdUseCase,
   GetOfferMediaUploadSignaturesUseCase,
   GetChatThreadUseCase,
-  GetProductModelByIdUseCase,
   GetReviewMediaUploadSignaturesUseCase,
   ListBrandsUseCase,
   ListCategoriesUseCase,
@@ -64,7 +61,6 @@ import {
   ListOfferReviewsUseCase,
   ListOffersUseCase,
   ListFavoriteOffersUseCase,
-  ListProductModelsUseCase,
   ListShippingCarriersUseCase,
   SetOfferPrimaryMediaUseCase,
   SendChatMessageUseCase,
@@ -76,13 +72,10 @@ import {
 @Controller()
 export class ProductsRpcController {
   constructor(
-    private readonly listProductModelsUseCase: ListProductModelsUseCase,
     private readonly listBrandsUseCase: ListBrandsUseCase,
     private readonly createBrandUseCase: CreateBrandUseCase,
     private readonly listCategoriesUseCase: ListCategoriesUseCase,
     private readonly createCategoryUseCase: CreateCategoryUseCase,
-    private readonly getProductModelByIdUseCase: GetProductModelByIdUseCase,
-    private readonly createProductModelUseCase: CreateProductModelUseCase,
     private readonly listShippingCarriersUseCase: ListShippingCarriersUseCase,
     private readonly createOfferUseCase: CreateOfferUseCase,
     private readonly updateOfferUseCase: UpdateOfferUseCase,
@@ -112,15 +105,6 @@ export class ProductsRpcController {
     private readonly startChatThreadUseCase: StartChatThreadUseCase,
     private readonly sendChatMessageUseCase: SendChatMessageUseCase,
   ) {}
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findModels)
-  async findModels() {
-    try {
-      return await this.listProductModelsUseCase.execute();
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
 
   @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findBrands)
   async findBrands() {
@@ -153,24 +137,6 @@ export class ProductsRpcController {
   async createCategory(@Payload() payload: CreateCategoryMessage) {
     try {
       return await this.createCategoryUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findModelById)
-  async findModelById(@Payload() payload: ProductModelLookupMessage) {
-    try {
-      return await this.getProductModelByIdUseCase.execute(payload.id);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.createModel)
-  async createModel(@Payload() payload: CreateProductModelMessage) {
-    try {
-      return await this.createProductModelUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }
@@ -357,7 +323,7 @@ export class ProductsRpcController {
   }
 
   @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findOfferById)
-  async findOfferById(@Payload() payload: ProductModelLookupMessage) {
+  async findOfferById(@Payload() payload: OfferLookupMessage) {
     try {
       return await this.getOfferByIdUseCase.execute(payload.id);
     } catch (error) {

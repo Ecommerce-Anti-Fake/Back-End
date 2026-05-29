@@ -55,72 +55,11 @@ export class ProductRepository {
     });
   }
 
-  findAllModels() {
-    return this.prisma.productModel.findMany({
-      include: {
-        brand: {
-          select: {
-            name: true,
-          },
-        },
-        category: {
-          select: {
-            name: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  findModelById(id: string) {
-    return this.prisma.productModel.findUnique({
-      where: { id },
-      include: {
-        brand: {
-          select: {
-            name: true,
-          },
-        },
-        category: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    });
-  }
-
   findBrandById(id: string) {
     return this.prisma.brand.findUnique({
       where: { id },
       select: {
         id: true,
-      },
-    });
-  }
-
-  createProductModel(data: {
-    brandId: string;
-    categoryId: string;
-    modelName: string;
-    gtin: string | null;
-    verificationPolicy: string;
-    approvalStatus: string;
-  }) {
-    return this.prisma.productModel.create({
-      data,
-      include: {
-        brand: {
-          select: {
-            name: true,
-          },
-        },
-        category: {
-          select: {
-            name: true,
-          },
-        },
       },
     });
   }
@@ -179,8 +118,11 @@ export class ProductRepository {
     sellerUserId: string;
     shopId: string;
     categoryId: string;
-    productModelId: string;
+    brandId: string;
     distributionNodeId: string | null;
+    modelName: string;
+    gtin: string | null;
+    verificationPolicy: string;
     title: string;
     description: string;
     price: number;
@@ -220,8 +162,8 @@ export class ProductRepository {
       category: {
         select: { name: true },
       },
-      productModel: {
-        select: { modelName: true, brandId: true },
+      brand: {
+        select: { name: true },
       },
       distributionNode: {
         select: { networkId: true },
@@ -286,9 +228,6 @@ export class ProductRepository {
         category: {
           select: { name: true },
         },
-        productModel: {
-          select: { modelName: true, brandId: true },
-        },
         distributionNode: {
           select: { networkId: true },
         },
@@ -329,7 +268,7 @@ export class ProductRepository {
       ...(Object.keys(shopWhere).length ? { shop: { is: shopWhere } } : {}),
       ...(!input.includeInactive ? { offerStatus: 'active' } : {}),
       ...(input.categoryId ? { categoryId: input.categoryId } : {}),
-      ...(input.brandId ? { productModel: { is: { brandId: input.brandId } } } : {}),
+      ...(input.brandId ? { brandId: input.brandId } : {}),
       ...(input.verificationStatus ? { verificationLevel: input.verificationStatus } : {}),
       ...(salesMode ? { salesMode } : {}),
       ...(input.minPrice !== undefined || input.maxPrice !== undefined
@@ -347,8 +286,8 @@ export class ProductRepository {
               { description: { contains: q, mode: 'insensitive' } },
               { shop: { is: { shopName: { contains: q, mode: 'insensitive' } } } },
               { category: { is: { name: { contains: q, mode: 'insensitive' } } } },
-              { productModel: { is: { modelName: { contains: q, mode: 'insensitive' } } } },
-              { productModel: { is: { brand: { is: { name: { contains: q, mode: 'insensitive' } } } } } },
+              { modelName: { contains: q, mode: 'insensitive' } },
+              { brand: { is: { name: { contains: q, mode: 'insensitive' } } } },
             ],
           }
         : {}),
@@ -376,9 +315,6 @@ export class ProductRepository {
         },
         category: {
           select: { name: true },
-        },
-        productModel: {
-          select: { modelName: true, brandId: true },
         },
         distributionNode: {
           select: { networkId: true },
@@ -433,9 +369,6 @@ export class ProductRepository {
         },
         category: {
           select: { name: true },
-        },
-        productModel: {
-          select: { modelName: true, brandId: true },
         },
         distributionNode: {
           select: { networkId: true },
@@ -703,9 +636,6 @@ export class ProductRepository {
         category: {
           select: { name: true },
         },
-        productModel: {
-          select: { modelName: true, brandId: true },
-        },
         media: {
           orderBy: { createdAt: 'asc' },
           select: {
@@ -724,20 +654,33 @@ export class ProductRepository {
     });
   }
 
-  findAllocatableBatches(batchIds: string[], shopId: string, productModelId: string) {
+  findAllocatableBatches(
+    batchIds: string[],
+    shopId: string,
+    identity: {
+      brandId: string;
+      categoryId: string;
+      modelName: string;
+      gtin: string | null;
+      verificationPolicy: string;
+    },
+  ) {
     return this.prisma.supplyBatch.findMany({
       where: {
         id: {
           in: batchIds,
         },
         shopId,
-        productModelId,
+        brandId: identity.brandId,
+        categoryId: identity.categoryId,
+        modelName: identity.modelName,
+        gtin: identity.gtin,
+        verificationPolicy: identity.verificationPolicy,
       },
       select: {
         id: true,
         batchNumber: true,
         quantity: true,
-        productModelId: true,
         distributionNodeId: true,
         offerLinks: {
           select: {
@@ -794,7 +737,6 @@ export class ProductRepository {
           batch: {
             select: {
               batchNumber: true,
-              productModelId: true,
               quantity: true,
               sourceName: true,
               countryOfOrigin: true,
@@ -821,7 +763,6 @@ export class ProductRepository {
         batch: {
           select: {
             batchNumber: true,
-            productModelId: true,
             quantity: true,
             sourceName: true,
             countryOfOrigin: true,

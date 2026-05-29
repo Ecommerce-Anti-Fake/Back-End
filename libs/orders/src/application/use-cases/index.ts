@@ -22,6 +22,7 @@ export * from './handle-payos-webhook.use-case';
 export * from './retry-payos-payment.use-case';
 export * from './receive-wholesale-order-inventory.use-case';
 export * from './book-order-shipping.use-case';
+export * from './sync-order-shipping-status.use-case';
 export * from './list-ghn-shipping-locations.use-case';
 export * from './complete-order.use-case';
 export * from './cancel-order.use-case';

@@ -13,7 +13,6 @@ export class CreatePricingPolicyUseCase {
     scope: 'NETWORK_DEFAULT' | 'NODE_LEVEL' | 'NODE_SPECIFIC';
     nodeId?: string | null;
     appliesToLevel?: number | null;
-    productModelId?: string | null;
     categoryId?: string | null;
     discountValue: number;
     minQuantity?: number | null;
@@ -77,7 +76,6 @@ export class CreatePricingPolicyUseCase {
       networkId: input.networkId,
       targetLevel,
       discountValue: input.discountValue,
-      productModelId: input.productModelId ?? null,
       categoryId: input.categoryId ?? null,
       minQuantity: input.minQuantity ?? null,
     });
@@ -86,7 +84,6 @@ export class CreatePricingPolicyUseCase {
       networkId: input.networkId,
       nodeId,
       appliesToLevel: targetLevel,
-      productModelId: input.productModelId ?? null,
       categoryId: input.categoryId ?? null,
       scope: input.scope,
       discountValue: input.discountValue,
@@ -103,7 +100,6 @@ export class CreatePricingPolicyUseCase {
     networkId: string;
     targetLevel: number | null;
     discountValue: number;
-    productModelId: string | null;
     categoryId: string | null;
     minQuantity: number | null;
   }) {
@@ -115,7 +111,6 @@ export class CreatePricingPolicyUseCase {
 
     const comparablePolicies = await this.pricingRepository.findComparablePolicies({
       networkId: input.networkId,
-      productModelId: input.productModelId,
       categoryId: input.categoryId,
       minQuantity: input.minQuantity,
     });

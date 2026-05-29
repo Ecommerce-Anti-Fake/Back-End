@@ -6,8 +6,7 @@ const affiliateProgramArgs = Prisma.validator<Prisma.AffiliateProgramDefaultArgs
   include: {
     ownerShop: { select: { shopName: true } },
     brand: { select: { name: true } },
-    productModel: { select: { modelName: true } },
-    offer: { select: { title: true } },
+    offer: { select: { title: true, modelName: true } },
   },
 });
 
@@ -53,10 +52,6 @@ export class AffiliateRepository {
     return this.prisma.brand.findUnique({ where: { id }, select: { id: true } });
   }
 
-  findProductModelById(id: string) {
-    return this.prisma.productModel.findUnique({ where: { id }, select: { id: true } });
-  }
-
   findOwnedOffer(offerId: string, sellerUserId: string) {
     return this.prisma.offer.findFirst({
       where: {
@@ -82,9 +77,8 @@ export class AffiliateRepository {
   async createProgram(data: {
     ownerShopId: string;
     brandId: string | null;
-    productModelId: string | null;
     offerId: string | null;
-    scopeType: 'SHOP' | 'BRAND' | 'PRODUCT_MODEL' | 'OFFER';
+    scopeType: 'SHOP' | 'BRAND' | 'OFFER';
     name: string;
     slug: string;
     attributionWindowDays: number;
@@ -99,7 +93,6 @@ export class AffiliateRepository {
       data: {
         ownerShopId: data.ownerShopId,
         brandId: data.brandId,
-        productModelId: data.productModelId,
         offerId: data.offerId,
         scopeType: data.scopeType,
         name: data.name,

@@ -74,7 +74,7 @@ export function toOrderResponse(order: OrderWithRelations) {
         reviewCreatedAt: item.reviews?.[0]?.createdAt ?? null,
         reviewed: Boolean(item.reviews?.[0]),
         canReview: order.orderStatus === 'completed' || order.fulfillmentStatus === 'DELIVERED',
-        batchAllocations: item.batchAllocations.map((allocation) => ({
+        batchAllocations: (item.batchAllocations ?? []).map((allocation) => ({
           batchId: allocation.batchId,
           quantity: allocation.quantity,
           batchNumber: allocation.batch?.batchNumber ?? null,

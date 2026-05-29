@@ -29,9 +29,6 @@ export class DistributionPricingPolicyResponseDto {
   @ApiPropertyOptional({ example: 2, nullable: true })
   appliesToLevel!: number | null;
 
-  @ApiPropertyOptional({ example: 'product-model-id', nullable: true })
-  productModelId!: string | null;
-
   @ApiPropertyOptional({ example: 'category-id', nullable: true })
   categoryId!: string | null;
 
@@ -83,11 +80,6 @@ export class CreateDistributionPricingPolicyDto {
   @Max(3)
   appliesToLevel?: number;
 
-  @ApiPropertyOptional({ example: 'product-model-id' })
-  @IsOptional()
-  @IsString()
-  productModelId?: string;
-
   @ApiPropertyOptional({ example: 'category-id' })
   @IsOptional()
   @IsString()
@@ -130,10 +122,6 @@ export class ResolveWholesalePricingOfferDto {
   @IsNumber()
   @Min(0)
   price!: number;
-
-  @ApiProperty({ example: 'product-model-id' })
-  @IsString()
-  productModelId!: string;
 
   @ApiProperty({ example: 'category-id' })
   @IsString()

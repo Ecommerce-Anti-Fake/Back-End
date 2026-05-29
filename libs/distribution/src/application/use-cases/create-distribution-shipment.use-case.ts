@@ -15,7 +15,6 @@ export class CreateDistributionShipmentUseCase {
     note?: string | null;
     items: Array<{
       batchId: string;
-      productModelId: string;
       quantity: number;
       unitCost?: number | null;
     }>;
@@ -69,13 +68,12 @@ export class CreateDistributionShipmentUseCase {
 
     const normalizedItems = input.items.map((item) => ({
       batchId: item.batchId.trim(),
-      productModelId: item.productModelId.trim(),
       quantity: item.quantity,
       unitCost: item.unitCost ?? null,
     }));
 
     const invalidItem = normalizedItems.find(
-      (item) => !item.batchId || !item.productModelId || item.quantity < 1 || (item.unitCost !== null && item.unitCost < 0),
+      (item) => !item.batchId || item.quantity < 1 || (item.unitCost !== null && item.unitCost < 0),
     );
     if (invalidItem) {
       throw new BadRequestException('Shipment items are invalid');
@@ -92,10 +90,26 @@ export class CreateDistributionShipmentUseCase {
     }
 
     const batchMap = new Map(batches.map((batch) => [batch.id, batch]));
-    for (const item of normalizedItems) {
+    const shipmentItems = normalizedItems.map((item) => {
       const batch = batchMap.get(item.batchId);
-      if (!batch || batch.productModelId !== item.productModelId) {
-        throw new BadRequestException('Shipment item product model does not match its batch');
+      if (!batch) {
+        throw new BadRequestException('One or more batches do not belong to the source distribution node');
+      }
+
+      return {
+        ...item,
+        brandId: batch.brandId,
+        categoryId: batch.categoryId,
+        modelName: batch.modelName,
+        gtin: batch.gtin,
+        verificationPolicy: batch.verificationPolicy,
+      };
+    });
+
+    for (const item of shipmentItems) {
+      const batch = batchMap.get(item.batchId);
+      if (!batch) {
+        throw new BadRequestException('Shipment item batch is invalid');
       }
 
       const allocatedQuantity = (batch.offerLinks ?? []).reduce((sum, link) => sum + link.allocatedQuantity, 0);
@@ -116,7 +130,7 @@ export class CreateDistributionShipmentUseCase {
       toNodeId: toNode.id,
       shipmentCode: normalizedCode,
       note: input.note?.trim() || null,
-      items: normalizedItems,
+      items: shipmentItems,
     });
 
     return toDistributionShipmentResponse(shipment);

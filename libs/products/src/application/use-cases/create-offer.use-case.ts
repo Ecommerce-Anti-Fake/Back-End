@@ -10,7 +10,7 @@ export class CreateOfferUseCase {
     sellerUserId: string;
     shopId: string;
     categoryId: string;
-    productModelId: string;
+    brandId?: string | null;
     distributionNodeId?: string | null;
     title: string;
     description: string;
@@ -37,9 +37,11 @@ export class CreateOfferUseCase {
       throw new BadRequestException('Shop must complete KYC approval before creating offers');
     }
 
-    const productModel = await this.productRepository.findModelById(input.productModelId);
-    if (!productModel) {
-      throw new NotFoundException('Product model not found');
+    const title = input.title.trim();
+    const description = input.description.trim();
+
+    if (!title || !description) {
+      throw new BadRequestException('Title and description are required');
     }
 
     const category = await this.productRepository.findCategoryById(input.categoryId);
@@ -55,9 +57,7 @@ export class CreateOfferUseCase {
       throw new BadRequestException('Shop category must be approved before creating offers in this category');
     }
 
-    if (productModel.categoryId !== input.categoryId) {
-      throw new BadRequestException('Category must match the selected product model');
-    }
+    const productIdentity = await this.resolveProductIdentity(input, title);
 
     const distributionNodeId = input.distributionNodeId?.trim() || null;
     if (distributionNodeId) {
@@ -76,18 +76,12 @@ export class CreateOfferUseCase {
       }
     }
 
-    const title = input.title.trim();
-    const description = input.description.trim();
     const currency = input.currency?.trim().toUpperCase() || 'VND';
     const salesMode = input.salesMode ?? 'RETAIL';
     const minWholesaleQty = input.minWholesaleQty ?? null;
     const itemCondition = input.itemCondition?.trim() || 'new';
     const verificationLevel = input.verificationLevel?.trim() || 'standard';
     const offerStatus = input.offerStatus ?? 'active';
-
-    if (!title || !description) {
-      throw new BadRequestException('Title and description are required');
-    }
 
     if (input.price <= 0) {
       throw new BadRequestException('Price must be greater than 0');
@@ -124,7 +118,10 @@ export class CreateOfferUseCase {
       sellerUserId: input.sellerUserId,
       shopId: input.shopId,
       categoryId: input.categoryId,
-      productModelId: input.productModelId,
+      brandId: productIdentity.brandId,
+      modelName: productIdentity.modelName,
+      gtin: productIdentity.gtin,
+      verificationPolicy: productIdentity.verificationPolicy,
       distributionNodeId,
       title,
       description,
@@ -141,6 +138,31 @@ export class CreateOfferUseCase {
     });
 
     return toOfferResponse(offer);
+  }
+
+  private async resolveProductIdentity(
+    input: {
+      categoryId: string;
+      brandId?: string | null;
+    },
+    title: string,
+  ) {
+    const brandId = input.brandId?.trim();
+    if (!brandId) {
+      throw new BadRequestException('Brand is required');
+    }
+
+    const brand = await this.productRepository.findBrandById(brandId);
+    if (!brand) {
+      throw new NotFoundException('Brand not found');
+    }
+
+    return {
+      brandId,
+      modelName: title,
+      gtin: null,
+      verificationPolicy: 'manual_review',
+    };
   }
 
   private normalizeShippingProviderCodes(providerCodes?: string[]) {

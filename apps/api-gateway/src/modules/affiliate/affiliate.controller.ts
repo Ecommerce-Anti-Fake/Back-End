@@ -45,7 +45,6 @@ export class AffiliateController {
       requesterUserId,
       ownerShopId: dto.ownerShopId ?? null,
       brandId: dto.brandId ?? null,
-      productModelId: dto.productModelId ?? null,
       offerId: dto.offerId ?? null,
       scopeType: dto.scopeType,
       name: dto.name,

@@ -70,9 +70,6 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   createBrand: 'products.create-brand',
   findCategories: 'products.find-categories',
   createCategory: 'products.create-category',
-  findModels: 'products.find-models',
-  findModelById: 'products.find-model-by-id',
-  createModel: 'products.create-model',
   createOffer: 'products.create-offer',
   updateOffer: 'products.update-offer',
   findShippingCarriers: 'products.find-shipping-carriers',
@@ -138,6 +135,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   retryPayOSPayment: 'orders.retry-payos-payment',
   receiveWholesaleInventory: 'orders.receive-wholesale-inventory',
   bookShipping: 'orders.book-shipping',
+  syncShippingStatus: 'orders.sync-shipping-status',
   listGhnProvinces: 'orders.list-ghn-provinces',
   listGhnDistricts: 'orders.list-ghn-districts',
   listGhnWards: 'orders.list-ghn-wards',
@@ -484,7 +482,7 @@ export type ReviewBrandAuthorizationMessage = {
   reviewNote?: string | null;
 };
 
-export type ProductModelLookupMessage = {
+export type OfferLookupMessage = {
   id: string;
 };
 
@@ -506,15 +504,6 @@ export type CreateCategoryMessage = {
   name: string;
   parentId?: string | null;
   riskTier?: string;
-};
-
-export type CreateProductModelMessage = {
-  brandId: string;
-  categoryId: string;
-  modelName: string;
-  gtin?: string | null;
-  verificationPolicy?: string;
-  approvalStatus?: string;
 };
 
 export type ListOffersMessage = {
@@ -556,7 +545,7 @@ export type CreateOfferMessage = {
   sellerUserId: string;
   shopId: string;
   categoryId: string;
-  productModelId: string;
+  brandId?: string | null;
   distributionNodeId?: string | null;
   title: string;
   description: string;
@@ -1013,6 +1002,11 @@ export type BookOrderShippingMessage = {
   requesterUserId: string;
 };
 
+export type SyncOrderShippingStatusMessage = {
+  id: string;
+  requesterUserId: string;
+};
+
 export type GhnDistrictsLookupMessage = {
   provinceId: number;
 };
@@ -1037,7 +1031,6 @@ export type CreateDistributionPricingPolicyMessage = {
   scope: 'NETWORK_DEFAULT' | 'NODE_LEVEL' | 'NODE_SPECIFIC';
   nodeId?: string | null;
   appliesToLevel?: number | null;
-  productModelId?: string | null;
   categoryId?: string | null;
   discountValue: number;
   minQuantity?: number | null;
@@ -1058,7 +1051,6 @@ export type ResolveWholesalePricingMessage = {
   quantity: number;
   offer: {
     price: number;
-    productModelId: string;
     categoryId: string;
     distributionNodeId?: string | null;
     distributionNetworkId?: string | null;
@@ -1122,7 +1114,6 @@ export type DistributionNodesLookupMessage = {
 
 export type CreateDistributionShipmentItemMessage = {
   batchId: string;
-  productModelId: string;
   quantity: number;
   unitCost?: number | null;
 };
@@ -1140,7 +1131,12 @@ export type CreateDistributionShipmentMessage = {
 export type CreateSupplyBatchMessage = {
   requesterUserId: string;
   shopId: string;
-  productModelId: string;
+  offerId?: string | null;
+  brandId?: string | null;
+  categoryId?: string | null;
+  modelName?: string | null;
+  gtin?: string | null;
+  verificationPolicy?: string | null;
   distributionNodeId?: string | null;
   batchNumber: string;
   quantity: number;
@@ -1233,9 +1229,8 @@ export type CreateAffiliateProgramMessage = {
   requesterUserId: string;
   ownerShopId?: string | null;
   brandId?: string | null;
-  productModelId?: string | null;
   offerId?: string | null;
-  scopeType: 'PLATFORM' | 'SHOP' | 'BRAND' | 'PRODUCT_MODEL' | 'OFFER';
+  scopeType: 'PLATFORM' | 'SHOP' | 'BRAND' | 'OFFER';
   name: string;
   slug: string;
   attributionWindowDays?: number;

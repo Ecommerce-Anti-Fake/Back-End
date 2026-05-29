@@ -35,6 +35,11 @@ export type ShippingQuoteResult = {
   serviceTypeId: number | null;
 };
 
+export type ShippingTrackingResult = {
+  providerStatus: string;
+  fulfillmentStatus: 'SHIPPING' | 'DELIVERED';
+};
+
 export type GhnProvince = {
   provinceId: number;
   provinceName: string;
@@ -111,6 +116,15 @@ export class ShippingCarrierAdapterService {
       serviceId: input.shippingServiceId ?? null,
       serviceTypeId: this.resolveServiceTypeId(input),
     };
+  }
+
+  async trackShipment(input: { providerCode?: string | null; trackingCode: string }): Promise<ShippingTrackingResult> {
+    const providerCode = input.providerCode || 'SELF_DELIVERY';
+    if (providerCode === 'GHN') {
+      return this.trackGhnShipment(input.trackingCode);
+    }
+
+    throw new ServiceUnavailableException('Carrier tracking sync currently supports GHN only');
   }
 
   async listGhnProvinces(): Promise<GhnProvince[]> {
@@ -235,6 +249,36 @@ export class ShippingCarrierAdapterService {
     };
   }
 
+  private async trackGhnShipment(trackingCode: string): Promise<ShippingTrackingResult> {
+    const credentials = this.getGhnCredentials();
+    const response = await fetch(this.resolveGhnTrackingUrl(credentials.baseUrl), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Token: credentials.token,
+        ShopId: credentials.shopId,
+      },
+      body: JSON.stringify({ order_code: trackingCode }),
+    });
+
+    const payload = (await response.json().catch(() => null)) as {
+      message?: string;
+      data?: {
+        status?: string;
+        order_code?: string;
+      };
+    } | null;
+    const providerStatus = String(payload?.data?.status || '').trim();
+    if (!response.ok || !providerStatus) {
+      throw new ServiceUnavailableException(payload?.message || 'Could not load GHN tracking status');
+    }
+
+    return {
+      providerStatus,
+      fulfillmentStatus: this.mapGhnFulfillmentStatus(providerStatus),
+    };
+  }
+
   private createLocalBooking(input: ShippingBookingInput): ShippingBookingResult {
     const providerCode = input.providerCode || 'SELF_DELIVERY';
     const suffix = input.orderId.replace(/-/g, '').slice(0, 10).toUpperCase();
@@ -273,6 +317,15 @@ export class ShippingCarrierAdapterService {
     }
 
     return `${normalized}/shiip/public-api/v2/shipping-order/fee`;
+  }
+
+  private resolveGhnTrackingUrl(baseUrl: string) {
+    const normalized = baseUrl.replace(/\/$/, '');
+    if (normalized.endsWith('/shiip/public-api/v2/shipping-order/detail')) {
+      return normalized;
+    }
+
+    return `${normalized}/shiip/public-api/v2/shipping-order/detail`;
   }
 
   private resolveGhnAvailableServicesUrl(baseUrl: string) {
@@ -372,5 +425,9 @@ export class ShippingCarrierAdapterService {
 
   private resolveServiceTypeId(input: { shippingServiceTypeId?: number | null }) {
     return input.shippingServiceTypeId ?? Number(this.configService.get<string>('GHN_SERVICE_TYPE_ID')?.trim() || 2);
+  }
+
+  private mapGhnFulfillmentStatus(providerStatus: string): 'SHIPPING' | 'DELIVERED' {
+    return providerStatus.trim().toLowerCase() === 'delivered' ? 'DELIVERED' : 'SHIPPING';
   }
 }

@@ -13,7 +13,6 @@ export class ResolveWholesalePricingUseCase {
     quantity: number;
     offer: {
       price: number;
-      productModelId: string;
       categoryId: string;
       distributionNodeId?: string | null;
       distributionNetworkId?: string | null;
@@ -66,7 +65,6 @@ export class ResolveWholesalePricingUseCase {
         networkId: buyerNode.networkId,
         nodeId: buyerNode.id,
         appliesToLevel: buyerNode.level,
-        productModelId: input.offer.productModelId,
         categoryId: input.offer.categoryId,
         quantity: input.quantity,
         now: new Date(),
@@ -75,7 +73,6 @@ export class ResolveWholesalePricingUseCase {
       const selectedPolicy = this.selectBestPricingPolicy(policies, {
         nodeId: buyerNode.id,
         level: buyerNode.level,
-        productModelId: input.offer.productModelId,
         categoryId: input.offer.categoryId,
       });
 
@@ -118,7 +115,6 @@ export class ResolveWholesalePricingUseCase {
     target: {
       nodeId: string;
       level: number;
-      productModelId: string;
       categoryId: string;
     },
   ) {
@@ -161,7 +157,6 @@ export class ResolveWholesalePricingUseCase {
     target: {
       nodeId: string;
       level: number;
-      productModelId: string;
       categoryId: string;
     },
   ) {
@@ -173,12 +168,6 @@ export class ResolveWholesalePricingUseCase {
       score += 60;
     } else if (policy.scope === 'NETWORK_DEFAULT') {
       score += 20;
-    }
-
-    if (policy.productModelId === target.productModelId) {
-      score += 10;
-    } else if (!policy.productModelId) {
-      score += 1;
     }
 
     if (policy.categoryId === target.categoryId) {

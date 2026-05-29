@@ -55,7 +55,18 @@ describe('CreateDistributionShipmentUseCase', () => {
         },
       });
     repositoryMock.findBatchesByIdsAndNode.mockResolvedValueOnce([
-      { id: 'batch-1', productModelId: 'pm-1', quantity: 100, batchNumber: 'BATCH-1', offerLinks: [] },
+      {
+        id: 'batch-1',
+        productModelId: 'pm-1',
+        brandId: 'brand-1',
+        categoryId: 'category-1',
+        modelName: 'Model 1',
+        gtin: 'GTIN-1',
+        verificationPolicy: 'manual_review',
+        quantity: 100,
+        batchNumber: 'BATCH-1',
+        offerLinks: [],
+      },
     ]);
     repositoryMock.createShipment.mockResolvedValueOnce({
       id: 'shipment-1',
@@ -73,6 +84,11 @@ describe('CreateDistributionShipmentUseCase', () => {
           id: 'item-1',
           batchId: 'batch-1',
           productModelId: 'pm-1',
+          brandId: 'brand-1',
+          categoryId: 'category-1',
+          modelName: 'Model 1',
+          gtin: 'GTIN-1',
+          verificationPolicy: 'manual_review',
           quantity: 100,
           unitCost: { toString: () => '120000' },
         },
@@ -88,14 +104,26 @@ describe('CreateDistributionShipmentUseCase', () => {
       items: [
         {
           batchId: 'batch-1',
-          productModelId: 'pm-1',
           quantity: 100,
           unitCost: 120000,
         },
       ],
     });
 
-    expect(repositoryMock.createShipment).toHaveBeenCalled();
+    expect(repositoryMock.createShipment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        items: [
+          expect.objectContaining({
+            batchId: 'batch-1',
+            brandId: 'brand-1',
+            categoryId: 'category-1',
+            modelName: 'Model 1',
+            gtin: 'GTIN-1',
+            verificationPolicy: 'manual_review',
+          }),
+        ],
+      }),
+    );
     expect(result).toMatchObject({
       id: 'shipment-1',
       shipmentCode: 'SHIP-001',

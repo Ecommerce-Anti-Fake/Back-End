@@ -1,13 +1,4 @@
-import { Offer, Prisma, ProductModel } from '@prisma/client';
-
-type ProductModelWithBrand = ProductModel & {
-  brand: {
-    name: string;
-  };
-  category: {
-    name: string;
-  };
-};
+import { Offer, Prisma } from '@prisma/client';
 
 type BrandRecord = {
   id: string;
@@ -30,10 +21,6 @@ type OfferWithRelations = Offer & {
   };
   category: {
     name: string;
-  };
-  productModel: {
-    modelName: string;
-    brandId: string;
   };
   distributionNode?: {
     networkId: string;
@@ -117,7 +104,6 @@ type OfferBatchLinkWithBatch = {
   createdAt: Date;
   batch: {
     batchNumber: string;
-    productModelId: string;
     quantity: number;
     sourceName: string;
     countryOfOrigin: string;
@@ -175,20 +161,6 @@ type ChatThreadWithRelations = {
   seller: ChatUserRecord;
   messages?: ChatMessageWithSender[];
 };
-
-export function toProductModelResponse(model: ProductModelWithBrand) {
-  return {
-    id: model.id,
-    modelName: model.modelName,
-    gtin: model.gtin,
-    verificationPolicy: model.verificationPolicy,
-    approvalStatus: model.approvalStatus,
-    brandName: model.brand.name,
-    categoryId: model.categoryId,
-    categoryName: model.category.name,
-    createdAt: model.createdAt,
-  };
-}
 
 export function toBrandResponse(brand: BrandRecord) {
   return {
@@ -252,14 +224,15 @@ export function toOfferResponse(offer: OfferWithRelations) {
     offerStatus: offer.offerStatus,
     shopId: offer.shopId,
     categoryId: offer.categoryId,
-    productModelId: offer.productModelId,
-    brandId: offer.productModel.brandId ?? null,
+    brandId: offer.brandId,
+    gtin: offer.gtin ?? null,
+    verificationPolicy: offer.verificationPolicy,
     distributionNodeId: offer.distributionNodeId,
     distributionNetworkId: offer.distributionNode?.networkId ?? null,
     shopName: offer.shop.shopName,
     shopType: offer.shop.registrationType,
     categoryName: offer.category.name,
-    productModelName: offer.productModel.modelName,
+    productModelName: offer.modelName,
     thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
     shippingMethods: (offer.shippingMethods ?? []).map((method) => ({
       providerCode: method.providerCode,
@@ -369,7 +342,6 @@ export function toOfferBatchLinkResponse(link: OfferBatchLinkWithBatch) {
     batchId: link.batchId,
     allocatedQuantity: link.allocatedQuantity,
     batchNumber: link.batch.batchNumber,
-    productModelId: link.batch.productModelId,
     batchQuantity: link.batch.quantity,
     sourceName: link.batch.sourceName,
     countryOfOrigin: link.batch.countryOfOrigin,

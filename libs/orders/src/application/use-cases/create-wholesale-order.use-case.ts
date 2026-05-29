@@ -123,8 +123,7 @@ export class CreateWholesaleOrderUseCase {
             customerUserId: input.buyerUserId,
             offerId: offer.id,
             sellerShopId: offer.shopId,
-            brandId: offer.productModel.brandId,
-            productModelId: offer.productModelId,
+            brandId: offer.brandId,
             orderAmount: pricing.buyerPayableAmount,
             commissionBase: pricing.platformFeeAmount,
           }

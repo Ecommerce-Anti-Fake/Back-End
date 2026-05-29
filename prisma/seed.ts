@@ -198,42 +198,6 @@ async function seedCatalog() {
       create: brand,
     });
   }
-
-  await prisma.productModel.upsert({
-    where: { id: 'model-organic-cashew' },
-    update: {
-      modelName: 'Hạt điều rang muối hữu cơ 500g',
-      verificationPolicy: 'STANDARD',
-      approvalStatus: 'approved',
-    },
-    create: {
-      id: 'model-organic-cashew',
-      brandId: 'brand-abc-food',
-      categoryId: 'cat-food',
-      modelName: 'Hạt điều rang muối hữu cơ 500g',
-      gtin: '8930000000011',
-      verificationPolicy: 'STANDARD',
-      approvalStatus: 'approved',
-    },
-  });
-
-  await prisma.productModel.upsert({
-    where: { id: 'model-herbal-soap' },
-    update: {
-      modelName: 'Xà phòng thảo mộc handmade',
-      verificationPolicy: 'STANDARD',
-      approvalStatus: 'approved',
-    },
-    create: {
-      id: 'model-herbal-soap',
-      brandId: 'brand-green-home',
-      categoryId: 'cat-household',
-      modelName: 'Xà phòng thảo mộc handmade',
-      gtin: '8930000000028',
-      verificationPolicy: 'STANDARD',
-      approvalStatus: 'approved',
-    },
-  });
 }
 
 async function seedUsersAndShops() {
@@ -445,6 +409,7 @@ async function seedOffers() {
       title: 'Hạt điều rang muối hữu cơ 500g',
       price: '129000',
       availableQuantity: 120,
+      verificationPolicy: 'BATCH_REQUIRED',
       offerStatus: 'active',
     },
     create: {
@@ -452,7 +417,9 @@ async function seedOffers() {
       sellerUserId: 'user-demo-manufacturer',
       shopId: 'shop-demo-manufacturer',
       categoryId: 'cat-food',
-      productModelId: 'model-organic-cashew',
+      brandId: 'brand-abc-food',
+      modelName: 'Hạt điều rang muối hữu cơ 500g',
+      verificationPolicy: 'BATCH_REQUIRED',
       title: 'Hạt điều rang muối hữu cơ 500g',
       description: 'Hạt điều tuyển chọn, truy xuất nguồn gốc theo lô sản xuất mẫu.',
       price: '129000',
@@ -641,25 +608,7 @@ const sampleProducts = [
 
 async function seedDemoProductsAndOffers() {
   for (const product of sampleProducts) {
-    await prisma.productModel.upsert({
-      where: { id: product.id },
-      update: {
-        brandId: product.brandId,
-        categoryId: product.categoryId,
-        modelName: product.modelName,
-        verificationPolicy: 'STANDARD',
-        approvalStatus: 'approved',
-      },
-      create: {
-        id: product.id,
-        brandId: product.brandId,
-        categoryId: product.categoryId,
-        modelName: product.modelName,
-        gtin: `8931000000${product.id.slice(-2)}`,
-        verificationPolicy: 'STANDARD',
-        approvalStatus: 'approved',
-      },
-    });
+    // productModel upsert removed; seeding offers with snapshot fields only
 
     await prisma.mediaAsset.upsert({
       where: { id: product.mediaId },
@@ -684,13 +633,15 @@ async function seedDemoProductsAndOffers() {
       where: { id: product.offerId },
       update: {
         categoryId: product.categoryId,
-        productModelId: product.id,
+        brandId: product.brandId,
+        modelName: product.modelName,
         title: product.title,
         description: product.description,
         price: String(product.price),
         salesMode: product.salesMode,
         minWholesaleQty: 'minWholesaleQty' in product ? product.minWholesaleQty : null,
         availableQuantity: product.quantity,
+        verificationPolicy: 'BATCH_REQUIRED',
         verificationLevel: 'verified',
         offerStatus: 'active',
       },
@@ -699,7 +650,9 @@ async function seedDemoProductsAndOffers() {
         sellerUserId: 'user-demo-manufacturer',
         shopId: 'shop-demo-manufacturer',
         categoryId: product.categoryId,
-        productModelId: product.id,
+        brandId: product.brandId,
+        modelName: product.modelName,
+        verificationPolicy: 'BATCH_REQUIRED',
         title: product.title,
         description: product.description,
         price: String(product.price),
@@ -931,25 +884,7 @@ async function seedDistributorOnboardingFixtures() {
     });
   }
 
-  await prisma.productModel.upsert({
-    where: { id: 'model-fixture-wholesale-food' },
-    update: {
-      brandId: 'brand-abc-food',
-      categoryId: 'cat-food',
-      modelName: 'Fixture Wholesale Food Carton',
-      verificationPolicy: 'STANDARD',
-      approvalStatus: 'approved',
-    },
-    create: {
-      id: 'model-fixture-wholesale-food',
-      brandId: 'brand-abc-food',
-      categoryId: 'cat-food',
-      modelName: 'Fixture Wholesale Food Carton',
-      gtin: '8930000999001',
-      verificationPolicy: 'STANDARD',
-      approvalStatus: 'approved',
-    },
-  });
+  // fixture productModel upsert removed; fixture offers have explicit brandId/modelName
 
   const offers = [
     {
@@ -989,12 +924,15 @@ async function seedDistributorOnboardingFixtures() {
         salesMode: OfferSalesMode.WHOLESALE,
         minWholesaleQty: 2,
         availableQuantity: 500,
+        verificationPolicy: 'BATCH_REQUIRED',
         offerStatus: 'active',
       },
       create: {
         ...offer,
         categoryId: 'cat-food',
-        productModelId: 'model-fixture-wholesale-food',
+        brandId: 'brand-abc-food',
+        modelName: 'Fixture Wholesale Food',
+        verificationPolicy: 'BATCH_REQUIRED',
         description: 'Deterministic fixture offer for distributor onboarding and tier pricing tests.',
         currency: 'VND',
         salesMode: OfferSalesMode.WHOLESALE,
@@ -1169,7 +1107,7 @@ async function seedShippingCarriers() {
 
 async function seedOfferShippingMethods() {
   const selfDelivery = await prisma.shippingCarrier.findUnique({
-    where: { providerCode: 'SELF_DELIVERY' },
+    where: { code: 'SELF_DELIVERY' },
   });
   if (!selfDelivery) return;
 
@@ -1182,19 +1120,19 @@ async function seedOfferShippingMethods() {
       where: {
         offerId_providerCode: {
           offerId: offer.id,
-          providerCode: selfDelivery.providerCode,
+          providerCode: selfDelivery.code,
         },
       },
       update: {
-        providerName: selfDelivery.providerName,
+        providerName: selfDelivery.name,
         carrierId: selfDelivery.id,
         isEnabled: true,
       },
       create: {
         offerId: offer.id,
         carrierId: selfDelivery.id,
-        providerCode: selfDelivery.providerCode,
-        providerName: selfDelivery.providerName,
+        providerCode: selfDelivery.code,
+        providerName: selfDelivery.name,
         isEnabled: true,
       },
     });

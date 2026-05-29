@@ -7,7 +7,6 @@ export function toDistributionPricingPolicyResponse(policy: DistributionPricingP
     scope: policy.scope,
     nodeId: policy.nodeId,
     appliesToLevel: policy.appliesToLevel,
-    productModelId: policy.productModelId,
     categoryId: policy.categoryId,
     discountType: policy.discountType,
     discountValue: decimalToNumber(policy.discountValue),

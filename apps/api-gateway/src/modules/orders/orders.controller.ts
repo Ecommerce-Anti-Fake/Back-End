@@ -832,6 +832,28 @@ export class OrdersController {
     });
   }
 
+  @ApiOperation({ summary: 'Seller dong bo trang thai van chuyen tu carrier' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'id', description: 'ID don hang.' })
+  @ApiOkResponse({
+    description: 'Don hang sau khi dong bo trang thai carrier.',
+    type: OrderResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Don hang chua co ma van don hoac chua o trang thai dang giao.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi seller cua don moi co quyen dong bo van chuyen.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post(':id/shipping/sync')
+  syncShippingStatus(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
+    return this.ordersRpcService.syncShippingStatus({
+      id,
+      requesterUserId,
+    });
+  }
+
   @ApiOperation({ summary: 'Seller xac nhan hoan tat don hang' })
   @ApiBearerAuth('access-token')
   @ApiParam({ name: 'id', description: 'ID don hang.' })

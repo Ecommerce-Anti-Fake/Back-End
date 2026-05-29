@@ -231,7 +231,12 @@ export class DistributionController {
     return this.distributionRpcService.createBatch({
       requesterUserId,
       shopId: dto.shopId,
-      productModelId: dto.productModelId,
+      offerId: dto.offerId ?? null,
+      brandId: dto.brandId ?? null,
+      categoryId: dto.categoryId ?? null,
+      modelName: dto.modelName ?? null,
+      gtin: dto.gtin ?? null,
+      verificationPolicy: dto.verificationPolicy ?? null,
       distributionNodeId: dto.distributionNodeId ?? null,
       batchNumber: dto.batchNumber,
       quantity: dto.quantity,
@@ -373,7 +378,6 @@ export class DistributionController {
       note: dto.note ?? null,
       items: dto.items.map((item) => ({
         batchId: item.batchId,
-        productModelId: item.productModelId,
         quantity: item.quantity,
         unitCost: item.unitCost ?? null,
       })),
@@ -567,7 +571,6 @@ export class DistributionController {
       scope: dto.scope,
       nodeId: dto.nodeId ?? null,
       appliesToLevel: dto.appliesToLevel ?? null,
-      productModelId: dto.productModelId ?? null,
       categoryId: dto.categoryId ?? null,
       discountValue: dto.discountValue,
       minQuantity: dto.minQuantity ?? null,
@@ -616,7 +619,6 @@ export class DistributionController {
       quantity: dto.quantity,
       offer: {
         price: dto.offer.price,
-        productModelId: dto.offer.productModelId,
         categoryId: dto.offer.categoryId,
         distributionNodeId: dto.offer.distributionNodeId ?? null,
         distributionNetworkId: dto.offer.distributionNetworkId ?? null,

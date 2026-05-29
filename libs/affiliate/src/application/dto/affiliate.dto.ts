@@ -12,7 +12,7 @@ import {
   Min,
 } from 'class-validator';
 
-const AFFILIATE_SCOPE_TYPES = ['PLATFORM', 'SHOP', 'BRAND', 'PRODUCT_MODEL', 'OFFER'] as const;
+const AFFILIATE_SCOPE_TYPES = ['PLATFORM', 'SHOP', 'BRAND', 'OFFER'] as const;
 
 export class AffiliateProgramResponseDto {
   @ApiProperty({ example: 'program-id' }) id!: string;
@@ -20,12 +20,11 @@ export class AffiliateProgramResponseDto {
   @ApiPropertyOptional({ example: 'Main Shop', nullable: true }) ownerShopName!: string | null;
   @ApiPropertyOptional({ example: 'brand-id', nullable: true }) brandId!: string | null;
   @ApiPropertyOptional({ example: 'Brand A', nullable: true }) brandName!: string | null;
-  @ApiPropertyOptional({ example: 'product-model-id', nullable: true }) productModelId!: string | null;
   @ApiPropertyOptional({ example: 'Model X', nullable: true }) productModelName!: string | null;
   @ApiPropertyOptional({ example: 'offer-id', nullable: true }) offerId!: string | null;
   @ApiPropertyOptional({ example: 'Offer title', nullable: true }) offerTitle!: string | null;
   @ApiProperty({ enum: AFFILIATE_SCOPE_TYPES, example: 'SHOP' })
-  scopeType!: 'PLATFORM' | 'SHOP' | 'BRAND' | 'PRODUCT_MODEL' | 'OFFER';
+  scopeType!: 'PLATFORM' | 'SHOP' | 'BRAND' | 'OFFER';
   @ApiProperty({ example: 'Shop Spring Campaign' }) name!: string;
   @ApiProperty({ example: 'shop-spring-campaign' }) slug!: string;
   @ApiProperty({ example: 'ACTIVE' }) programStatus!: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED';
@@ -41,12 +40,11 @@ export class AffiliateProgramResponseDto {
 export class CreateAffiliateProgramDto {
   @ApiPropertyOptional({ example: 'shop-id' }) @IsOptional() @IsString() ownerShopId?: string;
   @ApiPropertyOptional({ example: 'brand-id' }) @IsOptional() @IsString() brandId?: string;
-  @ApiPropertyOptional({ example: 'product-model-id' }) @IsOptional() @IsString() productModelId?: string;
   @ApiPropertyOptional({ example: 'offer-id' }) @IsOptional() @IsString() offerId?: string;
   @ApiProperty({ enum: AFFILIATE_SCOPE_TYPES, example: 'SHOP' })
   @IsString()
   @IsIn(AFFILIATE_SCOPE_TYPES)
-  scopeType!: 'PLATFORM' | 'SHOP' | 'BRAND' | 'PRODUCT_MODEL' | 'OFFER';
+  scopeType!: 'PLATFORM' | 'SHOP' | 'BRAND' | 'OFFER';
   @ApiProperty({ example: 'Shop Spring Campaign' }) @IsString() name!: string;
   @ApiProperty({ example: 'shop-spring-campaign' }) @IsString() @Matches(/^[a-z0-9-]+$/) slug!: string;
   @ApiPropertyOptional({ example: 30 }) @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(90) attributionWindowDays?: number;

@@ -143,9 +143,6 @@ export class DistributionShipmentItemResponseDto {
   @ApiProperty({ example: 'batch-id' })
   batchId!: string;
 
-  @ApiProperty({ example: 'product-model-id' })
-  productModelId!: string;
-
   @ApiProperty({ example: 100 })
   quantity!: number;
 
@@ -160,8 +157,20 @@ export class SupplyBatchResponseDto {
   @ApiProperty({ example: 'shop-id' })
   shopId!: string;
 
-  @ApiProperty({ example: 'product-model-id' })
-  productModelId!: string;
+  @ApiProperty({ example: 'brand-id' })
+  brandId!: string;
+
+  @ApiProperty({ example: 'category-id' })
+  categoryId!: string;
+
+  @ApiProperty({ example: 'Kem chong nang SPF50' })
+  modelName!: string;
+
+  @ApiPropertyOptional({ example: '8938505970012', nullable: true })
+  gtin!: string | null;
+
+  @ApiProperty({ example: 'manual_review' })
+  verificationPolicy!: string;
 
   @ApiPropertyOptional({ example: 'distribution-node-id', nullable: true })
   distributionNodeId!: string | null;
@@ -285,9 +294,6 @@ export class InventorySummaryBatchResponseDto {
 
   @ApiProperty({ example: 'BATCH-2026-0001' })
   batchNumber!: string;
-
-  @ApiProperty({ example: 'product-model-id' })
-  productModelId!: string;
 
   @ApiProperty({ example: 500 })
   quantityOnHand!: number;
@@ -604,10 +610,6 @@ export class CreateDistributionShipmentItemDto {
   @IsString()
   batchId!: string;
 
-  @ApiProperty({ example: 'product-model-id' })
-  @IsString()
-  productModelId!: string;
-
   @ApiProperty({ example: 100 })
   @Type(() => Number)
   @IsInt()
@@ -658,9 +660,36 @@ export class CreateSupplyBatchDto {
   @IsString()
   shopId!: string;
 
-  @ApiProperty({ example: 'product-model-id' })
+  @ApiPropertyOptional({ example: 'offer-id', nullable: true })
+  @IsOptional()
   @IsString()
-  productModelId!: string;
+  offerId?: string;
+
+  @ApiPropertyOptional({ example: 'brand-id', nullable: true })
+  @IsOptional()
+  @IsString()
+  brandId?: string;
+
+  @ApiPropertyOptional({ example: 'category-id', nullable: true })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiPropertyOptional({ example: 'Kem chong nang SPF50', nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  modelName?: string;
+
+  @ApiPropertyOptional({ example: '8938505970012', nullable: true })
+  @IsOptional()
+  @IsString()
+  gtin?: string;
+
+  @ApiPropertyOptional({ example: 'manual_review', nullable: true })
+  @IsOptional()
+  @IsString()
+  verificationPolicy?: string;
 
   @ApiPropertyOptional({ example: 'distribution-node-id' })
   @IsOptional()

@@ -53,7 +53,6 @@ export class LocalWholesalePricingAdapter implements WholesalePricingPort {
         networkId: buyerNode.networkId,
         nodeId: buyerNode.id,
         appliesToLevel: buyerNode.level,
-        productModelId: input.offer.productModelId,
         categoryId: input.offer.categoryId,
         quantity: input.quantity,
         now: new Date(),
@@ -62,7 +61,6 @@ export class LocalWholesalePricingAdapter implements WholesalePricingPort {
       const selectedPolicy = this.selectBestPricingPolicy(policies, {
         nodeId: buyerNode.id,
         level: buyerNode.level,
-        productModelId: input.offer.productModelId,
         categoryId: input.offer.categoryId,
       });
 
@@ -101,12 +99,11 @@ export class LocalWholesalePricingAdapter implements WholesalePricingPort {
     };
   }
 
-  private selectBestPricingPolicy(
+    private selectBestPricingPolicy(
     policies: DistributionPricingPolicy[],
     target: {
       nodeId: string;
       level: number;
-      productModelId: string;
       categoryId: string;
     },
   ) {
@@ -149,7 +146,6 @@ export class LocalWholesalePricingAdapter implements WholesalePricingPort {
     target: {
       nodeId: string;
       level: number;
-      productModelId: string;
       categoryId: string;
     },
   ) {
@@ -163,12 +159,7 @@ export class LocalWholesalePricingAdapter implements WholesalePricingPort {
       score += 20;
     }
 
-    if (policy.productModelId === target.productModelId) {
-      score += 10;
-    } else if (!policy.productModelId) {
-      score += 1;
-    }
-
+    // Prefer policies that specify category over generic policies.
     if (policy.categoryId === target.categoryId) {
       score += 5;
     } else if (!policy.categoryId) {

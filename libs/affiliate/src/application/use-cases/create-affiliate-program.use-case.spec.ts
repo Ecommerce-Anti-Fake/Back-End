@@ -10,7 +10,6 @@ describe('CreateAffiliateProgramUseCase', () => {
     findProgramBySlug: jest.fn(),
     findOwnedShop: jest.fn(),
     findBrandById: jest.fn(),
-    findProductModelById: jest.fn(),
     findOwnedOffer: jest.fn(),
     createProgram: jest.fn(),
   };
@@ -74,6 +73,23 @@ describe('CreateAffiliateProgramUseCase', () => {
         tier2Rate: 10,
       }),
     ).rejects.toThrow('Tier 2 rate cannot be greater than tier 1 rate');
+  });
+
+  it('should reject product-model scoped affiliate programs', async () => {
+    await expect(
+      useCase.execute({
+        requesterUserId: 'user-1',
+        ownerShopId: 'shop-1',
+        productModelId: 'model-1',
+        scopeType: 'PRODUCT_MODEL',
+        name: 'Model Program',
+        slug: 'model-program',
+        tier1Rate: 10,
+        tier2Rate: 5,
+      }),
+    ).rejects.toThrow('PRODUCT_MODEL affiliate scope is removed');
+
+    expect(repositoryMock.createProgram).not.toHaveBeenCalled();
   });
 });
 

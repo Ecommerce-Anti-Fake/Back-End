@@ -38,6 +38,7 @@ import {
   ORDERS_SERVICE_CLIENT,
   PayOSWebhookMessage,
   BookOrderShippingMessage,
+  SyncOrderShippingStatusMessage,
   GhnDistrictsLookupMessage,
   GhnServicesLookupMessage,
   GhnWardsLookupMessage,
@@ -190,6 +191,10 @@ export class OrdersRpcService {
 
   bookShipping(payload: BookOrderShippingMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.bookShipping, payload);
+  }
+
+  syncShippingStatus(payload: SyncOrderShippingStatusMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.syncShippingStatus, payload);
   }
 
   listGhnProvinces() {

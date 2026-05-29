@@ -460,8 +460,20 @@ export class WholesaleInventoryBatchResponseDto {
   @ApiProperty({ example: 'buyer-shop-id' })
   shopId!: string;
 
-  @ApiProperty({ example: 'product-model-id' })
-  productModelId!: string;
+  @ApiProperty({ example: 'brand-id' })
+  brandId!: string;
+
+  @ApiProperty({ example: 'category-id' })
+  categoryId!: string;
+
+  @ApiProperty({ example: 'Wholesale product carton' })
+  modelName!: string;
+
+  @ApiPropertyOptional({ example: '8930000999001', nullable: true })
+  gtin!: string | null;
+
+  @ApiProperty({ example: 'STANDARD' })
+  verificationPolicy!: string;
 
   @ApiPropertyOptional({ example: 'buyer-node-id', nullable: true })
   distributionNodeId!: string | null;

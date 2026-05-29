@@ -84,69 +84,6 @@ export class CategoryResponseDto {
   riskTier!: string;
 }
 
-export class CreateProductModelDto {
-  @ApiProperty({ example: 'brand-id' })
-  @IsString()
-  brandId!: string;
-
-  @ApiProperty({ example: 'category-id' })
-  @IsString()
-  categoryId!: string;
-
-  @ApiProperty({ example: 'Kem chong nang SPF50' })
-  @IsString()
-  @MinLength(3)
-  @MaxLength(255)
-  modelName!: string;
-
-  @ApiPropertyOptional({ example: '8938505970012', nullable: true })
-  @IsOptional()
-  @IsString()
-  @MaxLength(64)
-  gtin?: string;
-
-  @ApiPropertyOptional({ example: 'manual_review' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  verificationPolicy?: string;
-
-  @ApiPropertyOptional({ example: 'approved' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  approvalStatus?: string;
-}
-
-export class ProductModelResponseDto {
-  @ApiProperty({ example: '86a353f0-7a6f-4c75-a7e5-c26d6472a001' })
-  id!: string;
-
-  @ApiProperty({ example: 'Kem chong nang SPF50' })
-  modelName!: string;
-
-  @ApiPropertyOptional({ example: '8938505970012', nullable: true })
-  gtin!: string | null;
-
-  @ApiProperty({ example: 'manual_review' })
-  verificationPolicy!: string;
-
-  @ApiProperty({ example: 'approved' })
-  approvalStatus!: string;
-
-  @ApiProperty({ example: 'Brand ABC' })
-  brandName!: string;
-
-  @ApiProperty({ example: 'category-id' })
-  categoryId!: string;
-
-  @ApiProperty({ example: 'My pham' })
-  categoryName!: string;
-
-  @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
-  createdAt!: Date;
-}
-
 export class ShippingCarrierResponseDto {
   @ApiProperty({ example: 'GHN' })
   providerCode!: string;
@@ -228,13 +165,16 @@ export class OfferResponseDto {
   shopId!: string;
 
   @ApiProperty({ example: 'category-id' })
-  categoryId!: string;
-
-  @ApiProperty({ example: 'product-model-id' })
-  productModelId!: string;
+  categoryId!: string | null;
 
   @ApiPropertyOptional({ example: 'brand-id', nullable: true })
   brandId!: string | null;
+
+  @ApiPropertyOptional({ example: '8938505970012', nullable: true })
+  gtin!: string | null;
+
+  @ApiProperty({ example: 'manual_review' })
+  verificationPolicy!: string;
 
   @ApiPropertyOptional({ example: 'seller-node-id', nullable: true })
   distributionNodeId!: string | null;
@@ -705,9 +645,6 @@ export class OfferBatchLinkResponseDto {
   @ApiProperty({ example: 'BATCH-2026-0001' })
   batchNumber!: string;
 
-  @ApiProperty({ example: 'product-model-id' })
-  productModelId!: string;
-
   @ApiProperty({ example: 500 })
   batchQuantity!: number;
 
@@ -742,9 +679,10 @@ export class CreateOfferDto {
   @IsString()
   categoryId!: string;
 
-  @ApiProperty({ example: 'product-model-id' })
+  @ApiPropertyOptional({ example: 'brand-id', nullable: true })
+  @IsOptional()
   @IsString()
-  productModelId!: string;
+  brandId?: string;
 
   @ApiPropertyOptional({ example: 'distribution-node-id' })
   @IsOptional()

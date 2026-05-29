@@ -4,7 +4,7 @@ import { CompleteOrderUseCase } from './complete-order.use-case';
 import { CreateRetailOrderUseCase } from './create-retail-order.use-case';
 import { MarkOrderPaidUseCase } from './mark-order-paid.use-case';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
-import { OrderPlacementService, PayOSPaymentService } from '../services';
+import { OrderPlacementService, PayOSPaymentService, ShippingCarrierAdapterService } from '../services';
 
 describe('Retail order lifecycle', () => {
   let createRetailOrderUseCase: CreateRetailOrderUseCase;
@@ -25,6 +25,9 @@ describe('Retail order lifecycle', () => {
   };
   const payOSPaymentServiceMock = {
     createPaymentLink: jest.fn(),
+  };
+  const shippingCarrierAdapterMock = {
+    quoteShipment: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -178,6 +181,12 @@ describe('Retail order lifecycle', () => {
       return storedOrder;
     });
 
+    shippingCarrierAdapterMock.quoteShipment.mockResolvedValue({
+      shippingFeeAmount: 0,
+      serviceId: null,
+      serviceTypeId: null,
+    });
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CreateRetailOrderUseCase,
@@ -186,6 +195,7 @@ describe('Retail order lifecycle', () => {
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
         { provide: OrderPlacementService, useValue: orderPlacementServiceMock },
         { provide: PayOSPaymentService, useValue: payOSPaymentServiceMock },
+        { provide: ShippingCarrierAdapterService, useValue: shippingCarrierAdapterMock },
       ],
     }).compile();
 

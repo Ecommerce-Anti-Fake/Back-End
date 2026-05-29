@@ -34,7 +34,6 @@ enum AffiliateScopeType {
   PLATFORM
   SHOP
   BRAND
-  PRODUCT_MODEL
   OFFER
 }
 
@@ -373,7 +372,6 @@ model VerificationRequirement {
   updatedAt            DateTime              @updatedAt @map("updated_at")
   shopTypes            ShopTypeRequirement[]
   shopDocuments        ShopDocument[]
-
   @@index([isActive])
   @@map("verification_requirement")
 }
@@ -471,7 +469,9 @@ model Brand {
   name                 String
   registryStatus       String                @map("registry_status")
   createdAt            DateTime              @default(now()) @map("created_at")
-  productModels        ProductModel[]
+  offers               Offer[]
+  supplyBatches        SupplyBatch[]
+  shipmentItems        DistributionShipmentItem[]
   authorizations       BrandAuthorization[]
   verificationLabels   VerificationLabel[]
   distributionNetworks DistributionNetwork[]
@@ -507,33 +507,13 @@ model Category {
   riskTier                    String                      @map("risk_tier")
   parent                      Category?                   @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children                    Category[]                  @relation("CategoryHierarchy")
-  productModels               ProductModel[]
   offers                      Offer[]
+  supplyBatches               SupplyBatch[]
+  shipmentItems               DistributionShipmentItem[]
   shopBusinessCategories      ShopBusinessCategory[]
   distributionPricingPolicies DistributionPricingPolicy[]
 
   @@map("category")
-}
-
-model ProductModel {
-  id                          String                      @id @default(uuid())
-  brandId                     String                      @map("brand_id")
-  categoryId                  String                      @map("category_id")
-  modelName                   String                      @map("model_name")
-  gtin                        String?
-  verificationPolicy          String                      @map("verification_policy")
-  approvalStatus              String                      @map("approval_status")
-  createdAt                   DateTime                    @default(now()) @map("created_at")
-  brand                       Brand                       @relation(fields: [brandId], references: [id])
-  category                    Category                    @relation(fields: [categoryId], references: [id])
-  offers                      Offer[]
-  supplyBatches               SupplyBatch[]
-  shipmentItems               DistributionShipmentItem[]
-  affiliatePrograms           AffiliateProgram[]
-  distributionPricingPolicies DistributionPricingPolicy[]
-
-  @@index([categoryId])
-  @@map("product_model")
 }
 
 model ShippingCarrier {
@@ -556,8 +536,11 @@ model Offer {
   sellerUserId         String                @map("seller_user_id")
   shopId               String                @map("shop_id")
   categoryId           String                @map("category_id")
-  productModelId       String                @map("product_model_id")
+  brandId              String                @map("brand_id")
   distributionNodeId   String?               @map("distribution_node_id")
+  modelName            String                @map("model_name")
+  gtin                 String?
+  verificationPolicy   String                @map("verification_policy")
   title                String
   description          String
   price                Decimal               @db.Decimal(18, 2)
@@ -576,7 +559,7 @@ model Offer {
   seller               User                  @relation("OfferSeller", fields: [sellerUserId], references: [id])
   shop                 Shop                  @relation(fields: [shopId], references: [id])
   category             Category              @relation(fields: [categoryId], references: [id])
-  productModel         ProductModel          @relation(fields: [productModelId], references: [id])
+  brand                Brand                 @relation(fields: [brandId], references: [id])
   distributionNode     DistributionNode?     @relation(fields: [distributionNodeId], references: [id])
   media                OfferMedia[]
   documents            OfferDocument[]
@@ -588,6 +571,7 @@ model Offer {
   shippingMethods      OfferShippingMethod[]
   favoritedBy          UserFavoriteOffer[]
 
+  @@index([brandId])
   @@index([distributionNodeId])
   @@map("offer")
 }
@@ -659,8 +643,12 @@ model OfferDocument {
 model SupplyBatch {
   id                   String                     @id @default(uuid())
   shopId               String                     @map("shop_id")
-  productModelId       String                     @map("product_model_id")
+  brandId              String                     @map("brand_id")
+  categoryId           String                     @map("category_id")
   distributionNodeId   String?                    @map("distribution_node_id")
+  modelName            String                     @map("model_name")
+  gtin                 String?
+  verificationPolicy   String                     @map("verification_policy")
   batchNumber          String                     @map("batch_number")
   quantity             Int                        @map("quantity")
   sourceName           String                     @map("source_name")
@@ -670,7 +658,8 @@ model SupplyBatch {
   sourceOrderItemId    String?                    @map("source_order_item_id")
   receivedAt           DateTime                   @map("received_at")
   shop                 Shop                       @relation(fields: [shopId], references: [id])
-  productModel         ProductModel               @relation(fields: [productModelId], references: [id])
+  brand                Brand                      @relation(fields: [brandId], references: [id])
+  category             Category                   @relation(fields: [categoryId], references: [id])
   distributionNode     DistributionNode?          @relation(fields: [distributionNodeId], references: [id])
   sourceOrder          Order?                     @relation("SupplyBatchSourceOrder", fields: [sourceOrderId], references: [id], onDelete: SetNull)
   sourceOrderItem      OrderItem?                 @relation("SupplyBatchSourceOrderItem", fields: [sourceOrderItemId], references: [id], onDelete: SetNull)
@@ -679,6 +668,8 @@ model SupplyBatch {
   orderItemAllocations OrderItemBatchAllocation[]
   shipmentItems        DistributionShipmentItem[]
 
+  @@index([brandId])
+  @@index([categoryId])
   @@index([distributionNodeId])
   @@index([sourceOrderId])
   @@index([sourceOrderItemId])
@@ -1122,19 +1113,25 @@ model DistributionShipment {
 }
 
 model DistributionShipmentItem {
-  id             String               @id @default(uuid())
-  shipmentId     String               @map("shipment_id")
-  batchId        String               @map("batch_id")
-  productModelId String               @map("product_model_id")
-  quantity       Int
-  unitCost       Decimal?             @map("unit_cost") @db.Decimal(18, 2)
-  createdAt      DateTime             @default(now()) @map("created_at")
-  shipment       DistributionShipment @relation(fields: [shipmentId], references: [id])
-  batch          SupplyBatch          @relation(fields: [batchId], references: [id])
-  productModel   ProductModel         @relation(fields: [productModelId], references: [id])
+  id                 String               @id @default(uuid())
+  shipmentId         String               @map("shipment_id")
+  batchId            String               @map("batch_id")
+  brandId            String               @map("brand_id")
+  categoryId         String               @map("category_id")
+  modelName          String               @map("model_name")
+  gtin               String?
+  verificationPolicy String               @map("verification_policy")
+  quantity           Int
+  unitCost           Decimal?             @map("unit_cost") @db.Decimal(18, 2)
+  createdAt          DateTime             @default(now()) @map("created_at")
+  shipment           DistributionShipment @relation(fields: [shipmentId], references: [id])
+  batch              SupplyBatch          @relation(fields: [batchId], references: [id])
+  brand              Brand                @relation(fields: [brandId], references: [id])
+  category           Category             @relation(fields: [categoryId], references: [id])
 
   @@index([batchId])
-  @@index([productModelId])
+  @@index([brandId])
+  @@index([categoryId])
   @@map("distribution_shipment_item")
 }
 
@@ -1143,7 +1140,6 @@ model DistributionPricingPolicy {
   networkId      String                   @map("network_id")
   nodeId         String?                  @map("node_id")
   appliesToLevel Int?                     @map("applies_to_level")
-  productModelId String?                  @map("product_model_id")
   categoryId     String?                  @map("category_id")
   scope          DistributionPricingScope @map("scope")
   discountType   DistributionDiscountType @map("discount_type")
@@ -1157,13 +1153,11 @@ model DistributionPricingPolicy {
   updatedAt      DateTime                 @updatedAt @map("updated_at")
   network        DistributionNetwork      @relation(fields: [networkId], references: [id])
   node           DistributionNode?        @relation(fields: [nodeId], references: [id])
-  productModel   ProductModel?            @relation(fields: [productModelId], references: [id])
   category       Category?                @relation(fields: [categoryId], references: [id])
 
   @@index([networkId, isActive])
   @@index([nodeId])
   @@index([appliesToLevel])
-  @@index([productModelId])
   @@index([categoryId])
   @@map("distribution_pricing_policy")
 }
@@ -1172,7 +1166,6 @@ model AffiliateProgram {
   id                    String                 @id @default(uuid())
   ownerShopId           String?                @map("owner_shop_id")
   brandId               String?                @map("brand_id")
-  productModelId        String?                @map("product_model_id")
   offerId               String?                @map("offer_id")
   scopeType             AffiliateScopeType     @map("scope_type")
   name                  String
@@ -1189,7 +1182,6 @@ model AffiliateProgram {
   updatedAt             DateTime               @updatedAt @map("updated_at")
   ownerShop             Shop?                  @relation(fields: [ownerShopId], references: [id])
   brand                 Brand?                 @relation(fields: [brandId], references: [id])
-  productModel          ProductModel?          @relation(fields: [productModelId], references: [id])
   offer                 Offer?                 @relation(fields: [offerId], references: [id])
   accounts              AffiliateAccount[]
   codes                 AffiliateCode[]
@@ -1198,7 +1190,6 @@ model AffiliateProgram {
 
   @@index([ownerShopId])
   @@index([brandId])
-  @@index([productModelId])
   @@index([offerId])
   @@map("affiliate_program")
 }

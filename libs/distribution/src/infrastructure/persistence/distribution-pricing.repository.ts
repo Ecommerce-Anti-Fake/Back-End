@@ -44,11 +44,17 @@ export class DistributionPricingRepository {
     });
   }
 
-  findProductModelById(id: string) {
-    return this.prisma.productModel.findUnique({
+  findOfferIdentityById(id: string) {
+    return this.prisma.offer.findUnique({
       where: { id },
       select: {
         id: true,
+        shopId: true,
+        brandId: true,
+        categoryId: true,
+        modelName: true,
+        gtin: true,
+        verificationPolicy: true,
       },
     });
   }
@@ -324,7 +330,6 @@ export class DistributionPricingRepository {
 
   findComparablePolicies(input: {
     networkId: string;
-    productModelId?: string | null;
     categoryId?: string | null;
     minQuantity?: number | null;
   }) {
@@ -335,7 +340,6 @@ export class DistributionPricingRepository {
         scope: {
           in: ['NODE_LEVEL', 'NODE_SPECIFIC'],
         },
-        productModelId: input.productModelId ?? null,
         categoryId: input.categoryId ?? null,
         minQuantity: input.minQuantity ?? null,
       },
@@ -349,7 +353,6 @@ export class DistributionPricingRepository {
     networkId: string;
     nodeId: string;
     appliesToLevel: number;
-    productModelId: string;
     categoryId: string;
     quantity: number;
     now: Date;
@@ -365,9 +368,6 @@ export class DistributionPricingRepository {
           },
           {
             OR: [{ minQuantity: null }, { minQuantity: { lte: input.quantity } }],
-          },
-          {
-            OR: [{ productModelId: null }, { productModelId: input.productModelId }],
           },
           {
             OR: [{ categoryId: null }, { categoryId: input.categoryId }],
@@ -389,7 +389,6 @@ export class DistributionPricingRepository {
     networkId: string;
     nodeId: string | null;
     appliesToLevel: number | null;
-    productModelId: string | null;
     categoryId: string | null;
     scope: 'NETWORK_DEFAULT' | 'NODE_LEVEL' | 'NODE_SPECIFIC';
     discountValue: number;
@@ -403,7 +402,6 @@ export class DistributionPricingRepository {
         networkId: data.networkId,
         nodeId: data.nodeId,
         appliesToLevel: data.appliesToLevel,
-        productModelId: data.productModelId,
         categoryId: data.categoryId,
         scope: data.scope,
         discountType: 'PERCENT',
@@ -436,7 +434,11 @@ export class DistributionPricingRepository {
       },
       select: {
         id: true,
-        productModelId: true,
+        brandId: true,
+        categoryId: true,
+        modelName: true,
+        gtin: true,
+        verificationPolicy: true,
         quantity: true,
         batchNumber: true,
         offerLinks: {
@@ -450,7 +452,11 @@ export class DistributionPricingRepository {
 
   createBatch(data: {
     shopId: string;
-    productModelId: string;
+    brandId: string;
+    categoryId: string;
+    modelName: string;
+    gtin: string | null;
+    verificationPolicy: string;
     distributionNodeId: string | null;
     batchNumber: string;
     quantity: number;
@@ -741,7 +747,6 @@ export class DistributionPricingRepository {
               select: {
                 id: true,
                 shopId: true,
-                productModelId: true,
                 distributionNodeId: true,
                 batchNumber: true,
                 quantity: true,
@@ -783,7 +788,11 @@ export class DistributionPricingRepository {
     note: string | null;
     items: Array<{
       batchId: string;
-      productModelId: string;
+      brandId: string;
+      categoryId: string;
+      modelName: string;
+      gtin: string | null;
+      verificationPolicy: string;
       quantity: number;
       unitCost: number | null;
     }>;
@@ -799,7 +808,11 @@ export class DistributionPricingRepository {
         items: {
           create: data.items.map((item) => ({
             batchId: item.batchId,
-            productModelId: item.productModelId,
+            brandId: item.brandId,
+            categoryId: item.categoryId,
+            modelName: item.modelName,
+            gtin: item.gtin,
+            verificationPolicy: item.verificationPolicy,
             quantity: item.quantity,
             unitCost: item.unitCost,
           })),
