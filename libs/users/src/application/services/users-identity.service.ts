@@ -21,4 +21,8 @@ export class UsersIdentityService {
   }) {
     return this.usersRepository.create(data);
   }
+
+  updatePassword(userId: string, password: string) {
+    return this.usersRepository.updatePassword(userId, password);
+  }
 }

@@ -29,9 +29,10 @@ export class SyncOrderShippingStatusUseCase {
       throw new BadRequestException('Order must be shipping before syncing carrier status');
     }
 
-    const tracking = await this.shippingCarrierAdapterService.trackShipment({
-      providerCode: order.shippingProviderCode,
-      trackingCode: order.shippingTrackingCode,
+    const tracking = await this.trackShipmentWithFailureAudit({
+      order,
+      requesterUserId: input.requesterUserId,
+      currentFulfillmentStatus,
     });
     const nextFulfillmentStatus = tracking.fulfillmentStatus;
 
@@ -74,5 +75,41 @@ export class SyncOrderShippingStatusUseCase {
       targetId: order.id,
       dedupeKey: `ORDER_SHIPPING_SYNCED:${order.id}:${order.buyerUserId}:${toStatus}`,
     });
+  }
+
+  private async trackShipmentWithFailureAudit(input: {
+    order: {
+      id: string;
+      shippingProviderCode: string | null;
+      shippingTrackingCode: string | null;
+    };
+    requesterUserId: string;
+    currentFulfillmentStatus: string;
+  }) {
+    try {
+      return await this.shippingCarrierAdapterService.trackShipment({
+        providerCode: input.order.shippingProviderCode,
+        trackingCode: input.order.shippingTrackingCode ?? '',
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Carrier tracking sync failed';
+      await this.ordersRepository.createAuditLog({
+        targetType: 'ORDER',
+        targetId: input.order.id,
+        actorUserId: input.requesterUserId,
+        action: 'SHIPPING_STATUS_SYNC_FAILED',
+        fromStatus: input.currentFulfillmentStatus,
+        toStatus: input.currentFulfillmentStatus,
+        note: message,
+        metadata: {
+          domain: 'FULFILLMENT',
+          shippingProviderCode: input.order.shippingProviderCode ?? null,
+          shippingTrackingCode: input.order.shippingTrackingCode,
+          retryable: true,
+          errorMessage: message,
+        },
+      });
+      throw error;
+    }
   }
 }

@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   CreateUserIdentityMessage,
+  UpdateUserPasswordMessage,
   UserIdentityPort,
   USERS_MESSAGE_PATTERNS,
   USERS_SERVICE_CLIENT,
@@ -30,6 +31,11 @@ export class UsersIdentityAdapter implements UserIdentityPort {
 
   async create(data: CreateUserIdentityMessage): Promise<UserIdentityRecord> {
     return this.send<UserIdentityRecord>(USERS_MESSAGE_PATTERNS.create, data);
+  }
+
+  async updatePassword(userId: string, password: string): Promise<UserIdentityRecord> {
+    const payload: UpdateUserPasswordMessage = { userId, password };
+    return this.send<UserIdentityRecord>(USERS_MESSAGE_PATTERNS.updatePassword, payload);
   }
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {

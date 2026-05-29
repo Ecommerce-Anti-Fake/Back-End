@@ -52,6 +52,8 @@ import {
   RiskScoreResponseDto,
   ResolveAdminDisputeDto,
   ResolveOrderDisputeDto,
+  SellerDashboardAnalyticsQueryDto,
+  SellerDashboardAnalyticsResponseDto,
   UpdateAdminReportDto,
   UpdateAdminModerationCaseDto,
   UpdateCartItemDto,
@@ -313,6 +315,32 @@ export class OrdersController {
     return this.ordersRpcService.findSellerShopOrders({
       shopId,
       requesterUserId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Seller lay analytics dashboard cua mot shop' })
+  @ApiBearerAuth('access-token')
+  @ApiParam({ name: 'shopId', description: 'ID shop cua seller.' })
+  @ApiOkResponse({
+    description: 'KPI, chuoi doanh thu, don moi va san pham ban chay cua shop.',
+    type: SellerDashboardAnalyticsResponseDto,
+  })
+  @ApiForbiddenResponse({
+    description: 'Chi chu shop moi co quyen xem analytics nay.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('seller/shops/:shopId/dashboard-analytics')
+  getSellerShopDashboardAnalytics(
+    @Param('shopId') shopId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Query() query: SellerDashboardAnalyticsQueryDto,
+  ) {
+    return this.ordersRpcService.getSellerShopDashboardAnalytics({
+      shopId,
+      requesterUserId,
+      days: query.days,
+      fromDate: query.fromDate,
+      toDate: query.toDate,
     });
   }
 

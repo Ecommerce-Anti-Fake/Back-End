@@ -6,6 +6,7 @@ import type {
   AdminKycDetailMessage,
   AdminKycSummaryMessage,
   CreateUserIdentityMessage,
+  UpdateUserPasswordMessage,
   CreateUserAddressMessage,
   CurrentUserProfileMessage,
   CurrentUserProfileCompletionMessage,
@@ -235,6 +236,15 @@ export class UsersRpcController {
   async create(@Payload() payload: CreateUserIdentityMessage) {
     try {
       return await this.usersIdentityService.create(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(USERS_MESSAGE_PATTERNS.updatePassword)
+  async updatePassword(@Payload() payload: UpdateUserPasswordMessage) {
+    try {
+      return await this.usersIdentityService.updatePassword(payload.userId, payload.password);
     } catch (error) {
       throwRpcException(error);
     }

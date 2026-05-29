@@ -1,6 +1,14 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 
+const ORDER_TIMELINE_ACTIONS = [
+  'FULFILLMENT_STATUS_CHANGED',
+  'PAYMENT_STATUS_CHANGED',
+  'SHIPPING_BOOKED',
+  'SHIPPING_STATUS_SYNCED',
+  'SHIPPING_STATUS_SYNC_FAILED',
+] as const;
+
 @Injectable()
 export class GetOrderFulfillmentAuditUseCase {
   constructor(private readonly ordersRepository: OrdersRepository) {}
@@ -24,7 +32,7 @@ export class GetOrderFulfillmentAuditUseCase {
     const timeline = await this.ordersRepository.findAuditLogsByTarget('ORDER', id);
 
     return timeline
-      .filter((log) => ['FULFILLMENT_STATUS_CHANGED', 'PAYMENT_STATUS_CHANGED'].includes(log.action))
+      .filter((log) => ORDER_TIMELINE_ACTIONS.includes(log.action as (typeof ORDER_TIMELINE_ACTIONS)[number]))
       .map((log) => ({
         id: log.id,
         action: log.action,
@@ -34,6 +42,7 @@ export class GetOrderFulfillmentAuditUseCase {
         actorDisplayName: log.actor.displayName,
         actorEmail: shouldSanitize ? null : log.actor.email,
         note: log.note,
+        metadata: log.metadata,
         createdAt: log.createdAt,
       }));
   }

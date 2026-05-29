@@ -302,6 +302,13 @@ export class UsersRepository {
     return this.prisma.user.create({ data });
   }
 
+  updatePassword(userId: string, password: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { password },
+    });
+  }
+
   findAll(role?: string) {
     return this.prisma.user.findMany({
       where: role ? { role } : undefined,

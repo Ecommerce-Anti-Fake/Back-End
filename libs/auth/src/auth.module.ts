@@ -7,9 +7,17 @@ import type { StringValue } from 'ms';
 import { UserIdentityPort, USERS_SERVICE_CLIENT } from '@contracts';
 import { PrismaModule } from '@database/prisma/prisma.module';
 import { PasswordHasherService } from './application/services';
-import { LoginUseCase, LogoutUseCase, RefreshTokenUseCase, RegisterUseCase } from './application/use-cases';
+import {
+  ChangePasswordUseCase,
+  LoginUseCase,
+  LogoutUseCase,
+  RefreshTokenUseCase,
+  RegisterUseCase,
+  RequestPasswordResetUseCase,
+  ResetPasswordUseCase,
+} from './application/use-cases';
 import { JwtTokenAdapter, UsersIdentityAdapter } from './infrastructure/adapters';
-import { AuthSessionRepository } from './infrastructure/persistence';
+import { AuthSessionRepository, PasswordResetTokenRepository } from './infrastructure/persistence';
 import { AuthRpcController } from './presentation/rpc/auth.rpc-controller';
 
 @Module({
@@ -56,7 +64,11 @@ import { AuthRpcController } from './presentation/rpc/auth.rpc-controller';
     RegisterUseCase,
     LogoutUseCase,
     RefreshTokenUseCase,
+    RequestPasswordResetUseCase,
+    ResetPasswordUseCase,
+    ChangePasswordUseCase,
     AuthSessionRepository,
+    PasswordResetTokenRepository,
     JwtTokenAdapter,
     UsersIdentityAdapter,
     {

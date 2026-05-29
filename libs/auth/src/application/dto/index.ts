@@ -1,3 +1,4 @@
+export * from './account-security.dto';
 export * from './auth-response.dto';
 export * from './login.dto';
 export * from './refresh-token.dto';

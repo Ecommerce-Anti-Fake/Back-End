@@ -308,6 +308,134 @@ export class OrderResponseDto {
   createdAt!: Date;
 }
 
+export class SellerDashboardAnalyticsQueryDto {
+  @ApiPropertyOptional({ example: 7, minimum: 1, maximum: 31 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(31)
+  days?: number;
+
+  @ApiPropertyOptional({ example: '2026-05-01' })
+  @IsOptional()
+  @IsString()
+  fromDate?: string;
+
+  @ApiPropertyOptional({ example: '2026-05-29' })
+  @IsOptional()
+  @IsString()
+  toDate?: string;
+}
+
+export class SellerDashboardMetricDto {
+  @ApiProperty({ example: 128560000 })
+  value!: number;
+
+  @ApiProperty({ example: 24.5 })
+  growthPercent!: number;
+}
+
+export class SellerDashboardStatsDto {
+  @ApiProperty({ type: SellerDashboardMetricDto })
+  revenue!: SellerDashboardMetricDto;
+
+  @ApiProperty({ type: SellerDashboardMetricDto })
+  orders!: SellerDashboardMetricDto;
+
+  @ApiProperty({ type: SellerDashboardMetricDto })
+  products!: SellerDashboardMetricDto;
+
+  @ApiProperty({ type: SellerDashboardMetricDto })
+  newCustomers!: SellerDashboardMetricDto;
+}
+
+export class SellerDashboardRevenuePointDto {
+  @ApiProperty({ example: '2026-05-29' })
+  date!: string;
+
+  @ApiProperty({ example: '29/05' })
+  label!: string;
+
+  @ApiProperty({ example: 18500000 })
+  revenue!: number;
+
+  @ApiProperty({ example: 18 })
+  orders!: number;
+}
+
+export class SellerDashboardTopProductDto {
+  @ApiProperty({ example: 'offer-id' })
+  offerId!: string;
+
+  @ApiProperty({ example: 'Nước hoa AntiFake Premium' })
+  title!: string;
+
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/offer.jpg', nullable: true })
+  thumbnailUrl!: string | null;
+
+  @ApiProperty({ example: 1256 })
+  soldQuantity!: number;
+
+  @ApiProperty({ example: 389000000 })
+  revenue!: number;
+}
+
+export class SellerDashboardRevenueOrderDto {
+  @ApiProperty({ example: 'order-id' })
+  orderId!: string;
+
+  @ApiProperty({ example: '2026-05-29T10:00:00.000Z' })
+  createdAt!: Date;
+
+  @ApiPropertyOptional({ example: 'Nguyen Van A', nullable: true })
+  customerName!: string | null;
+
+  @ApiPropertyOptional({ example: 'PAID', nullable: true })
+  paymentStatus!: string | null;
+
+  @ApiProperty({ example: 'DELIVERED' })
+  fulfillmentStatus!: string;
+
+  @ApiProperty({ example: 1842750 })
+  buyerPayableAmount!: number;
+
+  @ApiProperty({ example: 12750 })
+  platformFeeAmount!: number;
+
+  @ApiProperty({ example: 1830000 })
+  sellerReceivableAmount!: number;
+
+  @ApiProperty({ example: 2 })
+  itemCount!: number;
+}
+
+export class SellerDashboardAnalyticsResponseDto {
+  @ApiProperty({
+    example: {
+      days: 7,
+      from: '2026-05-23T00:00:00.000Z',
+      to: '2026-05-29T23:59:59.999Z',
+    },
+  })
+  range!: { days: number; from: string; to: string };
+
+  @ApiProperty({ type: SellerDashboardStatsDto })
+  stats!: SellerDashboardStatsDto;
+
+  @ApiProperty({ type: SellerDashboardRevenuePointDto, isArray: true })
+  series!: SellerDashboardRevenuePointDto[];
+
+  @ApiProperty({ type: OrderResponseDto, isArray: true })
+  recentOrders!: OrderResponseDto[];
+
+  @ApiProperty({ type: SellerDashboardTopProductDto, isArray: true })
+  topProducts!: SellerDashboardTopProductDto[];
+
+  @ApiProperty({ type: SellerDashboardRevenueOrderDto, isArray: true })
+  revenueOrders!: SellerDashboardRevenueOrderDto[];
+}
+
 export class AdminFinanceReconciliationQueryDto {
   @ApiPropertyOptional({ example: '2026-05-01T00:00:00.000Z' })
   @IsOptional()
@@ -552,6 +680,9 @@ export class OrderFulfillmentAuditEntryDto {
 
   @ApiPropertyOptional({ example: 'Seller moved order to processing.', nullable: true })
   note!: string | null;
+
+  @ApiPropertyOptional({ example: { shippingProviderCode: 'GHN', providerStatus: 'delivered' }, nullable: true })
+  metadata!: Record<string, unknown> | null;
 
   @ApiProperty({ example: '2026-05-15T10:00:00.000Z' })
   createdAt!: Date;

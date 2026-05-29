@@ -113,6 +113,35 @@ describe('SyncOrderShippingStatusUseCase', () => {
       }),
     ).rejects.toThrow('Order does not have a tracking code');
   });
+
+  it('audits retryable carrier sync failures before returning the error', async () => {
+    const order = createOrderRecord();
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(order);
+    shippingCarrierAdapterMock.trackShipment.mockRejectedValueOnce(new Error('GHN timeout'));
+
+    await expect(
+      useCase.execute({
+        id: 'order-1',
+        requesterUserId: 'seller-user-1',
+      }),
+    ).rejects.toThrow('GHN timeout');
+
+    expect(ordersRepositoryMock.createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'SHIPPING_STATUS_SYNC_FAILED',
+        fromStatus: 'SHIPPING',
+        toStatus: 'SHIPPING',
+        note: 'GHN timeout',
+        metadata: expect.objectContaining({
+          shippingProviderCode: 'GHN',
+          shippingTrackingCode: 'GHN123456',
+          retryable: true,
+          errorMessage: 'GHN timeout',
+        }),
+      }),
+    );
+    expect(ordersRepositoryMock.updateFulfillmentStatus).not.toHaveBeenCalled();
+  });
 });
 
 function createOrderRecord(overrides?: { fulfillmentStatus?: string; shippingTrackingCode?: string | null }) {

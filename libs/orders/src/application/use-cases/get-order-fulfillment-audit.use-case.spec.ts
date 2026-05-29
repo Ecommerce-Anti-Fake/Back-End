@@ -138,6 +138,37 @@ describe('GetOrderFulfillmentAuditUseCase', () => {
       actorEmail: 'seller@example.com',
     });
   });
+
+  it('includes carrier booking and sync audit metadata for admins', async () => {
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord());
+    ordersRepositoryMock.findAuditLogsByTarget.mockResolvedValueOnce([
+      createAuditLog({
+        id: 'audit-shipping-1',
+        action: 'SHIPPING_STATUS_SYNCED',
+        fromStatus: 'SHIPPING',
+        toStatus: 'DELIVERED',
+        note: 'Shipping carrier status synced as delivered',
+        metadata: {
+          shippingProviderCode: 'GHN',
+          shippingTrackingCode: 'GHN123456',
+          providerStatus: 'delivered',
+        },
+      }),
+    ]);
+
+    const result = await useCase.execute('order-1', 'admin-user-1', 'admin');
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        action: 'SHIPPING_STATUS_SYNCED',
+        metadata: expect.objectContaining({
+          shippingProviderCode: 'GHN',
+          shippingTrackingCode: 'GHN123456',
+          providerStatus: 'delivered',
+        }),
+      }),
+    ]);
+  });
 });
 
 function createAuditLog(overrides: Record<string, unknown> = {}) {
@@ -154,6 +185,7 @@ function createAuditLog(overrides: Record<string, unknown> = {}) {
       displayName: 'Seller',
       email: 'seller@example.com',
     },
+    metadata: {},
     ...overrides,
   };
 }

@@ -13,7 +13,12 @@ import {
 import { ActiveUserGuard, CurrentUser, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import {
   AdminAccessResponseDto,
+  AccountSecurityDecisionsResponseDto,
+  AccountSecurityResponseDto,
   AuthUserResponseDto,
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  ForgotPasswordResponseDto,
   LoginDto,
   LoginResponseDto,
   LogoutResponseDto,
@@ -21,6 +26,7 @@ import {
   RefreshTokenDto,
   RegisterDto,
   RegisterResponseDto,
+  ResetPasswordDto,
 } from '@auth';
 import { AuthRpcService } from './auth-rpc.service';
 
@@ -89,6 +95,62 @@ export class AuthController {
   @Post('logout')
   logout(@Body() dto: RefreshTokenDto) {
     return this.authRpcService.logout(dto);
+  }
+
+  @ApiOperation({ summary: 'Tao password reset token neu tai khoan ton tai' })
+  @ApiBody({ type: ForgotPasswordDto })
+  @ApiOkResponse({
+    description: 'Tra ve thong bao generic de tranh account enumeration.',
+    type: ForgotPasswordResponseDto,
+  })
+  @Post('forgot-password')
+  requestPasswordReset(@Body() dto: ForgotPasswordDto) {
+    return this.authRpcService.requestPasswordReset(dto);
+  }
+
+  @ApiOperation({ summary: 'Dat lai mat khau bang reset token dung mot lan' })
+  @ApiBody({ type: ResetPasswordDto })
+  @ApiOkResponse({
+    description: 'Dat lai mat khau thanh cong.',
+    type: AccountSecurityResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Reset token khong hop le hoac het han.',
+  })
+  @Post('reset-password')
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authRpcService.resetPassword(dto);
+  }
+
+  @ApiOperation({ summary: 'Doi mat khau cua user dang dang nhap' })
+  @ApiBearerAuth('access-token')
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiOkResponse({
+    description: 'Doi mat khau thanh cong va revoke refresh sessions.',
+    type: AccountSecurityResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Access token hoac mat khau hien tai khong hop le.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('change-password')
+  changePassword(@CurrentUser() user: AuthUserResponseDto, @Body() dto: ChangePasswordDto) {
+    return this.authRpcService.changePassword(user.id, dto);
+  }
+
+  @ApiOperation({ summary: 'Quyet dinh pham vi security flow hien tai' })
+  @ApiOkResponse({
+    description: 'Security decisions for account flows.',
+    type: AccountSecurityDecisionsResponseDto,
+  })
+  @Get('security-decisions')
+  securityDecisions(): AccountSecurityDecisionsResponseDto {
+    return {
+      emailProvider: 'DEFERRED',
+      otpProvider: 'DEFERRED',
+      oauthLogin: 'DEFERRED',
+      resetTokenReturnedByDefault: false,
+    };
   }
 
   @ApiOperation({ summary: 'Kiem tra route chi danh cho admin' })

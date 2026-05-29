@@ -4,7 +4,7 @@ import {
   AUTH_MESSAGE_PATTERNS,
   AUTH_SERVICE_CLIENT,
 } from '@contracts';
-import { LoginDto, RefreshTokenDto, RegisterDto } from '@auth';
+import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RefreshTokenDto, RegisterDto, ResetPasswordDto } from '@auth';
 import { throwHttpExceptionFromRpc } from '@common';
 import { lastValueFrom } from 'rxjs';
 
@@ -29,6 +29,18 @@ export class AuthRpcService {
 
   logout(dto: RefreshTokenDto) {
     return this.send(AUTH_MESSAGE_PATTERNS.logout, dto);
+  }
+
+  requestPasswordReset(dto: ForgotPasswordDto) {
+    return this.send(AUTH_MESSAGE_PATTERNS.requestPasswordReset, dto);
+  }
+
+  resetPassword(dto: ResetPasswordDto) {
+    return this.send(AUTH_MESSAGE_PATTERNS.resetPassword, dto);
+  }
+
+  changePassword(userId: string, dto: ChangePasswordDto) {
+    return this.send(AUTH_MESSAGE_PATTERNS.changePassword, { userId, dto });
   }
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {

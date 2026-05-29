@@ -18,4 +18,8 @@ export class UsersIdentityAdapter implements UserIdentityPort {
   create(): Promise<UserIdentityRecord> {
     throw new Error('create is not used in api-gateway');
   }
+
+  updatePassword(): Promise<UserIdentityRecord> {
+    throw new Error('updatePassword is not used in api-gateway');
+  }
 }

@@ -147,6 +147,7 @@ model User {
   createdAt            DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
   authSessions         AuthSession[]
+  passwordResetTokens  PasswordResetToken[]
   kyc                  UserKyc?
   ownedShops           Shop[]                @relation("ShopOwner")
   offers               Offer[]               @relation("OfferSeller")
@@ -252,6 +253,20 @@ model AuthSession {
   @@index([userId])
   @@index([tokenFamily])
   @@map("auth_session")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, usedAt])
+  @@index([expiresAt])
+  @@map("password_reset_token")
 }
 
 model UserKyc {

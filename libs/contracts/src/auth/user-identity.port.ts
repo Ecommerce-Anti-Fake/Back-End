@@ -24,4 +24,6 @@ export abstract class UserIdentityPort {
     displayName: string | null;
     password: string;
   }): Promise<UserIdentityRecord>;
+
+  abstract updatePassword(userId: string, password: string): Promise<UserIdentityRecord>;
 }

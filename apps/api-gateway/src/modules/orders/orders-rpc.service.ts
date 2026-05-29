@@ -28,6 +28,7 @@ import {
   OrderFulfillmentAuditMessage,
   OrderLookupMessage,
   RetryPayOSPaymentMessage,
+  SellerShopDashboardAnalyticsMessage,
   SellerShopOrdersLookupMessage,
   DisputeEvidenceUploadSignaturesMessage,
   AddDisputeEvidenceBatchMessage,
@@ -99,6 +100,10 @@ export class OrdersRpcService {
 
   findSellerShopOrders(payload: SellerShopOrdersLookupMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.findSellerShopOrders, payload);
+  }
+
+  getSellerShopDashboardAnalytics(payload: SellerShopDashboardAnalyticsMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.getSellerShopDashboardAnalytics, payload);
   }
 
   findAdminOrders(payload: AdminOrdersLookupMessage = {}) {

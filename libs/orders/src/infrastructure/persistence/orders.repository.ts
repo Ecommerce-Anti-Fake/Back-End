@@ -402,6 +402,7 @@ export type OrderAuditLogRecord = {
   fromStatus: string | null;
   toStatus: string | null;
   note: string | null;
+  metadata: Prisma.JsonValue | null;
   actorUserId: string;
   createdAt: Date;
   actor: {
@@ -1955,6 +1956,7 @@ export class OrdersRepository {
           fromStatus: string | null;
           toStatus: string | null;
           note: string | null;
+          metadata: Prisma.JsonValue | null;
           actorUserId: string;
           createdAt: Date;
           actorId: string;
@@ -1968,6 +1970,7 @@ export class OrdersRepository {
           al.from_status AS "fromStatus",
           al.to_status AS "toStatus",
           al.note,
+          al.metadata,
           al.actor_user_id AS "actorUserId",
           al.created_at AS "createdAt",
           u.id AS "actorId",
@@ -1986,6 +1989,7 @@ export class OrdersRepository {
           fromStatus: row.fromStatus,
           toStatus: row.toStatus,
           note: row.note,
+          metadata: row.metadata,
           actorUserId: row.actorUserId,
           createdAt: row.createdAt,
           actor: {

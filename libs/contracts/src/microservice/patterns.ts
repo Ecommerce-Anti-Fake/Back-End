@@ -9,6 +9,9 @@ export const AUTH_MESSAGE_PATTERNS = {
   login: 'auth.login',
   refresh: 'auth.refresh',
   logout: 'auth.logout',
+  requestPasswordReset: 'auth.request-password-reset',
+  resetPassword: 'auth.reset-password',
+  changePassword: 'auth.change-password',
   adminCheck: 'auth.admin-check',
 } as const;
 
@@ -31,6 +34,7 @@ export const USERS_MESSAGE_PATTERNS = {
   findById: 'users.find-by-id',
   findByIdentifier: 'users.find-by-identifier',
   create: 'users.create',
+  updatePassword: 'users.update-password',
   getUserById: 'users.get-user-by-id',
   updateUser: 'users.update-user',
   deleteUser: 'users.delete-user',
@@ -111,6 +115,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   createWholesale: 'orders.create-wholesale',
   findMine: 'orders.find-mine',
   findSellerShopOrders: 'orders.find-seller-shop-orders',
+  getSellerShopDashboardAnalytics: 'orders.get-seller-shop-dashboard-analytics',
   findAdminOrders: 'orders.find-admin-orders',
   getAdminFinanceReconciliation: 'orders.get-admin-finance-reconciliation',
   findById: 'orders.find-by-id',
@@ -304,6 +309,11 @@ export type CreateUserIdentityMessage = {
   displayName: string | null;
   password: string;
   role?: string;
+};
+
+export type UpdateUserPasswordMessage = {
+  userId: string;
+  password: string;
 };
 
 export type ListUsersMessage = {
@@ -782,6 +792,14 @@ export type MyOrdersLookupMessage = {
 export type SellerShopOrdersLookupMessage = {
   requesterUserId: string;
   shopId: string;
+};
+
+export type SellerShopDashboardAnalyticsMessage = {
+  requesterUserId: string;
+  shopId: string;
+  days?: number;
+  fromDate?: string;
+  toDate?: string;
 };
 
 export type AdminOrdersLookupMessage = {

@@ -3,12 +3,15 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AUTH_MESSAGE_PATTERNS } from '@contracts';
 import { throwRpcException } from '@common';
 import type { AuthenticatedPrincipal } from '@contracts';
-import { LoginDto, RefreshTokenDto, RegisterDto } from '../../application/dto';
+import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RefreshTokenDto, RegisterDto, ResetPasswordDto } from '../../application/dto';
 import {
+  ChangePasswordUseCase,
   LoginUseCase,
   LogoutUseCase,
   RefreshTokenUseCase,
   RegisterUseCase,
+  RequestPasswordResetUseCase,
+  ResetPasswordUseCase,
 } from '../../application/use-cases';
 
 @Controller()
@@ -18,6 +21,9 @@ export class AuthRpcController {
     private readonly loginUseCase: LoginUseCase,
     private readonly refreshTokenUseCase: RefreshTokenUseCase,
     private readonly logoutUseCase: LogoutUseCase,
+    private readonly requestPasswordResetUseCase: RequestPasswordResetUseCase,
+    private readonly resetPasswordUseCase: ResetPasswordUseCase,
+    private readonly changePasswordUseCase: ChangePasswordUseCase,
   ) {}
 
   @MessagePattern(AUTH_MESSAGE_PATTERNS.register)
@@ -51,6 +57,33 @@ export class AuthRpcController {
   async logout(@Payload() dto: RefreshTokenDto) {
     try {
       return await this.logoutUseCase.execute(dto);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(AUTH_MESSAGE_PATTERNS.requestPasswordReset)
+  async requestPasswordReset(@Payload() dto: ForgotPasswordDto) {
+    try {
+      return await this.requestPasswordResetUseCase.execute(dto);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(AUTH_MESSAGE_PATTERNS.resetPassword)
+  async resetPassword(@Payload() dto: ResetPasswordDto) {
+    try {
+      return await this.resetPasswordUseCase.execute(dto);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(AUTH_MESSAGE_PATTERNS.changePassword)
+  async changePassword(@Payload() payload: { userId: string; dto: ChangePasswordDto }) {
+    try {
+      return await this.changePasswordUseCase.execute(payload.userId, payload.dto);
     } catch (error) {
       throwRpcException(error);
     }
