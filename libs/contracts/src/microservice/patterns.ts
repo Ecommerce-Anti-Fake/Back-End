@@ -86,6 +86,13 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   getChatThread: 'products.get-chat-thread',
   startChatThread: 'products.start-chat-thread',
   sendChatMessage: 'products.send-chat-message',
+  listSocialPosts: 'products.list-social-posts',
+  createSocialPost: 'products.create-social-post',
+  createSocialComment: 'products.create-social-comment',
+  setSocialReaction: 'products.set-social-reaction',
+  removeSocialReaction: 'products.remove-social-reaction',
+  shareSocialPost: 'products.share-social-post',
+  updateSocialPostVisibility: 'products.update-social-post-visibility',
   allocateOfferBatches: 'products.allocate-offer-batches',
   findOfferBatchLinks: 'products.find-offer-batch-links',
   getOfferMediaUploadSignatures: 'products.get-offer-media-upload-signatures',
@@ -549,6 +556,39 @@ export type ChatThreadLookupMessage = ChatRequesterMessage & {
 export type SendChatMessageMessage = ChatThreadLookupMessage & {
   body: string;
   messageType?: 'TEXT';
+};
+
+export type ListSocialPostsMessage = {
+  requesterUserId?: string | null;
+  includeHidden?: boolean;
+  page?: number;
+  pageSize?: number;
+};
+
+export type CreateSocialPostMessage = {
+  requesterUserId: string;
+  authorShopId?: string | null;
+  postType: 'SHARE' | 'QUESTION' | 'PRODUCT_SHARE';
+  body: string;
+  offerId?: string | null;
+};
+
+export type SocialPostLookupMessage = {
+  requesterUserId: string;
+  requesterRole?: string | null;
+  postId: string;
+};
+
+export type CreateSocialCommentMessage = SocialPostLookupMessage & {
+  body: string;
+};
+
+export type SetSocialReactionMessage = SocialPostLookupMessage & {
+  reactionType?: 'LIKE';
+};
+
+export type UpdateSocialPostVisibilityMessage = SocialPostLookupMessage & {
+  visibility: 'PUBLIC' | 'HIDDEN';
 };
 
 export type CreateOfferMessage = {

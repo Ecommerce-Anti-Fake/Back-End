@@ -10,6 +10,8 @@ import type {
   AddReviewMediaBatchMessage,
   CreateOrderItemReviewMessage,
   CreateOfferReviewMessage,
+  CreateSocialCommentMessage,
+  CreateSocialPostMessage,
   CreateBrandMessage,
   CreateCategoryMessage,
   CreateOfferMessage,
@@ -20,6 +22,7 @@ import type {
   ChatRequesterMessage,
   ChatThreadLookupMessage,
   ListOffersMessage,
+  ListSocialPostsMessage,
   OfferDocumentUploadSignaturesMessage,
   OfferBatchLinksLookupMessage,
   OfferDocumentsLookupMessage,
@@ -30,7 +33,10 @@ import type {
   ReviewMediaUploadSignaturesMessage,
   SendChatMessageMessage,
   SetOfferPrimaryMediaMessage,
+  SetSocialReactionMessage,
+  SocialPostLookupMessage,
   StartChatThreadMessage,
+  UpdateSocialPostVisibilityMessage,
   UpdateOfferMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
@@ -45,6 +51,8 @@ import {
   CreateOfferUseCase,
   CreateOfferReviewUseCase,
   CreateOrderItemReviewUseCase,
+  CreateSocialCommentUseCase,
+  CreateSocialPostUseCase,
   DeleteOfferDocumentUseCase,
   DeleteOfferMediaUseCase,
   GetOfferDocumentUploadSignaturesUseCase,
@@ -62,10 +70,15 @@ import {
   ListOffersUseCase,
   ListFavoriteOffersUseCase,
   ListShippingCarriersUseCase,
+  ListSocialPostsUseCase,
+  RemoveSocialReactionUseCase,
   SetOfferPrimaryMediaUseCase,
   SendChatMessageUseCase,
+  SetSocialReactionUseCase,
+  ShareSocialPostUseCase,
   StartChatThreadUseCase,
   RemoveFavoriteOfferUseCase,
+  UpdateSocialPostVisibilityUseCase,
   UpdateOfferUseCase,
 } from '../../application/use-cases';
 
@@ -104,6 +117,13 @@ export class ProductsRpcController {
     private readonly getChatThreadUseCase: GetChatThreadUseCase,
     private readonly startChatThreadUseCase: StartChatThreadUseCase,
     private readonly sendChatMessageUseCase: SendChatMessageUseCase,
+    private readonly listSocialPostsUseCase: ListSocialPostsUseCase,
+    private readonly createSocialPostUseCase: CreateSocialPostUseCase,
+    private readonly createSocialCommentUseCase: CreateSocialCommentUseCase,
+    private readonly setSocialReactionUseCase: SetSocialReactionUseCase,
+    private readonly removeSocialReactionUseCase: RemoveSocialReactionUseCase,
+    private readonly shareSocialPostUseCase: ShareSocialPostUseCase,
+    private readonly updateSocialPostVisibilityUseCase: UpdateSocialPostVisibilityUseCase,
   ) {}
 
   @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findBrands)
@@ -389,6 +409,69 @@ export class ProductsRpcController {
   async sendChatMessage(@Payload() payload: SendChatMessageMessage) {
     try {
       return await this.sendChatMessageUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.listSocialPosts)
+  async listSocialPosts(@Payload() payload: ListSocialPostsMessage) {
+    try {
+      return await this.listSocialPostsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.createSocialPost)
+  async createSocialPost(@Payload() payload: CreateSocialPostMessage) {
+    try {
+      return await this.createSocialPostUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.createSocialComment)
+  async createSocialComment(@Payload() payload: CreateSocialCommentMessage) {
+    try {
+      return await this.createSocialCommentUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.setSocialReaction)
+  async setSocialReaction(@Payload() payload: SetSocialReactionMessage) {
+    try {
+      return await this.setSocialReactionUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.removeSocialReaction)
+  async removeSocialReaction(@Payload() payload: SetSocialReactionMessage) {
+    try {
+      return await this.removeSocialReactionUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.shareSocialPost)
+  async shareSocialPost(@Payload() payload: SocialPostLookupMessage) {
+    try {
+      return await this.shareSocialPostUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.updateSocialPostVisibility)
+  async updateSocialPostVisibility(@Payload() payload: UpdateSocialPostVisibilityMessage) {
+    try {
+      return await this.updateSocialPostVisibilityUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

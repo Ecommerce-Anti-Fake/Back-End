@@ -10,6 +10,8 @@ import {
   CreateBrandMessage,
   CreateCategoryMessage,
   CreateOfferMessage,
+  CreateSocialCommentMessage,
+  CreateSocialPostMessage,
   DeleteOfferDocumentMessage,
   DeleteOfferMediaMessage,
   FavoriteOfferMessage,
@@ -17,6 +19,7 @@ import {
   ChatRequesterMessage,
   ChatThreadLookupMessage,
   ListOffersMessage,
+  ListSocialPostsMessage,
   OfferDocumentUploadSignaturesMessage,
   OfferBatchLinksLookupMessage,
   OfferDocumentsLookupMessage,
@@ -28,7 +31,10 @@ import {
   ReviewMediaUploadSignaturesMessage,
   SendChatMessageMessage,
   SetOfferPrimaryMediaMessage,
+  SetSocialReactionMessage,
+  SocialPostLookupMessage,
   StartChatThreadMessage,
+  UpdateSocialPostVisibilityMessage,
   UpdateOfferMessage,
   CATALOG_SERVICE_CLIENT,
 } from '@contracts';
@@ -168,6 +174,34 @@ export class ProductsRpcService {
 
   sendChatMessage(payload: SendChatMessageMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.sendChatMessage, payload);
+  }
+
+  listSocialPosts(payload: ListSocialPostsMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.listSocialPosts, payload);
+  }
+
+  createSocialPost(payload: CreateSocialPostMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.createSocialPost, payload);
+  }
+
+  createSocialComment(payload: CreateSocialCommentMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.createSocialComment, payload);
+  }
+
+  setSocialReaction(payload: SetSocialReactionMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.setSocialReaction, payload);
+  }
+
+  removeSocialReaction(payload: SetSocialReactionMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.removeSocialReaction, payload);
+  }
+
+  shareSocialPost(payload: SocialPostLookupMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.shareSocialPost, payload);
+  }
+
+  updateSocialPostVisibility(payload: UpdateSocialPostVisibilityMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.updateSocialPostVisibility, payload);
   }
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {

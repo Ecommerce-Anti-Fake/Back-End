@@ -136,6 +136,21 @@ enum KycDocumentSide {
   BACK
 }
 
+enum SocialPostType {
+  SHARE
+  QUESTION
+  PRODUCT_SHARE
+}
+
+enum SocialPostVisibility {
+  PUBLIC
+  HIDDEN
+}
+
+enum SocialReactionType {
+  LIKE
+}
+
 model User {
   id                   String                @id @default(uuid())
   phone                String?               @unique
@@ -170,6 +185,10 @@ model User {
   addresses            UserAddress[]
   notifications        Notification[]
   favoriteOffers       UserFavoriteOffer[]
+  socialPosts          SocialPost[]
+  socialComments       SocialComment[]
+  socialReactions      SocialReaction[]
+  socialShares         SocialShare[]
 
   @@map("user")
 }
@@ -355,6 +374,7 @@ model Shop {
   distributionNodes          DistributionNode[]
   affiliatePrograms          AffiliateProgram[]
   chatThreads                ChatThread[]
+  socialPosts                SocialPost[]
 
   @@index([shopTypeId])
   @@map("shop")
@@ -585,6 +605,7 @@ model Offer {
   affiliateConversions AffiliateConversion[]
   shippingMethods      OfferShippingMethod[]
   favoritedBy          UserFavoriteOffer[]
+  socialPosts          SocialPost[]
 
   @@index([brandId])
   @@index([distributionNodeId])
@@ -603,6 +624,75 @@ model UserFavoriteOffer {
   @@index([userId])
   @@index([offerId])
   @@map("user_favorite_offer")
+}
+
+model SocialPost {
+  id             String               @id @default(uuid())
+  authorUserId   String               @map("author_user_id")
+  authorShopId   String?              @map("author_shop_id")
+  offerId        String?              @map("offer_id")
+  postType       SocialPostType       @map("post_type")
+  body           String
+  visibility     SocialPostVisibility @default(PUBLIC)
+  hiddenAt       DateTime?            @map("hidden_at")
+  hiddenByUserId String?              @map("hidden_by_user_id")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+  author         User                 @relation(fields: [authorUserId], references: [id])
+  authorShop     Shop?                @relation(fields: [authorShopId], references: [id])
+  offer          Offer?               @relation(fields: [offerId], references: [id])
+  comments       SocialComment[]
+  reactions      SocialReaction[]
+  shares         SocialShare[]
+
+  @@index([authorUserId, createdAt])
+  @@index([authorShopId, createdAt])
+  @@index([offerId])
+  @@index([visibility, createdAt])
+  @@map("social_post")
+}
+
+model SocialComment {
+  id           String               @id @default(uuid())
+  postId       String               @map("post_id")
+  authorUserId String               @map("author_user_id")
+  body         String
+  visibility   SocialPostVisibility @default(PUBLIC)
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+  post         SocialPost           @relation(fields: [postId], references: [id])
+  author       User                 @relation(fields: [authorUserId], references: [id])
+
+  @@index([postId, createdAt])
+  @@index([authorUserId, createdAt])
+  @@map("social_comment")
+}
+
+model SocialReaction {
+  id           String             @id @default(uuid())
+  postId       String             @map("post_id")
+  userId       String             @map("user_id")
+  reactionType SocialReactionType @default(LIKE) @map("reaction_type")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  post         SocialPost         @relation(fields: [postId], references: [id])
+  user         User               @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId, reactionType])
+  @@index([userId, createdAt])
+  @@map("social_reaction")
+}
+
+model SocialShare {
+  id        String   @id @default(uuid())
+  postId    String   @map("post_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  post      SocialPost @relation(fields: [postId], references: [id])
+  user      User       @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId])
+  @@index([userId, createdAt])
+  @@map("social_share")
 }
 
 model OfferShippingMethod {
