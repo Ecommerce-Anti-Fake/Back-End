@@ -151,6 +151,13 @@ enum SocialReactionType {
   LIKE
 }
 
+enum LiveSessionStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}
+
 model User {
   id                   String                @id @default(uuid())
   phone                String?               @unique
@@ -189,6 +196,7 @@ model User {
   socialComments       SocialComment[]
   socialReactions      SocialReaction[]
   socialShares         SocialShare[]
+  liveSessionReminders LiveSessionReminder[]
 
   @@map("user")
 }
@@ -375,6 +383,7 @@ model Shop {
   affiliatePrograms          AffiliateProgram[]
   chatThreads                ChatThread[]
   socialPosts                SocialPost[]
+  liveSessions               LiveCommerceSession[]
 
   @@index([shopTypeId])
   @@map("shop")
@@ -606,6 +615,7 @@ model Offer {
   shippingMethods      OfferShippingMethod[]
   favoritedBy          UserFavoriteOffer[]
   socialPosts          SocialPost[]
+  liveSessionOffers    LiveSessionOffer[]
 
   @@index([brandId])
   @@index([distributionNodeId])
@@ -693,6 +703,52 @@ model SocialShare {
   @@unique([postId, userId])
   @@index([userId, createdAt])
   @@map("social_share")
+}
+
+model LiveCommerceSession {
+  id          String            @id @default(uuid())
+  shopId      String            @map("shop_id")
+  title       String
+  description String?
+  coverUrl    String?           @map("cover_url")
+  startAt     DateTime          @map("start_at")
+  status      LiveSessionStatus @default(SCHEDULED)
+  playbackUrl String?           @map("playback_url")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  shop        Shop              @relation(fields: [shopId], references: [id])
+  offers      LiveSessionOffer[]
+  reminders   LiveSessionReminder[]
+
+  @@index([shopId, startAt])
+  @@index([status, startAt])
+  @@map("live_commerce_session")
+}
+
+model LiveSessionOffer {
+  id        String              @id @default(uuid())
+  sessionId String              @map("session_id")
+  offerId   String              @map("offer_id")
+  sortOrder Int                 @default(0) @map("sort_order")
+  session   LiveCommerceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  offer     Offer               @relation(fields: [offerId], references: [id])
+
+  @@unique([sessionId, offerId])
+  @@index([offerId])
+  @@map("live_session_offer")
+}
+
+model LiveSessionReminder {
+  id        String              @id @default(uuid())
+  sessionId String              @map("session_id")
+  userId    String              @map("user_id")
+  createdAt DateTime            @default(now()) @map("created_at")
+  session   LiveCommerceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user      User                @relation(fields: [userId], references: [id])
+
+  @@unique([sessionId, userId])
+  @@index([userId, createdAt])
+  @@map("live_session_reminder")
 }
 
 model OfferShippingMethod {

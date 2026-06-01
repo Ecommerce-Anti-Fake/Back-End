@@ -15,12 +15,15 @@ import type {
   CreateBrandMessage,
   CreateCategoryMessage,
   CreateOfferMessage,
+  CreateLiveSessionMessage,
   DeleteOfferDocumentMessage,
   DeleteOfferMediaMessage,
   FavoriteOfferMessage,
   FavoriteOffersLookupMessage,
   ChatRequesterMessage,
   ChatThreadLookupMessage,
+  LiveSessionLookupMessage,
+  ListLiveSessionsMessage,
   ListOffersMessage,
   ListSocialPostsMessage,
   OfferDocumentUploadSignaturesMessage,
@@ -37,6 +40,7 @@ import type {
   SocialPostLookupMessage,
   StartChatThreadMessage,
   UpdateSocialPostVisibilityMessage,
+  UpdateLiveSessionStatusMessage,
   UpdateOfferMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
@@ -53,6 +57,7 @@ import {
   CreateOrderItemReviewUseCase,
   CreateSocialCommentUseCase,
   CreateSocialPostUseCase,
+  CreateLiveSessionUseCase,
   DeleteOfferDocumentUseCase,
   DeleteOfferMediaUseCase,
   GetOfferDocumentUploadSignaturesUseCase,
@@ -70,8 +75,10 @@ import {
   ListOffersUseCase,
   ListFavoriteOffersUseCase,
   ListShippingCarriersUseCase,
+  ListLiveSessionsUseCase,
   ListSocialPostsUseCase,
   RemoveSocialReactionUseCase,
+  RemindLiveSessionUseCase,
   SetOfferPrimaryMediaUseCase,
   SendChatMessageUseCase,
   SetSocialReactionUseCase,
@@ -79,6 +86,7 @@ import {
   StartChatThreadUseCase,
   RemoveFavoriteOfferUseCase,
   UpdateSocialPostVisibilityUseCase,
+  UpdateLiveSessionStatusUseCase,
   UpdateOfferUseCase,
 } from '../../application/use-cases';
 
@@ -124,6 +132,10 @@ export class ProductsRpcController {
     private readonly removeSocialReactionUseCase: RemoveSocialReactionUseCase,
     private readonly shareSocialPostUseCase: ShareSocialPostUseCase,
     private readonly updateSocialPostVisibilityUseCase: UpdateSocialPostVisibilityUseCase,
+    private readonly listLiveSessionsUseCase: ListLiveSessionsUseCase,
+    private readonly createLiveSessionUseCase: CreateLiveSessionUseCase,
+    private readonly updateLiveSessionStatusUseCase: UpdateLiveSessionStatusUseCase,
+    private readonly remindLiveSessionUseCase: RemindLiveSessionUseCase,
   ) {}
 
   @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findBrands)
@@ -472,6 +484,45 @@ export class ProductsRpcController {
   async updateSocialPostVisibility(@Payload() payload: UpdateSocialPostVisibilityMessage) {
     try {
       return await this.updateSocialPostVisibilityUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.listLiveSessions)
+  async listLiveSessions(@Payload() payload: ListLiveSessionsMessage) {
+    try {
+      return await this.listLiveSessionsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.createLiveSession)
+  async createLiveSession(@Payload() payload: CreateLiveSessionMessage) {
+    try {
+      return await this.createLiveSessionUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.updateLiveSessionStatus)
+  async updateLiveSessionStatus(@Payload() payload: UpdateLiveSessionStatusMessage) {
+    try {
+      return await this.updateLiveSessionStatusUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.remindLiveSession)
+  async remindLiveSession(@Payload() payload: LiveSessionLookupMessage) {
+    try {
+      return await this.remindLiveSessionUseCase.execute({
+        sessionId: payload.sessionId,
+        requesterUserId: payload.requesterUserId,
+      });
     } catch (error) {
       throwRpcException(error);
     }

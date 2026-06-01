@@ -10,6 +10,7 @@ import {
   CreateBrandMessage,
   CreateCategoryMessage,
   CreateOfferMessage,
+  CreateLiveSessionMessage,
   CreateSocialCommentMessage,
   CreateSocialPostMessage,
   DeleteOfferDocumentMessage,
@@ -18,6 +19,7 @@ import {
   FavoriteOffersLookupMessage,
   ChatRequesterMessage,
   ChatThreadLookupMessage,
+  ListLiveSessionsMessage,
   ListOffersMessage,
   ListSocialPostsMessage,
   OfferDocumentUploadSignaturesMessage,
@@ -34,7 +36,9 @@ import {
   SetSocialReactionMessage,
   SocialPostLookupMessage,
   StartChatThreadMessage,
+  LiveSessionLookupMessage,
   UpdateSocialPostVisibilityMessage,
+  UpdateLiveSessionStatusMessage,
   UpdateOfferMessage,
   CATALOG_SERVICE_CLIENT,
 } from '@contracts';
@@ -202,6 +206,22 @@ export class ProductsRpcService {
 
   updateSocialPostVisibility(payload: UpdateSocialPostVisibilityMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.updateSocialPostVisibility, payload);
+  }
+
+  listLiveSessions(payload: ListLiveSessionsMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.listLiveSessions, payload);
+  }
+
+  createLiveSession(payload: CreateLiveSessionMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.createLiveSession, payload);
+  }
+
+  updateLiveSessionStatus(payload: UpdateLiveSessionStatusMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.updateLiveSessionStatus, payload);
+  }
+
+  remindLiveSession(payload: LiveSessionLookupMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.remindLiveSession, payload);
   }
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {

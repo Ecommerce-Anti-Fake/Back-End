@@ -697,6 +697,117 @@ export class ProductRepository {
     });
   }
 
+  listLiveSessions(input: { requesterUserId?: string | null; filter?: 'all' | 'live' | 'upcoming'; q?: string | null }) {
+    const now = new Date();
+    const search = input.q?.trim();
+    const statusWhere =
+      input.filter === 'live'
+        ? { status: 'LIVE' as const }
+        : input.filter === 'upcoming'
+          ? { status: 'SCHEDULED' as const, startAt: { gte: now } }
+          : { status: { not: 'CANCELLED' as const } };
+
+    return this.prisma.liveCommerceSession.findMany({
+      where: {
+        ...statusWhere,
+        ...(search
+          ? {
+              OR: [
+                { title: { contains: search, mode: 'insensitive' as const } },
+                { description: { contains: search, mode: 'insensitive' as const } },
+              ],
+            }
+          : {}),
+      },
+      include: this.liveSessionInclude(input.requesterUserId),
+      orderBy: [{ status: 'asc' }, { startAt: 'asc' }],
+      take: 50,
+    });
+  }
+
+  findShopForLiveSession(shopId: string) {
+    return this.prisma.shop.findUnique({
+      where: { id: shopId },
+      select: {
+        id: true,
+        ownerUserId: true,
+        shopName: true,
+        shopStatus: true,
+      },
+    });
+  }
+
+  findOffersForLiveSession(offerIds: string[]) {
+    return this.prisma.offer.findMany({
+      where: { id: { in: offerIds } },
+      select: {
+        id: true,
+        shopId: true,
+        offerStatus: true,
+        availableQuantity: true,
+      },
+    });
+  }
+
+  createLiveSession(input: {
+    shopId: string;
+    title: string;
+    description?: string | null;
+    coverUrl?: string | null;
+    startAt: Date;
+    playbackUrl?: string | null;
+    offerIds: string[];
+    requesterUserId: string;
+  }) {
+    return this.prisma.liveCommerceSession.create({
+      data: {
+        shopId: input.shopId,
+        title: input.title,
+        description: input.description ?? null,
+        coverUrl: input.coverUrl ?? null,
+        startAt: input.startAt,
+        playbackUrl: input.playbackUrl ?? null,
+        offers: {
+          create: input.offerIds.map((offerId, index) => ({
+            offerId,
+            sortOrder: index,
+          })),
+        },
+      },
+      include: this.liveSessionInclude(input.requesterUserId),
+    });
+  }
+
+  findLiveSessionById(sessionId: string, requesterUserId?: string | null) {
+    return this.prisma.liveCommerceSession.findUnique({
+      where: { id: sessionId },
+      include: this.liveSessionInclude(requesterUserId),
+    });
+  }
+
+  updateLiveSessionStatus(input: { sessionId: string; status: 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED'; requesterUserId: string }) {
+    return this.prisma.liveCommerceSession.update({
+      where: { id: input.sessionId },
+      data: { status: input.status },
+      include: this.liveSessionInclude(input.requesterUserId),
+    });
+  }
+
+  async remindLiveSession(input: { sessionId: string; userId: string }) {
+    await this.prisma.liveSessionReminder.upsert({
+      where: {
+        sessionId_userId: {
+          sessionId: input.sessionId,
+          userId: input.userId,
+        },
+      },
+      create: input,
+      update: {},
+    });
+
+    return this.findLiveSessionById(input.sessionId, input.userId);
+  }
+
   private createNotification(input: {
     userId: string;
     notificationType: string;
@@ -801,6 +912,47 @@ export class ProductRepository {
           comments: true,
           reactions: true,
           shares: true,
+        },
+      },
+    };
+  }
+
+  private liveSessionInclude(requesterUserId?: string | null) {
+    return {
+      shop: {
+        select: {
+          shopName: true,
+        },
+      },
+      offers: {
+        orderBy: {
+          sortOrder: 'asc' as const,
+        },
+        include: {
+          offer: {
+            include: {
+              media: {
+                include: {
+                  mediaAsset: true,
+                },
+                orderBy: {
+                  createdAt: 'desc' as const,
+                },
+              },
+            },
+          },
+        },
+      },
+      reminders: requesterUserId
+        ? {
+            where: {
+              userId: requesterUserId,
+            },
+          }
+        : false,
+      _count: {
+        select: {
+          reminders: true,
         },
       },
     };

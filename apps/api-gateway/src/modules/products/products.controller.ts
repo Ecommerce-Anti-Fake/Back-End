@@ -20,6 +20,7 @@ import {
   ChatThreadResponseDto,
   CreateBrandDto,
   CreateCategoryDto,
+  CreateLiveSessionDto,
   CreateOfferDto,
   CreateOfferReviewDto,
   CreateSocialCommentDto,
@@ -27,6 +28,7 @@ import {
   GetOfferDocumentUploadSignaturesDto,
   GetOfferMediaUploadSignaturesDto,
   GetReviewMediaUploadSignaturesDto,
+  ListLiveSessionsQueryDto,
   ListSocialPostsQueryDto,
   ListOffersQueryDto,
   OfferDocumentResponseDto,
@@ -40,9 +42,11 @@ import {
   SendChatMessageDto,
   ShippingCarrierResponseDto,
   SetSocialReactionDto,
+  LiveSessionResponseDto,
   SocialPostResponseDto,
   StartChatThreadDto,
   UpdateSocialPostVisibilityDto,
+  UpdateLiveSessionStatusDto,
   UpdateOfferDto,
 } from '@products';
 import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
@@ -514,6 +518,84 @@ export class ProductsController {
       requesterUserId,
       requesterRole: requester?.role,
       visibility: dto.visibility,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach phien live commerce' })
+  @ApiOkResponse({
+    description: 'Danh sach phien live commerce.',
+    type: LiveSessionResponseDto,
+    isArray: true,
+  })
+  @Get('live/sessions')
+  listLiveSessions(@Query() query: ListLiveSessionsQueryDto, @CurrentUser() requester?: AuthenticatedUser) {
+    return this.productsRpcService.listLiveSessions({
+      requesterUserId: requester?.id ?? null,
+      filter: query.filter ?? 'all',
+      q: query.q ?? null,
+    });
+  }
+
+  @ApiOperation({ summary: 'Seller tao lich live commerce' })
+  @ApiBearerAuth('access-token')
+  @ApiCreatedResponse({
+    description: 'Phien live commerce da duoc tao.',
+    type: LiveSessionResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('live/sessions')
+  createLiveSession(@CurrentUserId() requesterUserId: string, @Body() dto: CreateLiveSessionDto) {
+    return this.productsRpcService.createLiveSession({
+      requesterUserId,
+      shopId: dto.shopId,
+      title: dto.title,
+      description: dto.description ?? null,
+      coverUrl: dto.coverUrl ?? null,
+      startAt: dto.startAt,
+      playbackUrl: dto.playbackUrl ?? null,
+      offerIds: dto.offerIds ?? [],
+    });
+  }
+
+  @ApiOperation({ summary: 'Cap nhat trang thai phien live commerce' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Phien live commerce sau khi cap nhat trang thai.',
+    type: LiveSessionResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Patch('live/sessions/:sessionId/status')
+  updateLiveSessionStatus(
+    @Param('sessionId') sessionId: string,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester: AuthenticatedUser | undefined,
+    @Body() dto: UpdateLiveSessionStatusDto,
+  ) {
+    return this.productsRpcService.updateLiveSessionStatus({
+      sessionId,
+      requesterUserId,
+      requesterRole: requester?.role,
+      status: dto.status,
+    });
+  }
+
+  @ApiOperation({ summary: 'Dang ky nhac lich live commerce' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Phien live commerce sau khi dang ky nhac lich.',
+    type: LiveSessionResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('live/sessions/:sessionId/reminders')
+  remindLiveSession(
+    @Param('sessionId') sessionId: string,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester: AuthenticatedUser | undefined,
+  ) {
+    return this.productsRpcService.remindLiveSession({
+      sessionId,
+      requesterUserId,
+      requesterRole: requester?.role,
     });
   }
 

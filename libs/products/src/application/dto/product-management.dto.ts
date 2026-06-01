@@ -25,6 +25,8 @@ const OFFER_SORTS = ['featured', 'newest', 'price-asc', 'price-desc'] as const;
 const SOCIAL_POST_TYPES = ['SHARE', 'QUESTION', 'PRODUCT_SHARE'] as const;
 const SOCIAL_POST_VISIBILITIES = ['PUBLIC', 'HIDDEN'] as const;
 const SOCIAL_REACTION_TYPES = ['LIKE'] as const;
+const LIVE_SESSION_STATUSES = ['SCHEDULED', 'LIVE', 'ENDED', 'CANCELLED'] as const;
+const LIVE_SESSION_FILTERS = ['all', 'live', 'upcoming'] as const;
 
 export class CreateBrandDto {
   @ApiProperty({ example: 'Brand ABC' })
@@ -406,6 +408,123 @@ export class SocialPostResponseDto {
 
   @ApiProperty({ type: SocialCommentResponseDto, isArray: true })
   comments!: SocialCommentResponseDto[];
+
+  @ApiProperty()
+  createdAt!: Date;
+}
+
+export class ListLiveSessionsQueryDto {
+  @ApiPropertyOptional({ enum: LIVE_SESSION_FILTERS, example: 'all' })
+  @IsOptional()
+  @IsIn(LIVE_SESSION_FILTERS)
+  filter?: (typeof LIVE_SESSION_FILTERS)[number];
+
+  @ApiPropertyOptional({ example: 'deal chinh hang' })
+  @IsOptional()
+  @IsString()
+  q?: string;
+}
+
+export class CreateLiveSessionDto {
+  @ApiProperty({ example: 'shop-id' })
+  @IsString()
+  shopId!: string;
+
+  @ApiProperty({ example: 'Live sale hang chinh hang' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(255)
+  title!: string;
+
+  @ApiPropertyOptional({ example: 'Gioi thieu san pham co QR xac thuc.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  description?: string | null;
+
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/live-cover.jpg' })
+  @IsOptional()
+  @IsString()
+  coverUrl?: string | null;
+
+  @ApiProperty({ example: '2026-06-02T13:00:00.000Z' })
+  @IsString()
+  startAt!: string;
+
+  @ApiPropertyOptional({ example: 'https://video.example.com/embed/live-1' })
+  @IsOptional()
+  @IsString()
+  playbackUrl?: string | null;
+
+  @ApiPropertyOptional({ example: ['offer-id-1', 'offer-id-2'], isArray: true })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  offerIds?: string[];
+}
+
+export class UpdateLiveSessionStatusDto {
+  @ApiProperty({ enum: LIVE_SESSION_STATUSES, example: 'LIVE' })
+  @IsIn(LIVE_SESSION_STATUSES)
+  status!: (typeof LIVE_SESSION_STATUSES)[number];
+}
+
+export class LiveSessionOfferResponseDto {
+  @ApiProperty()
+  offerId!: string;
+
+  @ApiProperty()
+  title!: string;
+
+  @ApiProperty()
+  price!: number;
+
+  @ApiProperty()
+  currency!: string;
+
+  @ApiProperty()
+  availableQuantity!: number;
+
+  @ApiPropertyOptional()
+  thumbnailUrl?: string | null;
+}
+
+export class LiveSessionResponseDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  shopId!: string;
+
+  @ApiProperty()
+  shopName!: string;
+
+  @ApiProperty()
+  title!: string;
+
+  @ApiPropertyOptional()
+  description?: string | null;
+
+  @ApiPropertyOptional()
+  coverUrl?: string | null;
+
+  @ApiProperty()
+  startAt!: Date;
+
+  @ApiProperty({ enum: LIVE_SESSION_STATUSES })
+  status!: string;
+
+  @ApiPropertyOptional()
+  playbackUrl?: string | null;
+
+  @ApiProperty()
+  reminderCount!: number;
+
+  @ApiProperty()
+  viewerHasReminder!: boolean;
+
+  @ApiProperty({ type: LiveSessionOfferResponseDto, isArray: true })
+  offers!: LiveSessionOfferResponseDto[];
 
   @ApiProperty()
   createdAt!: Date;

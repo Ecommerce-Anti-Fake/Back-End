@@ -93,6 +93,10 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   removeSocialReaction: 'products.remove-social-reaction',
   shareSocialPost: 'products.share-social-post',
   updateSocialPostVisibility: 'products.update-social-post-visibility',
+  listLiveSessions: 'products.list-live-sessions',
+  createLiveSession: 'products.create-live-session',
+  updateLiveSessionStatus: 'products.update-live-session-status',
+  remindLiveSession: 'products.remind-live-session',
   allocateOfferBatches: 'products.allocate-offer-batches',
   findOfferBatchLinks: 'products.find-offer-batch-links',
   getOfferMediaUploadSignatures: 'products.get-offer-media-upload-signatures',
@@ -589,6 +593,33 @@ export type SetSocialReactionMessage = SocialPostLookupMessage & {
 
 export type UpdateSocialPostVisibilityMessage = SocialPostLookupMessage & {
   visibility: 'PUBLIC' | 'HIDDEN';
+};
+
+export type ListLiveSessionsMessage = {
+  requesterUserId?: string | null;
+  filter?: 'all' | 'live' | 'upcoming';
+  q?: string | null;
+};
+
+export type CreateLiveSessionMessage = {
+  requesterUserId: string;
+  shopId: string;
+  title: string;
+  description?: string | null;
+  coverUrl?: string | null;
+  startAt: string;
+  playbackUrl?: string | null;
+  offerIds?: string[];
+};
+
+export type LiveSessionLookupMessage = {
+  sessionId: string;
+  requesterUserId: string;
+  requesterRole?: string | null;
+};
+
+export type UpdateLiveSessionStatusMessage = LiveSessionLookupMessage & {
+  status: 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED';
 };
 
 export type CreateOfferMessage = {
