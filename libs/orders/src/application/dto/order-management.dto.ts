@@ -4,7 +4,7 @@ import { IsArray, IsIn, IsInt, IsOptional, IsString, IsUrl, Max, Min, ValidateNe
 
 const ADMIN_DISPUTE_STATUSES = ['OPEN', 'RESOLVED', 'REFUNDED'] as const;
 const ADMIN_DISPUTE_SORT_FIELDS = ['openedAt', 'orderId', 'disputeStatus'] as const;
-const REPORT_TARGET_TYPES = ['ORDER', 'OFFER', 'SHOP'] as const;
+const REPORT_TARGET_TYPES = ['ORDER', 'OFFER', 'SHOP', 'SOCIAL_POST', 'SOCIAL_COMMENT'] as const;
 const REPORT_STATUSES = ['OPEN', 'IN_REVIEW', 'RESOLVED', 'REJECTED'] as const;
 const RISK_TARGET_TYPES = ['SHOP', 'OFFER', 'BATCH'] as const;
 const RISK_LEVELS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
@@ -698,7 +698,7 @@ export class CreateReportDto {
   @ApiProperty({ example: 'ORDER', enum: REPORT_TARGET_TYPES })
   @IsString()
   @IsIn(REPORT_TARGET_TYPES)
-  targetType!: 'ORDER' | 'OFFER' | 'SHOP';
+  targetType!: 'ORDER' | 'OFFER' | 'SHOP' | 'SOCIAL_POST' | 'SOCIAL_COMMENT';
 
   @ApiProperty({ example: 'target-id' })
   @IsString()
@@ -762,7 +762,7 @@ export class AdminReportQueryDto {
   @IsOptional()
   @IsString()
   @IsIn(REPORT_TARGET_TYPES)
-  targetType?: 'ORDER' | 'OFFER' | 'SHOP';
+  targetType?: 'ORDER' | 'OFFER' | 'SHOP' | 'SOCIAL_POST' | 'SOCIAL_COMMENT';
 
   @ApiPropertyOptional({ example: 'hang gia' })
   @IsOptional()

@@ -918,9 +918,11 @@ export type AdminDisputeDetailMessage = {
 
 export type AdminDisputeSummaryMessage = Record<string, never>;
 
+export type ReportTargetType = 'ORDER' | 'OFFER' | 'SHOP' | 'SOCIAL_POST' | 'SOCIAL_COMMENT';
+
 export type CreateReportMessage = {
   requesterUserId: string;
-  targetType: 'ORDER' | 'OFFER' | 'SHOP';
+  targetType: ReportTargetType;
   targetId: string;
   reason: string;
   description?: string | null;
@@ -932,7 +934,7 @@ export type MyReportsLookupMessage = {
 
 export type AdminReportsLookupMessage = {
   reportStatus?: 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'REJECTED';
-  targetType?: 'ORDER' | 'OFFER' | 'SHOP';
+  targetType?: ReportTargetType;
   search?: string;
   page?: number;
   pageSize?: number;

@@ -49,6 +49,30 @@ export class UpdateAdminReportUseCase {
       },
     });
 
+    if (report.targetType === 'SOCIAL_POST' || report.targetType === 'SOCIAL_COMMENT') {
+      const visibility = input.reportStatus === 'RESOLVED' ? 'HIDDEN' : input.reportStatus === 'REJECTED' ? 'PUBLIC' : null;
+      if (visibility) {
+        await this.ordersRepository.updateSocialReportTargetVisibility({
+          targetType: report.targetType,
+          targetId: report.targetId,
+          visibility,
+          actorUserId: input.requesterUserId,
+        });
+        await this.ordersRepository.createAuditLog({
+          targetType: report.targetType,
+          targetId: report.targetId,
+          actorUserId: input.requesterUserId,
+          action: 'SOCIAL_CONTENT_VISIBILITY_CHANGED',
+          toStatus: visibility,
+          note: input.internalNote ?? null,
+          metadata: {
+            reportId: report.id,
+            reportStatus: input.reportStatus,
+          },
+        });
+      }
+    }
+
     await this.recalculateRiskTargetsUseCase.executeForReport({
       targetType: report.targetType,
       targetId: report.targetId,

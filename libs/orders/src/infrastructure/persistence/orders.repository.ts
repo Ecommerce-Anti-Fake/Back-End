@@ -627,6 +627,37 @@ export class OrdersRepository {
     });
   }
 
+  findSocialPostReportTarget(postId: string) {
+    return this.prisma.socialPost.findUnique({
+      where: { id: postId },
+      select: {
+        id: true,
+        authorUserId: true,
+        body: true,
+        visibility: true,
+      },
+    });
+  }
+
+  findSocialCommentReportTarget(commentId: string) {
+    return this.prisma.socialComment.findUnique({
+      where: { id: commentId },
+      select: {
+        id: true,
+        postId: true,
+        authorUserId: true,
+        body: true,
+        visibility: true,
+        post: {
+          select: {
+            id: true,
+            visibility: true,
+          },
+        },
+      },
+    });
+  }
+
   findDistributionNodeById(id: string) {
     return this.prisma.distributionNode.findUnique({
       where: { id },
@@ -1554,7 +1585,7 @@ export class OrdersRepository {
 
   async findReportsForAdmin(filters?: {
     reportStatus?: 'OPEN' | 'IN_REVIEW' | 'RESOLVED' | 'REJECTED';
-    targetType?: 'ORDER' | 'OFFER' | 'SHOP';
+    targetType?: 'ORDER' | 'OFFER' | 'SHOP' | 'SOCIAL_POST' | 'SOCIAL_COMMENT';
     search?: string;
     page?: number;
     pageSize?: number;
@@ -1611,6 +1642,37 @@ export class OrdersRepository {
       },
       ...reportWithReporterArgs,
     });
+  }
+
+  async updateSocialReportTargetVisibility(input: {
+    targetType: string;
+    targetId: string;
+    visibility: 'PUBLIC' | 'HIDDEN';
+    actorUserId: string;
+  }) {
+    if (input.targetType === 'SOCIAL_POST') {
+      return this.prisma.socialPost.update({
+        where: { id: input.targetId },
+        data: {
+          visibility: input.visibility,
+          hiddenAt: input.visibility === 'HIDDEN' ? new Date() : null,
+          hiddenByUserId: input.visibility === 'HIDDEN' ? input.actorUserId : null,
+        },
+        select: { id: true },
+      });
+    }
+
+    if (input.targetType === 'SOCIAL_COMMENT') {
+      return this.prisma.socialComment.update({
+        where: { id: input.targetId },
+        data: {
+          visibility: input.visibility,
+        },
+        select: { id: true },
+      });
+    }
+
+    return null;
   }
 
   findRiskScoreByTarget(targetType: RiskTargetType, targetId: string): Promise<RiskScoreRecord | null> {

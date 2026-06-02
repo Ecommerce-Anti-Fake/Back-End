@@ -12,6 +12,8 @@ describe('CreateReportUseCase', () => {
     findOrderById: jest.fn(),
     findOfferReportTarget: jest.fn(),
     findShopReportTarget: jest.fn(),
+    findSocialPostReportTarget: jest.fn(),
+    findSocialCommentReportTarget: jest.fn(),
     findOpenReportByTarget: jest.fn(),
     createReport: jest.fn(),
     upsertReportModerationCase: jest.fn(),
@@ -107,9 +109,73 @@ describe('CreateReportUseCase', () => {
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
+
+  it('should create a social post report and open moderation case', async () => {
+    ordersRepositoryMock.findSocialPostReportTarget.mockResolvedValueOnce({
+      id: 'post-1',
+      authorUserId: 'author-user-1',
+      body: 'Bai viet nghi van spam hang gia tren bang tin cong dong',
+      visibility: 'PUBLIC',
+    });
+    ordersRepositoryMock.findOpenReportByTarget.mockResolvedValueOnce(null);
+    ordersRepositoryMock.createReport.mockResolvedValueOnce(
+      createReportRecord({
+        targetType: 'SOCIAL_POST',
+        targetId: 'post-1',
+        reason: 'Spam hang gia',
+      }),
+    );
+
+    const result = await useCase.execute({
+      requesterUserId: 'buyer-user-1',
+      targetType: 'SOCIAL_POST',
+      targetId: 'post-1',
+      reason: 'Spam hang gia',
+    });
+
+    expect(ordersRepositoryMock.createReport).toHaveBeenCalledWith({
+      reporterUserId: 'buyer-user-1',
+      targetType: 'SOCIAL_POST',
+      targetId: 'post-1',
+      reason: 'Spam hang gia',
+    });
+    expect(recalculateRiskTargetsUseCaseMock.executeForReport).toHaveBeenCalledWith({
+      targetType: 'SOCIAL_POST',
+      targetId: 'post-1',
+      actorUserId: 'buyer-user-1',
+    });
+    expect(result).toMatchObject({
+      targetType: 'SOCIAL_POST',
+      targetId: 'post-1',
+      targetLabel: 'Bai viet nghi van spam hang gia tren bang tin cong dong',
+    });
+  });
+
+  it('should reject reporting own social comment', async () => {
+    ordersRepositoryMock.findSocialCommentReportTarget.mockResolvedValueOnce({
+      id: 'comment-1',
+      postId: 'post-1',
+      authorUserId: 'buyer-user-1',
+      body: 'Binh luan cua toi',
+      visibility: 'PUBLIC',
+      post: {
+        id: 'post-1',
+        visibility: 'PUBLIC',
+      },
+    });
+
+    await expect(
+      useCase.execute({
+        requesterUserId: 'buyer-user-1',
+        targetType: 'SOCIAL_COMMENT',
+        targetId: 'comment-1',
+        reason: 'Spam',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
 });
 
-function createReportRecord() {
+function createReportRecord(overrides: Record<string, unknown> = {}) {
   return {
     id: 'report-1',
     reporterUserId: 'buyer-user-1',
@@ -123,6 +189,7 @@ function createReportRecord() {
       displayName: 'Buyer',
       email: 'buyer@example.com',
     },
+    ...overrides,
   };
 }
 

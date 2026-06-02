@@ -3,7 +3,8 @@ import { OrdersRepository } from '../../infrastructure/persistence/orders.reposi
 import { RecalculateRiskTargetsUseCase } from './recalculate-risk-targets.use-case';
 import { toReportResponse } from './reports.mapper';
 
-const REPORT_TARGET_TYPES = ['ORDER', 'OFFER', 'SHOP'] as const;
+const REPORT_TARGET_TYPES = ['ORDER', 'OFFER', 'SHOP', 'SOCIAL_POST', 'SOCIAL_COMMENT'] as const;
+type ReportTargetType = (typeof REPORT_TARGET_TYPES)[number];
 
 @Injectable()
 export class CreateReportUseCase {
@@ -14,7 +15,7 @@ export class CreateReportUseCase {
 
   async execute(input: {
     requesterUserId: string;
-    targetType: 'ORDER' | 'OFFER' | 'SHOP';
+    targetType: ReportTargetType;
     targetId: string;
     reason: string;
     description?: string | null;
@@ -32,7 +33,7 @@ export class CreateReportUseCase {
     const targetLabel = await this.assertTargetVisibleToReporter(input);
     const existing = await this.ordersRepository.findOpenReportByTarget({
       reporterUserId: input.requesterUserId,
-      targetType: input.targetType,
+    targetType: input.targetType,
       targetId: input.targetId,
     });
     if (existing) {
@@ -77,7 +78,7 @@ export class CreateReportUseCase {
 
   private async assertTargetVisibleToReporter(input: {
     requesterUserId: string;
-    targetType: 'ORDER' | 'OFFER' | 'SHOP';
+    targetType: ReportTargetType;
     targetId: string;
   }) {
     if (input.targetType === 'ORDER') {
@@ -99,6 +100,28 @@ export class CreateReportUseCase {
         throw new NotFoundException('Report target not found');
       }
       return offer.title;
+    }
+
+    if (input.targetType === 'SOCIAL_POST') {
+      const post = await this.ordersRepository.findSocialPostReportTarget(input.targetId);
+      if (!post || post.visibility !== 'PUBLIC') {
+        throw new NotFoundException('Report target not found');
+      }
+      if (post.authorUserId === input.requesterUserId) {
+        throw new ForbiddenException('Cannot report your own social post');
+      }
+      return post.body.length > 80 ? `${post.body.slice(0, 80)}...` : post.body;
+    }
+
+    if (input.targetType === 'SOCIAL_COMMENT') {
+      const comment = await this.ordersRepository.findSocialCommentReportTarget(input.targetId);
+      if (!comment || comment.visibility !== 'PUBLIC' || comment.post.visibility !== 'PUBLIC') {
+        throw new NotFoundException('Report target not found');
+      }
+      if (comment.authorUserId === input.requesterUserId) {
+        throw new ForbiddenException('Cannot report your own social comment');
+      }
+      return comment.body.length > 80 ? `${comment.body.slice(0, 80)}...` : comment.body;
     }
 
     const shop = await this.ordersRepository.findShopReportTarget(input.targetId);
