@@ -25,8 +25,9 @@ export const REALTIME_REDIS_NAMESPACES = {
 
 export const REALTIME_REDIS_KEY_TTLS_SECONDS = {
   rateLimit: 60,
-  presence: 90,
+  presence: 45,
   session: 900,
+  typing: 8,
   liveCounter: 300,
   cache: 300,
 } as const;
@@ -34,6 +35,8 @@ export const REALTIME_REDIS_KEY_TTLS_SECONDS = {
 export const REALTIME_OPERATION_METRICS = {
   websocketConnections: 'realtime.websocket.connections',
   websocketConnectionErrors: 'realtime.websocket.connection_errors',
+  websocketPresenceHeartbeats: 'realtime.websocket.presence_heartbeats',
+  websocketTypingEvents: 'realtime.websocket.typing_events',
   sseReconnects: 'realtime.sse.reconnects',
   rateLimitHits: 'realtime.rate_limit.hits',
   failedDeliveries: 'realtime.delivery.failed',

@@ -11,7 +11,17 @@ describe('ChatRealtimeService', () => {
   const redisRealtimeConfigService = {
     getConfig: jest.fn().mockReturnValue({ enabled: false, url: null }),
   };
-  const service = new ChatRealtimeService(jwtService as never, productsRpcService as never, redisRealtimeConfigService as never);
+  const presenceService = {
+    heartbeat: jest.fn(),
+    listOnlineUserIds: jest.fn(),
+    markTyping: jest.fn(),
+  };
+  const service = new ChatRealtimeService(
+    jwtService as never,
+    productsRpcService as never,
+    redisRealtimeConfigService as never,
+    presenceService as never,
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -47,6 +57,45 @@ describe('ChatRealtimeService', () => {
     });
     expect(join).not.toHaveBeenCalled();
     expect(ack).toHaveBeenCalledWith({ ok: false, error: 'Only chat participants can view this thread' });
+  });
+
+  it('emits room-scoped presence only after room authorization passes', async () => {
+    const join = jest.fn();
+    const emit = jest.fn();
+    const to = jest.fn().mockReturnValue({ emit });
+    (service as never as { io: { to: typeof to } }).io = { to };
+    productsRpcService.getChatThread.mockResolvedValue({
+      id: 'thread-1',
+      buyerUserId: 'buyer-1',
+      sellerUserId: 'seller-1',
+    });
+    presenceService.listOnlineUserIds.mockResolvedValue(['buyer-1']);
+    const socket = {
+      join,
+      data: {},
+    };
+
+    await service.joinThread(socket as never, { userId: 'buyer-1', role: 'user' }, { threadId: 'thread-1' }, jest.fn());
+
+    expect(join).toHaveBeenCalledWith('chat:thread:thread-1');
+    expect(to).toHaveBeenCalledWith('chat:thread:thread-1');
+    expect(emit).toHaveBeenCalledWith('presence:update', {
+      threadId: 'thread-1',
+      onlineUserIds: ['buyer-1'],
+    });
+  });
+
+  it('rejects typing events before authorized room join', async () => {
+    const emit = jest.fn();
+
+    await service.markTyping(
+      { data: {}, emit } as never,
+      { userId: 'buyer-1', role: 'user' },
+      { threadId: 'thread-1', isTyping: true },
+    );
+
+    expect(presenceService.markTyping).not.toHaveBeenCalled();
+    expect(emit).toHaveBeenCalledWith('chat:error', { error: 'Join the chat thread before sending typing events' });
   });
 
   it('persists messages before broadcasting to the room', async () => {

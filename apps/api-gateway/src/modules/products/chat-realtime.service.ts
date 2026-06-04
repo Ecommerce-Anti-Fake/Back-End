@@ -1,6 +1,12 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { REALTIME_OPERATION_METRICS, RedisRealtimeConfigService, createSocketIoRedisAdapter } from '@common';
+import {
+  PRESENCE_HEARTBEAT_INTERVAL_MS,
+  REALTIME_OPERATION_METRICS,
+  RealtimePresenceService,
+  RedisRealtimeConfigService,
+  createSocketIoRedisAdapter,
+} from '@common';
 import type { AccessTokenPayload } from '@contracts';
 import { Server, Socket } from 'socket.io';
 import { ProductsRpcService } from './products-rpc.service';
@@ -20,6 +26,17 @@ type ChatSendPayload = {
   clientMessageId?: string | null;
 };
 
+type ChatTypingPayload = {
+  threadId?: string;
+  isTyping?: boolean;
+};
+
+type ChatThreadRecord = {
+  id?: string;
+  buyerUserId?: string;
+  sellerUserId?: string;
+};
+
 type ChatAck =
   | { ok: true; thread?: unknown; clientMessageId?: string | null }
   | { ok: false; error: string };
@@ -36,6 +53,7 @@ export class ChatRealtimeService implements OnModuleDestroy {
     private readonly jwtService: JwtService,
     private readonly productsRpcService: ProductsRpcService,
     private readonly redisRealtimeConfigService: RedisRealtimeConfigService,
+    private readonly presenceService: RealtimePresenceService,
   ) {}
 
   async bind(httpServer: unknown) {
@@ -95,17 +113,19 @@ export class ChatRealtimeService implements OnModuleDestroy {
     }
 
     try {
-      const thread = await this.productsRpcService.getChatThread({
+      const thread = (await this.productsRpcService.getChatThread({
         threadId,
         requesterUserId: principal.userId,
         requesterRole: principal.role,
-      });
+      })) as ChatThreadRecord;
       await socket.join(this.roomName(threadId));
+      this.joinedThreads(socket).add(threadId);
       this.logger.log({
         metric: 'realtime.websocket.room_join',
         userId: principal.userId,
         room: this.roomName(threadId),
       });
+      await this.emitThreadPresence(threadId, thread);
       ack?.({ ok: true, thread });
     } catch (error) {
       this.logger.warn({
@@ -155,6 +175,31 @@ export class ChatRealtimeService implements OnModuleDestroy {
     }
   }
 
+  async markTyping(socket: Socket, principal: ChatSocketPrincipal, payload: ChatTypingPayload) {
+    const threadId = payload.threadId?.trim();
+    if (!threadId || !this.joinedThreads(socket).has(threadId)) {
+      socket.emit('chat:error', { error: 'Join the chat thread before sending typing events' });
+      return;
+    }
+
+    await this.presenceService.markTyping({
+      scope: this.roomName(threadId),
+      userId: principal.userId,
+      isTyping: Boolean(payload.isTyping),
+    });
+    socket.to(this.roomName(threadId)).emit('chat:typing', {
+      threadId,
+      userId: principal.userId,
+      isTyping: Boolean(payload.isTyping),
+    });
+    this.logger.log({
+      metric: REALTIME_OPERATION_METRICS.websocketTypingEvents,
+      userId: principal.userId,
+      threadId,
+      isTyping: Boolean(payload.isTyping),
+    });
+  }
+
   private async handleConnection(socket: Socket) {
     let principal: ChatSocketPrincipal;
     try {
@@ -174,6 +219,7 @@ export class ChatRealtimeService implements OnModuleDestroy {
       userId: principal.userId,
       connected: true,
     });
+    await this.recordHeartbeat(socket, principal);
 
     socket.on('chat:join', (payload: ChatJoinPayload, ack?: ChatAckCallback) => {
       void this.joinThread(socket, principal, payload ?? {}, ack);
@@ -181,6 +227,14 @@ export class ChatRealtimeService implements OnModuleDestroy {
 
     socket.on('chat:send', (payload: ChatSendPayload, ack?: ChatAckCallback) => {
       void this.sendMessage(socket, principal, payload ?? {}, ack);
+    });
+
+    socket.on('presence:heartbeat', (ack?: (payload: { ok: true }) => void) => {
+      void this.recordHeartbeat(socket, principal).then(() => ack?.({ ok: true }));
+    });
+
+    socket.on('chat:typing', (payload: ChatTypingPayload) => {
+      void this.markTyping(socket, principal, payload ?? {});
     });
 
     socket.on('disconnect', (reason) => {
@@ -191,6 +245,49 @@ export class ChatRealtimeService implements OnModuleDestroy {
         reason,
       });
     });
+  }
+
+  private async recordHeartbeat(socket: Socket, principal: ChatSocketPrincipal) {
+    await this.presenceService.heartbeat({
+      userId: principal.userId,
+      sessionId: socket.id,
+      metadata: {
+        transport: socket.conn.transport.name,
+      },
+    });
+    this.logger.log({
+      metric: REALTIME_OPERATION_METRICS.websocketPresenceHeartbeats,
+      userId: principal.userId,
+      sessionId: socket.id,
+      intervalMs: PRESENCE_HEARTBEAT_INTERVAL_MS,
+    });
+    await this.emitPresenceToJoinedThreads(socket, principal.userId);
+  }
+
+  private async emitThreadPresence(threadId: string, thread: ChatThreadRecord) {
+    const userIds = [thread.buyerUserId, thread.sellerUserId].filter((value): value is string => Boolean(value));
+    const onlineUserIds = await this.presenceService.listOnlineUserIds(userIds);
+    this.io?.to(this.roomName(threadId)).emit('presence:update', {
+      threadId,
+      onlineUserIds,
+    });
+  }
+
+  private async emitPresenceToJoinedThreads(socket: Socket, userId: string) {
+    for (const threadId of this.joinedThreads(socket)) {
+      this.io?.to(this.roomName(threadId)).emit('presence:update', {
+        threadId,
+        userId,
+        online: true,
+      });
+    }
+  }
+
+  private joinedThreads(socket: Socket) {
+    if (!socket.data.joinedChatThreads) {
+      socket.data.joinedChatThreads = new Set<string>();
+    }
+    return socket.data.joinedChatThreads as Set<string>;
   }
 
   private async attachRedisAdapter(io: Server) {
