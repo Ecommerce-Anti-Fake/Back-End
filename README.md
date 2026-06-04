@@ -93,6 +93,39 @@ Backend can Firebase Admin service account qua bien moi truong:
 
 `FIREBASE_PRIVATE_KEY` co the luu dang mot dong voi `\n`; service se chuyen ve newline that luc khoi tao Firebase Admin. Khong commit service account JSON hoac private key vao repo.
 
+## Redis / Realtime Foundation
+
+Redis is optional by default and is only used for ephemeral realtime coordination. PostgreSQL remains the durable source of truth.
+
+Local disabled fallback:
+
+- Leave `REDIS_ENABLED` unset and do not set `REDIS_URL` or `REDIS_HOST`.
+
+Local Redis:
+
+- `REDIS_ENABLED=true`
+- Optional: `REDIS_HOST=127.0.0.1`
+- Optional: `REDIS_PORT=6379`
+- Optional: `REDIS_DB=0`
+
+Production Redis:
+
+- `REDIS_URL=redis://user:password@host:6379/0`
+- Optional: `REDIS_KEY_PREFIX=acf`
+- Optional: `REDIS_DEFAULT_TTL_SECONDS=300`
+- Optional: `REDIS_CONNECTION_NAME=acf-realtime`
+
+RT0 shared conventions live in `libs/common/src/realtime`:
+
+- Socket.IO adapter/pubsub namespace: `rt:socket-io`, `rt:pubsub`
+- Rate limiting namespace: `rt:rate-limit`, default TTL 60 seconds
+- Presence namespace: `rt:presence`, default TTL 90 seconds
+- Session namespace: `rt:session`, default TTL 900 seconds
+- Live counter namespace: `rt:live-counter`, default TTL 300 seconds
+- Cache namespace: `rt:cache`, default TTL 300 seconds
+
+Do not store durable business state in Redis. Realtime keys must either expire or be recoverable from PostgreSQL or client reconnect/refetch state.
+
 ## Build
 
 ```bash

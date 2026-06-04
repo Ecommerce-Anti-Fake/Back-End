@@ -44,13 +44,16 @@
     "@nestjs/swagger": "^11.2.6",
     "@prisma/adapter-pg": "^7.6.0",
     "@prisma/client": "^7.6.0",
+    "@socket.io/redis-adapter": "^8.3.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "firebase": "^12.14.0",
     "firebase-admin": "^13.10.0",
     "pg": "^8.20.0",
+    "redis": "^6.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "socket.io": "^4.8.3",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
