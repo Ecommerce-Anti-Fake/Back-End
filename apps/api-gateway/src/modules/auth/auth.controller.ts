@@ -17,6 +17,7 @@ import {
   AccountSecurityResponseDto,
   AuthUserResponseDto,
   ChangePasswordDto,
+  FirebaseLoginDto,
   ForgotPasswordDto,
   ForgotPasswordResponseDto,
   LoginDto,
@@ -64,6 +65,23 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authRpcService.login(dto);
+  }
+
+  @ApiOperation({ summary: 'Dang nhap/dang ky bang Firebase Auth da xac thuc' })
+  @ApiBody({ type: FirebaseLoginDto })
+  @ApiOkResponse({
+    description: 'Firebase token hop le, user duoc dong bo va cap token noi bo.',
+    type: LoginResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Firebase token khong hop le.',
+  })
+  @ApiForbiddenResponse({
+    description: 'Email chua xac thuc hoac tai khoan khong active.',
+  })
+  @Post('firebase-login')
+  firebaseLogin(@Body() dto: FirebaseLoginDto) {
+    return this.authRpcService.firebaseLogin(dto);
   }
 
   @ApiOperation({ summary: 'Dung refresh token hien tai de rotate sang cap token moi' })
@@ -146,9 +164,9 @@ export class AuthController {
   @Get('security-decisions')
   securityDecisions(): AccountSecurityDecisionsResponseDto {
     return {
-      emailProvider: 'DEFERRED',
-      otpProvider: 'DEFERRED',
-      oauthLogin: 'DEFERRED',
+      emailProvider: 'FIREBASE_EMAIL_VERIFICATION_LINK',
+      otpProvider: 'FIREBASE_PHONE_AUTH',
+      oauthLogin: 'FIREBASE_GOOGLE_AUTH',
       resetTokenReturnedByDefault: false,
     };
   }

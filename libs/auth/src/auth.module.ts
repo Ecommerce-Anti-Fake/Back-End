@@ -9,6 +9,7 @@ import { PrismaModule } from '@database/prisma/prisma.module';
 import { PasswordHasherService } from './application/services';
 import {
   ChangePasswordUseCase,
+  FirebaseLoginUseCase,
   LoginUseCase,
   LogoutUseCase,
   RefreshTokenUseCase,
@@ -16,6 +17,7 @@ import {
   RequestPasswordResetUseCase,
   ResetPasswordUseCase,
 } from './application/use-cases';
+import { FirebaseTokenVerifierService } from './application/services';
 import { JwtTokenAdapter, UsersIdentityAdapter } from './infrastructure/adapters';
 import { AuthSessionRepository, PasswordResetTokenRepository } from './infrastructure/persistence';
 import { AuthRpcController } from './presentation/rpc/auth.rpc-controller';
@@ -60,7 +62,9 @@ import { AuthRpcController } from './presentation/rpc/auth.rpc-controller';
   controllers: [AuthRpcController],
   providers: [
     PasswordHasherService,
+    FirebaseTokenVerifierService,
     LoginUseCase,
+    FirebaseLoginUseCase,
     RegisterUseCase,
     LogoutUseCase,
     RefreshTokenUseCase,

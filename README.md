@@ -76,6 +76,23 @@ Service mac dinh:
 
 Gateway dang giu fallback ve `USERS_SERVICE_*` cho `catalog`, `orders`, `affiliate` de qua trinh tach service khong bi gay ngay. Khi deploy on dinh, nen set day du `CATALOG_SERVICE_*`, `ORDERS_SERVICE_*`, `AFFILIATE_SERVICE_*` thay vi dua vao fallback.
 
+## Firebase Auth
+
+Firebase Auth duoc dung de xac thuc email/phone truoc khi backend cap JWT noi bo:
+
+- Frontend email: Firebase email/password + email verification link.
+- Frontend phone: Firebase Phone Authentication + SMS OTP + invisible reCAPTCHA.
+- Frontend Google: Firebase Google provider.
+- Backend endpoint: `POST /auth/firebase-login` verify Firebase ID token, tao user neu chua ton tai, roi cap access/refresh token noi bo.
+
+Backend can Firebase Admin service account qua bien moi truong:
+
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+
+`FIREBASE_PRIVATE_KEY` co the luu dang mot dong voi `\n`; service se chuyen ve newline that luc khoi tao Firebase Admin. Khong commit service account JSON hoac private key vao repo.
+
 ## Build
 
 ```bash

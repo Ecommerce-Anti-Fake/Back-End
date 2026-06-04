@@ -7,6 +7,7 @@ export const AFFILIATE_SERVICE_CLIENT = 'AFFILIATE_SERVICE_CLIENT';
 export const AUTH_MESSAGE_PATTERNS = {
   register: 'auth.register',
   login: 'auth.login',
+  firebaseLogin: 'auth.firebase-login',
   refresh: 'auth.refresh',
   logout: 'auth.logout',
   requestPasswordReset: 'auth.request-password-reset',

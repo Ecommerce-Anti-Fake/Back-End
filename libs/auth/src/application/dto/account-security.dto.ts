@@ -52,14 +52,14 @@ export class AccountSecurityResponseDto {
 }
 
 export class AccountSecurityDecisionsResponseDto {
-  @ApiProperty({ example: 'DEFERRED' })
-  emailProvider!: 'DEFERRED';
+  @ApiProperty({ example: 'FIREBASE_EMAIL_VERIFICATION_LINK' })
+  emailProvider!: 'DEFERRED' | 'FIREBASE_EMAIL_VERIFICATION_LINK';
 
-  @ApiProperty({ example: 'DEFERRED' })
-  otpProvider!: 'DEFERRED';
+  @ApiProperty({ example: 'FIREBASE_PHONE_AUTH' })
+  otpProvider!: 'DEFERRED' | 'FIREBASE_PHONE_AUTH';
 
-  @ApiProperty({ example: 'DEFERRED' })
-  oauthLogin!: 'DEFERRED';
+  @ApiProperty({ example: 'FIREBASE_GOOGLE_AUTH' })
+  oauthLogin!: 'DEFERRED' | 'FIREBASE_GOOGLE_AUTH';
 
   @ApiProperty({ example: false })
   resetTokenReturnedByDefault!: boolean;

@@ -4,7 +4,7 @@ import {
   AUTH_MESSAGE_PATTERNS,
   AUTH_SERVICE_CLIENT,
 } from '@contracts';
-import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RefreshTokenDto, RegisterDto, ResetPasswordDto } from '@auth';
+import { ChangePasswordDto, FirebaseLoginDto, ForgotPasswordDto, LoginDto, RefreshTokenDto, RegisterDto, ResetPasswordDto } from '@auth';
 import { throwHttpExceptionFromRpc } from '@common';
 import { lastValueFrom } from 'rxjs';
 
@@ -21,6 +21,10 @@ export class AuthRpcService {
 
   login(dto: LoginDto) {
     return this.send(AUTH_MESSAGE_PATTERNS.login, dto);
+  }
+
+  firebaseLogin(dto: FirebaseLoginDto) {
+    return this.send(AUTH_MESSAGE_PATTERNS.firebaseLogin, dto);
   }
 
   refresh(dto: RefreshTokenDto) {

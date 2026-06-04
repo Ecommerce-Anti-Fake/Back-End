@@ -3,9 +3,10 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { AUTH_MESSAGE_PATTERNS } from '@contracts';
 import { throwRpcException } from '@common';
 import type { AuthenticatedPrincipal } from '@contracts';
-import { ChangePasswordDto, ForgotPasswordDto, LoginDto, RefreshTokenDto, RegisterDto, ResetPasswordDto } from '../../application/dto';
+import { ChangePasswordDto, FirebaseLoginDto, ForgotPasswordDto, LoginDto, RefreshTokenDto, RegisterDto, ResetPasswordDto } from '../../application/dto';
 import {
   ChangePasswordUseCase,
+  FirebaseLoginUseCase,
   LoginUseCase,
   LogoutUseCase,
   RefreshTokenUseCase,
@@ -19,6 +20,7 @@ export class AuthRpcController {
   constructor(
     private readonly registerUseCase: RegisterUseCase,
     private readonly loginUseCase: LoginUseCase,
+    private readonly firebaseLoginUseCase: FirebaseLoginUseCase,
     private readonly refreshTokenUseCase: RefreshTokenUseCase,
     private readonly logoutUseCase: LogoutUseCase,
     private readonly requestPasswordResetUseCase: RequestPasswordResetUseCase,
@@ -39,6 +41,15 @@ export class AuthRpcController {
   async login(@Payload() dto: LoginDto) {
     try {
       return await this.loginUseCase.execute(dto);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(AUTH_MESSAGE_PATTERNS.firebaseLogin)
+  async firebaseLogin(@Payload() dto: FirebaseLoginDto) {
+    try {
+      return await this.firebaseLoginUseCase.execute(dto);
     } catch (error) {
       throwRpcException(error);
     }
