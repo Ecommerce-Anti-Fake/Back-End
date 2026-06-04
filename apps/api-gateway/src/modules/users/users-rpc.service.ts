@@ -3,6 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import type {
   AdminKycDetailMessage,
   AdminKycSummaryMessage,
+  CreateNotificationMessage,
   CreateUserAddressMessage,
   CurrentUserKycMessage,
   CurrentUserProfileCompletionMessage,
@@ -11,7 +12,9 @@ import type {
   ListUsersMessage,
   NotificationLookupMessage,
   PendingKycsLookupMessage,
+  RegisterNotificationFcmTokenMessage,
   ReviewKycMessage,
+  RevokeNotificationFcmTokenMessage,
   SubmitKycMessage,
   UpdateUserMessage,
   UpdateUserAddressMessage,
@@ -120,6 +123,18 @@ export class UsersRpcService {
 
   markAllNotificationsRead(payload: CurrentUserProfileMessage) {
     return this.send(USERS_MESSAGE_PATTERNS.markAllNotificationsRead, payload);
+  }
+
+  registerNotificationFcmToken(payload: RegisterNotificationFcmTokenMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.registerNotificationFcmToken, payload);
+  }
+
+  revokeNotificationFcmToken(payload: RevokeNotificationFcmTokenMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.revokeNotificationFcmToken, payload);
+  }
+
+  createNotification(payload: CreateNotificationMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.createNotification, payload);
   }
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {

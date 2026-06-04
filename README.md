@@ -135,6 +135,14 @@ RT1 shared event foundation also lives in `libs/common/src/realtime`:
 - Durable dispatches produce audit entries through registered audit sinks. Ephemeral events declare whether they are droppable, sampled, or aggregated.
 - Transport sinks are registered per transport; RT1 does not create SSE/WebSocket/FCM emitters.
 
+RT2 notification delivery surfaces:
+
+- `POST /user/notifications/fcm-token` registers or reactivates the current browser FCM token.
+- `POST /user/notifications/fcm-token/revoke` revokes a browser FCM token by token or device ID.
+- `GET /user/notifications/events?accessToken=...` is an authenticated SSE invalidation stream for notification list/unread count refetch.
+- `NotificationFcmToken` stores active/revoked browser tokens; `NotificationDeliveryAttempt` records FCM delivery outcomes without blocking canonical in-app notifications.
+- FCM requires Firebase Admin env vars plus frontend `VITE_FIREBASE_VAPID_KEY`. If Firebase Admin is not configured, FCM attempts fail closed and are tracked as delivery failures.
+
 ## Build
 
 ```bash

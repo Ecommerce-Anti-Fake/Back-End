@@ -2,8 +2,10 @@ import { Module } from '@nestjs/common';
 import { UserIdentityPort } from '@contracts';
 import { PrismaModule } from '@database/prisma/prisma.module';
 import { MediaModule } from '@media';
+import { FirebaseNotificationDeliveryService } from './application/services/firebase-notification-delivery.service';
 import { UsersIdentityService } from './application/services/users-identity.service';
 import {
+  CreateNotificationUseCase,
   DeleteUserUseCase,
   GetAdminKycDetailUseCase,
   GetAdminKycSummaryUseCase,
@@ -20,6 +22,8 @@ import {
   ListUsersUseCase,
   MarkAllNotificationsReadUseCase,
   MarkNotificationReadUseCase,
+  RegisterNotificationFcmTokenUseCase,
+  RevokeNotificationFcmTokenUseCase,
   ReviewUserKycUseCase,
   SetDefaultUserAddressUseCase,
   SubmitUserKycUseCase,
@@ -52,6 +56,10 @@ import { UsersRpcController } from './presentation/rpc/users.rpc-controller';
     ListNotificationsUseCase,
     MarkNotificationReadUseCase,
     MarkAllNotificationsReadUseCase,
+    RegisterNotificationFcmTokenUseCase,
+    RevokeNotificationFcmTokenUseCase,
+    CreateNotificationUseCase,
+    FirebaseNotificationDeliveryService,
     GetKycUploadSignaturesUseCase,
     ListPendingKycsUseCase,
     ReviewUserKycUseCase,
@@ -80,6 +88,9 @@ import { UsersRpcController } from './presentation/rpc/users.rpc-controller';
     ListNotificationsUseCase,
     MarkNotificationReadUseCase,
     MarkAllNotificationsReadUseCase,
+    RegisterNotificationFcmTokenUseCase,
+    RevokeNotificationFcmTokenUseCase,
+    CreateNotificationUseCase,
     GetKycUploadSignaturesUseCase,
     ListPendingKycsUseCase,
     ReviewUserKycUseCase,

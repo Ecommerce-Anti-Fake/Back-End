@@ -1,4 +1,5 @@
 export * from './delete-user.use-case';
+export * from './create-notification.use-case';
 export * from './get-current-user-profile.use-case';
 export * from './get-current-user-profile-completion.use-case';
 export * from './get-current-user-kyc.use-case';
@@ -11,6 +12,7 @@ export * from './list-notifications.use-case';
 export * from './list-users.use-case';
 export * from './mark-all-notifications-read.use-case';
 export * from './mark-notification-read.use-case';
+export * from './manage-notification-fcm-token.use-case';
 export * from './manage-user-addresses.use-case';
 export * from './review-user-kyc.use-case';
 export * from './submit-user-kyc.use-case';

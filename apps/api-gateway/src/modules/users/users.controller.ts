@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, MessageEvent, Param, Patch, Query, Sse, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -23,7 +23,11 @@ import {
   ListNotificationsQueryDto,
   NotificationResponseDto,
   NotificationsResponseDto,
+  NotificationFcmTokenResponseDto,
   ProfileCompletionResponseDto,
+  RegisterNotificationFcmTokenDto,
+  RevokeNotificationFcmTokenDto,
+  RevokeNotificationFcmTokenResponseDto,
   ReviewUserKycDto,
   SubmitKycDto,
   UpdateUserAddressDto,
@@ -32,12 +36,20 @@ import {
   UserKycResponseDto,
   UserResponseDto,
 } from '@users';
+import { AccessTokenPayload } from '@contracts';
+import { JwtService } from '@nestjs/jwt';
+import { merge, Observable, of } from 'rxjs';
+import { NotificationSseBrokerService } from './notification-sse-broker.service';
 import { UsersRpcService } from './users-rpc.service';
 
 @ApiTags('Users')
 @Controller('user')
 export class UsersController {
-  constructor(private readonly usersRpcService: UsersRpcService) {}
+  constructor(
+    private readonly usersRpcService: UsersRpcService,
+    private readonly notificationSseBrokerService: NotificationSseBrokerService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   @ApiOperation({ summary: 'Admin lay danh sach user' })
   @ApiBearerAuth('access-token')
@@ -151,6 +163,63 @@ export class UsersController {
     });
   }
 
+  @ApiOperation({ summary: 'Dang ky FCM token de nhan push notification tren trinh duyet' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'FCM token da duoc luu hoac kich hoat lai.',
+    type: NotificationFcmTokenResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('notifications/fcm-token')
+  async registerNotificationFcmToken(
+    @CurrentUserId() userId: string,
+    @Body() dto: RegisterNotificationFcmTokenDto,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    const result = await this.usersRpcService.registerNotificationFcmToken({
+      userId,
+      token: dto.token,
+      deviceId: dto.deviceId,
+      userAgent,
+    });
+    this.notificationSseBrokerService.notifyUser({ family: 'notification', reason: 'push_token_registered', userId });
+
+    return result;
+  }
+
+  @ApiOperation({ summary: 'Thu hoi FCM token cua trinh duyet hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'So token da bi thu hoi.',
+    type: RevokeNotificationFcmTokenResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('notifications/fcm-token/revoke')
+  async revokeNotificationFcmToken(@CurrentUserId() userId: string, @Body() dto: RevokeNotificationFcmTokenDto) {
+    const result = await this.usersRpcService.revokeNotificationFcmToken({
+      userId,
+      token: dto.token,
+      deviceId: dto.deviceId,
+    });
+    this.notificationSseBrokerService.notifyUser({ family: 'notification', reason: 'push_token_revoked', userId });
+
+    return result;
+  }
+
+  @ApiOperation({ summary: 'SSE invalidation stream cho notification list/unread count' })
+  @Sse('notifications/events')
+  notificationEvents(@Query('accessToken') accessToken?: string): Observable<MessageEvent> {
+    const userId = this.verifySseAccessToken(accessToken);
+
+    return merge(
+      of({
+        type: 'notification.connected',
+        data: { family: 'notification' },
+      }),
+      this.notificationSseBrokerService.streamForUser(userId),
+    );
+  }
+
   @ApiOperation({ summary: 'Danh dau mot thong bao da doc' })
   @ApiBearerAuth('access-token')
   @ApiParam({ name: 'notificationId', description: 'ID thong bao can danh dau da doc.' })
@@ -160,8 +229,11 @@ export class UsersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('notifications/:notificationId/read')
-  markNotificationRead(@CurrentUserId() userId: string, @Param('notificationId') notificationId: string) {
-    return this.usersRpcService.markNotificationRead({ userId, notificationId });
+  async markNotificationRead(@CurrentUserId() userId: string, @Param('notificationId') notificationId: string) {
+    const result = await this.usersRpcService.markNotificationRead({ userId, notificationId });
+    this.notificationSseBrokerService.notifyUser({ family: 'notification', reason: 'read', userId, notificationId });
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Danh dau tat ca thong bao la da doc' })
@@ -172,8 +244,30 @@ export class UsersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('notifications/read-all')
-  markAllNotificationsRead(@CurrentUserId() userId: string) {
-    return this.usersRpcService.markAllNotificationsRead({ userId });
+  async markAllNotificationsRead(@CurrentUserId() userId: string) {
+    const result = await this.usersRpcService.markAllNotificationsRead({ userId });
+    this.notificationSseBrokerService.notifyUser({ family: 'notification', reason: 'read_all', userId });
+
+    return result;
+  }
+
+  private verifySseAccessToken(accessToken?: string) {
+    if (!accessToken) {
+      throw new UnauthorizedException('Missing access token');
+    }
+
+    let payload: AccessTokenPayload;
+    try {
+      payload = this.jwtService.verify<AccessTokenPayload>(accessToken);
+    } catch {
+      throw new UnauthorizedException('Invalid access token');
+    }
+
+    if (!payload.sub || !payload.role || payload.typ !== 'access') {
+      throw new UnauthorizedException('Invalid access token');
+    }
+
+    return payload.sub;
   }
 
   @ApiOperation({ summary: 'Lay danh sach dia chi giao hang cua user hien tai' })

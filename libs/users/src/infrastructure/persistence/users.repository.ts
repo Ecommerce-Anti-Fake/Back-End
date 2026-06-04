@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@database/prisma/prisma.service';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 
 const userKycWithDocumentsArgs = Prisma.validator<Prisma.UserKycDefaultArgs>()({
   include: {
@@ -152,6 +152,101 @@ export class UsersRepository {
     return this.prisma.notification.updateMany({
       where: { userId, readAt: null },
       data: { readAt: new Date() },
+    });
+  }
+
+  createNotification(input: {
+    userId: string;
+    notificationType: string;
+    title: string;
+    body: string;
+    targetType?: string | null;
+    targetId?: string | null;
+    dedupeKey: string;
+  }) {
+    return this.prisma.notification.upsert({
+      where: { dedupeKey: input.dedupeKey },
+      update: {
+        title: input.title,
+        body: input.body,
+        targetType: input.targetType ?? null,
+        targetId: input.targetId ?? null,
+      },
+      create: {
+        userId: input.userId,
+        notificationType: input.notificationType,
+        title: input.title,
+        body: input.body,
+        targetType: input.targetType ?? null,
+        targetId: input.targetId ?? null,
+        dedupeKey: input.dedupeKey,
+      },
+    });
+  }
+
+  registerNotificationFcmToken(input: { userId: string; token: string; deviceId?: string | null; userAgent?: string | null }) {
+    const tokenHash = hashFcmToken(input.token);
+
+    return this.prisma.notificationFcmToken.upsert({
+      where: { tokenHash },
+      update: {
+        userId: input.userId,
+        token: input.token,
+        deviceId: input.deviceId ?? null,
+        userAgent: input.userAgent ?? null,
+        revokedAt: null,
+      },
+      create: {
+        userId: input.userId,
+        token: input.token,
+        tokenHash,
+        deviceId: input.deviceId ?? null,
+        userAgent: input.userAgent ?? null,
+      },
+    });
+  }
+
+  revokeNotificationFcmToken(input: { userId: string; token?: string | null; deviceId?: string | null }) {
+    const tokenHash = input.token ? hashFcmToken(input.token) : null;
+    const where: Prisma.NotificationFcmTokenWhereInput = {
+      userId: input.userId,
+      revokedAt: null,
+      ...(tokenHash ? { tokenHash } : {}),
+      ...(!tokenHash && input.deviceId ? { deviceId: input.deviceId } : {}),
+    };
+
+    return this.prisma.notificationFcmToken.updateMany({
+      where,
+      data: { revokedAt: new Date() },
+    });
+  }
+
+  listActiveNotificationFcmTokens(userId: string) {
+    return this.prisma.notificationFcmToken.findMany({
+      where: { userId, revokedAt: null },
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
+  recordNotificationDeliveryAttempt(input: {
+    userId: string;
+    notificationId?: string | null;
+    eventName: string;
+    provider: string;
+    status: string;
+    errorCode?: string | null;
+    errorMessage?: string | null;
+  }) {
+    return this.prisma.notificationDeliveryAttempt.create({
+      data: {
+        userId: input.userId,
+        notificationId: input.notificationId ?? null,
+        eventName: input.eventName,
+        provider: input.provider,
+        status: input.status,
+        errorCode: input.errorCode ?? null,
+        errorMessage: input.errorMessage ?? null,
+      },
     });
   }
 
@@ -671,4 +766,8 @@ export class UsersRepository {
       });
     });
   }
+}
+
+function hashFcmToken(token: string) {
+  return createHash('sha256').update(token).digest('hex');
 }

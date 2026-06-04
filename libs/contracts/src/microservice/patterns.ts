@@ -42,6 +42,9 @@ export const USERS_MESSAGE_PATTERNS = {
   listNotifications: 'users.list-notifications',
   markNotificationRead: 'users.mark-notification-read',
   markAllNotificationsRead: 'users.mark-all-notifications-read',
+  registerNotificationFcmToken: 'users.register-notification-fcm-token',
+  revokeNotificationFcmToken: 'users.revoke-notification-fcm-token',
+  createNotification: 'users.create-notification',
 } as const;
 
 export const SHOPS_MESSAGE_PATTERNS = {
@@ -236,6 +239,30 @@ export type ListNotificationsMessage = {
 export type NotificationLookupMessage = {
   userId: string;
   notificationId: string;
+};
+
+export type RegisterNotificationFcmTokenMessage = {
+  userId: string;
+  token: string;
+  deviceId?: string | null;
+  userAgent?: string | null;
+};
+
+export type RevokeNotificationFcmTokenMessage = {
+  userId: string;
+  token?: string | null;
+  deviceId?: string | null;
+};
+
+export type CreateNotificationMessage = {
+  userId: string;
+  notificationType: string;
+  title: string;
+  body: string;
+  targetType?: string | null;
+  targetId?: string | null;
+  dedupeKey: string;
+  eventName?: string | null;
 };
 
 export type UserAddressLookupMessage = {

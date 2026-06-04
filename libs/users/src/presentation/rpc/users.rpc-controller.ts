@@ -5,6 +5,7 @@ import { throwRpcException } from '@common';
 import type {
   AdminKycDetailMessage,
   AdminKycSummaryMessage,
+  CreateNotificationMessage,
   CreateUserIdentityMessage,
   UpdateUserPasswordMessage,
   CreateUserAddressMessage,
@@ -16,7 +17,9 @@ import type {
   ListUsersMessage,
   NotificationLookupMessage,
   PendingKycsLookupMessage,
+  RegisterNotificationFcmTokenMessage,
   ReviewKycMessage,
+  RevokeNotificationFcmTokenMessage,
   SubmitKycMessage,
   UpdateUserMessage,
   UpdateUserAddressMessage,
@@ -26,6 +29,7 @@ import type {
 } from '@contracts';
 import { UsersIdentityService } from '../../application/services/users-identity.service';
 import {
+  CreateNotificationUseCase,
   DeleteUserUseCase,
   GetAdminKycDetailUseCase,
   GetAdminKycSummaryUseCase,
@@ -42,6 +46,8 @@ import {
   ListUsersUseCase,
   MarkAllNotificationsReadUseCase,
   MarkNotificationReadUseCase,
+  RegisterNotificationFcmTokenUseCase,
+  RevokeNotificationFcmTokenUseCase,
   ReviewUserKycUseCase,
   SetDefaultUserAddressUseCase,
   SubmitUserKycUseCase,
@@ -69,6 +75,9 @@ export class UsersRpcController {
     private readonly listNotificationsUseCase: ListNotificationsUseCase,
     private readonly markNotificationReadUseCase: MarkNotificationReadUseCase,
     private readonly markAllNotificationsReadUseCase: MarkAllNotificationsReadUseCase,
+    private readonly registerNotificationFcmTokenUseCase: RegisterNotificationFcmTokenUseCase,
+    private readonly revokeNotificationFcmTokenUseCase: RevokeNotificationFcmTokenUseCase,
+    private readonly createNotificationUseCase: CreateNotificationUseCase,
     private readonly getCurrentUserKycUseCase: GetCurrentUserKycUseCase,
     private readonly listPendingKycsUseCase: ListPendingKycsUseCase,
     private readonly getKycUploadSignaturesUseCase: GetKycUploadSignaturesUseCase,
@@ -299,6 +308,33 @@ export class UsersRpcController {
   async markAllNotificationsRead(@Payload() payload: CurrentUserProfileMessage) {
     try {
       return await this.markAllNotificationsReadUseCase.execute(payload.userId);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(USERS_MESSAGE_PATTERNS.registerNotificationFcmToken)
+  async registerNotificationFcmToken(@Payload() payload: RegisterNotificationFcmTokenMessage) {
+    try {
+      return await this.registerNotificationFcmTokenUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(USERS_MESSAGE_PATTERNS.revokeNotificationFcmToken)
+  async revokeNotificationFcmToken(@Payload() payload: RevokeNotificationFcmTokenMessage) {
+    try {
+      return await this.revokeNotificationFcmTokenUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(USERS_MESSAGE_PATTERNS.createNotification)
+  async createNotification(@Payload() payload: CreateNotificationMessage) {
+    try {
+      return await this.createNotificationUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

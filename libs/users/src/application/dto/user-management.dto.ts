@@ -171,6 +171,48 @@ export class NotificationsResponseDto {
   items!: NotificationResponseDto[];
 }
 
+export class RegisterNotificationFcmTokenDto {
+  @ApiProperty({ example: 'fcm-token-from-browser' })
+  @IsString()
+  token!: string;
+
+  @ApiPropertyOptional({ example: 'browser-device-id' })
+  @IsOptional()
+  @IsString()
+  deviceId?: string;
+}
+
+export class RevokeNotificationFcmTokenDto {
+  @ApiPropertyOptional({ example: 'fcm-token-from-browser' })
+  @IsOptional()
+  @IsString()
+  token?: string;
+
+  @ApiPropertyOptional({ example: 'browser-device-id' })
+  @IsOptional()
+  @IsString()
+  deviceId?: string;
+}
+
+export class NotificationFcmTokenResponseDto {
+  @ApiProperty({ example: 'token-row-id' })
+  id!: string;
+
+  @ApiPropertyOptional({ example: 'browser-device-id', nullable: true })
+  deviceId!: string | null;
+
+  @ApiPropertyOptional({ example: null, nullable: true })
+  revokedAt!: Date | null;
+
+  @ApiProperty({ example: '2026-06-04T12:00:00.000Z' })
+  updatedAt!: Date;
+}
+
+export class RevokeNotificationFcmTokenResponseDto {
+  @ApiProperty({ example: 1 })
+  revokedCount!: number;
+}
+
 export class ListNotificationsQueryDto {
   @ApiPropertyOptional({ example: true })
   @IsOptional()
