@@ -126,6 +126,15 @@ RT0 shared conventions live in `libs/common/src/realtime`:
 
 Do not store durable business state in Redis. Realtime keys must either expire or be recoverable from PostgreSQL or client reconnect/refetch state.
 
+RT1 shared event foundation also lives in `libs/common/src/realtime`:
+
+- Event names are versioned as `<family>.<resource>.<action>.v1`.
+- Initial contracts: `notification.order.created.v1`, `chat.message.created.v1`, `live.reaction.ephemeral.v1`.
+- Each event definition declares payload fields, allowed audience scope, dedupe fields, persistence/recovery rules, eligible transports, rate-limit expectations, and audit requirements.
+- Durable events must be created after a committed PostgreSQL write; `RealtimeEventDispatcher` rejects durable events with `source.writeCommitted=false`.
+- Durable dispatches produce audit entries through registered audit sinks. Ephemeral events declare whether they are droppable, sampled, or aggregated.
+- Transport sinks are registered per transport; RT1 does not create SSE/WebSocket/FCM emitters.
+
 ## Build
 
 ```bash
