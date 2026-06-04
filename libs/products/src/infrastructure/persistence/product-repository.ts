@@ -524,7 +524,26 @@ export class ProductRepository {
     });
   }
 
-  async createChatMessage(input: { threadId: string; senderUserId: string; body: string; messageType: 'TEXT' }) {
+  async createChatMessage(input: {
+    threadId: string;
+    senderUserId: string;
+    clientMessageId?: string | null;
+    body: string;
+    messageType: 'TEXT';
+  }) {
+    const existingMessage = input.clientMessageId
+      ? await this.prisma.chatMessage.findFirst({
+          where: {
+            threadId: input.threadId,
+            clientMessageId: input.clientMessageId,
+          },
+        })
+      : null;
+
+    if (existingMessage) {
+      return this.findChatThreadById(input.threadId);
+    }
+
     const message = await this.prisma.chatMessage.create({
       data: input,
       include: {

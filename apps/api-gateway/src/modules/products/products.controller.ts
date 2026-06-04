@@ -375,6 +375,7 @@ export class ProductsController {
       requesterUserId,
       requesterRole: requester?.role,
       body: dto.body,
+      clientMessageId: dto.clientMessageId ?? null,
       messageType: 'TEXT',
     });
   }

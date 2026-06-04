@@ -143,6 +143,14 @@ RT2 notification delivery surfaces:
 - `NotificationFcmToken` stores active/revoked browser tokens; `NotificationDeliveryAttempt` records FCM delivery outcomes without blocking canonical in-app notifications.
 - FCM requires Firebase Admin env vars plus frontend `VITE_FIREBASE_VAPID_KEY`. If Firebase Admin is not configured, FCM attempts fail closed and are tracked as delivery failures.
 
+RT3 chat realtime surfaces:
+
+- The API gateway attaches a Socket.IO server to the existing HTTP server. Clients authenticate with `auth.accessToken`.
+- `chat:join` authorizes the requested thread through the existing products RPC before joining `chat:thread:<threadId>`.
+- `chat:send` persists `ChatMessage` in PostgreSQL before broadcasting `chat:message.created`; client acknowledgements only confirm transport delivery.
+- `ChatMessage.clientMessageId` is unique per thread for retry dedupe. REST chat history remains the recovery source after reconnect.
+- Socket.IO uses the Redis adapter when Redis is configured; otherwise it logs the local in-process room fallback.
+
 ## Build
 
 ```bash

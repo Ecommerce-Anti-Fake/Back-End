@@ -142,6 +142,7 @@ type ChatMessageWithSender = {
   id: string;
   threadId: string;
   senderUserId: string;
+  clientMessageId?: string | null;
   messageType: string;
   body: string;
   sentAt: Date;
@@ -338,6 +339,7 @@ export function toChatMessageResponse(message: ChatMessageWithSender) {
     id: message.id,
     threadId: message.threadId,
     senderUserId: message.senderUserId,
+    clientMessageId: message.clientMessageId ?? null,
     senderName: chatDisplayName(message.sender),
     messageType: message.messageType,
     body: message.body,

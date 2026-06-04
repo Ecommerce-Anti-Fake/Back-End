@@ -1142,15 +1142,17 @@ model ChatThread {
 }
 
 model ChatMessage {
-  id           String     @id @default(uuid())
-  threadId     String     @map("thread_id")
-  senderUserId String     @map("sender_user_id")
-  messageType  String     @map("message_type")
-  body         String
-  sentAt       DateTime   @default(now()) @map("sent_at")
-  thread       ChatThread @relation(fields: [threadId], references: [id])
-  sender       User       @relation("ChatMessageSender", fields: [senderUserId], references: [id])
+  id              String     @id @default(uuid())
+  threadId        String     @map("thread_id")
+  senderUserId    String     @map("sender_user_id")
+  clientMessageId String?    @map("client_message_id")
+  messageType     String     @map("message_type")
+  body            String
+  sentAt          DateTime   @default(now()) @map("sent_at")
+  thread          ChatThread @relation(fields: [threadId], references: [id])
+  sender          User       @relation("ChatMessageSender", fields: [senderUserId], references: [id])
 
+  @@unique([threadId, clientMessageId])
   @@map("chat_message")
 }
 

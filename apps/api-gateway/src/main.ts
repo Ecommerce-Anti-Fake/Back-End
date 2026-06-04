@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { ChatRealtimeService } from './modules/products/chat-realtime.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -41,6 +42,7 @@ async function bootstrap() {
 
   const port = configService.get<number>('PORT') ?? 3001;
   await app.listen(port);
+  await app.get(ChatRealtimeService).bind(app.getHttpServer());
 }
 
 bootstrap();

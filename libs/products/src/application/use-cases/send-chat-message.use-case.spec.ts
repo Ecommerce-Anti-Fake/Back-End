@@ -40,10 +40,32 @@ describe('SendChatMessageUseCase', () => {
     expect(repository.createChatMessage).toHaveBeenCalledWith({
       threadId: 'thread-1',
       senderUserId: 'admin-1',
+      clientMessageId: null,
       body: 'Can ho tro dispute',
       messageType: 'TEXT',
     });
     expect(result.lastMessage?.body).toBe('Can ho tro dispute');
+  });
+
+  it('passes client message id for idempotent retries', async () => {
+    repository.findChatThreadById.mockResolvedValue(chatThread());
+    repository.createChatMessage.mockResolvedValue(chatThread({ body: 'Can ho tro dispute', clientMessageId: 'client-1' }));
+
+    const result = await useCase.execute({
+      threadId: 'thread-1',
+      requesterUserId: 'buyer-1',
+      body: 'Can ho tro dispute',
+      clientMessageId: ' client-1 ',
+    });
+
+    expect(repository.createChatMessage).toHaveBeenCalledWith({
+      threadId: 'thread-1',
+      senderUserId: 'buyer-1',
+      clientMessageId: 'client-1',
+      body: 'Can ho tro dispute',
+      messageType: 'TEXT',
+    });
+    expect(result.lastMessage?.clientMessageId).toBe('client-1');
   });
 
   it('returns not found for missing threads', async () => {
@@ -59,7 +81,7 @@ describe('SendChatMessageUseCase', () => {
   });
 });
 
-function chatThread(input: { body?: string } = {}) {
+function chatThread(input: { body?: string; clientMessageId?: string | null } = {}) {
   return {
     id: 'thread-1',
     shopId: 'shop-1',
@@ -74,6 +96,7 @@ function chatThread(input: { body?: string } = {}) {
         id: 'message-1',
         threadId: 'thread-1',
         senderUserId: 'buyer-1',
+        clientMessageId: input.clientMessageId ?? null,
         messageType: 'TEXT',
         body: input.body ?? 'Xin chao',
         sentAt: new Date('2026-05-26T01:01:00.000Z'),

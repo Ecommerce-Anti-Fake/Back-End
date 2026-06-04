@@ -587,6 +587,7 @@ export type ChatThreadLookupMessage = ChatRequesterMessage & {
 
 export type SendChatMessageMessage = ChatThreadLookupMessage & {
   body: string;
+  clientMessageId?: string | null;
   messageType?: 'TEXT';
 };
 

@@ -219,6 +219,9 @@ export class ChatMessageResponseDto {
   @ApiProperty({ example: 'user-id' })
   senderUserId!: string;
 
+  @ApiPropertyOptional({ example: 'client-generated-message-id', nullable: true })
+  clientMessageId!: string | null;
+
   @ApiProperty({ example: 'Nguyen Van A' })
   senderName!: string;
 
@@ -278,6 +281,12 @@ export class SendChatMessageDto {
   @MinLength(1)
   @MaxLength(1000)
   body!: string;
+
+  @ApiPropertyOptional({ example: 'client-generated-message-id' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  clientMessageId?: string;
 }
 
 export class ListSocialPostsQueryDto {

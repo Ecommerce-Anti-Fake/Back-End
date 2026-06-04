@@ -7,7 +7,13 @@ import { toChatThreadResponse } from './products.mapper';
 export class SendChatMessageUseCase {
   constructor(private readonly productRepository: ProductRepository) {}
 
-  async execute(input: { threadId: string; requesterUserId: string; requesterRole?: string | null; body: string }) {
+  async execute(input: {
+    threadId: string;
+    requesterUserId: string;
+    requesterRole?: string | null;
+    body: string;
+    clientMessageId?: string | null;
+  }) {
     const body = input.body.trim();
     if (!body) {
       throw new BadRequestException('Message body is required');
@@ -24,6 +30,7 @@ export class SendChatMessageUseCase {
     const updatedThread = await this.productRepository.createChatMessage({
       threadId: input.threadId,
       senderUserId: input.requesterUserId,
+      clientMessageId: input.clientMessageId?.trim() || null,
       body,
       messageType: 'TEXT',
     });
