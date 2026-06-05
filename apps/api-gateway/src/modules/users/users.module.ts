@@ -5,6 +5,7 @@ import { UserIdentityPort, USERS_SERVICE_CLIENT } from '@contracts';
 import { AuthGuardsModule } from '@security';
 import { UsersController } from './users.controller';
 import { UsersIdentityAdapter } from './users-identity.adapter';
+import { DashboardSseBrokerService } from './dashboard-sse-broker.service';
 import { NotificationSseBrokerService } from './notification-sse-broker.service';
 import { UsersRpcService } from './users-rpc.service';
 
@@ -31,12 +32,13 @@ import { UsersRpcService } from './users-rpc.service';
   providers: [
     UsersRpcService,
     UsersIdentityAdapter,
+    DashboardSseBrokerService,
     NotificationSseBrokerService,
     {
       provide: UserIdentityPort,
       useExisting: UsersIdentityAdapter,
     },
   ],
-  exports: [UsersRpcService, UserIdentityPort],
+  exports: [UsersRpcService, UserIdentityPort, DashboardSseBrokerService],
 })
 export class GatewayUsersModule {}

@@ -63,12 +63,16 @@ import {
 } from '@orders';
 import type { PayOSWebhookMessage } from '@contracts';
 import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
+import { DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
 import { OrdersRpcService } from './orders-rpc.service';
 
 @ApiTags('Orders')
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersRpcService: OrdersRpcService) {}
+  constructor(
+    private readonly ordersRpcService: OrdersRpcService,
+    private readonly dashboardSseBrokerService: DashboardSseBrokerService,
+  ) {}
 
   @ApiOperation({ summary: 'Lay gio hang active cua buyer hien tai' })
   @ApiBearerAuth('access-token')
@@ -177,12 +181,12 @@ export class OrdersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('cart/items/:cartItemId/checkout')
-  checkoutCartItem(
+  async checkoutCartItem(
     @CurrentUserId() buyerUserId: string,
     @Param('cartItemId') cartItemId: string,
     @Body() dto: CheckoutCartItemDto,
   ) {
-    return this.ordersRpcService.checkoutCartItem({
+    const result = await this.ordersRpcService.checkoutCartItem({
       buyerUserId,
       cartItemId,
       affiliateCode: dto.affiliateCode ?? null,
@@ -198,6 +202,9 @@ export class OrdersController {
       shippingServiceId: dto.shippingServiceId ?? null,
       shippingServiceTypeId: dto.shippingServiceTypeId ?? null,
     });
+    this.dashboardSseBrokerService.notifyOrderChanged(result, buyerUserId);
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Bao gia cac phuong thuc van chuyen cho mot cart item' })
@@ -237,8 +244,8 @@ export class OrdersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('retail')
-  createRetail(@CurrentUserId() buyerUserId: string, @Body() dto: CreateRetailOrderDto) {
-    return this.ordersRpcService.createRetail({
+  async createRetail(@CurrentUserId() buyerUserId: string, @Body() dto: CreateRetailOrderDto) {
+    const result = await this.ordersRpcService.createRetail({
       buyerUserId,
       offerId: dto.offerId,
       quantity: dto.quantity,
@@ -255,6 +262,9 @@ export class OrdersController {
       shippingServiceId: dto.shippingServiceId ?? null,
       shippingServiceTypeId: dto.shippingServiceTypeId ?? null,
     });
+    this.dashboardSseBrokerService.notifyOrderChanged(result, buyerUserId);
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Tao don si giua cac shop' })
@@ -271,8 +281,8 @@ export class OrdersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('wholesale')
-  createWholesale(@CurrentUserId() buyerUserId: string, @Body() dto: CreateWholesaleOrderDto) {
-    return this.ordersRpcService.createWholesale({
+  async createWholesale(@CurrentUserId() buyerUserId: string, @Body() dto: CreateWholesaleOrderDto) {
+    const result = await this.ordersRpcService.createWholesale({
       buyerUserId,
       buyerShopId: dto.buyerShopId,
       buyerDistributionNodeId: dto.buyerDistributionNodeId,
@@ -283,6 +293,9 @@ export class OrdersController {
       shippingPhone: dto.shippingPhone ?? null,
       shippingAddress: dto.shippingAddress ?? null,
     });
+    this.dashboardSseBrokerService.notifyOrderChanged(result, buyerUserId);
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Lay danh sach don hang cua nguoi dung hien tai' })
@@ -494,14 +507,18 @@ export class OrdersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('reports')
-  createReport(@CurrentUserId() requesterUserId: string, @Body() dto: CreateReportDto) {
-    return this.ordersRpcService.createReport({
+  async createReport(@CurrentUserId() requesterUserId: string, @Body() dto: CreateReportDto) {
+    const result = await this.ordersRpcService.createReport({
       requesterUserId,
       targetType: dto.targetType,
       targetId: dto.targetId,
       reason: dto.reason,
       description: dto.description ?? null,
     });
+    this.dashboardSseBrokerService.notifyAccount(requesterUserId);
+    this.dashboardSseBrokerService.notifyAdminQueue('report');
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Lay danh sach report cua buyer hien tai' })
@@ -544,17 +561,20 @@ export class OrdersController {
   @Roles('admin')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
   @Patch('admin/reports/:reportId')
-  updateAdminReport(
+  async updateAdminReport(
     @Param('reportId') reportId: string,
     @CurrentUserId() requesterUserId: string,
     @Body() dto: UpdateAdminReportDto,
   ) {
-    return this.ordersRpcService.updateAdminReport({
+    const result = await this.ordersRpcService.updateAdminReport({
       reportId,
       requesterUserId,
       reportStatus: dto.reportStatus,
       internalNote: dto.internalNote ?? null,
     });
+    this.dashboardSseBrokerService.notifyAdminQueue('report');
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Admin xem danh sach risk score' })
@@ -585,12 +605,15 @@ export class OrdersController {
   @Roles('admin')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
   @Post('admin/risk-scores/recalculate')
-  calculateRiskScore(@CurrentUserId() requesterUserId: string, @Body() dto: CalculateRiskScoreDto) {
-    return this.ordersRpcService.calculateRiskScore({
+  async calculateRiskScore(@CurrentUserId() requesterUserId: string, @Body() dto: CalculateRiskScoreDto) {
+    const result = await this.ordersRpcService.calculateRiskScore({
       targetType: dto.targetType,
       targetId: dto.targetId,
       actorUserId: requesterUserId,
     });
+    this.dashboardSseBrokerService.notifyAdminQueue('moderation');
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Admin xem moderation case queue tong hop' })
@@ -620,18 +643,21 @@ export class OrdersController {
   @Roles('admin')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
   @Patch('admin/moderation-cases/:caseId')
-  updateAdminModerationCase(
+  async updateAdminModerationCase(
     @Param('caseId') caseId: string,
     @CurrentUserId() requesterUserId: string,
     @Body() dto: UpdateAdminModerationCaseDto,
   ) {
-    return this.ordersRpcService.updateAdminModerationCase({
+    const result = await this.ordersRpcService.updateAdminModerationCase({
       caseId,
       requesterUserId,
       caseStatus: dto.caseStatus,
       internalNote: dto.internalNote ?? null,
       assignedAdminUserId: dto.assignedAdminUserId ?? null,
     });
+    this.dashboardSseBrokerService.notifyAdminQueue('moderation');
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Admin lay chi tiet dispute va evidence' })
@@ -743,16 +769,19 @@ export class OrdersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post(':id/mark-paid')
-  markPaid(
+  async markPaid(
     @Param('id') id: string,
     @CurrentUserId() requesterUserId: string,
     @Body() dto: MarkOrderPaidDto,
   ) {
-    return this.ordersRpcService.markPaid({
+    const result = await this.ordersRpcService.markPaid({
       id,
       requesterUserId,
       providerRef: dto.providerRef ?? null,
     });
+    this.dashboardSseBrokerService.notifyOrderChanged(result, requesterUserId);
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Buyer tao lai link thanh toan payOS cho don pending bi fail' })
@@ -773,11 +802,14 @@ export class OrdersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post(':id/retry-payos-payment')
-  retryPayOSPayment(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
-    return this.ordersRpcService.retryPayOSPayment({
+  async retryPayOSPayment(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
+    const result = await this.ordersRpcService.retryPayOSPayment({
       id,
       requesterUserId,
     });
+    this.dashboardSseBrokerService.notifyOrderChanged(result, requesterUserId);
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Distributor nhan don si da giao vao ton kho' })
@@ -795,11 +827,14 @@ export class OrdersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post(':id/receive-inventory')
-  receiveWholesaleInventory(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
-    return this.ordersRpcService.receiveWholesaleInventory({
+  async receiveWholesaleInventory(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
+    const result = await this.ordersRpcService.receiveWholesaleInventory({
       id,
       requesterUserId,
     });
+    this.dashboardSseBrokerService.notifyAccount(requesterUserId);
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Webhook public nhan ket qua thanh toan tu payOS' })
@@ -807,8 +842,11 @@ export class OrdersController {
     description: 'Da nhan webhook payOS.',
   })
   @Post('payos/webhook')
-  handlePayOSWebhook(@Body() payload: PayOSWebhookMessage) {
-    return this.ordersRpcService.handlePayOSWebhook(payload);
+  async handlePayOSWebhook(@Body() payload: PayOSWebhookMessage) {
+    const result = await this.ordersRpcService.handlePayOSWebhook(payload);
+    this.dashboardSseBrokerService.notifyOrderChanged(result ?? {});
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Seller cap nhat trang thai xu ly va giao hang' })
@@ -826,16 +864,19 @@ export class OrdersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post(':id/fulfillment')
-  updateFulfillment(
+  async updateFulfillment(
     @Param('id') id: string,
     @CurrentUserId() requesterUserId: string,
     @Body() dto: UpdateOrderFulfillmentDto,
   ) {
-    return this.ordersRpcService.updateFulfillment({
+    const result = await this.ordersRpcService.updateFulfillment({
       id,
       requesterUserId,
       fulfillmentStatus: dto.fulfillmentStatus,
     });
+    this.dashboardSseBrokerService.notifyOrderChanged(result);
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Seller tao van don voi don vi van chuyen da chon' })
@@ -853,11 +894,14 @@ export class OrdersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post(':id/shipping/book')
-  bookShipping(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
-    return this.ordersRpcService.bookShipping({
+  async bookShipping(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
+    const result = await this.ordersRpcService.bookShipping({
       id,
       requesterUserId,
     });
+    this.dashboardSseBrokerService.notifyOrderChanged(result);
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Seller dong bo trang thai van chuyen tu carrier' })
@@ -875,11 +919,14 @@ export class OrdersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post(':id/shipping/sync')
-  syncShippingStatus(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
-    return this.ordersRpcService.syncShippingStatus({
+  async syncShippingStatus(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
+    const result = await this.ordersRpcService.syncShippingStatus({
       id,
       requesterUserId,
     });
+    this.dashboardSseBrokerService.notifyOrderChanged(result);
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Seller xac nhan hoan tat don hang' })

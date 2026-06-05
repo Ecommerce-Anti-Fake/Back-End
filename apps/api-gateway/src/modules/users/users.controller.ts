@@ -38,7 +38,9 @@ import {
 } from '@users';
 import { AccessTokenPayload } from '@contracts';
 import { JwtService } from '@nestjs/jwt';
-import { merge, Observable, of } from 'rxjs';
+import { interval, merge, Observable, of } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { DashboardInvalidationScope, DashboardSseBrokerService } from './dashboard-sse-broker.service';
 import { NotificationSseBrokerService } from './notification-sse-broker.service';
 import { UsersRpcService } from './users-rpc.service';
 
@@ -47,6 +49,7 @@ import { UsersRpcService } from './users-rpc.service';
 export class UsersController {
   constructor(
     private readonly usersRpcService: UsersRpcService,
+    private readonly dashboardSseBrokerService: DashboardSseBrokerService,
     private readonly notificationSseBrokerService: NotificationSseBrokerService,
     private readonly jwtService: JwtService,
   ) {}
@@ -183,6 +186,7 @@ export class UsersController {
       userAgent,
     });
     this.notificationSseBrokerService.notifyUser({ family: 'notification', reason: 'push_token_registered', userId });
+    this.dashboardSseBrokerService.notifyAccount(userId, 'notification_changed');
 
     return result;
   }
@@ -202,6 +206,7 @@ export class UsersController {
       deviceId: dto.deviceId,
     });
     this.notificationSseBrokerService.notifyUser({ family: 'notification', reason: 'push_token_revoked', userId });
+    this.dashboardSseBrokerService.notifyAccount(userId, 'notification_changed');
 
     return result;
   }
@@ -209,7 +214,7 @@ export class UsersController {
   @ApiOperation({ summary: 'SSE invalidation stream cho notification list/unread count' })
   @Sse('notifications/events')
   notificationEvents(@Query('accessToken') accessToken?: string): Observable<MessageEvent> {
-    const userId = this.verifySseAccessToken(accessToken);
+    const userId = this.verifySseAccessToken(accessToken).sub;
 
     return merge(
       of({
@@ -217,6 +222,36 @@ export class UsersController {
         data: { family: 'notification' },
       }),
       this.notificationSseBrokerService.streamForUser(userId),
+    );
+  }
+
+  @ApiOperation({ summary: 'SSE invalidation stream cho dashboard counters va queues' })
+  @Sse('dashboard/events')
+  dashboardEvents(
+    @Query('accessToken') accessToken?: string,
+    @Query('shopId') shopId?: string,
+  ): Observable<MessageEvent> {
+    const payload = this.verifySseAccessToken(accessToken);
+    const scopes: DashboardInvalidationScope[] = [`user:${payload.sub}`];
+    if (payload.role === 'admin') {
+      scopes.push('role:admin');
+    }
+    if (shopId?.trim()) {
+      scopes.push(`shop:${shopId.trim()}`);
+    }
+
+    return merge(
+      of({
+        type: 'dashboard.connected',
+        data: { family: 'dashboard', scopes },
+      }),
+      interval(25000).pipe(
+        map(() => ({
+          type: 'dashboard.heartbeat',
+          data: { family: 'dashboard', ts: new Date().toISOString() },
+        })),
+      ),
+      this.dashboardSseBrokerService.streamForScopes(scopes),
     );
   }
 
@@ -232,6 +267,7 @@ export class UsersController {
   async markNotificationRead(@CurrentUserId() userId: string, @Param('notificationId') notificationId: string) {
     const result = await this.usersRpcService.markNotificationRead({ userId, notificationId });
     this.notificationSseBrokerService.notifyUser({ family: 'notification', reason: 'read', userId, notificationId });
+    this.dashboardSseBrokerService.notifyAccount(userId, 'notification_changed');
 
     return result;
   }
@@ -247,6 +283,7 @@ export class UsersController {
   async markAllNotificationsRead(@CurrentUserId() userId: string) {
     const result = await this.usersRpcService.markAllNotificationsRead({ userId });
     this.notificationSseBrokerService.notifyUser({ family: 'notification', reason: 'read_all', userId });
+    this.dashboardSseBrokerService.notifyAccount(userId, 'notification_changed');
 
     return result;
   }
@@ -267,7 +304,7 @@ export class UsersController {
       throw new UnauthorizedException('Invalid access token');
     }
 
-    return payload.sub;
+    return payload;
   }
 
   @ApiOperation({ summary: 'Lay danh sach dia chi giao hang cua user hien tai' })
@@ -291,14 +328,17 @@ export class UsersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('addresses')
-  createAddress(@CurrentUserId() userId: string, @Body() dto: CreateUserAddressDto) {
-    return this.usersRpcService.createAddress({
+  async createAddress(@CurrentUserId() userId: string, @Body() dto: CreateUserAddressDto) {
+    const result = await this.usersRpcService.createAddress({
       userId,
       recipientName: dto.recipientName,
       phone: dto.phone,
       addressLine: dto.addressLine,
       isDefault: dto.isDefault,
     });
+    this.dashboardSseBrokerService.notifyAccount(userId);
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Cap nhat dia chi giao hang cua user hien tai' })
@@ -310,12 +350,12 @@ export class UsersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Patch('addresses/:addressId')
-  updateAddress(
+  async updateAddress(
     @CurrentUserId() userId: string,
     @Param('addressId') addressId: string,
     @Body() dto: UpdateUserAddressDto,
   ) {
-    return this.usersRpcService.updateAddress({
+    const result = await this.usersRpcService.updateAddress({
       userId,
       addressId,
       recipientName: dto.recipientName,
@@ -323,6 +363,9 @@ export class UsersController {
       addressLine: dto.addressLine,
       isDefault: dto.isDefault,
     });
+    this.dashboardSseBrokerService.notifyAccount(userId);
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Dat mot dia chi lam mac dinh' })
@@ -334,8 +377,11 @@ export class UsersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('addresses/:addressId/default')
-  setDefaultAddress(@CurrentUserId() userId: string, @Param('addressId') addressId: string) {
-    return this.usersRpcService.setDefaultAddress({ userId, addressId });
+  async setDefaultAddress(@CurrentUserId() userId: string, @Param('addressId') addressId: string) {
+    const result = await this.usersRpcService.setDefaultAddress({ userId, addressId });
+    this.dashboardSseBrokerService.notifyAccount(userId);
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Xoa dia chi giao hang cua user hien tai' })
@@ -347,8 +393,11 @@ export class UsersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Delete('addresses/:addressId')
-  deleteAddress(@CurrentUserId() userId: string, @Param('addressId') addressId: string) {
-    return this.usersRpcService.deleteAddress({ userId, addressId });
+  async deleteAddress(@CurrentUserId() userId: string, @Param('addressId') addressId: string) {
+    const result = await this.usersRpcService.deleteAddress({ userId, addressId });
+    this.dashboardSseBrokerService.notifyAccount(userId);
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Lay trang thai KYC cua user hien tai' })
@@ -399,8 +448,8 @@ export class UsersController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('kyc')
-  submitKyc(@CurrentUserId() userId: string, @Body() dto: SubmitKycDto) {
-    return this.usersRpcService.submitKyc({
+  async submitKyc(@CurrentUserId() userId: string, @Body() dto: SubmitKycDto) {
+    const result = await this.usersRpcService.submitKyc({
       userId,
       fullName: dto.fullName,
       dateOfBirth: dto.dateOfBirth,
@@ -409,6 +458,10 @@ export class UsersController {
       idNumber: dto.idNumber,
       documents: dto.documents,
     });
+    this.dashboardSseBrokerService.notifyAccount(userId);
+    this.dashboardSseBrokerService.notifyAdminQueue('moderation');
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Admin duyet hoac tu choi KYC cua user' })
@@ -427,13 +480,17 @@ export class UsersController {
   @Roles('admin')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
   @Post(':id/kyc/review')
-  reviewKyc(@Param('id') userId: string, @CurrentUserId() reviewerUserId: string, @Body() dto: ReviewUserKycDto) {
-    return this.usersRpcService.reviewKyc({
+  async reviewKyc(@Param('id') userId: string, @CurrentUserId() reviewerUserId: string, @Body() dto: ReviewUserKycDto) {
+    const result = await this.usersRpcService.reviewKyc({
       reviewerUserId,
       userId,
       verificationStatus: dto.verificationStatus,
       reviewNote: dto.reviewNote ?? null,
     });
+    this.dashboardSseBrokerService.notifyAccount(userId);
+    this.dashboardSseBrokerService.notifyAdminQueue('moderation');
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Admin lay chi tiet mot user' })
@@ -475,8 +532,11 @@ export class UsersController {
   @Roles('admin', 'user')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.usersRpcService.updateUser({ id, ...dto });
+  async update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
+    const result = await this.usersRpcService.updateUser({ id, ...dto });
+    this.dashboardSseBrokerService.notifyAccount(id);
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Admin khoa mem user bang cach chuyen accountStatus sang inactive' })

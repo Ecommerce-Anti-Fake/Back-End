@@ -51,12 +51,16 @@ import {
 } from '@products';
 import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import type { AuthenticatedUser } from '@contracts';
+import { DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
 import { ProductsRpcService } from './products-rpc.service';
 
 @ApiTags('Products')
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsRpcService: ProductsRpcService) {}
+  constructor(
+    private readonly productsRpcService: ProductsRpcService,
+    private readonly dashboardSseBrokerService: DashboardSseBrokerService,
+  ) {}
 
   @ApiOperation({ summary: 'Lay danh sach brand' })
   @ApiOkResponse({
@@ -156,8 +160,8 @@ export class ProductsController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('offers')
-  createOffer(@CurrentUserId() sellerUserId: string, @Body() dto: CreateOfferDto) {
-    return this.productsRpcService.createOffer({
+  async createOffer(@CurrentUserId() sellerUserId: string, @Body() dto: CreateOfferDto) {
+    const result = await this.productsRpcService.createOffer({
       sellerUserId,
       shopId: dto.shopId,
       categoryId: dto.categoryId,
@@ -179,6 +183,9 @@ export class ProductsController {
       parcelWidthCm: dto.parcelWidthCm,
       parcelHeightCm: dto.parcelHeightCm,
     });
+    this.dashboardSseBrokerService.notifyShop(shopIdFromResult(result) ?? dto.shopId);
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Cap nhat thong tin ban hang cua offer' })
@@ -192,12 +199,12 @@ export class ProductsController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Patch('offers/:offerId')
-  updateOffer(
+  async updateOffer(
     @Param('offerId') offerId: string,
     @CurrentUserId() sellerUserId: string,
     @Body() dto: UpdateOfferDto,
   ) {
-    return this.productsRpcService.updateOffer({
+    const result = await this.productsRpcService.updateOffer({
       offerId,
       sellerUserId,
       title: dto.title,
@@ -211,6 +218,12 @@ export class ProductsController {
       parcelWidthCm: dto.parcelWidthCm,
       parcelHeightCm: dto.parcelHeightCm,
     });
+    const shopId = shopIdFromResult(result);
+    if (shopId) {
+      this.dashboardSseBrokerService.notifyShop(shopId);
+    }
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Lay danh sach offer cua shop hien tai' })
@@ -545,8 +558,8 @@ export class ProductsController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('live/sessions')
-  createLiveSession(@CurrentUserId() requesterUserId: string, @Body() dto: CreateLiveSessionDto) {
-    return this.productsRpcService.createLiveSession({
+  async createLiveSession(@CurrentUserId() requesterUserId: string, @Body() dto: CreateLiveSessionDto) {
+    const result = await this.productsRpcService.createLiveSession({
       requesterUserId,
       shopId: dto.shopId,
       title: dto.title,
@@ -556,6 +569,9 @@ export class ProductsController {
       playbackUrl: dto.playbackUrl ?? null,
       offerIds: dto.offerIds ?? [],
     });
+    this.dashboardSseBrokerService.notifyShop(shopIdFromResult(result) ?? dto.shopId, 'live_changed');
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Cap nhat trang thai phien live commerce' })
@@ -566,18 +582,24 @@ export class ProductsController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Patch('live/sessions/:sessionId/status')
-  updateLiveSessionStatus(
+  async updateLiveSessionStatus(
     @Param('sessionId') sessionId: string,
     @CurrentUserId() requesterUserId: string,
     @CurrentUser() requester: AuthenticatedUser | undefined,
     @Body() dto: UpdateLiveSessionStatusDto,
   ) {
-    return this.productsRpcService.updateLiveSessionStatus({
+    const result = await this.productsRpcService.updateLiveSessionStatus({
       sessionId,
       requesterUserId,
       requesterRole: requester?.role,
       status: dto.status,
     });
+    const shopId = shopIdFromResult(result);
+    if (shopId) {
+      this.dashboardSseBrokerService.notifyShop(shopId, 'live_changed');
+    }
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Dang ky nhac lich live commerce' })
@@ -889,4 +911,13 @@ export class ProductsController {
       requesterUserId,
     });
   }
+}
+
+function shopIdFromResult(value: unknown) {
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const shopId = (value as Record<string, unknown>).shopId;
+  return typeof shopId === 'string' ? shopId : null;
 }
