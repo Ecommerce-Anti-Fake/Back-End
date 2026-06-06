@@ -16,11 +16,15 @@ describe('ChatRealtimeService', () => {
     listOnlineUserIds: jest.fn(),
     markTyping: jest.fn(),
   };
+  const liveReactionsRealtimeService = {
+    bind: jest.fn(),
+  };
   const service = new ChatRealtimeService(
     jwtService as never,
     productsRpcService as never,
     redisRealtimeConfigService as never,
     presenceService as never,
+    liveReactionsRealtimeService as never,
   );
 
   beforeEach(() => {

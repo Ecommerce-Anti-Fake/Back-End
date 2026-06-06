@@ -827,6 +827,89 @@ export class ProductRepository {
     return this.findLiveSessionById(input.sessionId, input.userId);
   }
 
+  listLiveComments(input: {
+    sessionId: string;
+    includeHidden?: boolean;
+    cursor?: string | null;
+    since?: Date | null;
+    pageSize?: number | null;
+  }) {
+    const pageSize = Math.min(100, Math.max(1, input.pageSize ?? 50));
+    return this.prisma.liveSessionComment.findMany({
+      where: {
+        sessionId: input.sessionId,
+        ...(input.includeHidden ? {} : { visibility: 'PUBLIC' as const }),
+        ...(input.since ? { createdAt: { gt: input.since } } : {}),
+      },
+      ...(input.cursor ? { cursor: { id: input.cursor }, skip: 1 } : {}),
+      include: this.liveCommentInclude(),
+      orderBy: { createdAt: 'asc' },
+      take: pageSize,
+    });
+  }
+
+  findLiveCommentByClientMessage(input: { sessionId: string; authorUserId: string; clientMessageId: string }) {
+    return this.prisma.liveSessionComment.findFirst({
+      where: {
+        sessionId: input.sessionId,
+        authorUserId: input.authorUserId,
+        clientMessageId: input.clientMessageId,
+      },
+      include: this.liveCommentInclude(),
+    });
+  }
+
+  async createLiveComment(input: {
+    sessionId: string;
+    authorUserId: string;
+    body: string;
+    clientMessageId?: string | null;
+  }) {
+    if (input.clientMessageId) {
+      const existing = await this.findLiveCommentByClientMessage({
+        sessionId: input.sessionId,
+        authorUserId: input.authorUserId,
+        clientMessageId: input.clientMessageId,
+      });
+      if (existing) return existing;
+    }
+
+    return this.prisma.liveSessionComment.create({
+      data: input,
+      include: this.liveCommentInclude(),
+    });
+  }
+
+  updateLiveCommentVisibility(input: {
+    sessionId: string;
+    commentId: string;
+    requesterUserId: string;
+    visibility: 'PUBLIC' | 'HIDDEN';
+  }) {
+    return this.prisma.liveSessionComment.update({
+      where: {
+        id: input.commentId,
+        sessionId: input.sessionId,
+      },
+      data: {
+        visibility: input.visibility,
+        hiddenAt: input.visibility === 'HIDDEN' ? new Date() : null,
+        hiddenByUserId: input.visibility === 'HIDDEN' ? input.requesterUserId : null,
+      },
+      include: this.liveCommentInclude(),
+    });
+  }
+
+  deleteLiveComment(input: { sessionId: string; commentId: string }) {
+    return this.prisma.liveSessionComment.delete({
+      where: {
+        id: input.commentId,
+        sessionId: input.sessionId,
+      },
+      include: this.liveCommentInclude(),
+    });
+  }
+
   private createNotification(input: {
     userId: string;
     notificationType: string;
@@ -972,6 +1055,18 @@ export class ProductRepository {
       _count: {
         select: {
           reminders: true,
+        },
+      },
+    };
+  }
+
+  private liveCommentInclude() {
+    return {
+      author: {
+        select: {
+          displayName: true,
+          email: true,
+          phone: true,
         },
       },
     };

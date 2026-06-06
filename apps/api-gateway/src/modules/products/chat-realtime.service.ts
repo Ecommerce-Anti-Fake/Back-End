@@ -9,6 +9,7 @@ import {
 } from '@common';
 import type { AccessTokenPayload } from '@contracts';
 import { Server, Socket } from 'socket.io';
+import { LiveReactionsRealtimeService } from './live-reactions-realtime.service';
 import { ProductsRpcService } from './products-rpc.service';
 
 type ChatSocketPrincipal = {
@@ -54,6 +55,7 @@ export class ChatRealtimeService implements OnModuleDestroy {
     private readonly productsRpcService: ProductsRpcService,
     private readonly redisRealtimeConfigService: RedisRealtimeConfigService,
     private readonly presenceService: RealtimePresenceService,
+    private readonly liveReactionsRealtimeService: LiveReactionsRealtimeService,
   ) {}
 
   async bind(httpServer: unknown) {
@@ -70,6 +72,7 @@ export class ChatRealtimeService implements OnModuleDestroy {
     this.io = io;
 
     await this.attachRedisAdapter(io);
+    this.liveReactionsRealtimeService.bind(io);
 
     io.on('connection', (socket) => {
       void this.handleConnection(socket);

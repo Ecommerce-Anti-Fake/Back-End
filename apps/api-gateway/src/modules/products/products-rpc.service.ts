@@ -10,15 +10,18 @@ import {
   CreateBrandMessage,
   CreateCategoryMessage,
   CreateOfferMessage,
+  CreateLiveCommentMessage,
   CreateLiveSessionMessage,
   CreateSocialCommentMessage,
   CreateSocialPostMessage,
   DeleteOfferDocumentMessage,
   DeleteOfferMediaMessage,
+  DeleteLiveCommentMessage,
   FavoriteOfferMessage,
   FavoriteOffersLookupMessage,
   ChatRequesterMessage,
   ChatThreadLookupMessage,
+  ListLiveCommentsMessage,
   ListLiveSessionsMessage,
   ListOffersMessage,
   ListSocialPostsMessage,
@@ -37,6 +40,7 @@ import {
   SocialPostLookupMessage,
   StartChatThreadMessage,
   LiveSessionLookupMessage,
+  UpdateLiveCommentVisibilityMessage,
   UpdateSocialPostVisibilityMessage,
   UpdateLiveSessionStatusMessage,
   UpdateOfferMessage,
@@ -222,6 +226,22 @@ export class ProductsRpcService {
 
   remindLiveSession(payload: LiveSessionLookupMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.remindLiveSession, payload);
+  }
+
+  listLiveComments(payload: ListLiveCommentsMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.listLiveComments, payload);
+  }
+
+  createLiveComment(payload: CreateLiveCommentMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.createLiveComment, payload);
+  }
+
+  updateLiveCommentVisibility(payload: UpdateLiveCommentVisibilityMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.updateLiveCommentVisibility, payload);
+  }
+
+  deleteLiveComment(payload: DeleteLiveCommentMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.deleteLiveComment, payload);
   }
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {

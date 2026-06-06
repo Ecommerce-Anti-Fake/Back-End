@@ -15,7 +15,9 @@ import type {
   CreateBrandMessage,
   CreateCategoryMessage,
   CreateOfferMessage,
+  CreateLiveCommentMessage,
   CreateLiveSessionMessage,
+  DeleteLiveCommentMessage,
   DeleteOfferDocumentMessage,
   DeleteOfferMediaMessage,
   FavoriteOfferMessage,
@@ -23,6 +25,7 @@ import type {
   ChatRequesterMessage,
   ChatThreadLookupMessage,
   LiveSessionLookupMessage,
+  ListLiveCommentsMessage,
   ListLiveSessionsMessage,
   ListOffersMessage,
   ListSocialPostsMessage,
@@ -41,6 +44,7 @@ import type {
   StartChatThreadMessage,
   UpdateSocialPostVisibilityMessage,
   UpdateLiveSessionStatusMessage,
+  UpdateLiveCommentVisibilityMessage,
   UpdateOfferMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
@@ -57,7 +61,9 @@ import {
   CreateOrderItemReviewUseCase,
   CreateSocialCommentUseCase,
   CreateSocialPostUseCase,
+  CreateLiveCommentUseCase,
   CreateLiveSessionUseCase,
+  DeleteLiveCommentUseCase,
   DeleteOfferDocumentUseCase,
   DeleteOfferMediaUseCase,
   GetOfferDocumentUploadSignaturesUseCase,
@@ -76,6 +82,7 @@ import {
   ListFavoriteOffersUseCase,
   ListShippingCarriersUseCase,
   ListLiveSessionsUseCase,
+  ListLiveCommentsUseCase,
   ListSocialPostsUseCase,
   RemoveSocialReactionUseCase,
   RemindLiveSessionUseCase,
@@ -87,6 +94,7 @@ import {
   RemoveFavoriteOfferUseCase,
   UpdateSocialPostVisibilityUseCase,
   UpdateLiveSessionStatusUseCase,
+  UpdateLiveCommentVisibilityUseCase,
   UpdateOfferUseCase,
 } from '../../application/use-cases';
 
@@ -136,6 +144,10 @@ export class ProductsRpcController {
     private readonly createLiveSessionUseCase: CreateLiveSessionUseCase,
     private readonly updateLiveSessionStatusUseCase: UpdateLiveSessionStatusUseCase,
     private readonly remindLiveSessionUseCase: RemindLiveSessionUseCase,
+    private readonly listLiveCommentsUseCase: ListLiveCommentsUseCase,
+    private readonly createLiveCommentUseCase: CreateLiveCommentUseCase,
+    private readonly updateLiveCommentVisibilityUseCase: UpdateLiveCommentVisibilityUseCase,
+    private readonly deleteLiveCommentUseCase: DeleteLiveCommentUseCase,
   ) {}
 
   @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findBrands)
@@ -523,6 +535,42 @@ export class ProductsRpcController {
         sessionId: payload.sessionId,
         requesterUserId: payload.requesterUserId,
       });
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.listLiveComments)
+  async listLiveComments(@Payload() payload: ListLiveCommentsMessage) {
+    try {
+      return await this.listLiveCommentsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.createLiveComment)
+  async createLiveComment(@Payload() payload: CreateLiveCommentMessage) {
+    try {
+      return await this.createLiveCommentUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.updateLiveCommentVisibility)
+  async updateLiveCommentVisibility(@Payload() payload: UpdateLiveCommentVisibilityMessage) {
+    try {
+      return await this.updateLiveCommentVisibilityUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.deleteLiveComment)
+  async deleteLiveComment(@Payload() payload: DeleteLiveCommentMessage) {
+    try {
+      return await this.deleteLiveCommentUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

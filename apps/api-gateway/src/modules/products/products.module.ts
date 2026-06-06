@@ -6,6 +6,7 @@ import { CATALOG_SERVICE_CLIENT } from '@contracts';
 import { AuthGuardsModule } from '@security';
 import { GatewayUsersModule } from '../users/users.module';
 import { ChatRealtimeService } from './chat-realtime.service';
+import { LiveReactionsRealtimeService } from './live-reactions-realtime.service';
 import { ProductsController } from './products.controller';
 import { ProductsRpcService } from './products-rpc.service';
 
@@ -37,7 +38,7 @@ import { ProductsRpcService } from './products-rpc.service';
     ]),
   ],
   controllers: [ProductsController],
-  providers: [ProductsRpcService, ChatRealtimeService],
+  providers: [ProductsRpcService, ChatRealtimeService, LiveReactionsRealtimeService],
   exports: [ProductsRpcService, ChatRealtimeService],
 })
 export class GatewayProductsModule {}

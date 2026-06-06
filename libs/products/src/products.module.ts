@@ -15,8 +15,10 @@ import {
   CreateSocialCommentUseCase,
   CreateSocialPostUseCase,
   CreateLiveSessionUseCase,
+  CreateLiveCommentUseCase,
   DeleteOfferDocumentUseCase,
   DeleteOfferMediaUseCase,
+  DeleteLiveCommentUseCase,
   GetOfferDocumentUploadSignaturesUseCase,
   GetOfferByIdUseCase,
   GetOfferMediaUploadSignaturesUseCase,
@@ -33,6 +35,7 @@ import {
   ListOffersUseCase,
   ListShippingCarriersUseCase,
   ListLiveSessionsUseCase,
+  ListLiveCommentsUseCase,
   ListSocialPostsUseCase,
   RemoveFavoriteOfferUseCase,
   RemoveSocialReactionUseCase,
@@ -44,6 +47,7 @@ import {
   StartChatThreadUseCase,
   UpdateSocialPostVisibilityUseCase,
   UpdateLiveSessionStatusUseCase,
+  UpdateLiveCommentVisibilityUseCase,
   UpdateOfferUseCase,
 } from './application/use-cases';
 import { ProductRepository } from './infrastructure/persistence/product-repository';
@@ -97,6 +101,10 @@ import { ProductsRpcController } from './presentation/rpc/products.rpc-controlle
     CreateLiveSessionUseCase,
     UpdateLiveSessionStatusUseCase,
     RemindLiveSessionUseCase,
+    ListLiveCommentsUseCase,
+    CreateLiveCommentUseCase,
+    UpdateLiveCommentVisibilityUseCase,
+    DeleteLiveCommentUseCase,
   ],
   exports: [
     ProductRepository,
@@ -143,6 +151,10 @@ import { ProductsRpcController } from './presentation/rpc/products.rpc-controlle
     CreateLiveSessionUseCase,
     UpdateLiveSessionStatusUseCase,
     RemindLiveSessionUseCase,
+    ListLiveCommentsUseCase,
+    CreateLiveCommentUseCase,
+    UpdateLiveCommentVisibilityUseCase,
+    DeleteLiveCommentUseCase,
   ],
 })
 export class ProductsModule {}

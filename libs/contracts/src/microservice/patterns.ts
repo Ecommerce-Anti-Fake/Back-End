@@ -101,6 +101,10 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   createLiveSession: 'products.create-live-session',
   updateLiveSessionStatus: 'products.update-live-session-status',
   remindLiveSession: 'products.remind-live-session',
+  listLiveComments: 'products.list-live-comments',
+  createLiveComment: 'products.create-live-comment',
+  updateLiveCommentVisibility: 'products.update-live-comment-visibility',
+  deleteLiveComment: 'products.delete-live-comment',
   allocateOfferBatches: 'products.allocate-offer-batches',
   findOfferBatchLinks: 'products.find-offer-batch-links',
   getOfferMediaUploadSignatures: 'products.get-offer-media-upload-signatures',
@@ -649,6 +653,30 @@ export type LiveSessionLookupMessage = {
 
 export type UpdateLiveSessionStatusMessage = LiveSessionLookupMessage & {
   status: 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED';
+};
+
+export type ListLiveCommentsMessage = {
+  sessionId: string;
+  requesterUserId?: string | null;
+  requesterRole?: string | null;
+  cursor?: string | null;
+  since?: string | null;
+  pageSize?: number | null;
+  includeHidden?: boolean | null;
+};
+
+export type CreateLiveCommentMessage = LiveSessionLookupMessage & {
+  body: string;
+  clientMessageId?: string | null;
+};
+
+export type UpdateLiveCommentVisibilityMessage = LiveSessionLookupMessage & {
+  commentId: string;
+  visibility: 'PUBLIC' | 'HIDDEN';
+};
+
+export type DeleteLiveCommentMessage = LiveSessionLookupMessage & {
+  commentId: string;
 };
 
 export type CreateOfferMessage = {

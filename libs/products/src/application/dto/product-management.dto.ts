@@ -478,6 +478,49 @@ export class UpdateLiveSessionStatusDto {
   status!: (typeof LIVE_SESSION_STATUSES)[number];
 }
 
+export class ListLiveCommentsQueryDto {
+  @ApiPropertyOptional({ example: 'comment-id' })
+  @IsOptional()
+  @IsString()
+  cursor?: string;
+
+  @ApiPropertyOptional({ example: '2026-06-05T03:00:00.000Z' })
+  @IsOptional()
+  @IsString()
+  since?: string;
+
+  @ApiPropertyOptional({ example: 50 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  pageSize?: number;
+
+  @ApiPropertyOptional({ example: 'false' })
+  @IsOptional()
+  @IsString()
+  includeHidden?: string;
+}
+
+export class CreateLiveCommentDto {
+  @ApiProperty({ example: 'Shop oi san pham nay con size M khong?' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(1000)
+  body!: string;
+
+  @ApiPropertyOptional({ example: 'client-message-id' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  clientMessageId?: string | null;
+}
+
+export class UpdateLiveCommentVisibilityDto {
+  @ApiProperty({ enum: SOCIAL_POST_VISIBILITIES, example: 'HIDDEN' })
+  @IsIn(SOCIAL_POST_VISIBILITIES)
+  visibility!: (typeof SOCIAL_POST_VISIBILITIES)[number];
+}
+
 export class LiveSessionOfferResponseDto {
   @ApiProperty()
   offerId!: string;
@@ -496,6 +539,35 @@ export class LiveSessionOfferResponseDto {
 
   @ApiPropertyOptional()
   thumbnailUrl?: string | null;
+}
+
+export class LiveCommentResponseDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  sessionId!: string;
+
+  @ApiProperty()
+  authorUserId!: string;
+
+  @ApiProperty()
+  authorName!: string;
+
+  @ApiProperty()
+  body!: string;
+
+  @ApiProperty({ enum: SOCIAL_POST_VISIBILITIES })
+  visibility!: (typeof SOCIAL_POST_VISIBILITIES)[number];
+
+  @ApiPropertyOptional()
+  clientMessageId?: string | null;
+
+  @ApiProperty()
+  createdAt!: Date;
+
+  @ApiProperty()
+  updatedAt!: Date;
 }
 
 export class LiveSessionResponseDto {

@@ -20,6 +20,7 @@ import {
   ChatThreadResponseDto,
   CreateBrandDto,
   CreateCategoryDto,
+  CreateLiveCommentDto,
   CreateLiveSessionDto,
   CreateOfferDto,
   CreateOfferReviewDto,
@@ -28,6 +29,7 @@ import {
   GetOfferDocumentUploadSignaturesDto,
   GetOfferMediaUploadSignaturesDto,
   GetReviewMediaUploadSignaturesDto,
+  ListLiveCommentsQueryDto,
   ListLiveSessionsQueryDto,
   ListSocialPostsQueryDto,
   ListOffersQueryDto,
@@ -42,13 +44,16 @@ import {
   SendChatMessageDto,
   ShippingCarrierResponseDto,
   SetSocialReactionDto,
+  LiveCommentResponseDto,
   LiveSessionResponseDto,
   SocialPostResponseDto,
   StartChatThreadDto,
   UpdateSocialPostVisibilityDto,
+  UpdateLiveCommentVisibilityDto,
   UpdateLiveSessionStatusDto,
   UpdateOfferDto,
 } from '@products';
+import { RealtimeLiveReactionService } from '@common';
 import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import type { AuthenticatedUser } from '@contracts';
 import { DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
@@ -59,6 +64,7 @@ import { ProductsRpcService } from './products-rpc.service';
 export class ProductsController {
   constructor(
     private readonly productsRpcService: ProductsRpcService,
+    private readonly liveReactionService: RealtimeLiveReactionService,
     private readonly dashboardSseBrokerService: DashboardSseBrokerService,
   ) {}
 
@@ -547,6 +553,109 @@ export class ProductsController {
       requesterUserId: requester?.id ?? null,
       filter: query.filter ?? 'all',
       q: query.q ?? null,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay aggregate reaction counters cua phien live' })
+  @ApiOkResponse({
+    description: 'Tong reaction ephemeral theo type, dung de REST recovery sau reconnect.',
+  })
+  @Get('live/sessions/:sessionId/reactions')
+  getLiveReactionAggregate(@Param('sessionId') sessionId: string) {
+    return this.liveReactionService.getAggregate(sessionId);
+  }
+
+  @ApiOperation({ summary: 'Lay lich su binh luan cua phien live' })
+  @ApiOkResponse({
+    description: 'Danh sach comment cua live session, dung cho reconnect/replay.',
+    type: LiveCommentResponseDto,
+    isArray: true,
+  })
+  @Get('live/sessions/:sessionId/comments')
+  listLiveComments(
+    @Param('sessionId') sessionId: string,
+    @Query() query: ListLiveCommentsQueryDto,
+    @CurrentUser() requester?: AuthenticatedUser,
+  ) {
+    return this.productsRpcService.listLiveComments({
+      sessionId,
+      requesterUserId: requester?.id ?? null,
+      requesterRole: requester?.role,
+      cursor: query.cursor ?? null,
+      since: query.since ?? null,
+      pageSize: query.pageSize ?? null,
+      includeHidden: query.includeHidden === 'true',
+    });
+  }
+
+  @ApiOperation({ summary: 'Tao binh luan live qua REST fallback' })
+  @ApiBearerAuth('access-token')
+  @ApiCreatedResponse({
+    description: 'Comment live da duoc luu.',
+    type: LiveCommentResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('live/sessions/:sessionId/comments')
+  createLiveComment(
+    @Param('sessionId') sessionId: string,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester: AuthenticatedUser | undefined,
+    @Body() dto: CreateLiveCommentDto,
+  ) {
+    return this.productsRpcService.createLiveComment({
+      sessionId,
+      requesterUserId,
+      requesterRole: requester?.role,
+      body: dto.body,
+      clientMessageId: dto.clientMessageId ?? null,
+    });
+  }
+
+  @ApiOperation({ summary: 'Admin an/hien binh luan live' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Comment live sau khi cap nhat hien thi.',
+    type: LiveCommentResponseDto,
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Patch('live/sessions/:sessionId/comments/:commentId/visibility')
+  updateLiveCommentVisibility(
+    @Param('sessionId') sessionId: string,
+    @Param('commentId') commentId: string,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester: AuthenticatedUser | undefined,
+    @Body() dto: UpdateLiveCommentVisibilityDto,
+  ) {
+    return this.productsRpcService.updateLiveCommentVisibility({
+      sessionId,
+      commentId,
+      requesterUserId,
+      requesterRole: requester?.role,
+      visibility: dto.visibility,
+    });
+  }
+
+  @ApiOperation({ summary: 'Admin xoa binh luan live' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Comment live da bi xoa.',
+    type: LiveCommentResponseDto,
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Delete('live/sessions/:sessionId/comments/:commentId')
+  deleteLiveComment(
+    @Param('sessionId') sessionId: string,
+    @Param('commentId') commentId: string,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester: AuthenticatedUser | undefined,
+  ) {
+    return this.productsRpcService.deleteLiveComment({
+      sessionId,
+      commentId,
+      requesterUserId,
+      requesterRole: requester?.role,
     });
   }
 

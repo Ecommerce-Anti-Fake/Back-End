@@ -199,6 +199,18 @@ type SocialPostWithRelations = {
   };
 };
 
+type LiveCommentWithAuthor = {
+  id: string;
+  sessionId: string;
+  authorUserId: string;
+  body: string;
+  visibility: string;
+  clientMessageId?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  author: SocialUserRecord;
+};
+
 type LiveSessionWithRelations = {
   id: string;
   shopId: string;
@@ -409,6 +421,20 @@ export function toLiveSessionResponse(session: LiveSessionWithRelations, viewerU
       };
     }),
     createdAt: session.createdAt,
+  };
+}
+
+export function toLiveCommentResponse(comment: LiveCommentWithAuthor) {
+  return {
+    id: comment.id,
+    sessionId: comment.sessionId,
+    authorUserId: comment.authorUserId,
+    authorName: displayName(comment.author),
+    body: comment.body,
+    visibility: comment.visibility,
+    clientMessageId: comment.clientMessageId ?? null,
+    createdAt: comment.createdAt,
+    updatedAt: comment.updatedAt,
   };
 }
 
