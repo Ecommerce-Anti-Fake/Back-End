@@ -30,6 +30,8 @@
     "db:seed": "ts-node prisma/seed.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
+    "test:ci": "jest health.controller.spec.ts rate-limit.guard.spec.ts realtime-event.dispatcher.spec.ts notification-realtime-delivery.use-case.spec.ts create-report.use-case.spec.ts handle-payos-webhook.use-case.spec.ts retry-payos-payment.use-case.spec.ts --runInBand",
+    "ci:quality": "npm run test:ci && npm run build:deploy",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",

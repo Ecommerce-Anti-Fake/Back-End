@@ -1,0 +1,37 @@
+name: Backend Quality Gates
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      REDIS_ENABLED: 'false'
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+      DEPLOY_SMOKE_BASE_URL: http://127.0.0.1:3001
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run selected backend tests
+        run: npm run test:ci
+
+      - name: Build deploy artifact
+        run: npm run build:deploy

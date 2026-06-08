@@ -182,6 +182,20 @@ Rate-limit profiles are enforced in-process at the API gateway. Defaults are sui
 - payOS webhook endpoint: `RATE_LIMIT_PAYMENT_WEBHOOK_LIMIT=60`, `RATE_LIMIT_PAYMENT_WEBHOOK_WINDOW_MS=60000`
 - Public catalog endpoints: `RATE_LIMIT_PUBLIC_CATALOG_LIMIT=120`, `RATE_LIMIT_PUBLIC_CATALOG_WINDOW_MS=60000`
 
+## CI Quality Gates
+
+GitHub Actions workflow:
+
+- `.github/workflows/quality-gates.yml`
+
+Local equivalent:
+
+```bash
+npm run ci:quality
+```
+
+The backend gate runs `npm ci`, selected high-signal Jest tests through `npm run test:ci`, and `npm run build:deploy`. CI uses safe placeholders only and must not store production `DATABASE_URL`, Firebase private keys, payOS, GHN, Redis, or livestream provider secrets in repository files.
+
 ## Build
 
 ```bash
@@ -204,4 +218,6 @@ npm run start:prod:catalog
 npm run start:prod:orders
 npm run start:prod:affiliate
 npm run smoke:deploy
+npm run test:ci
+npm run ci:quality
 ```
