@@ -642,6 +642,12 @@ export type CreateLiveSessionMessage = {
   coverUrl?: string | null;
   startAt: string;
   playbackUrl?: string | null;
+  streamProvider?: string | null;
+  streamProviderSessionId?: string | null;
+  streamIngestUrl?: string | null;
+  streamLatencyTargetMs?: number | null;
+  recordingUrl?: string | null;
+  recordingRetentionDays?: number | null;
   offerIds?: string[];
 };
 

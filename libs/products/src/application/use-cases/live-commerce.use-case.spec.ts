@@ -43,6 +43,12 @@ describe('live-commerce use cases', () => {
       description: 'San pham co QR',
       startAt: '2026-06-02T13:00:00.000Z',
       playbackUrl: 'https://video.example.com/live-1',
+      streamProvider: 'HLS_CDN',
+      streamProviderSessionId: 'provider-live-1',
+      streamIngestUrl: 'rtmp://ingest.example.com/live/live-1',
+      streamLatencyTargetMs: 8000,
+      recordingUrl: 'https://cdn.example.com/recordings/live-1.m3u8',
+      recordingRetentionDays: 30,
       offerIds: ['offer-1'],
     });
 
@@ -52,11 +58,17 @@ describe('live-commerce use cases', () => {
         title: 'Live hang chinh hang',
         offerIds: ['offer-1'],
         requesterUserId: 'seller-user-1',
+        streamProvider: 'HLS_CDN',
+        streamProviderSessionId: 'provider-live-1',
+        streamLatencyTargetMs: 8000,
+        recordingRetentionDays: 30,
       }),
     );
     expect(result).toMatchObject({
       id: 'live-1',
       status: 'SCHEDULED',
+      streamProvider: 'HLS_CDN',
+      streamProviderSessionId: 'provider-live-1',
       offers: [expect.objectContaining({ offerId: 'offer-1' })],
     });
   });
@@ -164,6 +176,12 @@ function liveSession(overrides: Record<string, unknown> = {}) {
     startAt: new Date('2026-06-02T13:00:00.000Z'),
     status: 'SCHEDULED',
     playbackUrl: 'https://video.example.com/live-1',
+    streamProvider: 'HLS_CDN',
+    streamProviderSessionId: 'provider-live-1',
+    streamIngestUrl: 'rtmp://ingest.example.com/live/live-1',
+    streamLatencyTargetMs: 8000,
+    recordingUrl: 'https://cdn.example.com/recordings/live-1.m3u8',
+    recordingRetentionDays: 30,
     createdAt: new Date('2026-06-01T10:00:00.000Z'),
     shop: { shopName: 'Seller Shop' },
     offers: [

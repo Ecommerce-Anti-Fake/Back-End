@@ -775,6 +775,12 @@ export class ProductRepository {
     coverUrl?: string | null;
     startAt: Date;
     playbackUrl?: string | null;
+    streamProvider?: string | null;
+    streamProviderSessionId?: string | null;
+    streamIngestUrl?: string | null;
+    streamLatencyTargetMs?: number | null;
+    recordingUrl?: string | null;
+    recordingRetentionDays?: number | null;
     offerIds: string[];
     requesterUserId: string;
   }) {
@@ -786,6 +792,12 @@ export class ProductRepository {
         coverUrl: input.coverUrl ?? null,
         startAt: input.startAt,
         playbackUrl: input.playbackUrl ?? null,
+        streamProvider: input.streamProvider ?? null,
+        streamProviderSessionId: input.streamProviderSessionId ?? null,
+        streamIngestUrl: input.streamIngestUrl ?? null,
+        streamLatencyTargetMs: input.streamLatencyTargetMs ?? null,
+        recordingUrl: input.recordingUrl ?? null,
+        recordingRetentionDays: input.recordingRetentionDays ?? null,
         offers: {
           create: input.offerIds.map((offerId, index) => ({
             offerId,

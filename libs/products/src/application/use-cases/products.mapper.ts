@@ -220,6 +220,12 @@ type LiveSessionWithRelations = {
   startAt: Date;
   status: string;
   playbackUrl: string | null;
+  streamProvider?: string | null;
+  streamProviderSessionId?: string | null;
+  streamIngestUrl?: string | null;
+  streamLatencyTargetMs?: number | null;
+  recordingUrl?: string | null;
+  recordingRetentionDays?: number | null;
   createdAt: Date;
   shop: {
     shopName: string;
@@ -404,6 +410,12 @@ export function toLiveSessionResponse(session: LiveSessionWithRelations, viewerU
     startAt: session.startAt,
     status: session.status,
     playbackUrl: session.playbackUrl,
+    streamProvider: session.streamProvider ?? null,
+    streamProviderSessionId: session.streamProviderSessionId ?? null,
+    streamIngestUrl: session.streamIngestUrl ?? null,
+    streamLatencyTargetMs: session.streamLatencyTargetMs ?? null,
+    recordingUrl: session.recordingUrl ?? null,
+    recordingRetentionDays: session.recordingRetentionDays ?? null,
     reminderCount: session._count?.reminders ?? session.reminders?.length ?? 0,
     viewerHasReminder: Boolean(viewerUserId && session.reminders?.some((reminder) => reminder.userId === viewerUserId)),
     offers: (session.offers ?? []).map(({ offer }) => {

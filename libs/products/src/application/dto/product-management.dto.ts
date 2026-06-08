@@ -465,6 +465,42 @@ export class CreateLiveSessionDto {
   @IsString()
   playbackUrl?: string | null;
 
+  @ApiPropertyOptional({ example: 'HLS_CDN' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  streamProvider?: string | null;
+
+  @ApiPropertyOptional({ example: 'provider-session-id' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  streamProviderSessionId?: string | null;
+
+  @ApiPropertyOptional({ example: 'rtmp://ingest.example.com/live/stream-key' })
+  @IsOptional()
+  @IsString()
+  streamIngestUrl?: string | null;
+
+  @ApiPropertyOptional({ example: 8000 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1000)
+  streamLatencyTargetMs?: number | null;
+
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/recordings/live-1.m3u8' })
+  @IsOptional()
+  @IsString()
+  recordingUrl?: string | null;
+
+  @ApiPropertyOptional({ example: 30 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  recordingRetentionDays?: number | null;
+
   @ApiPropertyOptional({ example: ['offer-id-1', 'offer-id-2'], isArray: true })
   @IsOptional()
   @IsArray()
@@ -597,6 +633,24 @@ export class LiveSessionResponseDto {
 
   @ApiPropertyOptional()
   playbackUrl?: string | null;
+
+  @ApiPropertyOptional()
+  streamProvider?: string | null;
+
+  @ApiPropertyOptional()
+  streamProviderSessionId?: string | null;
+
+  @ApiPropertyOptional()
+  streamIngestUrl?: string | null;
+
+  @ApiPropertyOptional()
+  streamLatencyTargetMs?: number | null;
+
+  @ApiPropertyOptional()
+  recordingUrl?: string | null;
+
+  @ApiPropertyOptional()
+  recordingRetentionDays?: number | null;
 
   @ApiProperty()
   reminderCount!: number;

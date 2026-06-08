@@ -14,6 +14,12 @@ export class CreateLiveSessionUseCase {
     coverUrl?: string | null;
     startAt: string;
     playbackUrl?: string | null;
+    streamProvider?: string | null;
+    streamProviderSessionId?: string | null;
+    streamIngestUrl?: string | null;
+    streamLatencyTargetMs?: number | null;
+    recordingUrl?: string | null;
+    recordingRetentionDays?: number | null;
     offerIds?: string[];
   }) {
     const title = input.title.trim();
@@ -24,6 +30,12 @@ export class CreateLiveSessionUseCase {
     const startAt = new Date(input.startAt);
     if (Number.isNaN(startAt.getTime())) {
       throw new BadRequestException('Live session startAt is invalid');
+    }
+    if (input.streamLatencyTargetMs !== undefined && input.streamLatencyTargetMs !== null && input.streamLatencyTargetMs < 1000) {
+      throw new BadRequestException('Live stream latency target must be at least 1000ms');
+    }
+    if (input.recordingRetentionDays !== undefined && input.recordingRetentionDays !== null && input.recordingRetentionDays < 1) {
+      throw new BadRequestException('Recording retention must be at least 1 day');
     }
 
     const shop = await this.productRepository.findShopForLiveSession(input.shopId);
@@ -57,6 +69,12 @@ export class CreateLiveSessionUseCase {
       coverUrl: input.coverUrl?.trim() || null,
       startAt,
       playbackUrl: input.playbackUrl?.trim() || null,
+      streamProvider: input.streamProvider?.trim() || 'HLS_CDN',
+      streamProviderSessionId: input.streamProviderSessionId?.trim() || null,
+      streamIngestUrl: input.streamIngestUrl?.trim() || null,
+      streamLatencyTargetMs: input.streamLatencyTargetMs ?? null,
+      recordingUrl: input.recordingUrl?.trim() || null,
+      recordingRetentionDays: input.recordingRetentionDays ?? null,
       offerIds,
       requesterUserId: input.requesterUserId,
     });

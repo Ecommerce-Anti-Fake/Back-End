@@ -151,6 +151,14 @@ RT3 chat realtime surfaces:
 - `ChatMessage.clientMessageId` is unique per thread for retry dedupe. REST chat history remains the recovery source after reconnect.
 - Socket.IO uses the Redis adapter when Redis is configured; otherwise it logs the local in-process room fallback.
 
+RT8 livestream video pilot:
+
+- First production video strategy is HLS/CDN metadata, not custom WebRTC infrastructure.
+- Live session commerce state remains in PostgreSQL: metadata, offers, reminders, comments, moderation, orders, and audit events.
+- `LiveCommerceSession.playbackUrl` stores the viewer HLS/embed URL. `streamProvider`, `streamProviderSessionId`, `streamIngestUrl`, `streamLatencyTargetMs`, `recordingUrl`, and `recordingRetentionDays` store provider metadata only.
+- Provider credentials, stream keys, and CDN secrets must stay in the provider console or deployment secret manager. Do not commit them to env examples, seed data, docs, or Prisma migrations.
+- Recording retention for the pilot defaults to short-lived external provider retention; comments remain the canonical moderation/dispute replay log in PostgreSQL.
+
 ## Build
 
 ```bash

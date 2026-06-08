@@ -676,6 +676,12 @@ export class ProductsController {
       coverUrl: dto.coverUrl ?? null,
       startAt: dto.startAt,
       playbackUrl: dto.playbackUrl ?? null,
+      streamProvider: dto.streamProvider ?? null,
+      streamProviderSessionId: dto.streamProviderSessionId ?? null,
+      streamIngestUrl: dto.streamIngestUrl ?? null,
+      streamLatencyTargetMs: dto.streamLatencyTargetMs ?? null,
+      recordingUrl: dto.recordingUrl ?? null,
+      recordingRetentionDays: dto.recordingRetentionDays ?? null,
       offerIds: dto.offerIds ?? [],
     });
     this.dashboardSseBrokerService.notifyShop(shopIdFromResult(result) ?? dto.shopId, 'live_changed');
