@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule as ApiGatewayModule } from './app.module';
+import { configureHttpCors, configureRootSwaggerRedirect } from './bootstrap-http';
 import { AppModule as AffiliateServiceModule } from '../../affiliate-service/src/app.module';
 import { AppModule as AuthServiceModule } from '../../auth-service/src/app.module';
 import { AppModule as CatalogServiceModule } from '../../catalog-service/src/app.module';
@@ -45,10 +46,8 @@ async function bootstrapGateway() {
   const configService = app.get(ConfigService);
 
   app.setGlobalPrefix('api');
-  app.enableCors({
-    origin: true,
-    credentials: true,
-  });
+  configureHttpCors(app, configService);
+  configureRootSwaggerRedirect(app);
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { configureHttpCors, configureRootSwaggerRedirect } from './bootstrap-http';
 import { ChatRealtimeService } from './modules/products/chat-realtime.service';
 
 async function bootstrap() {
@@ -10,10 +11,8 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   app.setGlobalPrefix('api');
-  app.enableCors({
-    origin: true,
-    credentials: true,
-  });
+  configureHttpCors(app, configService);
+  configureRootSwaggerRedirect(app);
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
