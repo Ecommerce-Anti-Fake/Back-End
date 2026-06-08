@@ -159,6 +159,29 @@ RT8 livestream video pilot:
 - Provider credentials, stream keys, and CDN secrets must stay in the provider console or deployment secret manager. Do not commit them to env examples, seed data, docs, or Prisma migrations.
 - Recording retention for the pilot defaults to short-lived external provider retention; comments remain the canonical moderation/dispute replay log in PostgreSQL.
 
+## Production Observability
+
+Task 15 gateway observability is intentionally provider-neutral:
+
+- `GET /api/health` returns a deployment smoke payload for the API gateway.
+- Every HTTP request receives an `x-request-id` header and emits a structured JSON log with method, path, status, duration, IP, and user agent.
+- Unhandled and HTTP exceptions emit structured JSON error logs with request ID, status, path, message, and error name.
+- Rate-limit violations emit `rate_limit.exceeded` structured logs.
+- Monitoring decision: keep logs provider-neutral in code, then forward stdout/stderr to the host platform log pipeline. For production, attach Sentry or OpenTelemetry at the platform/logger sink, not inside business modules.
+
+Deploy smoke:
+
+```bash
+DEPLOY_SMOKE_BASE_URL=http://127.0.0.1:3001 npm run smoke:deploy
+```
+
+Rate-limit profiles are enforced in-process at the API gateway. Defaults are suitable for local/demo single-instance runs; production multi-instance deployments should pair them with edge/WAF or Redis-backed limiting:
+
+- Auth public endpoints: `RATE_LIMIT_AUTH_LIMIT=10`, `RATE_LIMIT_AUTH_WINDOW_MS=60000`
+- Upload-signature endpoints: `RATE_LIMIT_UPLOAD_SIGNATURE_LIMIT=20`, `RATE_LIMIT_UPLOAD_SIGNATURE_WINDOW_MS=60000`
+- payOS webhook endpoint: `RATE_LIMIT_PAYMENT_WEBHOOK_LIMIT=60`, `RATE_LIMIT_PAYMENT_WEBHOOK_WINDOW_MS=60000`
+- Public catalog endpoints: `RATE_LIMIT_PUBLIC_CATALOG_LIMIT=120`, `RATE_LIMIT_PUBLIC_CATALOG_WINDOW_MS=60000`
+
 ## Build
 
 ```bash
@@ -180,4 +203,5 @@ npm run start:prod:users
 npm run start:prod:catalog
 npm run start:prod:orders
 npm run start:prod:affiliate
+npm run smoke:deploy
 ```

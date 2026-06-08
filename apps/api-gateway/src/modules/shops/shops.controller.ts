@@ -33,6 +33,7 @@ import {
   UpdateShopProfileDto,
 } from '@shops';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
+import { RateLimit } from '../../observability';
 import { ShopsRpcService } from './shops-rpc.service';
 
 @ApiTags('Shops')
@@ -239,6 +240,7 @@ export class ShopsController {
   @ApiBearerAuth('access-token')
   @ApiOkResponse({ type: MediaUploadSignatureResponseDto, isArray: true })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @RateLimit({ profile: 'uploadSignature' })
   @Post(':shopId/documents/upload-signatures')
   getShopDocumentUploadSignatures(
     @Param('shopId') shopId: string,
@@ -273,6 +275,7 @@ export class ShopsController {
   @ApiBearerAuth('access-token')
   @ApiOkResponse({ type: MediaUploadSignatureResponseDto, isArray: true })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @RateLimit({ profile: 'uploadSignature' })
   @Post(':shopId/categories/:categoryId/documents/upload-signatures')
   getCategoryDocumentUploadSignatures(
     @Param('shopId') shopId: string,
@@ -311,6 +314,7 @@ export class ShopsController {
   @ApiBearerAuth('access-token')
   @ApiOkResponse({ type: MediaUploadSignatureResponseDto, isArray: true })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @RateLimit({ profile: 'uploadSignature' })
   @Post(':shopId/brands/:brandId/authorization/upload-signatures')
   getBrandAuthorizationUploadSignatures(
     @Param('shopId') shopId: string,

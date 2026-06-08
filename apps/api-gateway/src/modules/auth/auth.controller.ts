@@ -29,6 +29,7 @@ import {
   RegisterResponseDto,
   ResetPasswordDto,
 } from '@auth';
+import { RateLimit } from '../../observability';
 import { AuthRpcService } from './auth-rpc.service';
 
 @ApiTags('Auth')
@@ -45,6 +46,7 @@ export class AuthController {
   @ApiBadRequestResponse({
     description: 'Thieu email/phone, du lieu khong hop le hoac tai khoan da ton tai.',
   })
+  @RateLimit({ profile: 'auth' })
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authRpcService.register(dto);
@@ -62,6 +64,7 @@ export class AuthController {
   @ApiForbiddenResponse({
     description: 'Tai khoan khong o trang thai active.',
   })
+  @RateLimit({ profile: 'auth' })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authRpcService.login(dto);
@@ -79,6 +82,7 @@ export class AuthController {
   @ApiForbiddenResponse({
     description: 'Email chua xac thuc hoac tai khoan khong active.',
   })
+  @RateLimit({ profile: 'auth' })
   @Post('firebase-login')
   firebaseLogin(@Body() dto: FirebaseLoginDto) {
     return this.authRpcService.firebaseLogin(dto);
@@ -96,6 +100,7 @@ export class AuthController {
   @ApiForbiddenResponse({
     description: 'Tai khoan khong o trang thai active.',
   })
+  @RateLimit({ profile: 'auth' })
   @Post('refresh')
   refresh(@Body() dto: RefreshTokenDto) {
     return this.authRpcService.refresh(dto);
@@ -121,6 +126,7 @@ export class AuthController {
     description: 'Tra ve thong bao generic de tranh account enumeration.',
     type: ForgotPasswordResponseDto,
   })
+  @RateLimit({ profile: 'auth', limit: 5 })
   @Post('forgot-password')
   requestPasswordReset(@Body() dto: ForgotPasswordDto) {
     return this.authRpcService.requestPasswordReset(dto);
@@ -135,6 +141,7 @@ export class AuthController {
   @ApiBadRequestResponse({
     description: 'Reset token khong hop le hoac het han.',
   })
+  @RateLimit({ profile: 'auth', limit: 5 })
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authRpcService.resetPassword(dto);

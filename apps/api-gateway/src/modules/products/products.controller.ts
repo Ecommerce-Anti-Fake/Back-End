@@ -57,6 +57,7 @@ import { RealtimeLiveReactionService } from '@common';
 import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import type { AuthenticatedUser } from '@contracts';
 import { DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
+import { RateLimit } from '../../observability';
 import { ProductsRpcService } from './products-rpc.service';
 
 @ApiTags('Products')
@@ -74,6 +75,7 @@ export class ProductsController {
     type: BrandResponseDto,
     isArray: true,
   })
+  @RateLimit({ profile: 'publicCatalog' })
   @Get('brands')
   findBrands() {
     return this.productsRpcService.findBrands();
@@ -85,6 +87,7 @@ export class ProductsController {
     type: CategoryResponseDto,
     isArray: true,
   })
+  @RateLimit({ profile: 'publicCatalog' })
   @Get('categories')
   findCategories() {
     return this.productsRpcService.findCategories();
@@ -96,6 +99,7 @@ export class ProductsController {
     type: ShippingCarrierResponseDto,
     isArray: true,
   })
+  @RateLimit({ profile: 'publicCatalog' })
   @Get('shipping-carriers')
   findShippingCarriers() {
     return this.productsRpcService.findShippingCarriers();
@@ -258,6 +262,7 @@ export class ProductsController {
     type: OfferResponseDto,
     isArray: true,
   })
+  @RateLimit({ profile: 'publicCatalog' })
   @Get('offers')
   findOffers(@Query() query: ListOffersQueryDto) {
     return this.productsRpcService.findOffers({
@@ -281,6 +286,7 @@ export class ProductsController {
     description: 'Thong tin offer.',
     type: OfferResponseDto,
   })
+  @RateLimit({ profile: 'publicCatalog' })
   @Get('offers/:id')
   findOfferById(@Param('id') id: string) {
     return this.productsRpcService.findOfferById({ id });
@@ -405,6 +411,7 @@ export class ProductsController {
     type: SocialPostResponseDto,
     isArray: true,
   })
+  @RateLimit({ profile: 'publicCatalog' })
   @Get('social/posts')
   listSocialPosts(@Query() query: ListSocialPostsQueryDto, @CurrentUser() requester?: AuthenticatedUser) {
     return this.productsRpcService.listSocialPosts({
@@ -547,6 +554,7 @@ export class ProductsController {
     type: LiveSessionResponseDto,
     isArray: true,
   })
+  @RateLimit({ profile: 'publicCatalog' })
   @Get('live/sessions')
   listLiveSessions(@Query() query: ListLiveSessionsQueryDto, @CurrentUser() requester?: AuthenticatedUser) {
     return this.productsRpcService.listLiveSessions({
@@ -560,6 +568,7 @@ export class ProductsController {
   @ApiOkResponse({
     description: 'Tong reaction ephemeral theo type, dung de REST recovery sau reconnect.',
   })
+  @RateLimit({ profile: 'publicCatalog' })
   @Get('live/sessions/:sessionId/reactions')
   getLiveReactionAggregate(@Param('sessionId') sessionId: string) {
     return this.liveReactionService.getAggregate(sessionId);
@@ -571,6 +580,7 @@ export class ProductsController {
     type: LiveCommentResponseDto,
     isArray: true,
   })
+  @RateLimit({ profile: 'publicCatalog' })
   @Get('live/sessions/:sessionId/comments')
   listLiveComments(
     @Param('sessionId') sessionId: string,
@@ -777,6 +787,7 @@ export class ProductsController {
     isArray: true,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @RateLimit({ profile: 'uploadSignature' })
   @Post('offers/:offerId/media/upload-signatures')
   getOfferMediaUploadSignatures(
     @Param('offerId') offerId: string,
@@ -837,6 +848,7 @@ export class ProductsController {
     type: OfferMediaResponseDto,
     isArray: true,
   })
+  @RateLimit({ profile: 'publicCatalog' })
   @Get('offers/:offerId/media')
   findOfferMedia(@Param('offerId') offerId: string) {
     return this.productsRpcService.findOfferMedia({ offerId });
@@ -866,6 +878,7 @@ export class ProductsController {
     description: 'Danh sach danh gia cua offer.',
     type: OfferReviewsResponseDto,
   })
+  @RateLimit({ profile: 'publicCatalog' })
   @Get('offers/:offerId/reviews')
   findOfferReviews(@Param('offerId') offerId: string) {
     return this.productsRpcService.findOfferReviews({ offerId });
@@ -921,6 +934,7 @@ export class ProductsController {
     isArray: true,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @RateLimit({ profile: 'uploadSignature' })
   @Post('reviews/:reviewId/media/upload-signatures')
   getReviewMediaUploadSignatures(
     @Param('reviewId') reviewId: string,
@@ -963,6 +977,7 @@ export class ProductsController {
     isArray: true,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @RateLimit({ profile: 'uploadSignature' })
   @Post('offers/:offerId/documents/upload-signatures')
   getOfferDocumentUploadSignatures(
     @Param('offerId') offerId: string,
@@ -1003,6 +1018,7 @@ export class ProductsController {
     type: OfferDocumentResponseDto,
     isArray: true,
   })
+  @RateLimit({ profile: 'publicCatalog' })
   @Get('offers/:offerId/documents')
   findOfferDocuments(@Param('offerId') offerId: string) {
     return this.productsRpcService.findOfferDocuments({ offerId });

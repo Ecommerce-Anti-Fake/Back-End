@@ -37,6 +37,7 @@ import {
   WholesalePricingPreviewResponseDto,
 } from '@distribution';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
+import { RateLimit } from '../../observability';
 import { DistributionRpcService } from './distribution-rpc.service';
 
 @ApiTags('Distribution')
@@ -498,6 +499,7 @@ export class DistributionController {
     isArray: true,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @RateLimit({ profile: 'uploadSignature' })
   @Post('batches/:batchId/documents/upload-signatures')
   getBatchDocumentUploadSignatures(
     @CurrentUserId() requesterUserId: string,

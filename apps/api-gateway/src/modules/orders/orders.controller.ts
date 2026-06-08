@@ -64,6 +64,7 @@ import {
 import type { PayOSWebhookMessage } from '@contracts';
 import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import { DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
+import { RateLimit } from '../../observability';
 import { OrdersRpcService } from './orders-rpc.service';
 
 @ApiTags('Orders')
@@ -841,6 +842,7 @@ export class OrdersController {
   @ApiOkResponse({
     description: 'Da nhan webhook payOS.',
   })
+  @RateLimit({ profile: 'paymentWebhook' })
   @Post('payos/webhook')
   async handlePayOSWebhook(@Body() payload: PayOSWebhookMessage) {
     const result = await this.ordersRpcService.handlePayOSWebhook(payload);
@@ -1023,6 +1025,7 @@ export class OrdersController {
     description: 'Chi buyer hoac seller cua dispute moi co quyen upload evidence.',
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @RateLimit({ profile: 'uploadSignature' })
   @Post('disputes/:disputeId/evidence/upload-signatures')
   getDisputeEvidenceUploadSignatures(
     @Param('disputeId') disputeId: string,

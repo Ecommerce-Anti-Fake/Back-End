@@ -40,6 +40,7 @@ import { AccessTokenPayload } from '@contracts';
 import { JwtService } from '@nestjs/jwt';
 import { interval, merge, Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
+import { RateLimit } from '../../observability';
 import { DashboardInvalidationScope, DashboardSseBrokerService } from './dashboard-sse-broker.service';
 import { NotificationSseBrokerService } from './notification-sse-broker.service';
 import { UsersRpcService } from './users-rpc.service';
@@ -426,6 +427,7 @@ export class UsersController {
     description: 'Thieu access token hoac token khong hop le.',
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @RateLimit({ profile: 'uploadSignature' })
   @Post('kyc/document-upload-signatures')
   getKycUploadSignatures(@CurrentUserId() userId: string, @Body() dto: GetKycUploadSignaturesDto) {
     return this.usersRpcService.getKycUploadSignatures({
