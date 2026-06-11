@@ -7,9 +7,8 @@ const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:5173',
   'https://antifake.io.vn',
   'https://www.antifake.io.vn',
-  'https://api.antifake.io.vn/api',
+  'https://api.antifake.io.vn',
   'https://ecommerce-anti-fake-back-end.onrender.com',
-  'https://ecommerce-anti-fake-back-end.onrender.com/api',
 ];
 
 function parseOriginList(value?: string) {
@@ -40,7 +39,7 @@ export function configureHttpCors(
         return callback(null, true);
       }
 
-      return callback(new Error(`CORS blocked for origin: ${origin}`), false);
+      return callback(null, false);
     },
     credentials: true,
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

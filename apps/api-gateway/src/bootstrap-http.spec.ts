@@ -20,6 +20,42 @@ describe('configureHttpCors', () => {
 
     expect(callback).toHaveBeenCalledWith(null, true);
   });
+
+  it('allows requests from the production API gateway origin', () => {
+    const app = {
+      enableCors: jest.fn(),
+    };
+    const configService = {
+      get: jest.fn(),
+    } as unknown as ConfigService;
+
+    configureHttpCors(app as never, configService);
+
+    const corsOptions = app.enableCors.mock.calls[0][0];
+    const callback = jest.fn();
+
+    corsOptions.origin('https://api.antifake.io.vn', callback);
+
+    expect(callback).toHaveBeenCalledWith(null, true);
+  });
+
+  it('denies unknown origins without turning CORS into an HTTP 500', () => {
+    const app = {
+      enableCors: jest.fn(),
+    };
+    const configService = {
+      get: jest.fn(),
+    } as unknown as ConfigService;
+
+    configureHttpCors(app as never, configService);
+
+    const corsOptions = app.enableCors.mock.calls[0][0];
+    const callback = jest.fn();
+
+    corsOptions.origin('https://example.invalid', callback);
+
+    expect(callback).toHaveBeenCalledWith(null, false);
+  });
 });
 
 describe('configureRootSwaggerRedirect', () => {
