@@ -8,7 +8,7 @@ import {
   SubmitShopDocumentsDto,
 } from '@shops';
 import { RateLimit } from '../../observability';
-import { ShopsRpcService } from '../shops/shops-rpc.service';
+import { ShopsRpcService } from '../shop/shops-rpc.service';
 
 @ApiTags('Media')
 @Controller('shops')

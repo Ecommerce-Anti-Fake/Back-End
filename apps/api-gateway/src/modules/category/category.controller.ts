@@ -12,12 +12,12 @@ import {
 import { ActiveUserGuard, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import { CategoryResponseDto, CreateCategoryDto } from '@products';
 import { RateLimit } from '../../observability';
-import { ProductsRpcService } from '../products/products-rpc.service';
+import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 @ApiTags('Category')
 @Controller('products')
 export class CategoryController {
-  constructor(private readonly productsRpcService: ProductsRpcService) {}
+  constructor(private readonly catalogRpcService: CatalogRpcService) {}
 
   @ApiOperation({ summary: 'Lay danh sach category' })
   @ApiOkResponse({
@@ -28,7 +28,7 @@ export class CategoryController {
   @RateLimit({ profile: 'publicCatalog' })
   @Get('categories')
   findCategories() {
-    return this.productsRpcService.findCategories();
+    return this.catalogRpcService.findCategories();
   }
 
   @ApiOperation({ summary: 'Admin tao category moi' })
@@ -50,7 +50,7 @@ export class CategoryController {
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
   @Post('categories')
   createCategory(@Body() dto: CreateCategoryDto) {
-    return this.productsRpcService.createCategory({
+    return this.catalogRpcService.createCategory({
       name: dto.name,
       parentId: dto.parentId ?? null,
       riskTier: dto.riskTier,

@@ -3,12 +3,12 @@ import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags
 import type { AuthenticatedUser } from '@contracts';
 import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard } from '@security';
 import { ChatThreadResponseDto, SendChatMessageDto, StartChatThreadDto } from '@products';
-import { ProductsRpcService } from '../products/products-rpc.service';
+import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 @ApiTags('Chat')
 @Controller('products')
 export class ChatController {
-  constructor(private readonly productsRpcService: ProductsRpcService) {}
+  constructor(private readonly catalogRpcService: CatalogRpcService) {}
 
   @ApiOperation({ summary: 'Lay danh sach chat thread cua user hien tai' })
   @ApiBearerAuth('access-token')
@@ -20,7 +20,7 @@ export class ChatController {
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Get('chat/threads')
   findChatThreads(@CurrentUserId() requesterUserId: string, @CurrentUser() requester?: AuthenticatedUser) {
-    return this.productsRpcService.findChatThreads({
+    return this.catalogRpcService.findChatThreads({
       requesterUserId,
       requesterRole: requester?.role,
     });
@@ -39,7 +39,7 @@ export class ChatController {
     @CurrentUserId() requesterUserId: string,
     @CurrentUser() requester?: AuthenticatedUser,
   ) {
-    return this.productsRpcService.getChatThread({
+    return this.catalogRpcService.getChatThread({
       threadId,
       requesterUserId,
       requesterRole: requester?.role,
@@ -59,7 +59,7 @@ export class ChatController {
     @CurrentUserId() requesterUserId: string,
     @Body() dto: StartChatThreadDto,
   ) {
-    return this.productsRpcService.startChatThread({
+    return this.catalogRpcService.startChatThread({
       shopId,
       requesterUserId,
       initialMessage: dto.initialMessage ?? null,
@@ -80,7 +80,7 @@ export class ChatController {
     @CurrentUser() requester: AuthenticatedUser | undefined,
     @Body() dto: SendChatMessageDto,
   ) {
-    return this.productsRpcService.sendChatMessage({
+    return this.catalogRpcService.sendChatMessage({
       threadId,
       requesterUserId,
       requesterRole: requester?.role,

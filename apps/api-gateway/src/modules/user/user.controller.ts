@@ -11,8 +11,8 @@ import {
 } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import { ListUsersQueryDto, ProfileCompletionResponseDto, UpdateUserDto, UserResponseDto } from '@users';
-import { DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
-import { UsersRpcService } from '../users/users-rpc.service';
+import { DashboardSseBrokerService } from './dashboard-sse-broker.service';
+import { UsersRpcService } from './users-rpc.service';
 
 @ApiTags('User')
 @Controller('user')

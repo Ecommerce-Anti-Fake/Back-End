@@ -8,7 +8,7 @@ import {
   SellerDashboardAnalyticsQueryDto,
   UpdateOrderFulfillmentDto,
 } from '@orders';
-import { DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
+import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 import { OrdersRpcService } from './orders-rpc.service';
 
 @ApiTags('Order')

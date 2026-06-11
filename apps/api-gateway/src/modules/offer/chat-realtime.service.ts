@@ -10,7 +10,7 @@ import {
 import type { AccessTokenPayload } from '@contracts';
 import { Server, Socket } from 'socket.io';
 import { LiveReactionsRealtimeService } from './live-reactions-realtime.service';
-import { ProductsRpcService } from './products-rpc.service';
+import { CatalogRpcService } from './catalog-rpc.service';
 
 type ChatSocketPrincipal = {
   userId: string;
@@ -52,7 +52,7 @@ export class ChatRealtimeService implements OnModuleDestroy {
 
   constructor(
     private readonly jwtService: JwtService,
-    private readonly productsRpcService: ProductsRpcService,
+    private readonly catalogRpcService: CatalogRpcService,
     private readonly redisRealtimeConfigService: RedisRealtimeConfigService,
     private readonly presenceService: RealtimePresenceService,
     private readonly liveReactionsRealtimeService: LiveReactionsRealtimeService,
@@ -116,7 +116,7 @@ export class ChatRealtimeService implements OnModuleDestroy {
     }
 
     try {
-      const thread = (await this.productsRpcService.getChatThread({
+      const thread = (await this.catalogRpcService.getChatThread({
         threadId,
         requesterUserId: principal.userId,
         requesterRole: principal.role,
@@ -151,7 +151,7 @@ export class ChatRealtimeService implements OnModuleDestroy {
     }
 
     try {
-      const thread = await this.productsRpcService.sendChatMessage({
+      const thread = await this.catalogRpcService.sendChatMessage({
         threadId,
         requesterUserId: principal.userId,
         requesterRole: principal.role,

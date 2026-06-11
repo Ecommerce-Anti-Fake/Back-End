@@ -14,14 +14,14 @@ import {
   UpdateLiveSessionStatusDto,
 } from '@products';
 import { RateLimit } from '../../observability';
-import { ProductsRpcService } from '../products/products-rpc.service';
-import { DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
+import { CatalogRpcService } from '../offer/catalog-rpc.service';
+import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 
 @ApiTags('Live')
 @Controller('products')
 export class LiveController {
   constructor(
-    private readonly productsRpcService: ProductsRpcService,
+    private readonly catalogRpcService: CatalogRpcService,
     private readonly liveReactionService: RealtimeLiveReactionService,
     private readonly dashboardSseBrokerService: DashboardSseBrokerService,
   ) {}
@@ -35,7 +35,7 @@ export class LiveController {
   @RateLimit({ profile: 'publicCatalog' })
   @Get('live/sessions')
   listLiveSessions(@Query() query: ListLiveSessionsQueryDto, @CurrentUser() requester?: AuthenticatedUser) {
-    return this.productsRpcService.listLiveSessions({
+    return this.catalogRpcService.listLiveSessions({
       requesterUserId: requester?.id ?? null,
       filter: query.filter ?? 'all',
       q: query.q ?? null,
@@ -65,7 +65,7 @@ export class LiveController {
     @Query() query: ListLiveCommentsQueryDto,
     @CurrentUser() requester?: AuthenticatedUser,
   ) {
-    return this.productsRpcService.listLiveComments({
+    return this.catalogRpcService.listLiveComments({
       sessionId,
       requesterUserId: requester?.id ?? null,
       requesterRole: requester?.role,
@@ -89,7 +89,7 @@ export class LiveController {
     @CurrentUser() requester: AuthenticatedUser | undefined,
     @Body() dto: CreateLiveCommentDto,
   ) {
-    return this.productsRpcService.createLiveComment({
+    return this.catalogRpcService.createLiveComment({
       sessionId,
       requesterUserId,
       requesterRole: requester?.role,
@@ -114,7 +114,7 @@ export class LiveController {
     @CurrentUser() requester: AuthenticatedUser | undefined,
     @Body() dto: UpdateLiveCommentVisibilityDto,
   ) {
-    return this.productsRpcService.updateLiveCommentVisibility({
+    return this.catalogRpcService.updateLiveCommentVisibility({
       sessionId,
       commentId,
       requesterUserId,
@@ -138,7 +138,7 @@ export class LiveController {
     @CurrentUserId() requesterUserId: string,
     @CurrentUser() requester: AuthenticatedUser | undefined,
   ) {
-    return this.productsRpcService.deleteLiveComment({
+    return this.catalogRpcService.deleteLiveComment({
       sessionId,
       commentId,
       requesterUserId,
@@ -155,7 +155,7 @@ export class LiveController {
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('live/sessions')
   async createLiveSession(@CurrentUserId() requesterUserId: string, @Body() dto: CreateLiveSessionDto) {
-    const result = await this.productsRpcService.createLiveSession({
+    const result = await this.catalogRpcService.createLiveSession({
       requesterUserId,
       shopId: dto.shopId,
       title: dto.title,
@@ -190,7 +190,7 @@ export class LiveController {
     @CurrentUser() requester: AuthenticatedUser | undefined,
     @Body() dto: UpdateLiveSessionStatusDto,
   ) {
-    const result = await this.productsRpcService.updateLiveSessionStatus({
+    const result = await this.catalogRpcService.updateLiveSessionStatus({
       sessionId,
       requesterUserId,
       requesterRole: requester?.role,
@@ -217,7 +217,7 @@ export class LiveController {
     @CurrentUserId() requesterUserId: string,
     @CurrentUser() requester: AuthenticatedUser | undefined,
   ) {
-    return this.productsRpcService.remindLiveSession({
+    return this.catalogRpcService.remindLiveSession({
       sessionId,
       requesterUserId,
       requesterRole: requester?.role,

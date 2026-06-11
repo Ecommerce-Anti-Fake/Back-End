@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import { AdminReportQueryDto, CreateReportDto, UpdateAdminReportDto } from '@orders';
 import { OrdersRpcService } from '../order/orders-rpc.service';
-import { DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
+import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 
 @ApiTags('Report')
 @Controller('orders')

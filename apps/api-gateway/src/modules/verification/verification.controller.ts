@@ -8,7 +8,7 @@ import {
   ReviewShopDocumentDto,
   UpdateShopRegistrationTypeDto,
 } from '@shops';
-import { ShopsRpcService } from '../shops/shops-rpc.service';
+import { ShopsRpcService } from '../shop/shops-rpc.service';
 
 @ApiTags('Verification')
 @Controller('shops')

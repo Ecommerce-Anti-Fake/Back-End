@@ -20,16 +20,13 @@ import { GatewayOfferModule } from './modules/offer/offer.module';
 import { GatewayOrderModule } from './modules/order/order.module';
 import { GatewayOrderShippingModule } from './modules/order-shipping/order-shipping.module';
 import { GatewayPaymentModule } from './modules/payment/payment.module';
-import { GatewayProductsModule } from './modules/products/products.module';
 import { GatewayReviewModule } from './modules/review/review.module';
 import { GatewayReportModule } from './modules/report/report.module';
 import { GatewayShippingModule } from './modules/shipping/shipping.module';
 import { GatewayShopModule } from './modules/shop/shop.module';
-import { GatewayShopsModule } from './modules/shops/shops.module';
 import { GatewayChatModule } from './modules/chat/chat.module';
 import { GatewaySocialModule } from './modules/social/social.module';
 import { GatewayUserModule } from './modules/user/user.module';
-import { GatewayUsersModule } from './modules/users/users.module';
 import { GatewayVerificationModule } from './modules/verification/verification.module';
 import {
   HealthController,
@@ -62,15 +59,12 @@ import {
     GatewayOrderModule,
     GatewayOrderShippingModule,
     GatewayPaymentModule,
-    GatewayProductsModule,
     GatewayReviewModule,
     GatewayReportModule,
     GatewayShippingModule,
     GatewayShopModule,
-    GatewayShopsModule,
     GatewaySocialModule,
     GatewayUserModule,
-    GatewayUsersModule,
     GatewayVerificationModule,
     GatewayAuthModule,
   ],

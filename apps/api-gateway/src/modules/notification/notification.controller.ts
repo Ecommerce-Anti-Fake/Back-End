@@ -13,9 +13,9 @@ import {
   RevokeNotificationFcmTokenResponseDto,
 } from '@users';
 import { merge, Observable, of } from 'rxjs';
-import { DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
-import { NotificationSseBrokerService } from '../users/notification-sse-broker.service';
-import { UsersRpcService } from '../users/users-rpc.service';
+import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
+import { NotificationSseBrokerService } from '../user/notification-sse-broker.service';
+import { UsersRpcService } from '../user/users-rpc.service';
 
 @ApiTags('Notification')
 @Controller('user')

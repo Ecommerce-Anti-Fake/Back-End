@@ -50,7 +50,7 @@ import { throwHttpExceptionFromRpc } from '@common';
 import { lastValueFrom } from 'rxjs';
 
 @Injectable()
-export class ProductsRpcService {
+export class CatalogRpcService {
   constructor(
     @Inject(CATALOG_SERVICE_CLIENT)
     private readonly catalogClient: ClientProxy,

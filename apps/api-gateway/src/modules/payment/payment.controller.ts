@@ -5,7 +5,7 @@ import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from 
 import { AdminFinanceReconciliationQueryDto, MarkOrderPaidDto } from '@orders';
 import { RateLimit } from '../../observability';
 import { OrdersRpcService } from '../order/orders-rpc.service';
-import { DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
+import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 
 @ApiTags('Payment')
 @Controller('orders')

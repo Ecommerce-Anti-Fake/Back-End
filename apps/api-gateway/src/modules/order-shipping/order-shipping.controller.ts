@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import { GhnDistrictsQueryDto, GhnServicesQueryDto, GhnWardsQueryDto } from '@orders';
 import { OrdersRpcService } from '../order/orders-rpc.service';
-import { DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
+import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 
 @ApiTags('Shipping')
 @Controller('orders')

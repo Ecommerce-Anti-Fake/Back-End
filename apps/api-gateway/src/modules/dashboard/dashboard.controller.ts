@@ -4,7 +4,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AccessTokenPayload } from '@contracts';
 import { interval, merge, Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { DashboardInvalidationScope, DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
+import { DashboardInvalidationScope, DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 
 @ApiTags('Dashboard')
 @Controller('user')

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { OrdersRpcService } from '../order/orders-rpc.service';
-import { ShopsRpcService } from '../shops/shops-rpc.service';
-import { UsersRpcService } from '../users/users-rpc.service';
+import { ShopsRpcService } from '../shop/shops-rpc.service';
+import { UsersRpcService } from '../user/users-rpc.service';
 
 type PendingKycPreviewItem = { id: string };
 type PendingShopVerificationPreviewItem = { id: string };

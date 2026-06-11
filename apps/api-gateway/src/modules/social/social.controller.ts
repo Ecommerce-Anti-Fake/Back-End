@@ -11,12 +11,12 @@ import {
   UpdateSocialPostVisibilityDto,
 } from '@products';
 import { RateLimit } from '../../observability';
-import { ProductsRpcService } from '../products/products-rpc.service';
+import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 @ApiTags('Social')
 @Controller('products')
 export class SocialController {
-  constructor(private readonly productsRpcService: ProductsRpcService) {}
+  constructor(private readonly catalogRpcService: CatalogRpcService) {}
 
   @ApiOperation({ summary: 'Lay bang tin cong dong' })
   @ApiOkResponse({
@@ -27,7 +27,7 @@ export class SocialController {
   @RateLimit({ profile: 'publicCatalog' })
   @Get('social/posts')
   listSocialPosts(@Query() query: ListSocialPostsQueryDto, @CurrentUser() requester?: AuthenticatedUser) {
-    return this.productsRpcService.listSocialPosts({
+    return this.catalogRpcService.listSocialPosts({
       requesterUserId: requester?.id ?? null,
       includeHidden: query.includeHidden === 'true' && requester?.role === 'admin',
       page: query.page,
@@ -44,7 +44,7 @@ export class SocialController {
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('social/posts')
   createSocialPost(@CurrentUserId() requesterUserId: string, @Body() dto: CreateSocialPostDto) {
-    return this.productsRpcService.createSocialPost({
+    return this.catalogRpcService.createSocialPost({
       requesterUserId,
       authorShopId: dto.authorShopId ?? null,
       postType: dto.postType,
@@ -67,7 +67,7 @@ export class SocialController {
     @CurrentUser() requester: AuthenticatedUser | undefined,
     @Body() dto: CreateSocialCommentDto,
   ) {
-    return this.productsRpcService.createSocialComment({
+    return this.catalogRpcService.createSocialComment({
       postId,
       requesterUserId,
       requesterRole: requester?.role,
@@ -89,7 +89,7 @@ export class SocialController {
     @CurrentUser() requester: AuthenticatedUser | undefined,
     @Body() dto: SetSocialReactionDto,
   ) {
-    return this.productsRpcService.setSocialReaction({
+    return this.catalogRpcService.setSocialReaction({
       postId,
       requesterUserId,
       requesterRole: requester?.role,
@@ -111,7 +111,7 @@ export class SocialController {
     @CurrentUser() requester: AuthenticatedUser | undefined,
     @Body() dto: SetSocialReactionDto,
   ) {
-    return this.productsRpcService.removeSocialReaction({
+    return this.catalogRpcService.removeSocialReaction({
       postId,
       requesterUserId,
       requesterRole: requester?.role,
@@ -132,7 +132,7 @@ export class SocialController {
     @CurrentUserId() requesterUserId: string,
     @CurrentUser() requester: AuthenticatedUser | undefined,
   ) {
-    return this.productsRpcService.shareSocialPost({
+    return this.catalogRpcService.shareSocialPost({
       postId,
       requesterUserId,
       requesterRole: requester?.role,
@@ -153,7 +153,7 @@ export class SocialController {
     @CurrentUser() requester: AuthenticatedUser | undefined,
     @Body() dto: UpdateSocialPostVisibilityDto,
   ) {
-    return this.productsRpcService.updateSocialPostVisibility({
+    return this.catalogRpcService.updateSocialPostVisibility({
       postId,
       requesterUserId,
       requesterRole: requester?.role,

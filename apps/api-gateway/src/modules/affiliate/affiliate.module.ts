@@ -3,7 +3,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AFFILIATE_SERVICE_CLIENT } from '@contracts';
 import { AuthGuardsModule } from '@security';
-import { GatewayUsersModule } from '../users/users.module';
+import { GatewayUserModule } from '../user/user.module';
 import { AffiliateController } from './affiliate.controller';
 import { AffiliateRpcService } from './affiliate-rpc.service';
 
@@ -11,7 +11,7 @@ import { AffiliateRpcService } from './affiliate-rpc.service';
   imports: [
     ConfigModule,
     AuthGuardsModule,
-    GatewayUsersModule,
+    GatewayUserModule,
     ClientsModule.registerAsync([
       {
         name: AFFILIATE_SERVICE_CLIENT,

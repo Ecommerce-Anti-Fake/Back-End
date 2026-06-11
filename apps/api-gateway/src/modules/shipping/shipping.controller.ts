@@ -2,12 +2,12 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ShippingCarrierResponseDto } from '@products';
 import { RateLimit } from '../../observability';
-import { ProductsRpcService } from '../products/products-rpc.service';
+import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 @ApiTags('Shipping')
 @Controller('products')
 export class ShippingController {
-  constructor(private readonly productsRpcService: ProductsRpcService) {}
+  constructor(private readonly catalogRpcService: CatalogRpcService) {}
 
   @ApiOperation({ summary: 'Lay danh sach don vi van chuyen co the chon cho offer' })
   @ApiOkResponse({
@@ -18,6 +18,6 @@ export class ShippingController {
   @RateLimit({ profile: 'publicCatalog' })
   @Get('shipping-carriers')
   findShippingCarriers() {
-    return this.productsRpcService.findShippingCarriers();
+    return this.catalogRpcService.findShippingCarriers();
   }
 }

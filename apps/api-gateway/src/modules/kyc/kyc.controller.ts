@@ -21,8 +21,8 @@ import {
   UserKycResponseDto,
 } from '@users';
 import { RateLimit } from '../../observability';
-import { DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
-import { UsersRpcService } from '../users/users-rpc.service';
+import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
+import { UsersRpcService } from '../user/users-rpc.service';
 
 @ApiTags('KYC')
 @Controller('user')

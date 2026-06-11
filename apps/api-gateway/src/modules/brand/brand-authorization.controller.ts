@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import { SubmitBrandAuthorizationDto } from '@shops';
 import { RateLimit } from '../../observability';
-import { ShopsRpcService } from '../shops/shops-rpc.service';
+import { ShopsRpcService } from '../shop/shops-rpc.service';
 
 @ApiTags('Brand')
 @Controller('shops')

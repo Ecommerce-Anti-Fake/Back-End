@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { RealtimeOperationsModule } from '@common';
 import { AuthGuardsModule } from '@security';
-import { GatewayProductsModule } from '../products/products.module';
-import { GatewayUsersModule } from '../users/users.module';
+import { GatewayOfferModule } from '../offer/offer.module';
+import { GatewayUserModule } from '../user/user.module';
 import { LiveController } from './live.controller';
 
 @Module({
-  imports: [AuthGuardsModule, RealtimeOperationsModule, GatewayProductsModule, GatewayUsersModule],
+  imports: [AuthGuardsModule, RealtimeOperationsModule, GatewayOfferModule, GatewayUserModule],
   controllers: [LiveController],
 })
 export class GatewayLiveModule {}

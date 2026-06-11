@@ -10,7 +10,7 @@ import {
 } from '@common';
 import type { AccessTokenPayload } from '@contracts';
 import { Server, Socket } from 'socket.io';
-import { ProductsRpcService } from './products-rpc.service';
+import { CatalogRpcService } from './catalog-rpc.service';
 
 type LiveSocketPrincipal = {
   userId: string;
@@ -51,7 +51,7 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
 
   constructor(
     private readonly jwtService: JwtService,
-    private readonly productsRpcService: ProductsRpcService,
+    private readonly catalogRpcService: CatalogRpcService,
     private readonly liveReactionService: RealtimeLiveReactionService,
     private readonly presenceService: RealtimePresenceService,
   ) {}
@@ -171,7 +171,7 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
     }
 
     try {
-      const comment = await this.productsRpcService.createLiveComment({
+      const comment = await this.catalogRpcService.createLiveComment({
         sessionId: liveSessionId,
         requesterUserId: principal.userId,
         requesterRole: principal.role,
@@ -226,7 +226,7 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
   }
 
   private async assertCanJoin(liveSessionId: string, principal: LiveSocketPrincipal) {
-    const sessions = await this.productsRpcService.listLiveSessions({
+    const sessions = await this.catalogRpcService.listLiveSessions({
       requesterUserId: principal.userId,
       filter: 'all',
       q: null,

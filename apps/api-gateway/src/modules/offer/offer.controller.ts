@@ -19,14 +19,14 @@ import {
   UpdateOfferDto,
 } from '@products';
 import { RateLimit } from '../../observability';
-import { DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
-import { ProductsRpcService } from '../products/products-rpc.service';
+import { CatalogRpcService } from './catalog-rpc.service';
+import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 
 @ApiTags('Offer')
 @Controller('products')
 export class OfferController {
   constructor(
-    private readonly productsRpcService: ProductsRpcService,
+    private readonly catalogRpcService: CatalogRpcService,
     private readonly dashboardSseBrokerService: DashboardSseBrokerService,
   ) {}
 
@@ -45,7 +45,7 @@ export class OfferController {
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('offers')
   async createOffer(@CurrentUserId() sellerUserId: string, @Body() dto: CreateOfferDto) {
-    const result = await this.productsRpcService.createOffer({
+    const result = await this.catalogRpcService.createOffer({
       sellerUserId,
       shopId: dto.shopId,
       categoryId: dto.categoryId,
@@ -88,7 +88,7 @@ export class OfferController {
     @CurrentUserId() sellerUserId: string,
     @Body() dto: UpdateOfferDto,
   ) {
-    const result = await this.productsRpcService.updateOffer({
+    const result = await this.catalogRpcService.updateOffer({
       offerId,
       sellerUserId,
       title: dto.title,
@@ -123,7 +123,7 @@ export class OfferController {
     @Param('shopId') shopId: string,
     @CurrentUserId() sellerUserId: string,
   ) {
-    return this.productsRpcService.findOffers({
+    return this.catalogRpcService.findOffers({
       shopId,
       sellerUserId,
       includeInactive: true,
@@ -139,7 +139,7 @@ export class OfferController {
   @RateLimit({ profile: 'publicCatalog' })
   @Get('offers')
   findOffers(@Query() query: ListOffersQueryDto) {
-    return this.productsRpcService.findOffers({
+    return this.catalogRpcService.findOffers({
       shopId: query.shopId,
       q: query.q,
       categoryId: query.categoryId,
@@ -163,7 +163,7 @@ export class OfferController {
   @RateLimit({ profile: 'publicCatalog' })
   @Get('offers/:id')
   findOfferById(@Param('id') id: string) {
-    return this.productsRpcService.findOfferById({ id });
+    return this.catalogRpcService.findOfferById({ id });
   }
 
   @ApiOperation({ summary: 'Gan supply batch vao offer va dong bo available quantity' })
@@ -180,7 +180,7 @@ export class OfferController {
     @CurrentUserId() requesterUserId: string,
     @Body() dto: AllocateOfferBatchesDto,
   ) {
-    return this.productsRpcService.allocateOfferBatches({
+    return this.catalogRpcService.allocateOfferBatches({
       offerId,
       requesterUserId,
       items: dto.items,
@@ -195,7 +195,7 @@ export class OfferController {
   })
   @Get('offers/:offerId/batch-links')
   findOfferBatchLinks(@Param('offerId') offerId: string) {
-    return this.productsRpcService.findOfferBatchLinks({ offerId });
+    return this.catalogRpcService.findOfferBatchLinks({ offerId });
   }
 }
 

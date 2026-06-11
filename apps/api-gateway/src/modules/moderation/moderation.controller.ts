@@ -14,7 +14,7 @@ import {
   UpdateAdminModerationCaseDto,
 } from '@orders';
 import { OrdersRpcService } from '../order/orders-rpc.service';
-import { DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
+import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 
 @ApiTags('Moderation')
 @Controller('orders')

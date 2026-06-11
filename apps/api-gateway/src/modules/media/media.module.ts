@@ -1,14 +1,14 @@
 import { Module } from '@nestjs/common';
 import { AuthGuardsModule } from '@security';
+import { GatewayOfferModule } from '../offer/offer.module';
 import { GatewayOrderModule } from '../order/order.module';
-import { GatewayProductsModule } from '../products/products.module';
-import { GatewayShopsModule } from '../shops/shops.module';
+import { GatewayShopModule } from '../shop/shop.module';
 import { MediaController } from './media.controller';
 import { OrderEvidenceController } from './order-evidence.controller';
 import { ShopDocumentController } from './shop-document.controller';
 
 @Module({
-  imports: [AuthGuardsModule, GatewayOrderModule, GatewayProductsModule, GatewayShopsModule],
+  imports: [AuthGuardsModule, GatewayOfferModule, GatewayOrderModule, GatewayShopModule],
   controllers: [MediaController, OrderEvidenceController, ShopDocumentController],
 })
 export class GatewayMediaModule {}

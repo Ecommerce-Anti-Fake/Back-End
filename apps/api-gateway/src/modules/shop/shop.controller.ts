@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/co
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import { CreateShopDto, UpdateShopProfileDto } from '@shops';
-import { ShopsRpcService } from '../shops/shops-rpc.service';
+import { ShopsRpcService } from './shops-rpc.service';
 
 @ApiTags('Shop')
 @Controller('shops')

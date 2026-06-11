@@ -2,8 +2,8 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@n
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import { CreateUserAddressDto, UpdateUserAddressDto, UserAddressResponseDto } from '@users';
-import { DashboardSseBrokerService } from '../users/dashboard-sse-broker.service';
-import { UsersRpcService } from '../users/users-rpc.service';
+import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
+import { UsersRpcService } from '../user/users-rpc.service';
 
 @ApiTags('Address')
 @Controller('user')

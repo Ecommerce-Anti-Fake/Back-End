@@ -11,12 +11,12 @@ import {
   ReviewMediaResponseDto,
 } from '@products';
 import { RateLimit } from '../../observability';
-import { ProductsRpcService } from '../products/products-rpc.service';
+import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 @ApiTags('Review')
 @Controller('products')
 export class ReviewController {
-  constructor(private readonly productsRpcService: ProductsRpcService) {}
+  constructor(private readonly catalogRpcService: CatalogRpcService) {}
 
   @ApiOperation({ summary: 'Lay danh sach danh gia cua offer' })
   @ApiOkResponse({
@@ -26,7 +26,7 @@ export class ReviewController {
   @RateLimit({ profile: 'publicCatalog' })
   @Get('offers/:offerId/reviews')
   findOfferReviews(@Param('offerId') offerId: string) {
-    return this.productsRpcService.findOfferReviews({ offerId });
+    return this.catalogRpcService.findOfferReviews({ offerId });
   }
 
   @ApiOperation({ summary: 'Tao danh gia cho offer da mua' })
@@ -42,7 +42,7 @@ export class ReviewController {
     @CurrentUserId() fromUserId: string,
     @Body() dto: CreateOfferReviewDto,
   ) {
-    return this.productsRpcService.createOfferReview({
+    return this.catalogRpcService.createOfferReview({
       offerId,
       fromUserId,
       rating: dto.rating,
@@ -63,7 +63,7 @@ export class ReviewController {
     @CurrentUserId() fromUserId: string,
     @Body() dto: CreateOfferReviewDto,
   ) {
-    return this.productsRpcService.createOrderItemReview({
+    return this.catalogRpcService.createOrderItemReview({
       orderItemId,
       fromUserId,
       rating: dto.rating,
@@ -86,7 +86,7 @@ export class ReviewController {
     @CurrentUserId() requesterUserId: string,
     @Body() dto: GetReviewMediaUploadSignaturesDto,
   ) {
-    return this.productsRpcService.getReviewMediaUploadSignatures({
+    return this.catalogRpcService.getReviewMediaUploadSignatures({
       reviewId,
       requesterUserId,
       items: dto.items,
@@ -107,7 +107,7 @@ export class ReviewController {
     @CurrentUserId() requesterUserId: string,
     @Body() dto: AddReviewMediaBatchDto,
   ) {
-    return this.productsRpcService.addReviewMediaBatch({
+    return this.catalogRpcService.addReviewMediaBatch({
       reviewId,
       requesterUserId,
       items: dto.items,

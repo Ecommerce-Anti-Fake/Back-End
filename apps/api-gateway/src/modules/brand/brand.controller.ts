@@ -12,12 +12,12 @@ import {
 import { ActiveUserGuard, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import { BrandResponseDto, CreateBrandDto } from '@products';
 import { RateLimit } from '../../observability';
-import { ProductsRpcService } from '../products/products-rpc.service';
+import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 @ApiTags('Brand')
 @Controller('products')
 export class BrandController {
-  constructor(private readonly productsRpcService: ProductsRpcService) {}
+  constructor(private readonly catalogRpcService: CatalogRpcService) {}
 
   @ApiOperation({ summary: 'Lay danh sach brand' })
   @ApiOkResponse({
@@ -28,7 +28,7 @@ export class BrandController {
   @RateLimit({ profile: 'publicCatalog' })
   @Get('brands')
   findBrands() {
-    return this.productsRpcService.findBrands();
+    return this.catalogRpcService.findBrands();
   }
 
   @ApiOperation({ summary: 'Admin tao brand moi' })
@@ -50,7 +50,7 @@ export class BrandController {
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
   @Post('brands')
   createBrand(@Body() dto: CreateBrandDto) {
-    return this.productsRpcService.createBrand({
+    return this.catalogRpcService.createBrand({
       name: dto.name,
       registryStatus: dto.registryStatus,
     });

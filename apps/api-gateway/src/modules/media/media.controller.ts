@@ -11,12 +11,12 @@ import {
   OfferMediaUploadSignatureResponseDto,
 } from '@products';
 import { RateLimit } from '../../observability';
-import { ProductsRpcService } from '../products/products-rpc.service';
+import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 @ApiTags('Media')
 @Controller('products')
 export class MediaController {
-  constructor(private readonly productsRpcService: ProductsRpcService) {}
+  constructor(private readonly catalogRpcService: CatalogRpcService) {}
 
   @ApiOperation({ summary: 'Lay chu ky upload media cho offer' })
   @ApiBearerAuth('access-token')
@@ -33,7 +33,7 @@ export class MediaController {
     @CurrentUserId() requesterUserId: string,
     @Body() dto: GetOfferMediaUploadSignaturesDto,
   ) {
-    return this.productsRpcService.getOfferMediaUploadSignatures({
+    return this.catalogRpcService.getOfferMediaUploadSignatures({
       offerId,
       requesterUserId,
       items: dto.items,
@@ -54,7 +54,7 @@ export class MediaController {
     @CurrentUserId() requesterUserId: string,
     @Body() dto: AddOfferMediaBatchDto,
   ) {
-    return this.productsRpcService.addOfferMediaBatch({
+    return this.catalogRpcService.addOfferMediaBatch({
       offerId,
       requesterUserId,
       items: dto.items,
@@ -74,7 +74,7 @@ export class MediaController {
     @Param('mediaId') mediaId: string,
     @CurrentUserId() requesterUserId: string,
   ) {
-    return this.productsRpcService.setOfferPrimaryMedia({
+    return this.catalogRpcService.setOfferPrimaryMedia({
       offerId,
       mediaId,
       requesterUserId,
@@ -90,7 +90,7 @@ export class MediaController {
   @RateLimit({ profile: 'publicCatalog' })
   @Get('offers/:offerId/media')
   findOfferMedia(@Param('offerId') offerId: string) {
-    return this.productsRpcService.findOfferMedia({ offerId });
+    return this.catalogRpcService.findOfferMedia({ offerId });
   }
 
   @ApiOperation({ summary: 'Xoa media cua offer' })
@@ -105,7 +105,7 @@ export class MediaController {
     @Param('mediaId') mediaId: string,
     @CurrentUserId() requesterUserId: string,
   ) {
-    return this.productsRpcService.deleteOfferMedia({
+    return this.catalogRpcService.deleteOfferMedia({
       offerId,
       mediaId,
       requesterUserId,
@@ -127,7 +127,7 @@ export class MediaController {
     @CurrentUserId() requesterUserId: string,
     @Body() dto: GetOfferDocumentUploadSignaturesDto,
   ) {
-    return this.productsRpcService.getOfferDocumentUploadSignatures({
+    return this.catalogRpcService.getOfferDocumentUploadSignatures({
       offerId,
       requesterUserId,
       items: dto.items,
@@ -148,7 +148,7 @@ export class MediaController {
     @CurrentUserId() requesterUserId: string,
     @Body() dto: AddOfferDocumentsBatchDto,
   ) {
-    return this.productsRpcService.addOfferDocumentsBatch({
+    return this.catalogRpcService.addOfferDocumentsBatch({
       offerId,
       requesterUserId,
       items: dto.items,
@@ -164,7 +164,7 @@ export class MediaController {
   @RateLimit({ profile: 'publicCatalog' })
   @Get('offers/:offerId/documents')
   findOfferDocuments(@Param('offerId') offerId: string) {
-    return this.productsRpcService.findOfferDocuments({ offerId });
+    return this.catalogRpcService.findOfferDocuments({ offerId });
   }
 
   @ApiOperation({ summary: 'Xoa tai lieu cua offer' })
@@ -179,7 +179,7 @@ export class MediaController {
     @Param('documentId') documentId: string,
     @CurrentUserId() requesterUserId: string,
   ) {
-    return this.productsRpcService.deleteOfferDocument({
+    return this.catalogRpcService.deleteOfferDocument({
       offerId,
       documentId,
       requesterUserId,
