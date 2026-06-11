@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ORDERS_SERVICE_CLIENT } from '@contracts';
 import { AuthGuardsModule } from '@security';
 import { GatewayUsersModule } from '../users/users.module';
-import { OrdersController } from './orders.controller';
+import { OrderController } from './order.controller';
 import { OrdersRpcService } from './orders-rpc.service';
 
 @Module({
@@ -33,8 +33,8 @@ import { OrdersRpcService } from './orders-rpc.service';
       },
     ]),
   ],
-  controllers: [OrdersController],
+  controllers: [OrderController],
   providers: [OrdersRpcService],
   exports: [OrdersRpcService],
 })
-export class GatewayOrdersModule {}
+export class GatewayOrderModule {}

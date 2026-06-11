@@ -4,11 +4,33 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { GatewayAdminModule } from './modules/admin/admin.module';
 import { GatewayAffiliateModule } from './modules/affiliate/affiliate.module';
 import { GatewayAuthModule } from './modules/auth/auth.module';
+import { GatewayAddressModule } from './modules/address/address.module';
+import { GatewayBrandModule } from './modules/brand/brand.module';
+import { GatewayCartModule } from './modules/cart/cart.module';
+import { GatewayCategoryModule } from './modules/category/category.module';
+import { GatewayDashboardModule } from './modules/dashboard/dashboard.module';
 import { GatewayDistributionModule } from './modules/distribution/distribution.module';
-import { GatewayOrdersModule } from './modules/orders/orders.module';
+import { GatewayFavoriteModule } from './modules/favorite/favorite.module';
+import { GatewayKycModule } from './modules/kyc/kyc.module';
+import { GatewayLiveModule } from './modules/live/live.module';
+import { GatewayMediaModule } from './modules/media/media.module';
+import { GatewayModerationModule } from './modules/moderation/moderation.module';
+import { GatewayNotificationModule } from './modules/notification/notification.module';
+import { GatewayOfferModule } from './modules/offer/offer.module';
+import { GatewayOrderModule } from './modules/order/order.module';
+import { GatewayOrderShippingModule } from './modules/order-shipping/order-shipping.module';
+import { GatewayPaymentModule } from './modules/payment/payment.module';
 import { GatewayProductsModule } from './modules/products/products.module';
+import { GatewayReviewModule } from './modules/review/review.module';
+import { GatewayReportModule } from './modules/report/report.module';
+import { GatewayShippingModule } from './modules/shipping/shipping.module';
+import { GatewayShopModule } from './modules/shop/shop.module';
 import { GatewayShopsModule } from './modules/shops/shops.module';
+import { GatewayChatModule } from './modules/chat/chat.module';
+import { GatewaySocialModule } from './modules/social/social.module';
+import { GatewayUserModule } from './modules/user/user.module';
 import { GatewayUsersModule } from './modules/users/users.module';
+import { GatewayVerificationModule } from './modules/verification/verification.module';
 import {
   HealthController,
   RateLimitGuard,
@@ -22,12 +44,34 @@ import {
       isGlobal: true,
     }),
     GatewayAdminModule,
+    GatewayAddressModule,
     GatewayAffiliateModule,
+    GatewayBrandModule,
+    GatewayCartModule,
+    GatewayCategoryModule,
+    GatewayChatModule,
+    GatewayDashboardModule,
     GatewayDistributionModule,
-    GatewayOrdersModule,
+    GatewayFavoriteModule,
+    GatewayKycModule,
+    GatewayLiveModule,
+    GatewayMediaModule,
+    GatewayModerationModule,
+    GatewayNotificationModule,
+    GatewayOfferModule,
+    GatewayOrderModule,
+    GatewayOrderShippingModule,
+    GatewayPaymentModule,
     GatewayProductsModule,
+    GatewayReviewModule,
+    GatewayReportModule,
+    GatewayShippingModule,
+    GatewayShopModule,
     GatewayShopsModule,
+    GatewaySocialModule,
+    GatewayUserModule,
     GatewayUsersModule,
+    GatewayVerificationModule,
     GatewayAuthModule,
   ],
   controllers: [HealthController],

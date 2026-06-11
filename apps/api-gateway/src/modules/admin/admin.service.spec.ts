@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { OrdersRpcService } from '../orders/orders-rpc.service';
+import { OrdersRpcService } from '../order/orders-rpc.service';
 import { ShopsRpcService } from '../shops/shops-rpc.service';
 import { UsersRpcService } from '../users/users-rpc.service';
 import { AdminService } from './admin.service';

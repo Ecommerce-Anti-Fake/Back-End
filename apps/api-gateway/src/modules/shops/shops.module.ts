@@ -3,7 +3,6 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthGuardsModule } from '@security';
 import { CATALOG_SERVICE_CLIENT } from '@contracts';
-import { ShopsController } from './shops.controller';
 import { ShopsRpcService } from './shops-rpc.service';
 import { GatewayUsersModule } from '../users/users.module';
 
@@ -33,7 +32,7 @@ import { GatewayUsersModule } from '../users/users.module';
       },
     ]),
   ],
-  controllers: [ShopsController],
+  controllers: [],
   providers: [ShopsRpcService],
   exports: [ShopsRpcService],
 })

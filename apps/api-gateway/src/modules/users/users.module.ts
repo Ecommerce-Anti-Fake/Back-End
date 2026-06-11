@@ -3,7 +3,6 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserIdentityPort, USERS_SERVICE_CLIENT } from '@contracts';
 import { AuthGuardsModule } from '@security';
-import { UsersController } from './users.controller';
 import { UsersIdentityAdapter } from './users-identity.adapter';
 import { DashboardSseBrokerService } from './dashboard-sse-broker.service';
 import { NotificationSseBrokerService } from './notification-sse-broker.service';
@@ -28,7 +27,7 @@ import { UsersRpcService } from './users-rpc.service';
       },
     ]),
   ],
-  controllers: [UsersController],
+  controllers: [],
   providers: [
     UsersRpcService,
     UsersIdentityAdapter,
@@ -39,6 +38,6 @@ import { UsersRpcService } from './users-rpc.service';
       useExisting: UsersIdentityAdapter,
     },
   ],
-  exports: [UsersRpcService, UserIdentityPort, DashboardSseBrokerService],
+  exports: [UsersRpcService, UserIdentityPort, DashboardSseBrokerService, NotificationSseBrokerService],
 })
 export class GatewayUsersModule {}

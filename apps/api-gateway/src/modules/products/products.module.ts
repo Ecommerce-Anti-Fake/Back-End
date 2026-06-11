@@ -7,7 +7,6 @@ import { AuthGuardsModule } from '@security';
 import { GatewayUsersModule } from '../users/users.module';
 import { ChatRealtimeService } from './chat-realtime.service';
 import { LiveReactionsRealtimeService } from './live-reactions-realtime.service';
-import { ProductsController } from './products.controller';
 import { ProductsRpcService } from './products-rpc.service';
 
 @Module({
@@ -37,7 +36,7 @@ import { ProductsRpcService } from './products-rpc.service';
       },
     ]),
   ],
-  controllers: [ProductsController],
+  controllers: [],
   providers: [ProductsRpcService, ChatRealtimeService, LiveReactionsRealtimeService],
   exports: [ProductsRpcService, ChatRealtimeService],
 })
