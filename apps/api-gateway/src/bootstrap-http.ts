@@ -39,7 +39,7 @@ export function configureHttpCors(
       return callback(new Error(`CORS blocked for origin: ${origin}`), false);
     },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Request-Id'],
   });
 }
@@ -52,13 +52,21 @@ export function configureRootSwaggerRedirect(
     '/',
     (
       request: { method?: string; originalUrl?: string; url?: string },
-      response: { redirect: (status: number, path: string) => void },
+      response: {
+        end: () => void;
+        redirect: (status: number, path: string) => void;
+        status: (status: number) => { end: () => void };
+      },
       next: () => void,
     ) => {
-      if (
-        request.method === 'GET' &&
-        (request.originalUrl === '/' || request.url === '/')
-      ) {
+      const isRoot = request.originalUrl === '/' || request.url === '/';
+
+      if (request.method === 'HEAD' && isRoot) {
+        response.status(200).end();
+        return;
+      }
+
+      if (request.method === 'GET' && isRoot) {
         response.redirect(302, `/${swaggerPath}`);
         return;
       }
