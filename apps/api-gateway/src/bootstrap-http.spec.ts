@@ -1,4 +1,26 @@
-import { configureRootSwaggerRedirect } from './bootstrap-http';
+import { ConfigService } from '@nestjs/config';
+
+import { configureHttpCors, configureRootSwaggerRedirect } from './bootstrap-http';
+
+describe('configureHttpCors', () => {
+  it('allows Swagger UI requests from the local gateway origin', () => {
+    const app = {
+      enableCors: jest.fn(),
+    };
+    const configService = {
+      get: jest.fn(),
+    } as unknown as ConfigService;
+
+    configureHttpCors(app as never, configService);
+
+    const corsOptions = app.enableCors.mock.calls[0][0];
+    const callback = jest.fn();
+
+    corsOptions.origin('http://localhost:3001', callback);
+
+    expect(callback).toHaveBeenCalledWith(null, true);
+  });
+});
 
 describe('configureRootSwaggerRedirect', () => {
   const createHarness = () => {

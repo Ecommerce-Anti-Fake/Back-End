@@ -3,9 +3,11 @@ import { ConfigService } from '@nestjs/config';
 
 const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:3000',
+  'http://localhost:3001',
   'http://localhost:5173',
   'https://antifake.io.vn',
   'https://www.antifake.io.vn',
+  'https://api.antifake.io.vn/api',
 ];
 
 function parseOriginList(value?: string) {

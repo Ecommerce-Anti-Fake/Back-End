@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { RegisterDto } from '../dto';
 import { UserIdentityPort } from '@contracts';
 import { PasswordHasherService } from '../services';
+import { normalizeEmail, normalizePhone } from './auth-identifier.mapper';
 import { toSafeUser } from './user.mapper';
 
 @Injectable()
@@ -12,8 +13,8 @@ export class RegisterUseCase {
   ) {}
 
   async execute(dto: RegisterDto) {
-    const email = this.normalizeEmail(dto.email);
-    const phone = this.normalizePhone(dto.phone);
+    const email = normalizeEmail(dto.email);
+    const phone = normalizePhone(dto.phone);
     const displayName = dto.displayName?.trim() || null;
     const { password } = dto;
 
@@ -35,16 +36,5 @@ export class RegisterUseCase {
     });
 
     return toSafeUser(user);
-  }
-
-
-  private normalizeEmail(email?: string): string | null {
-    const normalized = email?.trim().toLowerCase();
-    return normalized || null;
-  }
-
-  private normalizePhone(phone?: string): string | null {
-    const normalized = phone?.trim();
-    return normalized || null;
   }
 }
