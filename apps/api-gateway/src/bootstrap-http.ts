@@ -8,7 +8,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
   'https://antifake.io.vn',
   'https://www.antifake.io.vn',
   'https://api.antifake.io.vn/api',
-  'https://ecommerce-anti-fake-back-end.onrender.com/',
+  'https://ecommerce-anti-fake-back-end.onrender.com',
   'https://ecommerce-anti-fake-back-end.onrender.com/api',
 ];
 
