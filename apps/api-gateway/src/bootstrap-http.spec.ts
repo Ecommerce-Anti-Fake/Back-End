@@ -39,6 +39,42 @@ describe('configureHttpCors', () => {
     expect(callback).toHaveBeenCalledWith(null, true);
   });
 
+  it('allows requests from the Vercel alpha frontend origin', () => {
+    const app = {
+      enableCors: jest.fn(),
+    };
+    const configService = {
+      get: jest.fn(),
+    } as unknown as ConfigService;
+
+    configureHttpCors(app as never, configService);
+
+    const corsOptions = app.enableCors.mock.calls[0][0];
+    const callback = jest.fn();
+
+    corsOptions.origin('https://anti-fake-alpha.vercel.app', callback);
+
+    expect(callback).toHaveBeenCalledWith(null, true);
+  });
+
+  it('allows LAN Vite dev requests against the production API', () => {
+    const app = {
+      enableCors: jest.fn(),
+    };
+    const configService = {
+      get: jest.fn(),
+    } as unknown as ConfigService;
+
+    configureHttpCors(app as never, configService);
+
+    const corsOptions = app.enableCors.mock.calls[0][0];
+    const callback = jest.fn();
+
+    corsOptions.origin('http://192.168.1.133:5173', callback);
+
+    expect(callback).toHaveBeenCalledWith(null, true);
+  });
+
   it('denies unknown origins without turning CORS into an HTTP 500', () => {
     const app = {
       enableCors: jest.fn(),
