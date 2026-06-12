@@ -16,6 +16,7 @@ import {
   OfferBatchLinkResponseDto,
   OfferListItemResponseDto,
   OfferResponseDto,
+  PaginatedOfferListResponseDto,
   CreateOfferDto,
   UpdateOfferDto,
 } from '@products';
@@ -133,14 +134,13 @@ export class OfferController {
 
   @ApiOperation({ summary: 'Lay danh sach offer' })
   @ApiOkResponse({
-    description: 'Danh sach offer public. De trong tat ca query params de lay toan bo offer active.',
-    type: OfferListItemResponseDto,
-    isArray: true,
+    description: 'Danh sach offer public co phan trang. De trong filter params de lay offer active.',
+    type: PaginatedOfferListResponseDto,
   })
   @RateLimit({ profile: 'publicCatalog' })
   @Get('offers')
   async findOffers(@Query() query: ListOffersQueryDto) {
-    const offers = await this.catalogRpcService.findOffers({
+    const result = await this.catalogRpcService.findOffers({
       shopId: query.shopId,
       q: query.q,
       categoryId: query.categoryId,
@@ -152,8 +152,19 @@ export class OfferController {
       shopType: query.shopType,
       salesChannel: query.salesChannel,
       sort: query.sort,
+      page: query.page ?? 1,
+      pageSize: query.pageSize ?? 20,
     });
-    return Array.isArray(offers) ? offers.map(toOfferListItem) : offers;
+    if (isPaginatedOfferResult(result)) {
+      return {
+        total: numberValue(result.total),
+        page: numberValue(result.page),
+        pageSize: numberValue(result.pageSize),
+        items: result.items.map(toOfferListItem),
+      };
+    }
+
+    return Array.isArray(result) ? result.map(toOfferListItem) : result;
   }
 
   @ApiOperation({ summary: 'Lay chi tiet mot offer' })
@@ -224,16 +235,15 @@ function toOfferListItem(offer: unknown): OfferListItemResponseDto {
     soldQuantity: numberValue(record.soldQuantity),
     verificationLevel: stringValue(record.verificationLevel),
     offerStatus: stringValue(record.offerStatus),
-    shopId: stringValue(record.shopId),
-    shopName: stringValue(record.shopName),
-    shopType: stringValue(record.shopType),
     categoryId: nullableStringValue(record.categoryId),
-    categoryName: stringValue(record.categoryName),
     brandId: nullableStringValue(record.brandId),
-    productModelName: stringValue(record.productModelName),
     thumbnailUrl: nullableStringValue(record.thumbnailUrl),
     createdAt: record.createdAt instanceof Date ? record.createdAt : new Date(stringValue(record.createdAt)),
   };
+}
+
+function isPaginatedOfferResult(value: unknown): value is { total: unknown; page: unknown; pageSize: unknown; items: unknown[] } {
+  return Boolean(value && typeof value === 'object' && Array.isArray((value as { items?: unknown }).items));
 }
 
 function stringValue(value: unknown) {

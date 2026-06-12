@@ -240,32 +240,31 @@ export class OfferListItemResponseDto {
   @ApiProperty({ example: 'active' })
   offerStatus!: string;
 
-  @ApiProperty({ example: 'shop-id' })
-  shopId!: string;
-
-  @ApiProperty({ example: 'Cong ty TNHH San Xuat ABC' })
-  shopName!: string;
-
-  @ApiProperty({ example: 'MANUFACTURER' })
-  shopType!: string;
-
   @ApiProperty({ example: 'category-id', nullable: true })
   categoryId!: string | null;
 
-  @ApiProperty({ example: 'My pham' })
-  categoryName!: string;
-
   @ApiPropertyOptional({ example: 'brand-id', nullable: true })
   brandId!: string | null;
-
-  @ApiProperty({ example: 'Kem chong nang SPF50' })
-  productModelName!: string;
 
   @ApiPropertyOptional({ example: 'https://res.cloudinary.com/demo/image/upload/product.jpg', nullable: true })
   thumbnailUrl!: string | null;
 
   @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
   createdAt!: Date;
+}
+
+export class PaginatedOfferListResponseDto {
+  @ApiProperty({ example: 120 })
+  total!: number;
+
+  @ApiProperty({ example: 1 })
+  page!: number;
+
+  @ApiProperty({ example: 20 })
+  pageSize!: number;
+
+  @ApiProperty({ type: OfferListItemResponseDto, isArray: true })
+  items!: OfferListItemResponseDto[];
 }
 
 export class ChatMessageResponseDto {
@@ -1394,4 +1393,26 @@ export class ListOffersQueryDto {
   @IsOptional()
   @IsIn(OFFER_SORTS)
   sort?: (typeof OFFER_SORTS)[number];
+
+  @ApiPropertyOptional({
+    description: '1-based page number.',
+    example: 1,
+    default: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({
+    description: 'Items per page. Maximum 100.',
+    example: 20,
+    default: 20,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  pageSize?: number;
 }

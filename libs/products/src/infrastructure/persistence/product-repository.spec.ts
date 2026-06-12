@@ -5,6 +5,7 @@ describe('ProductRepository', () => {
     const prisma = {
       offer: {
         findMany: jest.fn().mockResolvedValue([]),
+        count: jest.fn().mockResolvedValue(0),
       },
     };
     const repository = new ProductRepository(prisma as never);
@@ -60,6 +61,34 @@ describe('ProductRepository', () => {
         { modelName: { contains: 'spf', mode: 'insensitive' } },
         { brand: { is: { name: { contains: 'spf', mode: 'insensitive' } } } },
       ]),
+    );
+  });
+
+  it('should return paginated offers when page and page size are provided', async () => {
+    const prisma = {
+      offer: {
+        count: jest.fn().mockResolvedValue(21),
+        findMany: jest.fn().mockResolvedValue([{ id: 'offer-1' }]),
+      },
+      $transaction: jest.fn((queries) => Promise.all(queries)),
+    };
+    const repository = new ProductRepository(prisma as never);
+
+    await expect(repository.findAllOffers({ page: 2, pageSize: 10 })).resolves.toEqual({
+      total: 21,
+      page: 2,
+      pageSize: 10,
+      items: [{ id: 'offer-1' }],
+    });
+
+    expect(prisma.offer.count).toHaveBeenCalledWith({
+      where: expect.objectContaining({ offerStatus: 'active' }),
+    });
+    expect(prisma.offer.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 10,
+        take: 10,
+      }),
     );
   });
 

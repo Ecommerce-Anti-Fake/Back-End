@@ -254,6 +254,8 @@ export class ProductRepository {
       shopType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
       salesChannel?: 'retail' | 'wholesale' | 'all';
       sort?: 'featured' | 'newest' | 'price-asc' | 'price-desc';
+      page?: number;
+      pageSize?: number;
     } = {},
   ) {
     const q = input.q?.trim();
@@ -306,35 +308,58 @@ export class ProductRepository {
           }
         : {}),
     };
+    const include = {
+      shop: {
+        select: { shopName: true, registrationType: true },
+      },
+      category: {
+        select: { name: true },
+      },
+      distributionNode: {
+        select: { networkId: true },
+      },
+      media: {
+        orderBy: { createdAt: 'asc' as const },
+        select: {
+          mediaType: true,
+          fileUrl: true,
+          mediaAsset: {
+            select: { secureUrl: true },
+          },
+        },
+      },
+      shippingMethods: {
+        where: { isEnabled: true },
+        orderBy: { createdAt: 'asc' as const },
+      },
+    };
+    const orderBy = this.resolveOfferSort(input.sort);
+
+    if (input.page !== undefined || input.pageSize !== undefined) {
+      const page = Math.max(1, input.page ?? 1);
+      const pageSize = Math.min(100, Math.max(1, input.pageSize ?? 20));
+
+      return this.prisma.$transaction([
+        this.prisma.offer.count({ where }),
+        this.prisma.offer.findMany({
+          where,
+          include,
+          orderBy,
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+      ]).then(([total, items]) => ({
+        total,
+        page,
+        pageSize,
+        items,
+      }));
+    }
 
     return this.prisma.offer.findMany({
       where,
-      include: {
-        shop: {
-          select: { shopName: true, registrationType: true },
-        },
-        category: {
-          select: { name: true },
-        },
-        distributionNode: {
-          select: { networkId: true },
-        },
-        media: {
-          orderBy: { createdAt: 'asc' },
-          select: {
-            mediaType: true,
-            fileUrl: true,
-            mediaAsset: {
-              select: { secureUrl: true },
-            },
-          },
-        },
-        shippingMethods: {
-          where: { isEnabled: true },
-          orderBy: { createdAt: 'asc' },
-        },
-      },
-      orderBy: this.resolveOfferSort(input.sort),
+      include,
+      orderBy,
     });
   }
 

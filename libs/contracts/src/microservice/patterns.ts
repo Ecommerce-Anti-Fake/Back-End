@@ -573,6 +573,8 @@ export type ListOffersMessage = {
   shopType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
   salesChannel?: 'retail' | 'wholesale' | 'all';
   sort?: 'featured' | 'newest' | 'price-asc' | 'price-desc';
+  page?: number;
+  pageSize?: number;
 };
 
 export type ChatRequesterMessage = {
