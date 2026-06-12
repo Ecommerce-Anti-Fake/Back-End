@@ -14,6 +14,7 @@ import {
   AllocateOfferBatchesDto,
   ListOffersQueryDto,
   OfferBatchLinkResponseDto,
+  OfferListItemResponseDto,
   OfferResponseDto,
   CreateOfferDto,
   UpdateOfferDto,
@@ -132,14 +133,14 @@ export class OfferController {
 
   @ApiOperation({ summary: 'Lay danh sach offer' })
   @ApiOkResponse({
-    description: 'Danh sach offer.',
-    type: OfferResponseDto,
+    description: 'Danh sach offer public. De trong tat ca query params de lay toan bo offer active.',
+    type: OfferListItemResponseDto,
     isArray: true,
   })
   @RateLimit({ profile: 'publicCatalog' })
   @Get('offers')
-  findOffers(@Query() query: ListOffersQueryDto) {
-    return this.catalogRpcService.findOffers({
+  async findOffers(@Query() query: ListOffersQueryDto) {
+    const offers = await this.catalogRpcService.findOffers({
       shopId: query.shopId,
       q: query.q,
       categoryId: query.categoryId,
@@ -152,6 +153,7 @@ export class OfferController {
       salesChannel: query.salesChannel,
       sort: query.sort,
     });
+    return Array.isArray(offers) ? offers.map(toOfferListItem) : offers;
   }
 
   @ApiOperation({ summary: 'Lay chi tiet mot offer' })
@@ -206,4 +208,50 @@ function shopIdFromResult(result: unknown) {
   }
 
   return undefined;
+}
+
+function toOfferListItem(offer: unknown): OfferListItemResponseDto {
+  const record = offer && typeof offer === 'object' ? (offer as Record<string, unknown>) : {};
+
+  return {
+    id: stringValue(record.id),
+    title: stringValue(record.title),
+    price: numberValue(record.price),
+    currency: stringValue(record.currency),
+    salesMode: salesModeValue(record.salesMode),
+    minWholesaleQty: nullableNumberValue(record.minWholesaleQty),
+    availableQuantity: numberValue(record.availableQuantity),
+    soldQuantity: numberValue(record.soldQuantity),
+    verificationLevel: stringValue(record.verificationLevel),
+    offerStatus: stringValue(record.offerStatus),
+    shopId: stringValue(record.shopId),
+    shopName: stringValue(record.shopName),
+    shopType: stringValue(record.shopType),
+    categoryId: nullableStringValue(record.categoryId),
+    categoryName: stringValue(record.categoryName),
+    brandId: nullableStringValue(record.brandId),
+    productModelName: stringValue(record.productModelName),
+    thumbnailUrl: nullableStringValue(record.thumbnailUrl),
+    createdAt: record.createdAt instanceof Date ? record.createdAt : new Date(stringValue(record.createdAt)),
+  };
+}
+
+function stringValue(value: unknown) {
+  return typeof value === 'string' ? value : '';
+}
+
+function nullableStringValue(value: unknown) {
+  return typeof value === 'string' ? value : null;
+}
+
+function numberValue(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+function nullableNumberValue(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function salesModeValue(value: unknown): 'RETAIL' | 'WHOLESALE' | 'BOTH' {
+  return value === 'WHOLESALE' || value === 'BOTH' ? value : 'RETAIL';
 }

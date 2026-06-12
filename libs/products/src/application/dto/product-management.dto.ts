@@ -209,6 +209,65 @@ export class OfferResponseDto {
   createdAt!: Date;
 }
 
+export class OfferListItemResponseDto {
+  @ApiProperty({ example: '06b5f15b-4c48-4f57-a2d6-0f2eb45fd001' })
+  id!: string;
+
+  @ApiProperty({ example: 'Kem chong nang SPF50 - lo 2026' })
+  title!: string;
+
+  @ApiProperty({ example: 150000 })
+  price!: number;
+
+  @ApiProperty({ example: 'VND' })
+  currency!: string;
+
+  @ApiProperty({ enum: OFFER_SALES_MODES, example: 'RETAIL' })
+  salesMode!: 'RETAIL' | 'WHOLESALE' | 'BOTH';
+
+  @ApiPropertyOptional({ example: 50, nullable: true })
+  minWholesaleQty!: number | null;
+
+  @ApiProperty({ example: 500 })
+  availableQuantity!: number;
+
+  @ApiProperty({ example: 120 })
+  soldQuantity!: number;
+
+  @ApiProperty({ example: 'standard' })
+  verificationLevel!: string;
+
+  @ApiProperty({ example: 'active' })
+  offerStatus!: string;
+
+  @ApiProperty({ example: 'shop-id' })
+  shopId!: string;
+
+  @ApiProperty({ example: 'Cong ty TNHH San Xuat ABC' })
+  shopName!: string;
+
+  @ApiProperty({ example: 'MANUFACTURER' })
+  shopType!: string;
+
+  @ApiProperty({ example: 'category-id', nullable: true })
+  categoryId!: string | null;
+
+  @ApiProperty({ example: 'My pham' })
+  categoryName!: string;
+
+  @ApiPropertyOptional({ example: 'brand-id', nullable: true })
+  brandId!: string | null;
+
+  @ApiProperty({ example: 'Kem chong nang SPF50' })
+  productModelName!: string;
+
+  @ApiPropertyOptional({ example: 'https://res.cloudinary.com/demo/image/upload/product.jpg', nullable: true })
+  thumbnailUrl!: string | null;
+
+  @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
+  createdAt!: Date;
+}
+
 export class ChatMessageResponseDto {
   @ApiProperty({ example: 'message-id' })
   id!: string;
@@ -1242,61 +1301,96 @@ export class UpdateOfferDto {
 }
 
 export class ListOffersQueryDto {
-  @ApiPropertyOptional({ example: 'shop-id' })
+  @ApiPropertyOptional({
+    description: 'Optional. Leave empty to list offers from all shops.',
+    example: 'shop-id',
+  })
   @IsOptional()
   @IsString()
   shopId?: string;
 
-  @ApiPropertyOptional({ example: 'kem chong nang' })
+  @ApiPropertyOptional({
+    description: 'Optional keyword. Leave empty to disable text search.',
+    example: 'kem chong nang',
+  })
   @IsOptional()
   @IsString()
   q?: string;
 
-  @ApiPropertyOptional({ example: 'category-id' })
+  @ApiPropertyOptional({
+    description: 'Optional category filter. Leave empty to include all categories.',
+    example: 'category-id',
+  })
   @IsOptional()
   @IsString()
   categoryId?: string;
 
-  @ApiPropertyOptional({ example: 'brand-id' })
+  @ApiPropertyOptional({
+    description: 'Optional brand filter. Leave empty to include all brands.',
+    example: 'brand-id',
+  })
   @IsOptional()
   @IsString()
   brandId?: string;
 
-  @ApiPropertyOptional({ example: 100000 })
+  @ApiPropertyOptional({
+    description: 'Optional minimum price.',
+    example: 100000,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0)
   minPrice?: number;
 
-  @ApiPropertyOptional({ example: 500000 })
+  @ApiPropertyOptional({
+    description: 'Optional maximum price.',
+    example: 500000,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsNumber()
   @Min(0)
   maxPrice?: number;
 
-  @ApiPropertyOptional({ example: 'VN' })
+  @ApiPropertyOptional({
+    description: 'Optional origin/location filter. Leave empty to include all locations.',
+    example: 'VN',
+  })
   @IsOptional()
   @IsString()
   location?: string;
 
-  @ApiPropertyOptional({ example: 'standard' })
+  @ApiPropertyOptional({
+    description: 'Optional verification level filter. Leave empty to include all levels.',
+    example: 'standard',
+  })
   @IsOptional()
   @IsString()
   verificationStatus?: string;
 
-  @ApiPropertyOptional({ enum: SHOP_TYPES })
+  @ApiPropertyOptional({
+    description: 'Optional shop type filter. Leave empty to include all shop types.',
+    enum: SHOP_TYPES,
+  })
   @IsOptional()
   @IsIn(SHOP_TYPES)
   shopType?: (typeof SHOP_TYPES)[number];
 
-  @ApiPropertyOptional({ enum: OFFER_SALES_CHANNELS })
+  @ApiPropertyOptional({
+    description: 'Optional sales channel filter. Leave empty or use all to include every sales mode.',
+    enum: OFFER_SALES_CHANNELS,
+    example: 'all',
+  })
   @IsOptional()
   @IsIn(OFFER_SALES_CHANNELS)
   salesChannel?: (typeof OFFER_SALES_CHANNELS)[number];
 
-  @ApiPropertyOptional({ enum: OFFER_SORTS })
+  @ApiPropertyOptional({
+    description: 'Optional sort order. Leave empty for featured/default ordering.',
+    enum: OFFER_SORTS,
+    example: 'featured',
+  })
   @IsOptional()
   @IsIn(OFFER_SORTS)
   sort?: (typeof OFFER_SORTS)[number];
