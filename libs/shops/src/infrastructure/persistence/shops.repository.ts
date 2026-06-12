@@ -368,6 +368,91 @@ export class ShopsRepository {
     });
   }
 
+  async findPublicShopSummaries(input: { page?: number; pageSize?: number } = {}) {
+    const page = Math.max(1, input.page ?? 1);
+    const pageSize = Math.min(100, Math.max(1, input.pageSize ?? 20));
+    const where = { shopStatus: 'active' };
+    const [total, shops] = await this.prisma.$transaction([
+      this.prisma.shop.count({ where }),
+      this.prisma.shop.findMany({
+        where,
+        select: {
+          id: true,
+          shopName: true,
+          shopStatus: true,
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    const items = await Promise.all(shops.map((shop) => this.toPublicShopSummary(shop)));
+
+    return {
+      total,
+      page,
+      pageSize,
+      items,
+    };
+  }
+
+  async findPublicShopSummaryByOfferId(offerId: string) {
+    const offer = await this.prisma.offer.findUnique({
+      where: { id: offerId },
+      select: {
+        shop: {
+          select: {
+            id: true,
+            shopName: true,
+            shopStatus: true,
+          },
+        },
+      },
+    });
+
+    return offer?.shop ? this.toPublicShopSummary(offer.shop) : null;
+  }
+
+  private async toPublicShopSummary(shop: { id: string; shopName: string; shopStatus: string }) {
+    const [reviewStats, saleStats] = await Promise.all([
+      this.prisma.review.aggregate({
+        where: {
+          order: {
+            shopId: shop.id,
+          },
+        },
+        _avg: {
+          rating: true,
+        },
+        _count: {
+          _all: true,
+        },
+      }),
+      this.prisma.orderItem.aggregate({
+        where: {
+          order: {
+            shopId: shop.id,
+            OR: [{ orderStatus: 'completed' }, { fulfillmentStatus: 'DELIVERED' }],
+          },
+        },
+        _sum: {
+          quantity: true,
+        },
+      }),
+    ]);
+
+    return {
+      id: shop.id,
+      name: shop.shopName,
+      avatarUrl: '',
+      isVerified: shop.shopStatus === 'active',
+      rating: Number((reviewStats._avg.rating ?? 0).toFixed(1)),
+      totalReviews: reviewStats._count._all,
+      totalSale: saleStats._sum.quantity ?? 0,
+    };
+  }
+
   updateProfile(
     shopId: string,
     data: {

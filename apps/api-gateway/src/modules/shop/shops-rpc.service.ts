@@ -12,10 +12,12 @@ import {
   CreateShopMessage,
   MyShopsLookupMessage,
   PendingVerificationShopsLookupMessage,
+  PublicShopsLookupMessage,
   ReviewBrandAuthorizationMessage,
   ReviewShopCategoryMessage,
   ReviewShopDocumentMessage,
   SHOPS_MESSAGE_PATTERNS,
+  ShopByOfferLookupMessage,
   ShopDocumentRequirementsLookupMessage,
   ShopDocumentsLookupMessage,
   ShopDocumentUploadSignaturesMessage,
@@ -75,6 +77,14 @@ export class ShopsRpcService {
 
   findMine(payload: MyShopsLookupMessage) {
     return this.send(SHOPS_MESSAGE_PATTERNS.findMine, payload);
+  }
+
+  findPublic(payload: PublicShopsLookupMessage = {}) {
+    return this.send(SHOPS_MESSAGE_PATTERNS.findPublic, payload);
+  }
+
+  findByOffer(payload: ShopByOfferLookupMessage) {
+    return this.send(SHOPS_MESSAGE_PATTERNS.findByOffer, payload);
   }
 
   findPendingVerification(payload: PendingVerificationShopsLookupMessage = {}) {

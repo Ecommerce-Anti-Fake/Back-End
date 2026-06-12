@@ -100,6 +100,60 @@ export class ShopResponseDto {
   registeredCategories!: ShopRegisteredCategoryResponseDto[];
 }
 
+export class PublicShopSummaryResponseDto {
+  @ApiProperty({ example: '5b6ef5e7-1a03-4b17-baf3-8c4be0f5f001' })
+  id!: string;
+
+  @ApiProperty({ example: 'Cong ty TNHH San Xuat ABC' })
+  name!: string;
+
+  @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/shop.jpg' })
+  avatarUrl!: string;
+
+  @ApiProperty({ example: true })
+  isVerified!: boolean;
+
+  @ApiProperty({ example: 4.8 })
+  rating!: number;
+
+  @ApiProperty({ example: 128 })
+  totalReviews!: number;
+
+  @ApiProperty({ example: 2450 })
+  totalSale!: number;
+}
+
+export class PaginatedPublicShopSummaryResponseDto {
+  @ApiProperty({ example: 120 })
+  total!: number;
+
+  @ApiProperty({ example: 1 })
+  page!: number;
+
+  @ApiProperty({ example: 20 })
+  pageSize!: number;
+
+  @ApiProperty({ type: PublicShopSummaryResponseDto, isArray: true })
+  items!: PublicShopSummaryResponseDto[];
+}
+
+export class PublicShopsQueryDto {
+  @ApiPropertyOptional({ example: 1, default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 20, default: 20, description: 'Maximum 100.' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize?: number;
+}
+
 export class MediaUploadSignatureResponseDto {
   @ApiProperty({ example: 'dbpa0ndt0' })
   cloudName!: string;

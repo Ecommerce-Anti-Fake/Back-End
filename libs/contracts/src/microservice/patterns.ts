@@ -51,6 +51,8 @@ export const SHOPS_MESSAGE_PATTERNS = {
   create: 'shops.create',
   updateProfile: 'shops.update-profile',
   updateRegistrationType: 'shops.update-registration-type',
+  findPublic: 'shops.find-public',
+  findByOffer: 'shops.find-by-offer',
   findById: 'shops.find-by-id',
   findMine: 'shops.find-mine',
   getVerificationSummary: 'shops.get-verification-summary',
@@ -399,6 +401,15 @@ export type UpdateShopRegistrationTypeMessage = {
 
 export type ShopLookupMessage = {
   id: string;
+};
+
+export type ShopByOfferLookupMessage = {
+  offerId: string;
+};
+
+export type PublicShopsLookupMessage = {
+  page?: number;
+  pageSize?: number;
 };
 
 export type MyShopsLookupMessage = {

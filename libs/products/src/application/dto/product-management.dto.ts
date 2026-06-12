@@ -209,6 +209,89 @@ export class OfferResponseDto {
   createdAt!: Date;
 }
 
+export class PublicOfferDetailResponseDto {
+  @ApiProperty({ example: '06b5f15b-4c48-4f57-a2d6-0f2eb45fd001' })
+  id!: string;
+
+  @ApiProperty({ example: 'Kem chong nang SPF50 - lo 2026' })
+  title!: string;
+
+  @ApiProperty({ example: 'Mo ta san pham' })
+  description!: string;
+
+  @ApiProperty({ example: 150000 })
+  price!: number;
+
+  @ApiProperty({ example: 'VND' })
+  currency!: string;
+
+  @ApiProperty({ enum: OFFER_SALES_MODES, example: 'WHOLESALE' })
+  salesMode!: 'RETAIL' | 'WHOLESALE' | 'BOTH';
+
+  @ApiPropertyOptional({ example: 50, nullable: true })
+  minWholesaleQty!: number | null;
+
+  @ApiProperty({ example: 'new' })
+  itemCondition!: string;
+
+  @ApiProperty({ example: 500 })
+  availableQuantity!: number;
+
+  @ApiPropertyOptional({ example: 500, nullable: true })
+  parcelWeightGrams!: number | null;
+
+  @ApiPropertyOptional({ example: 20, nullable: true })
+  parcelLengthCm!: number | null;
+
+  @ApiPropertyOptional({ example: 12, nullable: true })
+  parcelWidthCm!: number | null;
+
+  @ApiPropertyOptional({ example: 8, nullable: true })
+  parcelHeightCm!: number | null;
+
+  @ApiProperty({ example: 120 })
+  soldQuantity!: number;
+
+  @ApiProperty({ example: 'standard' })
+  verificationLevel!: string;
+
+  @ApiProperty({ example: 'active' })
+  offerStatus!: string;
+
+  @ApiProperty({ example: 'category-id' })
+  categoryId!: string | null;
+
+  @ApiPropertyOptional({ example: 'brand-id', nullable: true })
+  brandId!: string | null;
+
+  @ApiPropertyOptional({ example: '8938505970012', nullable: true })
+  gtin!: string | null;
+
+  @ApiProperty({ example: 'manual_review' })
+  verificationPolicy!: string;
+
+  @ApiPropertyOptional({ example: 'seller-node-id', nullable: true })
+  distributionNodeId!: string | null;
+
+  @ApiPropertyOptional({ example: 'network-id', nullable: true })
+  distributionNetworkId!: string | null;
+
+  @ApiProperty({ example: 'My pham' })
+  categoryName!: string;
+
+  @ApiProperty({ example: 'Kem chong nang SPF50' })
+  productModelName!: string;
+
+  @ApiPropertyOptional({ example: 'https://res.cloudinary.com/demo/image/upload/product.jpg', nullable: true })
+  thumbnailUrl!: string | null;
+
+  @ApiProperty({ type: OfferShippingMethodResponseDto, isArray: true })
+  shippingMethods!: OfferShippingMethodResponseDto[];
+
+  @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
+  createdAt!: Date;
+}
+
 export class OfferListItemResponseDto {
   @ApiProperty({ example: '06b5f15b-4c48-4f57-a2d6-0f2eb45fd001' })
   id!: string;

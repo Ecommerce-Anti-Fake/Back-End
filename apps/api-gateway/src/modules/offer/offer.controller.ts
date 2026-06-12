@@ -17,6 +17,7 @@ import {
   OfferListItemResponseDto,
   OfferResponseDto,
   PaginatedOfferListResponseDto,
+  PublicOfferDetailResponseDto,
   CreateOfferDto,
   UpdateOfferDto,
 } from '@products';
@@ -171,12 +172,13 @@ export class OfferController {
   @ApiParam({ name: 'id', description: 'ID offer can xem.' })
   @ApiOkResponse({
     description: 'Thong tin offer.',
-    type: OfferResponseDto,
+    type: PublicOfferDetailResponseDto,
   })
   @RateLimit({ profile: 'publicCatalog' })
   @Get('offers/:id')
-  findOfferById(@Param('id') id: string) {
-    return this.catalogRpcService.findOfferById({ id });
+  async findOfferById(@Param('id') id: string) {
+    const offer = await this.catalogRpcService.findOfferById({ id });
+    return toPublicOfferDetail(offer);
   }
 
   @ApiOperation({ summary: 'Gan supply batch vao offer va dong bo available quantity' })
@@ -238,6 +240,40 @@ function toOfferListItem(offer: unknown): OfferListItemResponseDto {
     categoryId: nullableStringValue(record.categoryId),
     brandId: nullableStringValue(record.brandId),
     thumbnailUrl: nullableStringValue(record.thumbnailUrl),
+    createdAt: record.createdAt instanceof Date ? record.createdAt : new Date(stringValue(record.createdAt)),
+  };
+}
+
+function toPublicOfferDetail(offer: unknown): PublicOfferDetailResponseDto {
+  const record = offer && typeof offer === 'object' ? (offer as Record<string, unknown>) : {};
+
+  return {
+    id: stringValue(record.id),
+    title: stringValue(record.title),
+    description: stringValue(record.description),
+    price: numberValue(record.price),
+    currency: stringValue(record.currency),
+    salesMode: salesModeValue(record.salesMode),
+    minWholesaleQty: nullableNumberValue(record.minWholesaleQty),
+    itemCondition: stringValue(record.itemCondition),
+    availableQuantity: numberValue(record.availableQuantity),
+    parcelWeightGrams: nullableNumberValue(record.parcelWeightGrams),
+    parcelLengthCm: nullableNumberValue(record.parcelLengthCm),
+    parcelWidthCm: nullableNumberValue(record.parcelWidthCm),
+    parcelHeightCm: nullableNumberValue(record.parcelHeightCm),
+    soldQuantity: numberValue(record.soldQuantity),
+    verificationLevel: stringValue(record.verificationLevel),
+    offerStatus: stringValue(record.offerStatus),
+    categoryId: nullableStringValue(record.categoryId),
+    brandId: nullableStringValue(record.brandId),
+    gtin: nullableStringValue(record.gtin),
+    verificationPolicy: stringValue(record.verificationPolicy),
+    distributionNodeId: nullableStringValue(record.distributionNodeId),
+    distributionNetworkId: nullableStringValue(record.distributionNetworkId),
+    categoryName: stringValue(record.categoryName),
+    productModelName: stringValue(record.productModelName),
+    thumbnailUrl: nullableStringValue(record.thumbnailUrl),
+    shippingMethods: Array.isArray(record.shippingMethods) ? record.shippingMethods : [],
     createdAt: record.createdAt instanceof Date ? record.createdAt : new Date(stringValue(record.createdAt)),
   };
 }

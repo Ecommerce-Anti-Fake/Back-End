@@ -1,7 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
-import { CreateShopDto, UpdateShopProfileDto } from '@shops';
+import {
+  CreateShopDto,
+  PaginatedPublicShopSummaryResponseDto,
+  PublicShopSummaryResponseDto,
+  PublicShopsQueryDto,
+  UpdateShopProfileDto,
+} from '@shops';
 import { ShopsRpcService } from './shops-rpc.service';
 
 @ApiTags('Shop')
@@ -48,6 +54,23 @@ export class ShopController {
   @Get('mine')
   findMine(@CurrentUserId() ownerUserId: string) {
     return this.shopsRpcService.findMine({ ownerUserId });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach shop public co phan trang' })
+  @ApiOkResponse({ type: PaginatedPublicShopSummaryResponseDto })
+  @Get()
+  findPublic(@Query() query: PublicShopsQueryDto) {
+    return this.shopsRpcService.findPublic({
+      page: query.page ?? 1,
+      pageSize: query.pageSize ?? 20,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay thong tin shop public theo offer ID' })
+  @ApiOkResponse({ type: PublicShopSummaryResponseDto })
+  @Get('by-offer/:offerId')
+  findByOfferId(@Param('offerId') offerId: string) {
+    return this.shopsRpcService.findByOffer({ offerId });
   }
 
   @ApiOperation({ summary: 'Lay thong tin chi tiet mot shop' })

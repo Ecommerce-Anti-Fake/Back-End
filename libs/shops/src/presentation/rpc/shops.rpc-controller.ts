@@ -12,12 +12,14 @@ import type {
   CreateShopMessage,
   MyShopsLookupMessage,
   PendingVerificationShopsLookupMessage,
+  PublicShopsLookupMessage,
   ReviewShopCategoryMessage,
   ReviewBrandAuthorizationMessage,
   ReviewShopDocumentMessage,
   ShopDocumentRequirementsLookupMessage,
   ShopDocumentsLookupMessage,
   ShopDocumentUploadSignaturesMessage,
+  ShopByOfferLookupMessage,
   ShopLookupMessage,
   ShopVerificationSummaryMessage,
   SubmitBrandAuthorizationMessage,
@@ -33,6 +35,7 @@ import {
   GetAdminShopVerificationDetailUseCase,
   GetAdminShopVerificationSummaryUseCase,
   GetCategoryDocumentUploadSignaturesUseCase,
+  GetPublicShopByOfferUseCase,
   GetShopVerificationSummaryUseCase,
   GetShopDocumentUploadSignaturesUseCase,
   GetShopByIdUseCase,
@@ -41,6 +44,7 @@ import {
   ListCategoryDocumentsUseCase,
   ListMyShopsUseCase,
   ListPendingVerificationShopsUseCase,
+  ListPublicShopsUseCase,
   ListShopDocumentRequirementsUseCase,
   ListShopDocumentsUseCase,
   ReviewBrandAuthorizationUseCase,
@@ -71,9 +75,11 @@ export class ShopsRpcController {
     private readonly submitCategoryDocumentsUseCase: SubmitCategoryDocumentsUseCase,
     private readonly reviewShopDocumentUseCase: ReviewShopDocumentUseCase,
     private readonly reviewShopCategoryUseCase: ReviewShopCategoryUseCase,
+    private readonly getPublicShopByOfferUseCase: GetPublicShopByOfferUseCase,
     private readonly getShopByIdUseCase: GetShopByIdUseCase,
     private readonly listAdminBrandAuthorizationsUseCase: ListAdminBrandAuthorizationsUseCase,
     private readonly listBrandAuthorizationsUseCase: ListBrandAuthorizationsUseCase,
+    private readonly listPublicShopsUseCase: ListPublicShopsUseCase,
     private readonly listMyShopsUseCase: ListMyShopsUseCase,
     private readonly submitBrandAuthorizationUseCase: SubmitBrandAuthorizationUseCase,
     private readonly reviewBrandAuthorizationUseCase: ReviewBrandAuthorizationUseCase,
@@ -274,6 +280,24 @@ export class ShopsRpcController {
   async findById(@Payload() payload: ShopLookupMessage) {
     try {
       return await this.getShopByIdUseCase.execute(payload.id);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(SHOPS_MESSAGE_PATTERNS.findPublic)
+  async findPublic(@Payload() payload?: PublicShopsLookupMessage) {
+    try {
+      return await this.listPublicShopsUseCase.execute(payload ?? {});
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(SHOPS_MESSAGE_PATTERNS.findByOffer)
+  async findByOffer(@Payload() payload: ShopByOfferLookupMessage) {
+    try {
+      return await this.getPublicShopByOfferUseCase.execute(payload.offerId);
     } catch (error) {
       throwRpcException(error);
     }
