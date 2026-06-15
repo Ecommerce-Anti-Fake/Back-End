@@ -88,6 +88,12 @@ const orderWithRelationsArgs = Prisma.validator<Prisma.OrderDefaultArgs>()({
         },
         offer: {
           include: {
+            shop: {
+              select: {
+                id: true,
+                shopName: true,
+              },
+            },
             media: {
               orderBy: {
                 createdAt: 'asc',
@@ -159,6 +165,12 @@ const disputeWithOrderArgs = Prisma.validator<Prisma.DisputeDefaultArgs>()({
             },
             offer: {
               include: {
+                shop: {
+                  select: {
+                    id: true,
+                    shopName: true,
+                  },
+                },
                 shippingMethods: {
                   where: {
                     isEnabled: true,
@@ -226,6 +238,12 @@ const cartWithItemsArgs = Prisma.validator<Prisma.CartDefaultArgs>()({
       include: {
         offer: {
           include: {
+            shop: {
+              select: {
+                id: true,
+                shopName: true,
+              },
+            },
             shippingMethods: {
               where: {
                 isEnabled: true,

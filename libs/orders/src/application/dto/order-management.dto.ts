@@ -65,6 +65,17 @@ export class CartItemResponseDto {
   updatedAt!: Date;
 }
 
+export class CartShopGroupResponseDto {
+  @ApiProperty({ example: 'shop-id' })
+  shopId!: string;
+
+  @ApiProperty({ example: 'Cong ty TNHH San Xuat ABC' })
+  shopName!: string;
+
+  @ApiProperty({ type: CartItemResponseDto, isArray: true })
+  items!: CartItemResponseDto[];
+}
+
 export class CartResponseDto {
   @ApiProperty({ example: 'cart-id' })
   id!: string;
@@ -77,6 +88,9 @@ export class CartResponseDto {
 
   @ApiProperty({ type: CartItemResponseDto, isArray: true })
   items!: CartItemResponseDto[];
+
+  @ApiProperty({ type: CartShopGroupResponseDto, isArray: true })
+  shops!: CartShopGroupResponseDto[];
 
   @ApiProperty({ example: '2026-04-22T10:00:00.000Z' })
   createdAt!: Date;
@@ -153,6 +167,17 @@ export class OrderItemResponseDto {
 
   @ApiProperty({ type: OrderItemBatchAllocationResponseDto, isArray: true })
   batchAllocations!: OrderItemBatchAllocationResponseDto[];
+}
+
+export class OrderShopGroupResponseDto {
+  @ApiProperty({ example: 'shop-id' })
+  shopId!: string;
+
+  @ApiProperty({ example: 'Cong ty TNHH San Xuat ABC' })
+  shopName!: string;
+
+  @ApiProperty({ type: OrderItemResponseDto, isArray: true })
+  items!: OrderItemResponseDto[];
 }
 
 export class OrderResponseDto {
@@ -303,6 +328,9 @@ export class OrderResponseDto {
 
   @ApiProperty({ type: OrderItemResponseDto, isArray: true })
   items!: OrderItemResponseDto[];
+
+  @ApiProperty({ type: OrderShopGroupResponseDto, isArray: true })
+  shops!: OrderShopGroupResponseDto[];
 
   @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
   createdAt!: Date;

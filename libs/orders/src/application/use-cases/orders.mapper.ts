@@ -3,6 +3,7 @@ import { CartWithItems, OrderWithRelations } from '../../infrastructure/persiste
 
 export function toOrderResponse(order: OrderWithRelations) {
   const openDispute = order.disputes?.[0] ?? null;
+  const items = order.items.map((item) => toOrderItemResponse(order, item));
 
   return {
     id: order.id,
@@ -54,77 +55,119 @@ export function toOrderResponse(order: OrderWithRelations) {
     parcelLengthCm: order.parcelLengthCm,
     parcelWidthCm: order.parcelWidthCm,
     parcelHeightCm: order.parcelHeightCm,
-    items: order.items.map((item) => {
-      const offerMedia = item.offer?.media ?? [];
-      const thumbnailMedia =
-        offerMedia.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
-        offerMedia.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
-
-      return {
-        id: item.id,
-        offerId: item.offerId,
-        offerTitleSnapshot: item.offerTitleSnapshot,
-        thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
-        unitPrice: decimalToNumber(item.unitPrice),
-        quantity: item.quantity,
-        verificationLevelSnapshot: item.verificationLevelSnapshot,
-        reviewId: item.reviews?.[0]?.id ?? null,
-        reviewRating: item.reviews?.[0]?.rating ?? null,
-        reviewComment: item.reviews?.[0]?.comment ?? null,
-        reviewCreatedAt: item.reviews?.[0]?.createdAt ?? null,
-        reviewed: Boolean(item.reviews?.[0]),
-        canReview: order.orderStatus === 'completed' || order.fulfillmentStatus === 'DELIVERED',
-        batchAllocations: (item.batchAllocations ?? []).map((allocation) => ({
-          batchId: allocation.batchId,
-          quantity: allocation.quantity,
-          batchNumber: allocation.batch?.batchNumber ?? null,
-          sourceName: allocation.batch?.sourceName ?? null,
-          countryOfOrigin: allocation.batch?.countryOfOrigin ?? null,
-          sourceType: allocation.batch?.sourceType ?? null,
-          sourceOrderId: allocation.batch?.sourceOrderId ?? null,
-          sourceOrderItemId: allocation.batch?.sourceOrderItemId ?? null,
-          receivedAt: allocation.batch?.receivedAt ?? null,
-        })),
-      };
-    }),
+    items,
+    shops: groupItemsByShop(
+      items.map((item, index) => ({
+        shopId: order.items[index].offer.shopId,
+        shopName: order.items[index].offer.shop.shopName,
+        item,
+      })),
+    ),
     createdAt: order.createdAt,
   };
 }
 
 export function toCartResponse(cart: CartWithItems) {
+  const items = cart.items.map((item) => toCartItemResponse(item));
+
   return {
     id: cart.id,
     buyerUserId: cart.buyerUserId,
     cartStatus: cart.cartStatus,
-    items: cart.items.map((item) => {
-      const offerMedia = item.offer?.media ?? [];
-      const thumbnailMedia =
-        offerMedia.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
-        offerMedia.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
-
-      return {
-        id: item.id,
-        offerId: item.offerId,
-        offerTitleSnapshot: item.offerTitleSnapshot,
-        thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
-        unitPriceSnapshot: decimalToNumber(item.unitPriceSnapshot),
-        currencySnapshot: item.currencySnapshot,
-        shopNameSnapshot: item.shopNameSnapshot,
-        shippingMethods: (item.offer?.shippingMethods ?? []).map((method) => ({
-          providerCode: method.providerCode,
-          providerName: method.providerName,
-          shippingFee: decimalToNumber(method.shippingFee),
-          estimatedDays: method.estimatedDays,
-          isEnabled: method.isEnabled,
-        })),
-        quantity: item.quantity,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-      };
-    }),
+    items,
+    shops: groupItemsByShop(
+      items.map((item, index) => ({
+        shopId: cart.items[index].offer.shopId,
+        shopName: cart.items[index].offer.shop.shopName,
+        item,
+      })),
+    ),
     createdAt: cart.createdAt,
     updatedAt: cart.updatedAt,
   };
+}
+
+function toOrderItemResponse(order: OrderWithRelations, item: OrderWithRelations['items'][number]) {
+  const offerMedia = item.offer?.media ?? [];
+  const thumbnailMedia =
+    offerMedia.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
+    offerMedia.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
+
+  return {
+    id: item.id,
+    offerId: item.offerId,
+    offerTitleSnapshot: item.offerTitleSnapshot,
+    thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
+    unitPrice: decimalToNumber(item.unitPrice),
+    quantity: item.quantity,
+    verificationLevelSnapshot: item.verificationLevelSnapshot,
+    reviewId: item.reviews?.[0]?.id ?? null,
+    reviewRating: item.reviews?.[0]?.rating ?? null,
+    reviewComment: item.reviews?.[0]?.comment ?? null,
+    reviewCreatedAt: item.reviews?.[0]?.createdAt ?? null,
+    reviewed: Boolean(item.reviews?.[0]),
+    canReview: order.orderStatus === 'completed' || order.fulfillmentStatus === 'DELIVERED',
+    batchAllocations: (item.batchAllocations ?? []).map((allocation) => ({
+      batchId: allocation.batchId,
+      quantity: allocation.quantity,
+      batchNumber: allocation.batch?.batchNumber ?? null,
+      sourceName: allocation.batch?.sourceName ?? null,
+      countryOfOrigin: allocation.batch?.countryOfOrigin ?? null,
+      sourceType: allocation.batch?.sourceType ?? null,
+      sourceOrderId: allocation.batch?.sourceOrderId ?? null,
+      sourceOrderItemId: allocation.batch?.sourceOrderItemId ?? null,
+      receivedAt: allocation.batch?.receivedAt ?? null,
+    })),
+  };
+}
+
+function toCartItemResponse(item: CartWithItems['items'][number]) {
+  const offerMedia = item.offer?.media ?? [];
+  const thumbnailMedia =
+    offerMedia.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
+    offerMedia.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
+
+  return {
+    id: item.id,
+    offerId: item.offerId,
+    offerTitleSnapshot: item.offerTitleSnapshot,
+    thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
+    unitPriceSnapshot: decimalToNumber(item.unitPriceSnapshot),
+    currencySnapshot: item.currencySnapshot,
+    shopNameSnapshot: item.shopNameSnapshot,
+    shippingMethods: (item.offer?.shippingMethods ?? []).map((method) => ({
+      providerCode: method.providerCode,
+      providerName: method.providerName,
+      shippingFee: decimalToNumber(method.shippingFee),
+      estimatedDays: method.estimatedDays,
+      isEnabled: method.isEnabled,
+    })),
+    quantity: item.quantity,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  };
+}
+
+function groupItemsByShop<T>(entries: Array<{ shopId: string; shopName: string; item: T }>) {
+  const groups = new Map<string, { shopId: string; shopName: string; items: T[] }>();
+
+  for (const entry of entries) {
+    const key = entry.shopId;
+    const group = groups.get(key);
+
+    if (group) {
+      group.items.push(entry.item);
+      continue;
+    }
+
+    groups.set(key, {
+      shopId: entry.shopId,
+      shopName: entry.shopName,
+      items: [entry.item],
+    });
+  }
+
+  return Array.from(groups.values());
 }
 
 function decimalToNumber(value: Prisma.Decimal | number | string | null | undefined) {
