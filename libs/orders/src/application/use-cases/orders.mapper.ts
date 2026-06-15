@@ -58,8 +58,8 @@ export function toOrderResponse(order: OrderWithRelations) {
     items,
     shops: groupItemsByShop(
       items.map((item, index) => ({
-        shopId: order.items[index].offer.shopId,
-        shopName: order.items[index].offer.shop.shopName,
+        shopId: order.items[index].offer?.shopId ?? order.shopId,
+        shopName: order.items[index].offer?.shop?.shopName ?? order.shop.shopName,
         item,
       })),
     ),
