@@ -52,9 +52,6 @@ export class CartItemResponseDto {
   @ApiProperty({ example: 'Cong ty TNHH San Xuat ABC' })
   shopNameSnapshot!: string;
 
-  @ApiProperty({ type: ShippingMethodResponseDto, isArray: true })
-  shippingMethods!: ShippingMethodResponseDto[];
-
   @ApiProperty({ example: 2 })
   quantity!: number;
 
@@ -82,12 +79,6 @@ export class CartResponseDto {
 
   @ApiProperty({ example: 'buyer-user-id' })
   buyerUserId!: string;
-
-  @ApiProperty({ example: 'ACTIVE' })
-  cartStatus!: string;
-
-  @ApiProperty({ type: CartItemResponseDto, isArray: true })
-  items!: CartItemResponseDto[];
 
   @ApiProperty({ type: CartShopGroupResponseDto, isArray: true })
   shops!: CartShopGroupResponseDto[];

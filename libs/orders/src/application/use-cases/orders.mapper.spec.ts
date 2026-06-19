@@ -18,6 +18,8 @@ describe('orders mapper shop grouping', () => {
 
     const response = toCartResponse(cart as any);
 
+    expect(response).not.toHaveProperty('cartStatus');
+    expect(response).not.toHaveProperty('items');
     expect(response.shops).toHaveLength(2);
     expect(response.shops[0]).toMatchObject({
       shopId: 'shop-1',
@@ -29,6 +31,7 @@ describe('orders mapper shop grouping', () => {
       shopName: 'Shop Two',
       items: [{ id: 'cart-item-3' }],
     });
+    expect(response.shops[0].items[0]).not.toHaveProperty('shippingMethods');
   });
 
   it('groups order items by shop with shop id and name', () => {

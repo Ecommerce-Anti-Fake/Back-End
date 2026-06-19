@@ -24,8 +24,6 @@ export class CartController {
       example: {
         id: 'cart-id',
         buyerUserId: 'buyer-user-id',
-        cartStatus: 'ACTIVE',
-        items: [],
         shops: [],
       },
     },

@@ -73,8 +73,6 @@ export function toCartResponse(cart: CartWithItems) {
   return {
     id: cart.id,
     buyerUserId: cart.buyerUserId,
-    cartStatus: cart.cartStatus,
-    items,
     shops: groupItemsByShop(
       items.map((item, index) => ({
         shopId: cart.items[index].offer.shopId,
@@ -135,13 +133,6 @@ function toCartItemResponse(item: CartWithItems['items'][number]) {
     unitPriceSnapshot: decimalToNumber(item.unitPriceSnapshot),
     currencySnapshot: item.currencySnapshot,
     shopNameSnapshot: item.shopNameSnapshot,
-    shippingMethods: (item.offer?.shippingMethods ?? []).map((method) => ({
-      providerCode: method.providerCode,
-      providerName: method.providerName,
-      shippingFee: decimalToNumber(method.shippingFee),
-      estimatedDays: method.estimatedDays,
-      isEnabled: method.isEnabled,
-    })),
     quantity: item.quantity,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
