@@ -202,6 +202,15 @@ export class OfferResponseDto {
   @ApiPropertyOptional({ example: 'https://res.cloudinary.com/demo/image/upload/product.jpg', nullable: true })
   thumbnailUrl!: string | null;
 
+  @ApiProperty({
+    example: [
+      'https://res.cloudinary.com/demo/image/upload/product.jpg',
+      'https://res.cloudinary.com/demo/image/upload/product-gallery-1.jpg',
+    ],
+    isArray: true,
+  })
+  imageUrls!: string[];
+
   @ApiProperty({ type: OfferShippingMethodResponseDto, isArray: true })
   shippingMethods!: OfferShippingMethodResponseDto[];
 
@@ -285,8 +294,14 @@ export class PublicOfferDetailResponseDto {
   @ApiPropertyOptional({ example: 'https://res.cloudinary.com/demo/image/upload/product.jpg', nullable: true })
   thumbnailUrl!: string | null;
 
-  @ApiProperty({ type: OfferShippingMethodResponseDto, isArray: true })
-  shippingMethods!: OfferShippingMethodResponseDto[];
+  @ApiProperty({
+    example: [
+      'https://res.cloudinary.com/demo/image/upload/product.jpg',
+      'https://res.cloudinary.com/demo/image/upload/product-gallery-1.jpg',
+    ],
+    isArray: true,
+  })
+  imageUrls!: string[];
 
   @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
   createdAt!: Date;

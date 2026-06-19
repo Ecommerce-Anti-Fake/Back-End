@@ -273,7 +273,7 @@ function toPublicOfferDetail(offer: unknown): PublicOfferDetailResponseDto {
     categoryName: stringValue(record.categoryName),
     productModelName: stringValue(record.productModelName),
     thumbnailUrl: nullableStringValue(record.thumbnailUrl),
-    shippingMethods: Array.isArray(record.shippingMethods) ? record.shippingMethods : [],
+    imageUrls: stringArrayValue(record.imageUrls),
     createdAt: record.createdAt instanceof Date ? record.createdAt : new Date(stringValue(record.createdAt)),
   };
 }
@@ -288,6 +288,25 @@ function stringValue(value: unknown) {
 
 function nullableStringValue(value: unknown) {
   return typeof value === 'string' ? value : null;
+}
+
+function stringArrayValue(value: unknown) {
+  const seen = new Set<string>();
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (typeof item !== 'string') {
+      return [];
+    }
+    const trimmed = item.trim();
+    if (!trimmed || seen.has(trimmed)) {
+      return [];
+    }
+    seen.add(trimmed);
+    return [trimmed];
+  });
 }
 
 function numberValue(value: unknown) {

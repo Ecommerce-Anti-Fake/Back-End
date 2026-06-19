@@ -98,7 +98,7 @@ describe('OfferController', () => {
     );
   });
 
-  it('omits shop fields from public offer detail', async () => {
+  it('returns public offer detail image links without shop or shipping fields', async () => {
     const catalogRpcService = {
       findOfferById: jest.fn().mockResolvedValue({
         id: 'offer-1',
@@ -129,6 +129,12 @@ describe('OfferController', () => {
         distributionNetworkId: null,
         productModelName: 'Kem chong nang',
         thumbnailUrl: 'https://res.cloudinary.com/demo/image/upload/product.jpg',
+        imageUrls: [
+          'https://res.cloudinary.com/demo/image/upload/product.jpg',
+          'https://res.cloudinary.com/demo/image/upload/gallery-1.jpg',
+          '',
+          'https://res.cloudinary.com/demo/image/upload/gallery-1.jpg',
+        ],
         shippingMethods: [{ providerCode: 'GHN' }],
         createdAt: new Date('2026-04-14T10:00:00.000Z'),
       }),
@@ -163,11 +169,15 @@ describe('OfferController', () => {
       distributionNetworkId: null,
       productModelName: 'Kem chong nang',
       thumbnailUrl: 'https://res.cloudinary.com/demo/image/upload/product.jpg',
-      shippingMethods: [{ providerCode: 'GHN' }],
+      imageUrls: [
+        'https://res.cloudinary.com/demo/image/upload/product.jpg',
+        'https://res.cloudinary.com/demo/image/upload/gallery-1.jpg',
+      ],
       createdAt: new Date('2026-04-14T10:00:00.000Z'),
     });
     expect(result).not.toHaveProperty('shopId');
     expect(result).not.toHaveProperty('shopName');
     expect(result).not.toHaveProperty('shopType');
+    expect(result).not.toHaveProperty('shippingMethods');
   });
 });

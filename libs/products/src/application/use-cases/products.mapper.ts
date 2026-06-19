@@ -292,6 +292,7 @@ export function toOfferResponse(offer: OfferWithRelations) {
   const thumbnailMedia =
     offer.media?.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
     offer.media?.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
+  const imageUrls = offerImageUrls(offer.media);
   const allocatedQuantity = offer.batchLinks?.reduce((sum, link) => sum + link.allocatedQuantity, 0) ?? offer.availableQuantity;
   const soldQuantity = Math.max(allocatedQuantity - offer.availableQuantity, 0);
 
@@ -324,6 +325,7 @@ export function toOfferResponse(offer: OfferWithRelations) {
     categoryName: offer.category.name,
     productModelName: offer.modelName,
     thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
+    imageUrls,
     shippingMethods: (offer.shippingMethods ?? []).map((method) => ({
       providerCode: method.providerCode,
       providerName: method.providerName,
@@ -333,6 +335,24 @@ export function toOfferResponse(offer: OfferWithRelations) {
     })),
     createdAt: offer.createdAt,
   };
+}
+
+function offerImageUrls(media: OfferWithRelations['media']) {
+  const seen = new Set<string>();
+  return [...(media ?? [])]
+    .sort((left, right) => {
+      if (left.mediaType === 'thumbnail' && right.mediaType !== 'thumbnail') return -1;
+      if (right.mediaType === 'thumbnail' && left.mediaType !== 'thumbnail') return 1;
+      return 0;
+    })
+    .flatMap((item) => {
+      const url = (item.mediaAsset?.secureUrl ?? item.fileUrl ?? '').trim();
+      if (!url || seen.has(url)) {
+        return [];
+      }
+      seen.add(url);
+      return [url];
+    });
 }
 
 export function toChatThreadResponse(thread: ChatThreadWithRelations) {
