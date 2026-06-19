@@ -1,12 +1,16 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import { AddCartItemDto, CheckoutCartItemDto, QuoteCartItemShippingOptionsDto, UpdateCartItemDto } from '@orders';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 import { OrdersRpcService } from '../order/orders-rpc.service';
 
+class CartMutationSuccessResponseDto {
+  success!: boolean;
+}
+
 @ApiTags('Cart')
-@Controller('orders')
+@Controller('cart')
 export class CartController {
   constructor(
     private readonly ordersRpcService: OrdersRpcService,
@@ -15,28 +19,41 @@ export class CartController {
 
   @ApiOperation({ summary: 'Lay gio hang active cua buyer hien tai' })
   @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    schema: {
+      example: {
+        id: 'cart-id',
+        buyerUserId: 'buyer-user-id',
+        cartStatus: 'ACTIVE',
+        items: [],
+        shops: [],
+      },
+    },
+  })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Get('cart')
+  @Get()
   getActiveCart(@CurrentUserId() buyerUserId: string) {
     return this.ordersRpcService.getActiveCart({ buyerUserId });
   }
 
   @ApiOperation({ summary: 'Them offer vao gio hang active cua buyer' })
   @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: CartMutationSuccessResponseDto })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post('cart/items')
-  addCartItem(@CurrentUserId() buyerUserId: string, @Body() dto: AddCartItemDto) {
-    return this.ordersRpcService.addCartItem({
+  @Post('items')
+  async addCartItem(@CurrentUserId() buyerUserId: string, @Body() dto: AddCartItemDto) {
+    await this.ordersRpcService.addCartItem({
       buyerUserId,
       offerId: dto.offerId,
       quantity: dto.quantity,
     });
+    return { success: true };
   }
 
   @ApiOperation({ summary: 'Cap nhat so luong mot cart item' })
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Patch('cart/items/:cartItemId')
+  @Patch('items/:cartItemId')
   updateCartItem(
     @CurrentUserId() buyerUserId: string,
     @Param('cartItemId') cartItemId: string,
@@ -52,7 +69,7 @@ export class CartController {
   @ApiOperation({ summary: 'Xoa mot cart item khoi gio hang' })
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Delete('cart/items/:cartItemId')
+  @Delete('items/:cartItemId')
   removeCartItem(@CurrentUserId() buyerUserId: string, @Param('cartItemId') cartItemId: string) {
     return this.ordersRpcService.removeCartItem({
       buyerUserId,
@@ -63,7 +80,7 @@ export class CartController {
   @ApiOperation({ summary: 'Checkout mot cart item thanh retail order' })
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post('cart/items/:cartItemId/checkout')
+  @Post('items/:cartItemId/checkout')
   async checkoutCartItem(
     @CurrentUserId() buyerUserId: string,
     @Param('cartItemId') cartItemId: string,
@@ -94,7 +111,7 @@ export class CartController {
   @ApiOperation({ summary: 'Bao gia cac phuong thuc van chuyen cho mot cart item' })
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post('cart/items/:cartItemId/shipping-options')
+  @Post('items/:cartItemId/shipping-options')
   quoteCartItemShippingOptions(
     @CurrentUserId() buyerUserId: string,
     @Param('cartItemId') cartItemId: string,

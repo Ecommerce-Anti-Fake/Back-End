@@ -1,40 +1,11 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ClientsModule, Transport } from '@nestjs/microservices';
-import { ORDERS_SERVICE_CLIENT } from '@contracts';
 import { AuthGuardsModule } from '@security';
 import { GatewayUserModule } from '../user/user.module';
 import { OrderController } from './order.controller';
-import { OrdersRpcService } from './orders-rpc.service';
+import { GatewayOrdersRpcModule } from './orders-rpc.module';
 
 @Module({
-  imports: [
-    ConfigModule,
-    AuthGuardsModule,
-    GatewayUserModule,
-    ClientsModule.registerAsync([
-      {
-        name: ORDERS_SERVICE_CLIENT,
-        imports: [ConfigModule],
-        inject: [ConfigService],
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.TCP,
-          options: {
-            host:
-              configService.get<string>('ORDERS_SERVICE_HOST')?.trim() ||
-              configService.get<string>('USERS_SERVICE_HOST')?.trim() ||
-              '127.0.0.1',
-            port:
-              configService.get<number>('ORDERS_SERVICE_PORT') ??
-              configService.get<number>('USERS_SERVICE_PORT') ??
-              4002,
-          },
-        }),
-      },
-    ]),
-  ],
+  imports: [AuthGuardsModule, GatewayUserModule, GatewayOrdersRpcModule],
   controllers: [OrderController],
-  providers: [OrdersRpcService],
-  exports: [OrdersRpcService],
 })
 export class GatewayOrderModule {}

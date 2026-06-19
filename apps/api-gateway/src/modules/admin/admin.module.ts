@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { AuthGuardsModule } from '@security';
-import { GatewayOrderModule } from '../order/order.module';
+import { GatewayOrdersRpcModule } from '../order/orders-rpc.module';
 import { GatewayShopModule } from '../shop/shop.module';
 import { GatewayUserModule } from '../user/user.module';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 
 @Module({
-  imports: [AuthGuardsModule, GatewayUserModule, GatewayShopModule, GatewayOrderModule],
+  imports: [AuthGuardsModule, GatewayUserModule, GatewayShopModule, GatewayOrdersRpcModule],
   controllers: [AdminController],
   providers: [AdminService],
 })
