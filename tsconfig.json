@@ -39,6 +39,8 @@
       "@users/*": ["libs/users/src/*"],
       "@products": ["libs/products/src"],
       "@products/*": ["libs/products/src/*"],
+      "@chat": ["libs/chat/src"],
+      "@chat/*": ["libs/chat/src/*"],
       "@distribution": ["libs/distribution/src"],
       "@distribution/*": ["libs/distribution/src/*"],
       "@affiliate": ["libs/affiliate/src"],

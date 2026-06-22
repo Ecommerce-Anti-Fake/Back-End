@@ -132,37 +132,6 @@ type ReviewWithAuthor = {
   media?: ReviewMediaWithAsset[];
 };
 
-type ChatUserRecord = {
-  displayName: string | null;
-  email: string | null;
-  phone: string | null;
-};
-
-type ChatMessageWithSender = {
-  id: string;
-  threadId: string;
-  senderUserId: string;
-  clientMessageId?: string | null;
-  messageType: string;
-  body: string;
-  sentAt: Date;
-  sender?: ChatUserRecord;
-};
-
-type ChatThreadWithRelations = {
-  id: string;
-  shopId: string;
-  buyerUserId: string;
-  sellerUserId: string;
-  createdAt: Date;
-  shop: {
-    shopName: string;
-  };
-  buyer: ChatUserRecord;
-  seller: ChatUserRecord;
-  messages?: ChatMessageWithSender[];
-};
-
 type SocialUserRecord = {
   displayName: string | null;
   email: string | null;
@@ -355,45 +324,6 @@ function offerImageUrls(media: OfferWithRelations['media']) {
     });
 }
 
-export function toChatMessageResponse(message: ChatMessageWithSender) {
-  return {
-    id: message.id,
-    threadId: message.threadId,
-    senderUserId: message.senderUserId,
-    clientMessageId: message.clientMessageId ?? null,
-    senderName: message.sender ? chatDisplayName(message.sender) : null,
-    messageType: message.messageType,
-    body: message.body,
-    sentAt: message.sentAt,
-  };
-}
-
-export function toChatThreadListItemResponse(
-  thread: ChatThreadWithRelations,
-  requesterUserId: string,
-) {
-  const lastMessage = (thread.messages ?? [])[0];
-  const isBuyer = thread.buyerUserId === requesterUserId;
-
-  return {
-    id: thread.id,
-    chatUserID: isBuyer ? thread.shopId : thread.buyerUserId,
-    chatUserName: isBuyer ? thread.shop.shopName : chatDisplayName(thread.buyer),
-    lastMessage: lastMessage
-      ? [
-          {
-            id: lastMessage.id,
-            clientMessageId: lastMessage.clientMessageId ?? null,
-            messageType: lastMessage.messageType,
-            body: lastMessage.body,
-            sentAt: lastMessage.sentAt,
-          },
-        ]
-      : [],
-    createdAt: thread.createdAt,
-  };
-}
-
 export function toSocialPostResponse(post: SocialPostWithRelations, viewerUserId?: string | null) {
   return {
     id: post.id,
@@ -568,8 +498,4 @@ function decimalToNumber(value: Prisma.Decimal | number | string | null | undefi
   }
 
   return Number(value.toString());
-}
-
-function chatDisplayName(user: ChatUserRecord) {
-  return user.displayName || user.email || user.phone || 'Nguoi dung';
 }

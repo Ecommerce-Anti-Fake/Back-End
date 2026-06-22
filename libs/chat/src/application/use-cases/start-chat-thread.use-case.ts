@@ -1,13 +1,13 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toChatThreadResponse } from './products.mapper';
+import { ChatRepository } from '../../infrastructure/persistence/chat.repository';
+import { toChatThreadResponse } from '../chat.mapper';
 
 @Injectable()
 export class StartChatThreadUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(private readonly chatRepository: ChatRepository) {}
 
   async execute(input: { requesterUserId: string; shopId: string; initialMessage?: string | null }) {
-    const shop = await this.productRepository.findShopForChat(input.shopId);
+    const shop = await this.chatRepository.findShopForChat(input.shopId);
     if (!shop) {
       throw new NotFoundException('Shop not found');
     }
@@ -15,10 +15,10 @@ export class StartChatThreadUseCase {
       throw new BadRequestException('Seller cannot start a buyer chat with own shop');
     }
 
-    const existing = await this.productRepository.findChatThreadByShopAndBuyer(input.shopId, input.requesterUserId);
+    const existing = await this.chatRepository.findChatThreadByShopAndBuyer(input.shopId, input.requesterUserId);
     const thread =
       existing ??
-      (await this.productRepository.createChatThread({
+      (await this.chatRepository.createChatThread({
         shopId: input.shopId,
         buyerUserId: input.requesterUserId,
         sellerUserId: shop.ownerUserId,
@@ -27,7 +27,7 @@ export class StartChatThreadUseCase {
     const body = input.initialMessage?.trim();
     if (body) {
       await this.assertParticipant(thread, input.requesterUserId);
-      const updatedThread = await this.productRepository.createChatMessage({
+      const updatedThread = await this.chatRepository.createChatMessage({
         threadId: thread.id,
         senderUserId: input.requesterUserId,
         body,

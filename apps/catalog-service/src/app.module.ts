@@ -4,6 +4,7 @@ import { PrismaModule } from '@database/prisma/prisma.module';
 import { DistributionModule } from '@distribution/distribution.module';
 import { ProductsModule } from '@products/products.module';
 import { ShopsModule } from '@shops/shops.module';
+import { ChatModule } from '@chat/chat.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { ShopsModule } from '@shops/shops.module';
     PrismaModule,
     DistributionModule,
     ProductsModule,
+    ChatModule,
     ShopsModule,
   ],
 })

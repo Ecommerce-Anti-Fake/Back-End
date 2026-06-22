@@ -1,11 +1,11 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
+import { ChatRepository } from '../../infrastructure/persistence/chat.repository';
 import { canAccessThread } from './get-chat-thread.use-case';
-import { toChatThreadResponse } from './products.mapper';
+import { toChatThreadResponse } from '../chat.mapper';
 
 @Injectable()
 export class SendChatMessageUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(private readonly chatRepository: ChatRepository) {}
 
   async execute(input: {
     threadId: string;
@@ -19,7 +19,7 @@ export class SendChatMessageUseCase {
       throw new BadRequestException('Message body is required');
     }
 
-    const thread = await this.productRepository.findChatThreadById(input.threadId);
+    const thread = await this.chatRepository.findChatThreadById(input.threadId);
     if (!thread) {
       throw new NotFoundException('Chat thread not found');
     }
@@ -27,7 +27,7 @@ export class SendChatMessageUseCase {
       throw new ForbiddenException('Only chat participants can send messages');
     }
 
-    const updatedThread = await this.productRepository.createChatMessage({
+    const updatedThread = await this.chatRepository.createChatMessage({
       threadId: input.threadId,
       senderUserId: input.requesterUserId,
       clientMessageId: input.clientMessageId?.trim() || null,

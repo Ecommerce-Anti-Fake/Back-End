@@ -1,7 +1,7 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { SendChatMessageUseCase } from './send-chat-message.use-case';
 
-describe('SendChatMessageUseCase', () => {
+describe('SendChatMessageUseCase in ChatModule', () => {
   const repository = {
     findChatThreadById: jest.fn(),
     createChatMessage: jest.fn(),

@@ -1,7 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { StartChatThreadUseCase } from './start-chat-thread.use-case';
 
-describe('StartChatThreadUseCase', () => {
+describe('StartChatThreadUseCase in ChatModule', () => {
   const repository = {
     findShopForChat: jest.fn(),
     findChatThreadByShopAndBuyer: jest.fn(),

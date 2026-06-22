@@ -1,13 +1,13 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toChatThreadResponse } from './products.mapper';
+import { ChatRepository } from '../../infrastructure/persistence/chat.repository';
+import { toChatThreadResponse } from '../chat.mapper';
 
 @Injectable()
 export class GetChatThreadUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(private readonly chatRepository: ChatRepository) {}
 
   async execute(input: { threadId: string; requesterUserId: string; requesterRole?: string | null }) {
-    const thread = await this.productRepository.findChatThreadById(input.threadId);
+    const thread = await this.chatRepository.findChatThreadById(input.threadId);
     if (!thread) {
       throw new NotFoundException('Chat thread not found');
     }

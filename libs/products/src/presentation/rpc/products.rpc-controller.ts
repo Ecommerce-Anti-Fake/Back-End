@@ -22,8 +22,6 @@ import type {
   DeleteOfferMediaMessage,
   FavoriteOfferMessage,
   FavoriteOffersLookupMessage,
-  ChatRequesterMessage,
-  ChatThreadLookupMessage,
   LiveSessionLookupMessage,
   ListLiveCommentsMessage,
   ListLiveSessionsMessage,
@@ -37,11 +35,9 @@ import type {
   OfferReviewsLookupMessage,
   OfferLookupMessage,
   ReviewMediaUploadSignaturesMessage,
-  SendChatMessageMessage,
   SetOfferPrimaryMediaMessage,
   SetSocialReactionMessage,
   SocialPostLookupMessage,
-  StartChatThreadMessage,
   UpdateSocialPostVisibilityMessage,
   UpdateLiveSessionStatusMessage,
   UpdateLiveCommentVisibilityMessage,
@@ -69,11 +65,9 @@ import {
   GetOfferDocumentUploadSignaturesUseCase,
   GetOfferByIdUseCase,
   GetOfferMediaUploadSignaturesUseCase,
-  GetChatThreadUseCase,
   GetReviewMediaUploadSignaturesUseCase,
   ListBrandsUseCase,
   ListCategoriesUseCase,
-  ListChatThreadsUseCase,
   ListOfferBatchLinksUseCase,
   ListOfferDocumentsUseCase,
   ListOfferMediaUseCase,
@@ -87,10 +81,8 @@ import {
   RemoveSocialReactionUseCase,
   RemindLiveSessionUseCase,
   SetOfferPrimaryMediaUseCase,
-  SendChatMessageUseCase,
   SetSocialReactionUseCase,
   ShareSocialPostUseCase,
-  StartChatThreadUseCase,
   RemoveFavoriteOfferUseCase,
   UpdateSocialPostVisibilityUseCase,
   UpdateLiveSessionStatusUseCase,
@@ -129,10 +121,6 @@ export class ProductsRpcController {
     private readonly listFavoriteOffersUseCase: ListFavoriteOffersUseCase,
     private readonly addFavoriteOfferUseCase: AddFavoriteOfferUseCase,
     private readonly removeFavoriteOfferUseCase: RemoveFavoriteOfferUseCase,
-    private readonly listChatThreadsUseCase: ListChatThreadsUseCase,
-    private readonly getChatThreadUseCase: GetChatThreadUseCase,
-    private readonly startChatThreadUseCase: StartChatThreadUseCase,
-    private readonly sendChatMessageUseCase: SendChatMessageUseCase,
     private readonly listSocialPostsUseCase: ListSocialPostsUseCase,
     private readonly createSocialPostUseCase: CreateSocialPostUseCase,
     private readonly createSocialCommentUseCase: CreateSocialCommentUseCase,
@@ -397,42 +385,6 @@ export class ProductsRpcController {
   async removeFavoriteOffer(@Payload() payload: FavoriteOfferMessage) {
     try {
       return await this.removeFavoriteOfferUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findChatThreads)
-  async findChatThreads(@Payload() payload: ChatRequesterMessage) {
-    try {
-      return await this.listChatThreadsUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.getChatThread)
-  async getChatThread(@Payload() payload: ChatThreadLookupMessage) {
-    try {
-      return await this.getChatThreadUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.startChatThread)
-  async startChatThread(@Payload() payload: StartChatThreadMessage) {
-    try {
-      return await this.startChatThreadUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.sendChatMessage)
-  async sendChatMessage(@Payload() payload: SendChatMessageMessage) {
-    try {
-      return await this.sendChatMessageUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

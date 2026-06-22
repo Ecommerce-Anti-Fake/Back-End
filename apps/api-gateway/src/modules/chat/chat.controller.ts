@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { AuthenticatedUser } from '@contracts';
 import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard } from '@security';
-import { ChatThreadResponseDto, SendChatMessageDto, StartChatThreadDto } from '@products';
+import { ChatThreadResponseDto, SendChatMessageDto, StartChatThreadDto } from '@chat';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 @ApiTags('Chat')
