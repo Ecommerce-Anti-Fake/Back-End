@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import type { AuthenticatedUser } from '@contracts';
 import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard } from '@security';
 import {
@@ -34,6 +34,18 @@ export class ChatController {
 
   @ApiOperation({ summary: 'Lay chi tiet chat thread' })
   @ApiBearerAuth('access-token')
+  @ApiQuery({
+    name: 'before',
+    required: false,
+    description: 'Cursor để lấy message cũ hơn. Lần đầu mở thread thì bỏ trống.',
+    example: '2026-06-04T09:51:05.445Z|message-id',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Số message mỗi lần lấy. Mặc định 50, tối đa 50.',
+    example: 50,
+  })
   @ApiOkResponse({
     description: 'Chi tiet chat thread.',
     type: ChatThreadDetailResponseDto,
