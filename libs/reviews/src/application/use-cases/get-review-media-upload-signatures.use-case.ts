@@ -1,11 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { MediaService } from '@media';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
+import { ReviewsRepository } from '../../infrastructure/persistence/reviews.repository';
 
 @Injectable()
 export class GetReviewMediaUploadSignaturesUseCase {
   constructor(
-    private readonly productRepository: ProductRepository,
+    private readonly reviewsRepository: ReviewsRepository,
     private readonly mediaService: MediaService,
   ) {}
 
@@ -16,7 +20,10 @@ export class GetReviewMediaUploadSignaturesUseCase {
       assetType: 'IMAGE';
     }>;
   }) {
-    const review = await this.productRepository.findReviewOwnedByBuyer(input.reviewId, input.requesterUserId);
+    const review = await this.reviewsRepository.findReviewOwnedByBuyer(
+      input.reviewId,
+      input.requesterUserId,
+    );
     if (!review) {
       throw new NotFoundException('Review not found');
     }
@@ -26,7 +33,9 @@ export class GetReviewMediaUploadSignaturesUseCase {
     }
 
     if (input.items.length > 5) {
-      throw new BadRequestException('A review can upload up to 5 images at once');
+      throw new BadRequestException(
+        'A review can upload up to 5 images at once',
+      );
     }
 
     return input.items.map((item, index) =>

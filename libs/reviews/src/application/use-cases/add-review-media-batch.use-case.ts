@@ -1,12 +1,16 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { MediaService } from '@media';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toReviewMediaResponse } from './products.mapper';
+import { ReviewsRepository } from '../../infrastructure/persistence/reviews.repository';
+import { toReviewMediaResponse } from '../reviews.mapper';
 
 @Injectable()
 export class AddReviewMediaBatchUseCase {
   constructor(
-    private readonly productRepository: ProductRepository,
+    private readonly reviewsRepository: ReviewsRepository,
     private readonly mediaService: MediaService,
   ) {}
 
@@ -20,7 +24,10 @@ export class AddReviewMediaBatchUseCase {
       publicId: string;
     }>;
   }) {
-    const review = await this.productRepository.findReviewOwnedByBuyer(input.reviewId, input.requesterUserId);
+    const review = await this.reviewsRepository.findReviewOwnedByBuyer(
+      input.reviewId,
+      input.requesterUserId,
+    );
     if (!review) {
       throw new NotFoundException('Review not found');
     }
@@ -37,12 +44,16 @@ export class AddReviewMediaBatchUseCase {
 
     for (const item of input.items) {
       if (!this.mediaService.isOwnedCloudinaryUrl(item.fileUrl)) {
-        throw new BadRequestException('Review image URL must belong to the configured Cloudinary cloud');
+        throw new BadRequestException(
+          'Review image URL must belong to the configured Cloudinary cloud',
+        );
       }
 
       const publicId = item.publicId.trim();
       if (!publicId.startsWith(`reviews/${review.id}/media/`)) {
-        throw new BadRequestException('Review image public ID does not belong to the review media folder');
+        throw new BadRequestException(
+          'Review image public ID does not belong to the review media folder',
+        );
       }
 
       const mimeType = item.mimeType.trim().toLowerCase();
@@ -60,7 +71,7 @@ export class AddReviewMediaBatchUseCase {
         folder: `reviews/${review.id}/media`,
       });
 
-      const media = await this.productRepository.createReviewMedia({
+      const media = await this.reviewsRepository.createReviewMedia({
         reviewId: review.id,
         mediaAssetId: mediaAsset.id,
         fileUrl: item.fileUrl,

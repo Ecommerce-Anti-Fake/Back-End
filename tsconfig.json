@@ -45,6 +45,8 @@
       "@social/*": ["libs/social/src/*"],
       "@live-commerce": ["libs/live-commerce/src"],
       "@live-commerce/*": ["libs/live-commerce/src/*"],
+      "@reviews": ["libs/reviews/src"],
+      "@reviews/*": ["libs/reviews/src/*"],
       "@distribution": ["libs/distribution/src"],
       "@distribution/*": ["libs/distribution/src/*"],
       "@affiliate": ["libs/affiliate/src"],

@@ -7,9 +7,6 @@ import type {
   AllocateOfferBatchesMessage,
   AddOfferDocumentsBatchMessage,
   AddOfferMediaBatchMessage,
-  AddReviewMediaBatchMessage,
-  CreateOrderItemReviewMessage,
-  CreateOfferReviewMessage,
   CreateBrandMessage,
   CreateCategoryMessage,
   CreateOfferMessage,
@@ -23,9 +20,7 @@ import type {
   OfferDocumentsLookupMessage,
   OfferMediaLookupMessage,
   OfferMediaUploadSignaturesMessage,
-  OfferReviewsLookupMessage,
   OfferLookupMessage,
-  ReviewMediaUploadSignaturesMessage,
   SetOfferPrimaryMediaMessage,
   UpdateOfferMessage,
 } from '@contracts';
@@ -34,25 +29,20 @@ import {
   AllocateOfferBatchesUseCase,
   AddOfferDocumentsBatchUseCase,
   AddOfferMediaBatchUseCase,
-  AddReviewMediaBatchUseCase,
   AddFavoriteOfferUseCase,
   CreateBrandUseCase,
   CreateCategoryUseCase,
   CreateOfferUseCase,
-  CreateOfferReviewUseCase,
-  CreateOrderItemReviewUseCase,
   DeleteOfferDocumentUseCase,
   DeleteOfferMediaUseCase,
   GetOfferDocumentUploadSignaturesUseCase,
   GetOfferByIdUseCase,
   GetOfferMediaUploadSignaturesUseCase,
-  GetReviewMediaUploadSignaturesUseCase,
   ListBrandsUseCase,
   ListCategoriesUseCase,
   ListOfferBatchLinksUseCase,
   ListOfferDocumentsUseCase,
   ListOfferMediaUseCase,
-  ListOfferReviewsUseCase,
   ListOffersUseCase,
   ListFavoriteOffersUseCase,
   ListShippingCarriersUseCase,
@@ -77,11 +67,6 @@ export class ProductsRpcController {
     private readonly listOfferMediaUseCase: ListOfferMediaUseCase,
     private readonly deleteOfferMediaUseCase: DeleteOfferMediaUseCase,
     private readonly setOfferPrimaryMediaUseCase: SetOfferPrimaryMediaUseCase,
-    private readonly listOfferReviewsUseCase: ListOfferReviewsUseCase,
-    private readonly createOfferReviewUseCase: CreateOfferReviewUseCase,
-    private readonly createOrderItemReviewUseCase: CreateOrderItemReviewUseCase,
-    private readonly getReviewMediaUploadSignaturesUseCase: GetReviewMediaUploadSignaturesUseCase,
-    private readonly addReviewMediaBatchUseCase: AddReviewMediaBatchUseCase,
     private readonly listOfferBatchLinksUseCase: ListOfferBatchLinksUseCase,
     private readonly getOfferDocumentUploadSignaturesUseCase: GetOfferDocumentUploadSignaturesUseCase,
     private readonly addOfferDocumentsBatchUseCase: AddOfferDocumentsBatchUseCase,
@@ -215,51 +200,6 @@ export class ProductsRpcController {
   async setOfferPrimaryMedia(@Payload() payload: SetOfferPrimaryMediaMessage) {
     try {
       return await this.setOfferPrimaryMediaUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findOfferReviews)
-  async findOfferReviews(@Payload() payload: OfferReviewsLookupMessage) {
-    try {
-      return await this.listOfferReviewsUseCase.execute(payload.offerId);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.createOfferReview)
-  async createOfferReview(@Payload() payload: CreateOfferReviewMessage) {
-    try {
-      return await this.createOfferReviewUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.createOrderItemReview)
-  async createOrderItemReview(@Payload() payload: CreateOrderItemReviewMessage) {
-    try {
-      return await this.createOrderItemReviewUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.getReviewMediaUploadSignatures)
-  async getReviewMediaUploadSignatures(@Payload() payload: ReviewMediaUploadSignaturesMessage) {
-    try {
-      return await this.getReviewMediaUploadSignaturesUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.addReviewMediaBatch)
-  async addReviewMediaBatch(@Payload() payload: AddReviewMediaBatchMessage) {
-    try {
-      return await this.addReviewMediaBatchUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

@@ -5,11 +5,11 @@ import {
   AddReviewMediaBatchDto,
   CreateOfferReviewDto,
   GetReviewMediaUploadSignaturesDto,
-  OfferMediaUploadSignatureResponseDto,
   OfferReviewResponseDto,
   OfferReviewsResponseDto,
   ReviewMediaResponseDto,
-} from '@products';
+} from '@reviews';
+import { OfferMediaUploadSignatureResponseDto } from '@products';
 import { RateLimit } from '../../observability';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
