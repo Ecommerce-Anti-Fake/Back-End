@@ -111,9 +111,28 @@ export class OfferReviewResponseDto {
   @ApiProperty({ example: '2026-05-14T10:00:00.000Z' }) createdAt!: Date;
 }
 
+export class OfferReviewListMediaResponseDto {
+  @ApiProperty({
+    example:
+      'https://res.cloudinary.com/example/image/upload/v1/reviews/review-1/media/photo.jpg',
+  })
+  fileUrl!: string;
+}
+
+export class OfferReviewListItemResponseDto {
+  @ApiProperty({ example: 'review-id' }) id!: string;
+  @ApiProperty({ example: 5 }) rating!: number;
+  @ApiPropertyOptional({ example: 'San pham dung mo ta.', nullable: true })
+  comment!: string | null;
+  @ApiProperty({ example: 'Nguoi mua da xac minh' }) authorName!: string;
+  @ApiProperty({ type: OfferReviewListMediaResponseDto, isArray: true })
+  media!: OfferReviewListMediaResponseDto[];
+  @ApiProperty({ example: '2026-05-14T10:00:00.000Z' }) createdAt!: string;
+}
+
 export class OfferReviewsResponseDto {
   @ApiProperty({ example: 2 }) total!: number;
   @ApiProperty({ example: 4.5 }) averageRating!: number;
-  @ApiProperty({ type: OfferReviewResponseDto, isArray: true })
-  items!: OfferReviewResponseDto[];
+  @ApiProperty({ type: OfferReviewListItemResponseDto, isArray: true })
+  items!: OfferReviewListItemResponseDto[];
 }

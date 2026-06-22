@@ -29,6 +29,31 @@ type ReviewWithAuthor = {
   media?: ReviewMediaWithAsset[];
 };
 
+type OfferReviewListRecord = {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: Date;
+  fromUser: { displayName: string | null };
+  media: Array<{
+    fileUrl: string;
+    mediaAsset: { secureUrl: string } | null;
+  }>;
+};
+
+export function toOfferReviewListItemResponse(review: OfferReviewListRecord) {
+  return {
+    id: review.id,
+    rating: review.rating,
+    comment: review.comment,
+    authorName: review.fromUser.displayName || 'Nguoi mua da xac minh',
+    media: review.media.map((item) => ({
+      fileUrl: item.mediaAsset?.secureUrl ?? item.fileUrl,
+    })),
+    createdAt: review.createdAt.toISOString(),
+  };
+}
+
 export function toOfferReviewResponse(review: ReviewWithAuthor) {
   const media = (review.media ?? []).map(toReviewMediaResponse);
   return {

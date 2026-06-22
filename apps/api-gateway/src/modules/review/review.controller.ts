@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiCreatedResponse,
@@ -20,7 +28,7 @@ import { RateLimit } from '../../observability';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 @ApiTags('Review')
-@Controller('products')
+@Controller()
 export class ReviewController {
   constructor(private readonly catalogRpcService: CatalogRpcService) {}
 
@@ -30,8 +38,10 @@ export class ReviewController {
     type: OfferReviewsResponseDto,
   })
   @RateLimit({ profile: 'publicCatalog' })
-  @Get('offers/:offerId/reviews')
-  findOfferReviews(@Param('offerId') offerId: string) {
+  @Get(['offers/:offerId/reviews', 'products/offers/:offerId/reviews'])
+  findOfferReviews(
+    @Param('offerId', new ParseUUIDPipe({ version: '4' })) offerId: string,
+  ) {
     return this.catalogRpcService.findOfferReviews({ offerId });
   }
 
@@ -42,7 +52,7 @@ export class ReviewController {
     type: OfferReviewResponseDto,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post('offers/:offerId/reviews')
+  @Post('products/offers/:offerId/reviews')
   createOfferReview(
     @Param('offerId') offerId: string,
     @CurrentUserId() fromUserId: string,
@@ -65,7 +75,7 @@ export class ReviewController {
     type: OfferReviewResponseDto,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post('order-items/:orderItemId/review')
+  @Post('products/order-items/:orderItemId/review')
   createOrderItemReview(
     @Param('orderItemId') orderItemId: string,
     @CurrentUserId() fromUserId: string,
@@ -88,7 +98,7 @@ export class ReviewController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @RateLimit({ profile: 'uploadSignature' })
-  @Post('reviews/:reviewId/media/upload-signatures')
+  @Post('products/reviews/:reviewId/media/upload-signatures')
   getReviewMediaUploadSignatures(
     @Param('reviewId') reviewId: string,
     @CurrentUserId() requesterUserId: string,
@@ -109,7 +119,7 @@ export class ReviewController {
     isArray: true,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post('reviews/:reviewId/media')
+  @Post('products/reviews/:reviewId/media')
   addReviewMediaBatch(
     @Param('reviewId') reviewId: string,
     @CurrentUserId() requesterUserId: string,

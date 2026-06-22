@@ -5,15 +5,31 @@ import { PrismaService } from '@database/prisma/prisma.service';
 export class ReviewsRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async offerExists(offerId: string) {
+    const offer = await this.prisma.offer.findUnique({
+      where: { id: offerId },
+      select: { id: true },
+    });
+    return Boolean(offer);
+  }
+
   findOfferReviews(offerId: string) {
     return this.prisma.review.findMany({
-      where: {
-        OR: [
-          { orderItem: { offerId } },
-          { orderItemId: null, order: { items: { some: { offerId } } } },
-        ],
+      where: { orderItem: { offerId } },
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+        fromUser: { select: { displayName: true } },
+        media: {
+          select: {
+            fileUrl: true,
+            mediaAsset: { select: { secureUrl: true } },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
-      include: this.reviewInclude(),
       orderBy: { createdAt: 'desc' },
     });
   }
