@@ -42,6 +42,7 @@ export function toChatMessageResponse(message: ChatMessageWithSender) {
 
 export function toChatThreadResponse(thread: ChatThreadWithRelations) {
   const messages = (thread.messages ?? []).map(toChatMessageResponse);
+
   return {
     id: thread.id,
     shopId: thread.shopId,
@@ -52,6 +53,37 @@ export function toChatThreadResponse(thread: ChatThreadWithRelations) {
     sellerName: chatDisplayName(thread.seller),
     lastMessage: messages.at(-1) ?? null,
     messages,
+    createdAt: thread.createdAt,
+  };
+}
+
+export function toChatThreadDetailResponse(
+  thread: Omit<ChatThreadWithRelations, 'messages'>,
+  messagesPage: {
+    messages: ChatMessageWithSender[];
+    pageInfo: {
+      limit: number;
+      hasMoreBefore: boolean;
+      beforeCursor: string | null;
+    };
+  },
+  requesterUserId: string,
+) {
+  const isBuyer = thread.buyerUserId === requesterUserId;
+
+  return {
+    id: thread.id,
+    chatUserID: isBuyer ? thread.shopId : thread.buyerUserId,
+    chatUserName: isBuyer ? thread.shop.shopName : chatDisplayName(thread.buyer),
+    messages: messagesPage.messages.map((message) => ({
+      id: message.id,
+      senderUserId: message.senderUserId,
+      clientMessageId: message.clientMessageId ?? null,
+      messageType: message.messageType,
+      body: message.body,
+      sentAt: message.sentAt,
+    })),
+    pageInfo: messagesPage.pageInfo,
     createdAt: thread.createdAt,
   };
 }

@@ -21,6 +21,92 @@ export class ChatRepository {
     return this.prisma.chatThread.findUnique({ where: { id: threadId }, include: this.chatThreadInclude() });
   }
 
+  findChatThreadMetaById(threadId: string) {
+  return this.prisma.chatThread.findUnique({
+    where: { id: threadId },
+    include: {
+      shop: {
+        select: {
+          shopName: true,
+        },
+      },
+      buyer: {
+        select: {
+          displayName: true,
+          email: true,
+          phone: true,
+        },
+      },
+      seller: {
+        select: {
+          displayName: true,
+          email: true,
+          phone: true,
+          },
+        },
+      },
+    });
+  }
+
+  async findChatMessagesPage(input: {
+  threadId: string;
+  before?: string | null;
+  limit?: number | null;
+  }) {
+  const limit = Math.min(50, Math.max(1, input.limit ?? 50));
+  const cursor = parseChatMessageCursor(input.before);
+
+  const messagesDesc = await this.prisma.chatMessage.findMany({
+    where: {
+      threadId: input.threadId,
+        ...(cursor
+          ? {
+              OR: [
+                {
+                  sentAt: {
+                    lt: cursor.sentAt,
+                  },
+                },
+                {
+                  sentAt: cursor.sentAt,
+                  id: {
+                    lt: cursor.id,
+                  },
+                },
+              ],
+            }
+          : {}),
+      },
+      orderBy: [
+        {
+          sentAt: 'desc',
+        },
+        {
+          id: 'desc',
+        },
+      ],
+      take: limit + 1,
+    });
+
+    const hasMoreBefore = messagesDesc.length > limit;
+    const pageDesc = messagesDesc.slice(0, limit);
+
+    // Quan trọng:
+    // DB lấy newest trước, nhưng trả về frontend theo thứ tự cũ -> mới.
+    const messagesAsc = [...pageDesc].reverse();
+
+    const oldestMessage = messagesAsc[0] ?? null;
+
+    return {
+      messages: messagesAsc,
+      pageInfo: {
+        limit,
+        hasMoreBefore,
+        beforeCursor: oldestMessage ? buildChatMessageCursor(oldestMessage) : null,
+      },
+    };
+  }
+
   findChatThreadsForUser(input: { requesterUserId: string; requesterRole?: string | null }) {
     return this.prisma.chatThread.findMany({
       where: input.requesterRole === 'admin'
@@ -99,4 +185,23 @@ export class ChatRepository {
     };
   }
 }
+
+function parseChatMessageCursor(cursor?: string | null) {
+    if (!cursor) return null;
+
+    const [sentAtRaw, id] = cursor.split('|');
+    if (!sentAtRaw || !id) return null;
+
+    const sentAt = new Date(sentAtRaw);
+    if (Number.isNaN(sentAt.getTime())) return null;
+
+    return {
+      sentAt,
+      id,
+    };
+  }
+
+  function buildChatMessageCursor(message: { sentAt: Date; id: string }) {
+    return `${message.sentAt.toISOString()}|${message.id}`;
+  }
 

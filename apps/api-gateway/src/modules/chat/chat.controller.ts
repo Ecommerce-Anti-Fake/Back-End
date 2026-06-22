@@ -1,8 +1,14 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { AuthenticatedUser } from '@contracts';
 import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard } from '@security';
-import { ChatThreadResponseDto, SendChatMessageDto, StartChatThreadDto } from '@chat';
+import {
+  ChatThreadDetailResponseDto,
+  ChatThreadListItemResponseDto,
+  ChatThreadResponseDto,
+  SendChatMessageDto,
+  StartChatThreadDto,
+} from '@chat';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 @ApiTags('Chat')
@@ -14,7 +20,7 @@ export class ChatController {
   @ApiBearerAuth('access-token')
   @ApiOkResponse({
     description: 'Danh sach chat thread.',
-    type: ChatThreadResponseDto,
+    type: ChatThreadListItemResponseDto,
     isArray: true,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
@@ -30,7 +36,7 @@ export class ChatController {
   @ApiBearerAuth('access-token')
   @ApiOkResponse({
     description: 'Chi tiet chat thread.',
-    type: ChatThreadResponseDto,
+    type: ChatThreadDetailResponseDto,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Get('chat/threads/:threadId')
@@ -38,11 +44,15 @@ export class ChatController {
     @Param('threadId') threadId: string,
     @CurrentUserId() requesterUserId: string,
     @CurrentUser() requester?: AuthenticatedUser,
+    @Query('before') before?: string,
+    @Query('limit') limit?: string,
   ) {
     return this.catalogRpcService.getChatThread({
       threadId,
       requesterUserId,
       requesterRole: requester?.role,
+      before: before ?? null,
+      limit: limit ? Number(limit) : 50,
     });
   }
 

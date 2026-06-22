@@ -600,6 +600,8 @@ export type StartChatThreadMessage = ChatRequesterMessage & {
 
 export type ChatThreadLookupMessage = ChatRequesterMessage & {
   threadId: string;
+  before?: string | null;
+  limit?: number | null;
 };
 
 export type SendChatMessageMessage = ChatThreadLookupMessage & {
