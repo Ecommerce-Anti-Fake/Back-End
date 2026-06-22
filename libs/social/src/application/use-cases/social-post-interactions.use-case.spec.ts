@@ -1,10 +1,13 @@
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CreateSocialCommentUseCase } from './create-social-comment.use-case';
-import { RemoveSocialReactionUseCase, SetSocialReactionUseCase } from './set-social-reaction.use-case';
+import {
+  RemoveSocialReactionUseCase,
+  SetSocialReactionUseCase,
+} from './set-social-reaction.use-case';
 import { ShareSocialPostUseCase } from './share-social-post.use-case';
 import { UpdateSocialPostVisibilityUseCase } from './update-social-post-visibility.use-case';
 
-describe('social post interaction use cases', () => {
+describe('social post interaction use cases in SocialModule', () => {
   const repository = {
     findSocialPostById: jest.fn(),
     createSocialComment: jest.fn(),
@@ -17,17 +20,27 @@ describe('social post interaction use cases', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository.findSocialPostById.mockResolvedValue(socialPost());
-    repository.createSocialComment.mockResolvedValue(socialPost({ commentCount: 1 }));
-    repository.setSocialReaction.mockResolvedValue(socialPost({ liked: true, reactionCount: 1 }));
+    repository.createSocialComment.mockResolvedValue(
+      socialPost({ commentCount: 1 }),
+    );
+    repository.setSocialReaction.mockResolvedValue(
+      socialPost({ liked: true, reactionCount: 1 }),
+    );
     repository.removeSocialReaction.mockResolvedValue(socialPost());
     repository.shareSocialPost.mockResolvedValue(socialPost({ shareCount: 1 }));
-    repository.updateSocialPostVisibility.mockResolvedValue(socialPost({ visibility: 'HIDDEN' }));
+    repository.updateSocialPostVisibility.mockResolvedValue(
+      socialPost({ visibility: 'HIDDEN' }),
+    );
   });
 
   it('adds a comment to a public post', async () => {
     const useCase = new CreateSocialCommentUseCase(repository as never);
 
-    const result = await useCase.execute({ postId: 'post-1', requesterUserId: 'user-2', body: ' Dong y ' });
+    const result = await useCase.execute({
+      postId: 'post-1',
+      requesterUserId: 'user-2',
+      body: ' Dong y ',
+    });
 
     expect(repository.createSocialComment).toHaveBeenCalledWith({
       postId: 'post-1',
@@ -41,8 +54,14 @@ describe('social post interaction use cases', () => {
     const setUseCase = new SetSocialReactionUseCase(repository as never);
     const removeUseCase = new RemoveSocialReactionUseCase(repository as never);
 
-    const liked = await setUseCase.execute({ postId: 'post-1', requesterUserId: 'user-2' });
-    const unliked = await removeUseCase.execute({ postId: 'post-1', requesterUserId: 'user-2' });
+    const liked = await setUseCase.execute({
+      postId: 'post-1',
+      requesterUserId: 'user-2',
+    });
+    const unliked = await removeUseCase.execute({
+      postId: 'post-1',
+      requesterUserId: 'user-2',
+    });
 
     expect(repository.setSocialReaction).toHaveBeenCalledWith({
       postId: 'post-1',
@@ -61,9 +80,15 @@ describe('social post interaction use cases', () => {
   it('records one share per user', async () => {
     const useCase = new ShareSocialPostUseCase(repository as never);
 
-    const result = await useCase.execute({ postId: 'post-1', requesterUserId: 'user-2' });
+    const result = await useCase.execute({
+      postId: 'post-1',
+      requesterUserId: 'user-2',
+    });
 
-    expect(repository.shareSocialPost).toHaveBeenCalledWith({ postId: 'post-1', userId: 'user-2' });
+    expect(repository.shareSocialPost).toHaveBeenCalledWith({
+      postId: 'post-1',
+      userId: 'user-2',
+    });
     expect(result.shareCount).toBe(1);
   });
 
@@ -97,17 +122,29 @@ describe('social post interaction use cases', () => {
   });
 
   it('returns not found for hidden posts when commenting', async () => {
-    repository.findSocialPostById.mockResolvedValue(socialPost({ visibility: 'HIDDEN' }));
+    repository.findSocialPostById.mockResolvedValue(
+      socialPost({ visibility: 'HIDDEN' }),
+    );
     const useCase = new CreateSocialCommentUseCase(repository as never);
 
     await expect(
-      useCase.execute({ postId: 'post-1', requesterUserId: 'user-2', body: 'Dong y' }),
+      useCase.execute({
+        postId: 'post-1',
+        requesterUserId: 'user-2',
+        body: 'Dong y',
+      }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 });
 
 function socialPost(
-  input: { visibility?: string; liked?: boolean; reactionCount?: number; commentCount?: number; shareCount?: number } = {},
+  input: {
+    visibility?: string;
+    liked?: boolean;
+    reactionCount?: number;
+    commentCount?: number;
+    shareCount?: number;
+  } = {},
 ) {
   return {
     id: 'post-1',

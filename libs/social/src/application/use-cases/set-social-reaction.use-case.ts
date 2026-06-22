@@ -1,18 +1,25 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toSocialPostResponse } from './products.mapper';
+import { SocialRepository } from '../../infrastructure/persistence/social.repository';
+import { toSocialPostResponse } from '../social.mapper';
 
 @Injectable()
 export class SetSocialReactionUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(private readonly socialRepository: SocialRepository) {}
 
-  async execute(input: { postId: string; requesterUserId: string; reactionType?: 'LIKE' }) {
-    const post = await this.productRepository.findSocialPostById(input.postId, input.requesterUserId);
+  async execute(input: {
+    postId: string;
+    requesterUserId: string;
+    reactionType?: 'LIKE';
+  }) {
+    const post = await this.socialRepository.findSocialPostById(
+      input.postId,
+      input.requesterUserId,
+    );
     if (!post || post.visibility !== 'PUBLIC') {
       throw new NotFoundException('Social post not found');
     }
 
-    const updatedPost = await this.productRepository.setSocialReaction({
+    const updatedPost = await this.socialRepository.setSocialReaction({
       postId: input.postId,
       userId: input.requesterUserId,
       reactionType: input.reactionType ?? 'LIKE',
@@ -27,10 +34,14 @@ export class SetSocialReactionUseCase {
 
 @Injectable()
 export class RemoveSocialReactionUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(private readonly socialRepository: SocialRepository) {}
 
-  async execute(input: { postId: string; requesterUserId: string; reactionType?: 'LIKE' }) {
-    const updatedPost = await this.productRepository.removeSocialReaction({
+  async execute(input: {
+    postId: string;
+    requesterUserId: string;
+    reactionType?: 'LIKE';
+  }) {
+    const updatedPost = await this.socialRepository.removeSocialReaction({
       postId: input.postId,
       userId: input.requesterUserId,
       reactionType: input.reactionType ?? 'LIKE',

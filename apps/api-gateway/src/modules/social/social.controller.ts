@@ -9,7 +9,7 @@ import {
   SetSocialReactionDto,
   SocialPostResponseDto,
   UpdateSocialPostVisibilityDto,
-} from '@products';
+} from '@social';
 import { RateLimit } from '../../observability';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 

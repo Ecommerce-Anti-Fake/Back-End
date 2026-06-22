@@ -1,6 +1,11 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toSocialPostResponse } from './products.mapper';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { SocialRepository } from '../../infrastructure/persistence/social.repository';
+import { toSocialPostResponse } from '../social.mapper';
 
 const NORMAL_POST_LIMIT = 3;
 const SHOP_POST_LIMIT = 30;
@@ -8,7 +13,7 @@ const QUOTA_WINDOW_DAYS = 7;
 
 @Injectable()
 export class CreateSocialPostUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(private readonly socialRepository: SocialRepository) {}
 
   async execute(input: {
     requesterUserId: string;
@@ -28,11 +33,14 @@ export class CreateSocialPostUseCase {
       throw new BadRequestException('Product share requires an offer');
     }
     if (input.postType !== 'PRODUCT_SHARE' && offerId) {
-      throw new BadRequestException('Only product share posts can attach an offer');
+      throw new BadRequestException(
+        'Only product share posts can attach an offer',
+      );
     }
 
     if (authorShopId) {
-      const shop = await this.productRepository.findShopForSocialPost(authorShopId);
+      const shop =
+        await this.socialRepository.findShopForSocialPost(authorShopId);
       if (!shop) {
         throw new NotFoundException('Shop not found');
       }
@@ -45,7 +53,7 @@ export class CreateSocialPostUseCase {
     }
 
     if (offerId) {
-      const offer = await this.productRepository.findOfferForSocialPost(offerId);
+      const offer = await this.socialRepository.findOfferForSocialPost(offerId);
       if (!offer) {
         throw new NotFoundException('Offer not found');
       }
@@ -54,18 +62,22 @@ export class CreateSocialPostUseCase {
       }
     }
 
-    const since = new Date(Date.now() - QUOTA_WINDOW_DAYS * 24 * 60 * 60 * 1000);
-    const postCount = await this.productRepository.countSocialPostsSince({
+    const since = new Date(
+      Date.now() - QUOTA_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+    );
+    const postCount = await this.socialRepository.countSocialPostsSince({
       authorUserId: input.requesterUserId,
       authorShopId,
       since,
     });
     const limit = authorShopId ? SHOP_POST_LIMIT : NORMAL_POST_LIMIT;
     if (postCount >= limit) {
-      throw new BadRequestException(`Social post quota exceeded: ${limit} posts per ${QUOTA_WINDOW_DAYS} days`);
+      throw new BadRequestException(
+        `Social post quota exceeded: ${limit} posts per ${QUOTA_WINDOW_DAYS} days`,
+      );
     }
 
-    const post = await this.productRepository.createSocialPost({
+    const post = await this.socialRepository.createSocialPost({
       authorUserId: input.requesterUserId,
       authorShopId,
       offerId,

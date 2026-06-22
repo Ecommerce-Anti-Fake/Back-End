@@ -1,7 +1,11 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateSocialPostUseCase } from './create-social-post.use-case';
 
-describe('CreateSocialPostUseCase', () => {
+describe('CreateSocialPostUseCase in SocialModule', () => {
   const repository = {
     findShopForSocialPost: jest.fn(),
     findOfferForSocialPost: jest.fn(),
@@ -59,7 +63,9 @@ describe('CreateSocialPostUseCase', () => {
       shopName: 'Shop A',
     });
     repository.countSocialPostsSince.mockResolvedValue(29);
-    repository.createSocialPost.mockResolvedValue(socialPost({ authorShopId: 'shop-1' }));
+    repository.createSocialPost.mockResolvedValue(
+      socialPost({ authorShopId: 'shop-1' }),
+    );
 
     const result = await useCase.execute({
       requesterUserId: 'user-1',
@@ -95,7 +101,10 @@ describe('CreateSocialPostUseCase', () => {
   });
 
   it('requires an active offer for product-share posts', async () => {
-    repository.findOfferForSocialPost.mockResolvedValue({ id: 'offer-1', offerStatus: 'inactive' });
+    repository.findOfferForSocialPost.mockResolvedValue({
+      id: 'offer-1',
+      offerStatus: 'inactive',
+    });
 
     await expect(
       useCase.execute({

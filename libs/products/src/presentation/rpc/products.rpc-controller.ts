@@ -10,8 +10,6 @@ import type {
   AddReviewMediaBatchMessage,
   CreateOrderItemReviewMessage,
   CreateOfferReviewMessage,
-  CreateSocialCommentMessage,
-  CreateSocialPostMessage,
   CreateBrandMessage,
   CreateCategoryMessage,
   CreateOfferMessage,
@@ -26,7 +24,6 @@ import type {
   ListLiveCommentsMessage,
   ListLiveSessionsMessage,
   ListOffersMessage,
-  ListSocialPostsMessage,
   OfferDocumentUploadSignaturesMessage,
   OfferBatchLinksLookupMessage,
   OfferDocumentsLookupMessage,
@@ -36,9 +33,6 @@ import type {
   OfferLookupMessage,
   ReviewMediaUploadSignaturesMessage,
   SetOfferPrimaryMediaMessage,
-  SetSocialReactionMessage,
-  SocialPostLookupMessage,
-  UpdateSocialPostVisibilityMessage,
   UpdateLiveSessionStatusMessage,
   UpdateLiveCommentVisibilityMessage,
   UpdateOfferMessage,
@@ -55,8 +49,6 @@ import {
   CreateOfferUseCase,
   CreateOfferReviewUseCase,
   CreateOrderItemReviewUseCase,
-  CreateSocialCommentUseCase,
-  CreateSocialPostUseCase,
   CreateLiveCommentUseCase,
   CreateLiveSessionUseCase,
   DeleteLiveCommentUseCase,
@@ -77,14 +69,9 @@ import {
   ListShippingCarriersUseCase,
   ListLiveSessionsUseCase,
   ListLiveCommentsUseCase,
-  ListSocialPostsUseCase,
-  RemoveSocialReactionUseCase,
   RemindLiveSessionUseCase,
   SetOfferPrimaryMediaUseCase,
-  SetSocialReactionUseCase,
-  ShareSocialPostUseCase,
   RemoveFavoriteOfferUseCase,
-  UpdateSocialPostVisibilityUseCase,
   UpdateLiveSessionStatusUseCase,
   UpdateLiveCommentVisibilityUseCase,
   UpdateOfferUseCase,
@@ -121,13 +108,6 @@ export class ProductsRpcController {
     private readonly listFavoriteOffersUseCase: ListFavoriteOffersUseCase,
     private readonly addFavoriteOfferUseCase: AddFavoriteOfferUseCase,
     private readonly removeFavoriteOfferUseCase: RemoveFavoriteOfferUseCase,
-    private readonly listSocialPostsUseCase: ListSocialPostsUseCase,
-    private readonly createSocialPostUseCase: CreateSocialPostUseCase,
-    private readonly createSocialCommentUseCase: CreateSocialCommentUseCase,
-    private readonly setSocialReactionUseCase: SetSocialReactionUseCase,
-    private readonly removeSocialReactionUseCase: RemoveSocialReactionUseCase,
-    private readonly shareSocialPostUseCase: ShareSocialPostUseCase,
-    private readonly updateSocialPostVisibilityUseCase: UpdateSocialPostVisibilityUseCase,
     private readonly listLiveSessionsUseCase: ListLiveSessionsUseCase,
     private readonly createLiveSessionUseCase: CreateLiveSessionUseCase,
     private readonly updateLiveSessionStatusUseCase: UpdateLiveSessionStatusUseCase,
@@ -385,69 +365,6 @@ export class ProductsRpcController {
   async removeFavoriteOffer(@Payload() payload: FavoriteOfferMessage) {
     try {
       return await this.removeFavoriteOfferUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.listSocialPosts)
-  async listSocialPosts(@Payload() payload: ListSocialPostsMessage) {
-    try {
-      return await this.listSocialPostsUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.createSocialPost)
-  async createSocialPost(@Payload() payload: CreateSocialPostMessage) {
-    try {
-      return await this.createSocialPostUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.createSocialComment)
-  async createSocialComment(@Payload() payload: CreateSocialCommentMessage) {
-    try {
-      return await this.createSocialCommentUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.setSocialReaction)
-  async setSocialReaction(@Payload() payload: SetSocialReactionMessage) {
-    try {
-      return await this.setSocialReactionUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.removeSocialReaction)
-  async removeSocialReaction(@Payload() payload: SetSocialReactionMessage) {
-    try {
-      return await this.removeSocialReactionUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.shareSocialPost)
-  async shareSocialPost(@Payload() payload: SocialPostLookupMessage) {
-    try {
-      return await this.shareSocialPostUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.updateSocialPostVisibility)
-  async updateSocialPostVisibility(@Payload() payload: UpdateSocialPostVisibilityMessage) {
-    try {
-      return await this.updateSocialPostVisibilityUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

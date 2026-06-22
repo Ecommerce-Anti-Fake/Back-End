@@ -41,6 +41,8 @@
       "@products/*": ["libs/products/src/*"],
       "@chat": ["libs/chat/src"],
       "@chat/*": ["libs/chat/src/*"],
+      "@social": ["libs/social/src"],
+      "@social/*": ["libs/social/src/*"],
       "@distribution": ["libs/distribution/src"],
       "@distribution/*": ["libs/distribution/src/*"],
       "@affiliate": ["libs/affiliate/src"],

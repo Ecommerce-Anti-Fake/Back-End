@@ -5,6 +5,7 @@ import { DistributionModule } from '@distribution/distribution.module';
 import { ProductsModule } from '@products/products.module';
 import { ShopsModule } from '@shops/shops.module';
 import { ChatModule } from '@chat/chat.module';
+import { SocialModule } from '@social/social.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ChatModule } from '@chat/chat.module';
     DistributionModule,
     ProductsModule,
     ChatModule,
+    SocialModule,
     ShopsModule,
   ],
 })
