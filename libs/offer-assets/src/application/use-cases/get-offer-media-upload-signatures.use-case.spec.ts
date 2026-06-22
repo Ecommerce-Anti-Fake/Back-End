@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MediaService } from '@media';
 import { GetOfferMediaUploadSignaturesUseCase } from './get-offer-media-upload-signatures.use-case';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
+import { OfferAssetsRepository } from '../../infrastructure/persistence/offer-assets.repository';
 
-describe('GetOfferMediaUploadSignaturesUseCase', () => {
+describe('GetOfferMediaUploadSignaturesUseCase in OfferAssetsModule', () => {
   let useCase: GetOfferMediaUploadSignaturesUseCase;
 
   const repositoryMock = {
@@ -20,12 +20,14 @@ describe('GetOfferMediaUploadSignaturesUseCase', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         GetOfferMediaUploadSignaturesUseCase,
-        { provide: ProductRepository, useValue: repositoryMock },
+        { provide: OfferAssetsRepository, useValue: repositoryMock },
         { provide: MediaService, useValue: mediaServiceMock },
       ],
     }).compile();
 
-    useCase = module.get<GetOfferMediaUploadSignaturesUseCase>(GetOfferMediaUploadSignaturesUseCase);
+    useCase = module.get<GetOfferMediaUploadSignaturesUseCase>(
+      GetOfferMediaUploadSignaturesUseCase,
+    );
   });
 
   it('should return signed upload params for active offer owner', async () => {

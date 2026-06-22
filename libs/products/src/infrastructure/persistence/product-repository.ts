@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { createHash } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@database/prisma/prisma.service';
 
@@ -13,10 +12,7 @@ export class ProductRepository {
     });
   }
 
-  createBrand(data: {
-    name: string;
-    registryStatus: string;
-  }) {
+  createBrand(data: { name: string; registryStatus: string }) {
     return this.prisma.brand.create({
       data,
     });
@@ -98,7 +94,11 @@ export class ProductRepository {
     });
   }
 
-  findOwnedDistributionNode(nodeId: string, shopId: string, ownerUserId: string) {
+  findOwnedDistributionNode(
+    nodeId: string,
+    shopId: string,
+    ownerUserId: string,
+  ) {
     return this.prisma.distributionNode.findFirst({
       where: {
         id: nodeId,
@@ -145,7 +145,13 @@ export class ProductRepository {
         data: offerData,
       });
 
-      await this.replaceOfferShippingMethodsTx(tx, offer.id, shippingProviderCodes?.length ? shippingProviderCodes : ['SELF_DELIVERY']);
+      await this.replaceOfferShippingMethodsTx(
+        tx,
+        offer.id,
+        shippingProviderCodes?.length
+          ? shippingProviderCodes
+          : ['SELF_DELIVERY'],
+      );
 
       return tx.offer.findUniqueOrThrow({
         where: { id: offer.id },
@@ -185,9 +191,19 @@ export class ProductRepository {
     };
   }
 
-  private async replaceOfferShippingMethodsTx(tx: Prisma.TransactionClient, offerId: string, providerCodes: string[]) {
-    const normalizedCodes = Array.from(new Set(providerCodes.map((code) => code.trim().toUpperCase()).filter(Boolean)));
-    const effectiveCodes = normalizedCodes.length ? normalizedCodes : ['SELF_DELIVERY'];
+  private async replaceOfferShippingMethodsTx(
+    tx: Prisma.TransactionClient,
+    offerId: string,
+    providerCodes: string[],
+  ) {
+    const normalizedCodes = Array.from(
+      new Set(
+        providerCodes.map((code) => code.trim().toUpperCase()).filter(Boolean),
+      ),
+    );
+    const effectiveCodes = normalizedCodes.length
+      ? normalizedCodes
+      : ['SELF_DELIVERY'];
     const carriers = await tx.shippingCarrier.findMany({
       where: {
         code: { in: effectiveCodes },
@@ -271,7 +287,9 @@ export class ProductRepository {
       ...(!input.includeInactive ? { offerStatus: 'active' } : {}),
       ...(input.categoryId ? { categoryId: input.categoryId } : {}),
       ...(input.brandId ? { brandId: input.brandId } : {}),
-      ...(input.verificationStatus ? { verificationLevel: input.verificationStatus } : {}),
+      ...(input.verificationStatus
+        ? { verificationLevel: input.verificationStatus }
+        : {}),
       ...(salesMode ? { salesMode } : {}),
       ...(input.minPrice !== undefined || input.maxPrice !== undefined
         ? {
@@ -286,8 +304,16 @@ export class ProductRepository {
             OR: [
               { title: { contains: q, mode: 'insensitive' } },
               { description: { contains: q, mode: 'insensitive' } },
-              { shop: { is: { shopName: { contains: q, mode: 'insensitive' } } } },
-              { category: { is: { name: { contains: q, mode: 'insensitive' } } } },
+              {
+                shop: {
+                  is: { shopName: { contains: q, mode: 'insensitive' } },
+                },
+              },
+              {
+                category: {
+                  is: { name: { contains: q, mode: 'insensitive' } },
+                },
+              },
               { modelName: { contains: q, mode: 'insensitive' } },
               { brand: { is: { name: { contains: q, mode: 'insensitive' } } } },
             ],
@@ -299,7 +325,12 @@ export class ProductRepository {
               some: {
                 batch: {
                   OR: [
-                    { countryOfOrigin: { contains: location, mode: 'insensitive' } },
+                    {
+                      countryOfOrigin: {
+                        contains: location,
+                        mode: 'insensitive',
+                      },
+                    },
                     { sourceName: { contains: location, mode: 'insensitive' } },
                   ],
                 },
@@ -339,21 +370,23 @@ export class ProductRepository {
       const page = Math.max(1, input.page ?? 1);
       const pageSize = Math.min(100, Math.max(1, input.pageSize ?? 20));
 
-      return this.prisma.$transaction([
-        this.prisma.offer.count({ where }),
-        this.prisma.offer.findMany({
-          where,
-          include,
-          orderBy,
-          skip: (page - 1) * pageSize,
-          take: pageSize,
-        }),
-      ]).then(([total, items]) => ({
-        total,
-        page,
-        pageSize,
-        items,
-      }));
+      return this.prisma
+        .$transaction([
+          this.prisma.offer.count({ where }),
+          this.prisma.offer.findMany({
+            where,
+            include,
+            orderBy,
+            skip: (page - 1) * pageSize,
+            take: pageSize,
+          }),
+        ])
+        .then(([total, items]) => ({
+          total,
+          page,
+          pageSize,
+          items,
+        }));
     }
 
     return this.prisma.offer.findMany({
@@ -363,7 +396,9 @@ export class ProductRepository {
     });
   }
 
-  private resolveSalesModeFilter(salesChannel?: 'retail' | 'wholesale' | 'all'): Prisma.EnumOfferSalesModeFilter | undefined {
+  private resolveSalesModeFilter(
+    salesChannel?: 'retail' | 'wholesale' | 'all',
+  ): Prisma.EnumOfferSalesModeFilter | undefined {
     if (salesChannel === 'retail') {
       return { in: ['RETAIL', 'BOTH'] };
     }
@@ -374,7 +409,9 @@ export class ProductRepository {
     return undefined;
   }
 
-  private resolveOfferSort(sort?: 'featured' | 'newest' | 'price-asc' | 'price-desc'): Prisma.OfferOrderByWithRelationInput {
+  private resolveOfferSort(
+    sort?: 'featured' | 'newest' | 'price-asc' | 'price-desc',
+  ): Prisma.OfferOrderByWithRelationInput {
     if (sort === 'price-asc') {
       return { price: 'asc' };
     }
@@ -592,8 +629,14 @@ export class ProductRepository {
       allocatedQuantity: number;
     }>;
   }) {
-    const totalAllocatedQuantity = input.items.reduce((sum, item) => sum + item.allocatedQuantity, 0);
-    const newAvailableQuantity = Math.max(totalAllocatedQuantity - input.soldQuantity, 0);
+    const totalAllocatedQuantity = input.items.reduce(
+      (sum, item) => sum + item.allocatedQuantity,
+      0,
+    );
+    const newAvailableQuantity = Math.max(
+      totalAllocatedQuantity - input.soldQuantity,
+      0,
+    );
 
     return this.prisma.$transaction(async (tx) => {
       await tx.offerBatchLink.deleteMany({
@@ -669,145 +712,5 @@ export class ProductRepository {
         createdAt: 'asc',
       },
     });
-  }
-
-  createOfferMedia(data: {
-    offerId: string;
-    mediaAssetId: string | null;
-    mediaType: string;
-    fileUrl: string;
-    phash: string | null;
-  }) {
-    return this.prisma.offerMedia.create({
-      data: {
-        offerId: data.offerId,
-        mediaAssetId: data.mediaAssetId,
-        mediaType: data.mediaType,
-        fileUrl: data.fileUrl,
-        phash: data.phash,
-      },
-      include: {
-        mediaAsset: true,
-      },
-    });
-  }
-
-  findOfferMedia(offerId: string) {
-    return this.prisma.offerMedia.findMany({
-      where: { offerId },
-      include: {
-        mediaAsset: true,
-      },
-      orderBy: {
-        createdAt: 'asc',
-      },
-    });
-  }
-
-  findOwnedOfferMedia(offerId: string, mediaId: string, sellerUserId: string) {
-    return this.prisma.offerMedia.findFirst({
-      where: {
-        id: mediaId,
-        offerId,
-        offer: {
-          sellerUserId,
-        },
-      },
-    });
-  }
-
-  deleteOfferMedia(mediaId: string) {
-    return this.prisma.offerMedia.delete({
-      where: {
-        id: mediaId,
-      },
-    });
-  }
-
-  setOfferPrimaryMedia(offerId: string, mediaId: string) {
-    return this.prisma.$transaction(async (tx) => {
-      await tx.offerMedia.updateMany({
-        where: {
-          offerId,
-          mediaType: 'thumbnail',
-          id: { not: mediaId },
-        },
-        data: {
-          mediaType: 'gallery',
-        },
-      });
-
-      return tx.offerMedia.update({
-        where: {
-          id: mediaId,
-        },
-        data: {
-          mediaType: 'thumbnail',
-        },
-        include: {
-          mediaAsset: true,
-        },
-      });
-    });
-  }
-
-  createOfferDocument(data: {
-    offerId: string;
-    mediaAssetId: string | null;
-    docType: string;
-    fileUrl: string;
-    issuerName: string | null;
-    documentNumber: string | null;
-  }) {
-    return this.prisma.offerDocument.create({
-      data: {
-        offerId: data.offerId,
-        mediaAssetId: data.mediaAssetId,
-        docType: data.docType,
-        fileUrl: data.fileUrl,
-        issuerName: data.issuerName,
-        documentNumberHash: data.documentNumber ? this.hashValue(data.documentNumber) : null,
-        reviewStatus: 'pending',
-      },
-      include: {
-        mediaAsset: true,
-      },
-    });
-  }
-
-  findOfferDocuments(offerId: string) {
-    return this.prisma.offerDocument.findMany({
-      where: { offerId },
-      include: {
-        mediaAsset: true,
-      },
-      orderBy: {
-        uploadedAt: 'asc',
-      },
-    });
-  }
-
-  findOwnedOfferDocument(offerId: string, documentId: string, sellerUserId: string) {
-    return this.prisma.offerDocument.findFirst({
-      where: {
-        id: documentId,
-        offerId,
-        offer: {
-          sellerUserId,
-        },
-      },
-    });
-  }
-
-  deleteOfferDocument(documentId: string) {
-    return this.prisma.offerDocument.delete({
-      where: {
-        id: documentId,
-      },
-    });
-  }
-
-  private hashValue(value: string) {
-    return createHash('sha256').update(value).digest('hex');
   }
 }

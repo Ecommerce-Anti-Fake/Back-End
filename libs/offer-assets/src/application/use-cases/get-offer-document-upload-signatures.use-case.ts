@@ -1,11 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { MediaService } from '@media';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
+import { OfferAssetsRepository } from '../../infrastructure/persistence/offer-assets.repository';
 
 @Injectable()
 export class GetOfferDocumentUploadSignaturesUseCase {
   constructor(
-    private readonly productRepository: ProductRepository,
+    private readonly offerAssetsRepository: OfferAssetsRepository,
     private readonly mediaService: MediaService,
   ) {}
 
@@ -16,13 +20,18 @@ export class GetOfferDocumentUploadSignaturesUseCase {
       docType: string;
     }>;
   }) {
-    const offer = await this.productRepository.findOwnedOffer(input.offerId, input.requesterUserId);
+    const offer = await this.offerAssetsRepository.findOwnedOffer(
+      input.offerId,
+      input.requesterUserId,
+    );
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
 
     if (offer.shop.shopStatus !== 'active') {
-      throw new BadRequestException('Only active shops can upload offer documents');
+      throw new BadRequestException(
+        'Only active shops can upload offer documents',
+      );
     }
 
     if (input.items.length === 0) {

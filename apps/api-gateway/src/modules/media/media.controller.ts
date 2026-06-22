@@ -1,5 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
   AddOfferDocumentsBatchDto,
@@ -9,7 +24,7 @@ import {
   OfferDocumentResponseDto,
   OfferMediaResponseDto,
   OfferMediaUploadSignatureResponseDto,
-} from '@products';
+} from '@offer-assets';
 import { RateLimit } from '../../observability';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 

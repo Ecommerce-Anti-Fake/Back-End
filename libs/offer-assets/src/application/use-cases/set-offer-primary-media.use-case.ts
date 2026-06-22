@@ -1,17 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toOfferMediaResponse } from './products.mapper';
+import { OfferAssetsRepository } from '../../infrastructure/persistence/offer-assets.repository';
+import { toOfferMediaResponse } from '../offer-assets.mapper';
 
 @Injectable()
 export class SetOfferPrimaryMediaUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(private readonly offerAssetsRepository: OfferAssetsRepository) {}
 
   async execute(input: {
     offerId: string;
     mediaId: string;
     requesterUserId: string;
   }) {
-    const media = await this.productRepository.findOwnedOfferMedia(
+    const media = await this.offerAssetsRepository.findOwnedOfferMedia(
       input.offerId,
       input.mediaId,
       input.requesterUserId,
@@ -20,7 +20,10 @@ export class SetOfferPrimaryMediaUseCase {
       throw new NotFoundException('Offer media not found');
     }
 
-    const updatedMedia = await this.productRepository.setOfferPrimaryMedia(input.offerId, input.mediaId);
+    const updatedMedia = await this.offerAssetsRepository.setOfferPrimaryMedia(
+      input.offerId,
+      input.mediaId,
+    );
     return toOfferMediaResponse(updatedMedia);
   }
 }

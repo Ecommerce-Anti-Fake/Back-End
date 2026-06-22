@@ -1,7 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { MediaService } from '@media';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toOfferDocumentResponse } from './products.mapper';
+import { OfferAssetsRepository } from '../../infrastructure/persistence/offer-assets.repository';
+import { toOfferDocumentResponse } from '../offer-assets.mapper';
 
 const ALLOWED_OFFER_DOCUMENT_MIME_TYPES = new Set([
   'application/pdf',
@@ -14,7 +18,7 @@ const MAX_OFFER_DOCUMENT_BYTES = 10 * 1024 * 1024;
 @Injectable()
 export class AddOfferDocumentsBatchUseCase {
   constructor(
-    private readonly productRepository: ProductRepository,
+    private readonly offerAssetsRepository: OfferAssetsRepository,
     private readonly mediaService: MediaService,
   ) {}
 
@@ -31,13 +35,18 @@ export class AddOfferDocumentsBatchUseCase {
       bytes?: number | null;
     }>;
   }) {
-    const offer = await this.productRepository.findOwnedOffer(input.offerId, input.requesterUserId);
+    const offer = await this.offerAssetsRepository.findOwnedOffer(
+      input.offerId,
+      input.requesterUserId,
+    );
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
 
     if (offer.shop.shopStatus !== 'active') {
-      throw new BadRequestException('Only active shops can upload offer documents');
+      throw new BadRequestException(
+        'Only active shops can upload offer documents',
+      );
     }
 
     if (input.items.length === 0) {
@@ -48,21 +57,33 @@ export class AddOfferDocumentsBatchUseCase {
 
     for (const item of input.items) {
       if (!this.mediaService.isOwnedCloudinaryUrl(item.fileUrl)) {
-        throw new BadRequestException('Offer document URL must belong to the configured Cloudinary cloud');
+        throw new BadRequestException(
+          'Offer document URL must belong to the configured Cloudinary cloud',
+        );
       }
 
       const publicId = item.publicId.trim();
       if (!publicId.startsWith(`offers/${offer.id}/documents/`)) {
-        throw new BadRequestException('Offer document public ID does not belong to the offer documents folder');
+        throw new BadRequestException(
+          'Offer document public ID does not belong to the offer documents folder',
+        );
       }
 
       const mimeType = item.mimeType.trim().toLowerCase();
       if (!ALLOWED_OFFER_DOCUMENT_MIME_TYPES.has(mimeType)) {
-        throw new BadRequestException('Offer document must be PDF, JPG, PNG or WEBP');
+        throw new BadRequestException(
+          'Offer document must be PDF, JPG, PNG or WEBP',
+        );
       }
 
-      if (item.bytes !== undefined && item.bytes !== null && item.bytes > MAX_OFFER_DOCUMENT_BYTES) {
-        throw new BadRequestException('Offer document file size must be at most 10MB');
+      if (
+        item.bytes !== undefined &&
+        item.bytes !== null &&
+        item.bytes > MAX_OFFER_DOCUMENT_BYTES
+      ) {
+        throw new BadRequestException(
+          'Offer document file size must be at most 10MB',
+        );
       }
 
       const mediaAsset = await this.mediaService.createCloudinaryAsset({
@@ -75,7 +96,7 @@ export class AddOfferDocumentsBatchUseCase {
         folder: `offers/${offer.id}/documents`,
       });
 
-      const document = await this.productRepository.createOfferDocument({
+      const document = await this.offerAssetsRepository.createOfferDocument({
         offerId: offer.id,
         mediaAssetId: mediaAsset.id,
         docType: item.docType.trim(),

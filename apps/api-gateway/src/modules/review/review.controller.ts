@@ -1,5 +1,11 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
   AddReviewMediaBatchDto,
@@ -9,7 +15,7 @@ import {
   OfferReviewsResponseDto,
   ReviewMediaResponseDto,
 } from '@reviews';
-import { OfferMediaUploadSignatureResponseDto } from '@products';
+import { OfferMediaUploadSignatureResponseDto } from '@offer-assets';
 import { RateLimit } from '../../observability';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
@@ -50,7 +56,9 @@ export class ReviewController {
     });
   }
 
-  @ApiOperation({ summary: 'Tao hoac cap nhat danh gia cho mot san pham trong don hang' })
+  @ApiOperation({
+    summary: 'Tao hoac cap nhat danh gia cho mot san pham trong don hang',
+  })
   @ApiBearerAuth('access-token')
   @ApiCreatedResponse({
     description: 'Danh gia sau khi luu.',

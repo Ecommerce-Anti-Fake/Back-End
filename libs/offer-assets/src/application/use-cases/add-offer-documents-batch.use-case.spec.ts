@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MediaService } from '@media';
 import { AddOfferDocumentsBatchUseCase } from './add-offer-documents-batch.use-case';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
+import { OfferAssetsRepository } from '../../infrastructure/persistence/offer-assets.repository';
 
-describe('AddOfferDocumentsBatchUseCase', () => {
+describe('AddOfferDocumentsBatchUseCase in OfferAssetsModule', () => {
   let useCase: AddOfferDocumentsBatchUseCase;
 
   const repositoryMock = {
@@ -22,12 +22,14 @@ describe('AddOfferDocumentsBatchUseCase', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AddOfferDocumentsBatchUseCase,
-        { provide: ProductRepository, useValue: repositoryMock },
+        { provide: OfferAssetsRepository, useValue: repositoryMock },
         { provide: MediaService, useValue: mediaServiceMock },
       ],
     }).compile();
 
-    useCase = module.get<AddOfferDocumentsBatchUseCase>(AddOfferDocumentsBatchUseCase);
+    useCase = module.get<AddOfferDocumentsBatchUseCase>(
+      AddOfferDocumentsBatchUseCase,
+    );
   });
 
   it('should persist uploaded documents for an active offer', async () => {
@@ -47,14 +49,16 @@ describe('AddOfferDocumentsBatchUseCase', () => {
       offerId: 'offer-1',
       mediaAssetId: 'media-1',
       docType: 'INGREDIENT_CERTIFICATE',
-      fileUrl: 'https://res.cloudinary.com/demo/raw/upload/v1/offers/offer-1/documents/file.pdf',
+      fileUrl:
+        'https://res.cloudinary.com/demo/raw/upload/v1/offers/offer-1/documents/file.pdf',
       issuerName: 'Bo Y Te',
       reviewStatus: 'pending',
       uploadedAt: new Date('2026-04-16T13:00:00.000Z'),
       mediaAsset: {
         mimeType: 'application/pdf',
         publicId: 'offers/offer-1/documents/file',
-        secureUrl: 'https://res.cloudinary.com/demo/raw/upload/v1/offers/offer-1/documents/file.pdf',
+        secureUrl:
+          'https://res.cloudinary.com/demo/raw/upload/v1/offers/offer-1/documents/file.pdf',
       },
     });
 
@@ -65,7 +69,8 @@ describe('AddOfferDocumentsBatchUseCase', () => {
         {
           docType: 'INGREDIENT_CERTIFICATE',
           mimeType: 'application/pdf',
-          fileUrl: 'https://res.cloudinary.com/demo/raw/upload/v1/offers/offer-1/documents/file.pdf',
+          fileUrl:
+            'https://res.cloudinary.com/demo/raw/upload/v1/offers/offer-1/documents/file.pdf',
           publicId: 'offers/offer-1/documents/file',
           issuerName: 'Bo Y Te',
           documentNumber: 'GCN-001',
@@ -106,7 +111,8 @@ describe('AddOfferDocumentsBatchUseCase', () => {
           {
             docType: 'INGREDIENT_CERTIFICATE',
             mimeType: 'text/plain',
-            fileUrl: 'https://res.cloudinary.com/demo/raw/upload/v1/offers/offer-1/documents/file.txt',
+            fileUrl:
+              'https://res.cloudinary.com/demo/raw/upload/v1/offers/offer-1/documents/file.txt',
             publicId: 'offers/offer-1/documents/file',
           },
         ],

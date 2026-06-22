@@ -48,38 +48,6 @@ type OfferWithRelations = Offer & {
   }>;
 };
 
-type OfferMediaWithAsset = {
-  id: string;
-  offerId: string;
-  mediaAssetId: string | null;
-  mediaType: string;
-  fileUrl: string;
-  phash: string | null;
-  createdAt: Date;
-  mediaAsset?: {
-    assetType: 'IMAGE' | 'VIDEO' | 'RAW';
-    mimeType: string | null;
-    publicId: string | null;
-    secureUrl: string;
-  } | null;
-};
-
-type OfferDocumentWithAsset = {
-  id: string;
-  offerId: string;
-  mediaAssetId: string | null;
-  docType: string;
-  fileUrl: string;
-  issuerName: string | null;
-  reviewStatus: string;
-  uploadedAt: Date;
-  mediaAsset?: {
-    mimeType: string | null;
-    publicId: string | null;
-    secureUrl: string;
-  } | null;
-};
-
 type OfferBatchLinkWithBatch = {
   id: string;
   offerId: string;
@@ -136,10 +104,16 @@ export function toShippingCarrierResponse(carrier: {
 
 export function toOfferResponse(offer: OfferWithRelations) {
   const thumbnailMedia =
-    offer.media?.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
+    offer.media?.find(
+      (media) =>
+        media.mediaType === 'thumbnail' &&
+        (media.mediaAsset?.secureUrl || media.fileUrl),
+    ) ??
     offer.media?.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
   const imageUrls = offerImageUrls(offer.media);
-  const allocatedQuantity = offer.batchLinks?.reduce((sum, link) => sum + link.allocatedQuantity, 0) ?? offer.availableQuantity;
+  const allocatedQuantity =
+    offer.batchLinks?.reduce((sum, link) => sum + link.allocatedQuantity, 0) ??
+    offer.availableQuantity;
   const soldQuantity = Math.max(allocatedQuantity - offer.availableQuantity, 0);
 
   return {
@@ -170,7 +144,8 @@ export function toOfferResponse(offer: OfferWithRelations) {
     shopType: offer.shop.registrationType,
     categoryName: offer.category.name,
     productModelName: offer.modelName,
-    thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
+    thumbnailUrl:
+      thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
     imageUrls,
     shippingMethods: (offer.shippingMethods ?? []).map((method) => ({
       providerCode: method.providerCode,
@@ -187,8 +162,10 @@ function offerImageUrls(media: OfferWithRelations['media']) {
   const seen = new Set<string>();
   return [...(media ?? [])]
     .sort((left, right) => {
-      if (left.mediaType === 'thumbnail' && right.mediaType !== 'thumbnail') return -1;
-      if (right.mediaType === 'thumbnail' && left.mediaType !== 'thumbnail') return 1;
+      if (left.mediaType === 'thumbnail' && right.mediaType !== 'thumbnail')
+        return -1;
+      if (right.mediaType === 'thumbnail' && left.mediaType !== 'thumbnail')
+        return 1;
       return 0;
     })
     .flatMap((item) => {
@@ -199,36 +176,6 @@ function offerImageUrls(media: OfferWithRelations['media']) {
       seen.add(url);
       return [url];
     });
-}
-
-export function toOfferMediaResponse(media: OfferMediaWithAsset) {
-  return {
-    id: media.id,
-    offerId: media.offerId,
-    mediaAssetId: media.mediaAssetId,
-    mediaType: media.mediaType,
-    fileUrl: media.mediaAsset?.secureUrl ?? media.fileUrl,
-    phash: media.phash,
-    assetType: media.mediaAsset?.assetType ?? 'RAW',
-    mimeType: media.mediaAsset?.mimeType ?? null,
-    publicId: media.mediaAsset?.publicId ?? null,
-    createdAt: media.createdAt,
-  };
-}
-
-export function toOfferDocumentResponse(document: OfferDocumentWithAsset) {
-  return {
-    id: document.id,
-    offerId: document.offerId,
-    mediaAssetId: document.mediaAssetId,
-    docType: document.docType,
-    fileUrl: document.mediaAsset?.secureUrl ?? document.fileUrl,
-    issuerName: document.issuerName,
-    reviewStatus: document.reviewStatus,
-    mimeType: document.mediaAsset?.mimeType ?? null,
-    publicId: document.mediaAsset?.publicId ?? null,
-    uploadedAt: document.uploadedAt,
-  };
 }
 
 export function toOfferBatchLinkResponse(link: OfferBatchLinkWithBatch) {
@@ -249,7 +196,9 @@ export function toOfferBatchLinkResponse(link: OfferBatchLinkWithBatch) {
   };
 }
 
-function decimalToNumber(value: Prisma.Decimal | number | string | null | undefined) {
+function decimalToNumber(
+  value: Prisma.Decimal | number | string | null | undefined,
+) {
   if (value === null || value === undefined) {
     return 0;
   }

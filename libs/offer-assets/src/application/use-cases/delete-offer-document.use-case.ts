@@ -1,16 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
+import { OfferAssetsRepository } from '../../infrastructure/persistence/offer-assets.repository';
 
 @Injectable()
 export class DeleteOfferDocumentUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(private readonly offerAssetsRepository: OfferAssetsRepository) {}
 
   async execute(input: {
     offerId: string;
     documentId: string;
     requesterUserId: string;
   }) {
-    const document = await this.productRepository.findOwnedOfferDocument(
+    const document = await this.offerAssetsRepository.findOwnedOfferDocument(
       input.offerId,
       input.documentId,
       input.requesterUserId,
@@ -19,7 +19,7 @@ export class DeleteOfferDocumentUseCase {
       throw new NotFoundException('Offer document not found');
     }
 
-    await this.productRepository.deleteOfferDocument(input.documentId);
+    await this.offerAssetsRepository.deleteOfferDocument(input.documentId);
     return { deleted: true };
   }
 }

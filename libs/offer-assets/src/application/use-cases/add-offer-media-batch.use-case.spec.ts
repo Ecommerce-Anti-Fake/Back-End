@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MediaService } from '@media';
 import { AddOfferMediaBatchUseCase } from './add-offer-media-batch.use-case';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
+import { OfferAssetsRepository } from '../../infrastructure/persistence/offer-assets.repository';
 
-describe('AddOfferMediaBatchUseCase', () => {
+describe('AddOfferMediaBatchUseCase in OfferAssetsModule', () => {
   let useCase: AddOfferMediaBatchUseCase;
 
   const repositoryMock = {
@@ -22,7 +22,7 @@ describe('AddOfferMediaBatchUseCase', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AddOfferMediaBatchUseCase,
-        { provide: ProductRepository, useValue: repositoryMock },
+        { provide: OfferAssetsRepository, useValue: repositoryMock },
         { provide: MediaService, useValue: mediaServiceMock },
       ],
     }).compile();
@@ -47,14 +47,16 @@ describe('AddOfferMediaBatchUseCase', () => {
       offerId: 'offer-1',
       mediaAssetId: 'media-1',
       mediaType: 'gallery',
-      fileUrl: 'https://res.cloudinary.com/demo/image/upload/v1/offers/offer-1/media/photo.jpg',
+      fileUrl:
+        'https://res.cloudinary.com/demo/image/upload/v1/offers/offer-1/media/photo.jpg',
       phash: null,
       createdAt: new Date('2026-04-16T13:00:00.000Z'),
       mediaAsset: {
         assetType: 'IMAGE',
         mimeType: 'image/jpeg',
         publicId: 'offers/offer-1/media/photo',
-        secureUrl: 'https://res.cloudinary.com/demo/image/upload/v1/offers/offer-1/media/photo.jpg',
+        secureUrl:
+          'https://res.cloudinary.com/demo/image/upload/v1/offers/offer-1/media/photo.jpg',
       },
     });
 
@@ -65,7 +67,8 @@ describe('AddOfferMediaBatchUseCase', () => {
         {
           assetType: 'IMAGE',
           mimeType: 'image/jpeg',
-          fileUrl: 'https://res.cloudinary.com/demo/image/upload/v1/offers/offer-1/media/photo.jpg',
+          fileUrl:
+            'https://res.cloudinary.com/demo/image/upload/v1/offers/offer-1/media/photo.jpg',
           publicId: 'offers/offer-1/media/photo',
         },
       ],
@@ -102,7 +105,8 @@ describe('AddOfferMediaBatchUseCase', () => {
           {
             assetType: 'IMAGE',
             mimeType: 'image/gif',
-            fileUrl: 'https://res.cloudinary.com/demo/image/upload/v1/offers/offer-1/media/photo.gif',
+            fileUrl:
+              'https://res.cloudinary.com/demo/image/upload/v1/offers/offer-1/media/photo.gif',
             publicId: 'offers/offer-1/media/photo',
           },
         ],

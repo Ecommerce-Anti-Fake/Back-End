@@ -1,15 +1,23 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { MediaService } from '@media';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toOfferMediaResponse } from './products.mapper';
+import { OfferAssetsRepository } from '../../infrastructure/persistence/offer-assets.repository';
+import { toOfferMediaResponse } from '../offer-assets.mapper';
 
-const ALLOWED_OFFER_MEDIA_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const ALLOWED_OFFER_MEDIA_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
 const MAX_OFFER_MEDIA_BYTES = 5 * 1024 * 1024;
 
 @Injectable()
 export class AddOfferMediaBatchUseCase {
   constructor(
-    private readonly productRepository: ProductRepository,
+    private readonly offerAssetsRepository: OfferAssetsRepository,
     private readonly mediaService: MediaService,
   ) {}
 
@@ -26,7 +34,10 @@ export class AddOfferMediaBatchUseCase {
       bytes?: number | null;
     }>;
   }) {
-    const offer = await this.productRepository.findOwnedOffer(input.offerId, input.requesterUserId);
+    const offer = await this.offerAssetsRepository.findOwnedOffer(
+      input.offerId,
+      input.requesterUserId,
+    );
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
@@ -36,19 +47,25 @@ export class AddOfferMediaBatchUseCase {
     }
 
     if (input.items.length === 0) {
-      throw new BadRequestException('At least one offer media item is required');
+      throw new BadRequestException(
+        'At least one offer media item is required',
+      );
     }
 
     const results: Array<ReturnType<typeof toOfferMediaResponse>> = [];
 
     for (const item of input.items) {
       if (!this.mediaService.isOwnedCloudinaryUrl(item.fileUrl)) {
-        throw new BadRequestException('Offer media URL must belong to the configured Cloudinary cloud');
+        throw new BadRequestException(
+          'Offer media URL must belong to the configured Cloudinary cloud',
+        );
       }
 
       const publicId = item.publicId.trim();
       if (!publicId.startsWith(`offers/${offer.id}/media/`)) {
-        throw new BadRequestException('Offer media public ID does not belong to the offer media folder');
+        throw new BadRequestException(
+          'Offer media public ID does not belong to the offer media folder',
+        );
       }
 
       const mimeType = item.mimeType.trim().toLowerCase();
@@ -56,8 +73,14 @@ export class AddOfferMediaBatchUseCase {
         throw new BadRequestException('Offer media must be JPG, PNG or WEBP');
       }
 
-      if (item.bytes !== undefined && item.bytes !== null && item.bytes > MAX_OFFER_MEDIA_BYTES) {
-        throw new BadRequestException('Offer media file size must be at most 5MB');
+      if (
+        item.bytes !== undefined &&
+        item.bytes !== null &&
+        item.bytes > MAX_OFFER_MEDIA_BYTES
+      ) {
+        throw new BadRequestException(
+          'Offer media file size must be at most 5MB',
+        );
       }
 
       const mediaAsset = await this.mediaService.createCloudinaryAsset({
@@ -70,7 +93,7 @@ export class AddOfferMediaBatchUseCase {
         folder: `offers/${offer.id}/media`,
       });
 
-      const media = await this.productRepository.createOfferMedia({
+      const media = await this.offerAssetsRepository.createOfferMedia({
         offerId: offer.id,
         mediaAssetId: mediaAsset.id,
         mediaType: item.mediaType?.trim() || 'gallery',
