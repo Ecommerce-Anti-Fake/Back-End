@@ -6,6 +6,7 @@ import { ProductsModule } from '@products/products.module';
 import { ShopsModule } from '@shops/shops.module';
 import { ChatModule } from '@chat/chat.module';
 import { SocialModule } from '@social/social.module';
+import { LiveCommerceModule } from '@live-commerce/live-commerce.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { SocialModule } from '@social/social.module';
     ProductsModule,
     ChatModule,
     SocialModule,
+    LiveCommerceModule,
     ShopsModule,
   ],
 })

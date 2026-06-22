@@ -1,10 +1,16 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toLiveCommentResponse } from './products.mapper';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { LiveCommerceRepository } from '../../infrastructure/persistence/live-commerce.repository';
+import { toLiveCommentResponse } from '../live-commerce.mapper';
 
 @Injectable()
 export class CreateLiveCommentUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(
+    private readonly liveCommerceRepository: LiveCommerceRepository,
+  ) {}
 
   async execute(input: {
     sessionId: string;
@@ -18,7 +24,10 @@ export class CreateLiveCommentUseCase {
       throw new BadRequestException('Live comment body is required');
     }
 
-    const session = await this.productRepository.findLiveSessionById(input.sessionId, input.requesterUserId);
+    const session = await this.liveCommerceRepository.findLiveSessionById(
+      input.sessionId,
+      input.requesterUserId,
+    );
     if (!session || session.status === 'CANCELLED') {
       throw new NotFoundException('Live session not found');
     }
@@ -26,7 +35,7 @@ export class CreateLiveCommentUseCase {
       throw new BadRequestException('Live session is not accepting comments');
     }
 
-    const comment = await this.productRepository.createLiveComment({
+    const comment = await this.liveCommerceRepository.createLiveComment({
       sessionId: input.sessionId,
       authorUserId: input.requesterUserId,
       body,

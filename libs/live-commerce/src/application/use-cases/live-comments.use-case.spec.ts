@@ -3,7 +3,7 @@ import { CreateLiveCommentUseCase } from './create-live-comment.use-case';
 import { ListLiveCommentsUseCase } from './list-live-comments.use-case';
 import { UpdateLiveCommentVisibilityUseCase } from './update-live-comment-visibility.use-case';
 
-describe('live comment use cases', () => {
+describe('live comment use cases in LiveCommerceModule', () => {
   const repository = {
     findLiveSessionById: jest.fn(),
     listLiveComments: jest.fn(),
@@ -15,8 +15,12 @@ describe('live comment use cases', () => {
     jest.clearAllMocks();
     repository.findLiveSessionById.mockResolvedValue(liveSession());
     repository.listLiveComments.mockResolvedValue([liveComment()]);
-    repository.createLiveComment.mockResolvedValue(liveComment({ body: 'Xin gia' }));
-    repository.updateLiveCommentVisibility.mockResolvedValue(liveComment({ visibility: 'HIDDEN' }));
+    repository.createLiveComment.mockResolvedValue(
+      liveComment({ body: 'Xin gia' }),
+    );
+    repository.updateLiveCommentVisibility.mockResolvedValue(
+      liveComment({ visibility: 'HIDDEN' }),
+    );
   });
 
   it('lists public comments for reconnect history', async () => {
@@ -54,11 +58,17 @@ describe('live comment use cases', () => {
   });
 
   it('rejects comments after live session ends', async () => {
-    repository.findLiveSessionById.mockResolvedValue(liveSession({ status: 'ENDED' }));
+    repository.findLiveSessionById.mockResolvedValue(
+      liveSession({ status: 'ENDED' }),
+    );
     const useCase = new CreateLiveCommentUseCase(repository as never);
 
     await expect(
-      useCase.execute({ sessionId: 'live-1', requesterUserId: 'user-1', body: 'Xin gia' }),
+      useCase.execute({
+        sessionId: 'live-1',
+        requesterUserId: 'user-1',
+        body: 'Xin gia',
+      }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 

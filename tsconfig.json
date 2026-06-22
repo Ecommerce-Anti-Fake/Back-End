@@ -43,6 +43,8 @@
       "@chat/*": ["libs/chat/src/*"],
       "@social": ["libs/social/src"],
       "@social/*": ["libs/social/src/*"],
+      "@live-commerce": ["libs/live-commerce/src"],
+      "@live-commerce/*": ["libs/live-commerce/src/*"],
       "@distribution": ["libs/distribution/src"],
       "@distribution/*": ["libs/distribution/src/*"],
       "@affiliate": ["libs/affiliate/src"],

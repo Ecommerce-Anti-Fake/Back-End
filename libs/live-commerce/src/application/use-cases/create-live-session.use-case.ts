@@ -1,10 +1,17 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toLiveSessionResponse } from './products.mapper';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { LiveCommerceRepository } from '../../infrastructure/persistence/live-commerce.repository';
+import { toLiveSessionResponse } from '../live-commerce.mapper';
 
 @Injectable()
 export class CreateLiveSessionUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(
+    private readonly liveCommerceRepository: LiveCommerceRepository,
+  ) {}
 
   async execute(input: {
     requesterUserId: string;
@@ -31,14 +38,28 @@ export class CreateLiveSessionUseCase {
     if (Number.isNaN(startAt.getTime())) {
       throw new BadRequestException('Live session startAt is invalid');
     }
-    if (input.streamLatencyTargetMs !== undefined && input.streamLatencyTargetMs !== null && input.streamLatencyTargetMs < 1000) {
-      throw new BadRequestException('Live stream latency target must be at least 1000ms');
+    if (
+      input.streamLatencyTargetMs !== undefined &&
+      input.streamLatencyTargetMs !== null &&
+      input.streamLatencyTargetMs < 1000
+    ) {
+      throw new BadRequestException(
+        'Live stream latency target must be at least 1000ms',
+      );
     }
-    if (input.recordingRetentionDays !== undefined && input.recordingRetentionDays !== null && input.recordingRetentionDays < 1) {
-      throw new BadRequestException('Recording retention must be at least 1 day');
+    if (
+      input.recordingRetentionDays !== undefined &&
+      input.recordingRetentionDays !== null &&
+      input.recordingRetentionDays < 1
+    ) {
+      throw new BadRequestException(
+        'Recording retention must be at least 1 day',
+      );
     }
 
-    const shop = await this.productRepository.findShopForLiveSession(input.shopId);
+    const shop = await this.liveCommerceRepository.findShopForLiveSession(
+      input.shopId,
+    );
     if (!shop) {
       throw new NotFoundException('Shop not found');
     }
@@ -46,23 +67,37 @@ export class CreateLiveSessionUseCase {
       throw new ForbiddenException('Only shop owner can create live sessions');
     }
     if (shop.shopStatus !== 'active') {
-      throw new BadRequestException('Only active shops can create live sessions');
+      throw new BadRequestException(
+        'Only active shops can create live sessions',
+      );
     }
 
-    const offerIds = [...new Set((input.offerIds ?? []).map((offerId) => offerId.trim()).filter(Boolean))];
+    const offerIds = [
+      ...new Set(
+        (input.offerIds ?? []).map((offerId) => offerId.trim()).filter(Boolean),
+      ),
+    ];
     if (offerIds.length) {
-      const offers = await this.productRepository.findOffersForLiveSession(offerIds);
+      const offers =
+        await this.liveCommerceRepository.findOffersForLiveSession(offerIds);
       if (offers.length !== offerIds.length) {
         throw new NotFoundException('One or more live offers were not found');
       }
 
-      const invalidOffer = offers.find((offer) => offer.shopId !== input.shopId || offer.offerStatus !== 'active' || offer.availableQuantity <= 0);
+      const invalidOffer = offers.find(
+        (offer) =>
+          offer.shopId !== input.shopId ||
+          offer.offerStatus !== 'active' ||
+          offer.availableQuantity <= 0,
+      );
       if (invalidOffer) {
-        throw new BadRequestException('Live offers must belong to the shop, be active, and have stock');
+        throw new BadRequestException(
+          'Live offers must belong to the shop, be active, and have stock',
+        );
       }
     }
 
-    const session = await this.productRepository.createLiveSession({
+    const session = await this.liveCommerceRepository.createLiveSession({
       shopId: input.shopId,
       title,
       description: input.description?.trim() || null,

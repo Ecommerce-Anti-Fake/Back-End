@@ -1,10 +1,16 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toLiveCommentResponse } from './products.mapper';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { LiveCommerceRepository } from '../../infrastructure/persistence/live-commerce.repository';
+import { toLiveCommentResponse } from '../live-commerce.mapper';
 
 @Injectable()
 export class ListLiveCommentsUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(
+    private readonly liveCommerceRepository: LiveCommerceRepository,
+  ) {}
 
   async execute(input: {
     sessionId: string;
@@ -15,7 +21,10 @@ export class ListLiveCommentsUseCase {
     pageSize?: number | null;
     includeHidden?: boolean | null;
   }) {
-    const session = await this.productRepository.findLiveSessionById(input.sessionId, input.requesterUserId);
+    const session = await this.liveCommerceRepository.findLiveSessionById(
+      input.sessionId,
+      input.requesterUserId,
+    );
     if (!session || session.status === 'CANCELLED') {
       throw new NotFoundException('Live session not found');
     }
@@ -25,8 +34,9 @@ export class ListLiveCommentsUseCase {
       throw new BadRequestException('since is invalid');
     }
 
-    const includeHidden = input.requesterRole === 'admin' && Boolean(input.includeHidden);
-    const comments = await this.productRepository.listLiveComments({
+    const includeHidden =
+      input.requesterRole === 'admin' && Boolean(input.includeHidden);
+    const comments = await this.liveCommerceRepository.listLiveComments({
       sessionId: input.sessionId,
       cursor: input.cursor ?? null,
       since,

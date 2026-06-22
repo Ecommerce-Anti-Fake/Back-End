@@ -4,7 +4,7 @@ import { ListLiveSessionsUseCase } from './list-live-sessions.use-case';
 import { RemindLiveSessionUseCase } from './remind-live-session.use-case';
 import { UpdateLiveSessionStatusUseCase } from './update-live-session-status.use-case';
 
-describe('live-commerce use cases', () => {
+describe('live-commerce use cases in LiveCommerceModule', () => {
   const repository = {
     findShopForLiveSession: jest.fn(),
     findOffersForLiveSession: jest.fn(),
@@ -24,13 +24,22 @@ describe('live-commerce use cases', () => {
       shopStatus: 'active',
     });
     repository.findOffersForLiveSession.mockResolvedValue([
-      { id: 'offer-1', shopId: 'shop-1', offerStatus: 'active', availableQuantity: 10 },
+      {
+        id: 'offer-1',
+        shopId: 'shop-1',
+        offerStatus: 'active',
+        availableQuantity: 10,
+      },
     ]);
     repository.createLiveSession.mockResolvedValue(liveSession());
     repository.listLiveSessions.mockResolvedValue([liveSession()]);
     repository.findLiveSessionById.mockResolvedValue(liveSession());
-    repository.updateLiveSessionStatus.mockResolvedValue(liveSession({ status: 'LIVE' }));
-    repository.remindLiveSession.mockResolvedValue(liveSession({ reminders: [{ userId: 'buyer-user-1' }] }));
+    repository.updateLiveSessionStatus.mockResolvedValue(
+      liveSession({ status: 'LIVE' }),
+    );
+    repository.remindLiveSession.mockResolvedValue(
+      liveSession({ reminders: [{ userId: 'buyer-user-1' }] }),
+    );
   });
 
   it('creates a scheduled live session with active in-stock shop offers', async () => {
@@ -76,7 +85,12 @@ describe('live-commerce use cases', () => {
   it('rejects live offers that do not belong to the seller shop or have no stock', async () => {
     const useCase = new CreateLiveSessionUseCase(repository as never);
     repository.findOffersForLiveSession.mockResolvedValueOnce([
-      { id: 'offer-1', shopId: 'other-shop', offerStatus: 'active', availableQuantity: 10 },
+      {
+        id: 'offer-1',
+        shopId: 'other-shop',
+        offerStatus: 'active',
+        availableQuantity: 10,
+      },
     ]);
 
     await expect(
@@ -139,7 +153,9 @@ describe('live-commerce use cases', () => {
 
   it('rejects invalid status transitions', async () => {
     const useCase = new UpdateLiveSessionStatusUseCase(repository as never);
-    repository.findLiveSessionById.mockResolvedValueOnce(liveSession({ status: 'ENDED' }));
+    repository.findLiveSessionById.mockResolvedValueOnce(
+      liveSession({ status: 'ENDED' }),
+    );
 
     await expect(
       useCase.execute({

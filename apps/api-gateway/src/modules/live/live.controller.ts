@@ -12,7 +12,7 @@ import {
   LiveSessionResponseDto,
   UpdateLiveCommentVisibilityDto,
   UpdateLiveSessionStatusDto,
-} from '@products';
+} from '@live-commerce';
 import { RateLimit } from '../../observability';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
