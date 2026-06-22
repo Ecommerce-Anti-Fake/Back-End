@@ -6,6 +6,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:3001',
   'http://localhost:5173',
   'http://192.168.1.133:5173',
+  'http://192.168.1.161:5173',
   'https://anti-fake-alpha.vercel.app',
   'https://antifake.io.vn',
   'https://www.antifake.io.vn',

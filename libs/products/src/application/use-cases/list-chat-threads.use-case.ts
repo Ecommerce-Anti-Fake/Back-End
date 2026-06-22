@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toChatThreadResponse } from './products.mapper';
+import { toChatThreadListItemResponse } from './products.mapper';
 
 @Injectable()
 export class ListChatThreadsUseCase {
@@ -8,6 +8,7 @@ export class ListChatThreadsUseCase {
 
   async execute(input: { requesterUserId: string; requesterRole?: string | null }) {
     const threads = await this.productRepository.findChatThreadsForUser(input);
-    return threads.map(toChatThreadResponse);
+
+    return threads.map((thread) => toChatThreadListItemResponse(thread, input.requesterUserId));
   }
 }

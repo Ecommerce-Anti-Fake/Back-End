@@ -963,42 +963,47 @@ export class ProductRepository {
     });
   }
 
-  private chatThreadInclude(messageTake?: number) {
-    return {
-      shop: {
-        select: {
-          shopName: true,
-        },
+ private chatThreadInclude(messageTake?: number): Prisma.ChatThreadInclude {
+  const isListMode = messageTake === 1;
+  const messageOrderBy: Prisma.ChatMessageOrderByWithRelationInput = {
+    sentAt: isListMode ? 'desc' : 'asc',
+  };
+
+  return {
+    shop: {
+      select: {
+        shopName: true,
       },
-      buyer: {
-        select: {
-          displayName: true,
-          email: true,
-          phone: true,
-        },
+    },
+    buyer: {
+      select: {
+        displayName: true,
+        email: true,
+        phone: true,
       },
-      seller: {
-        select: {
-          displayName: true,
-          email: true,
-          phone: true,
-        },
+    },
+    seller: {
+      select: {
+        displayName: true,
+        email: true,
+        phone: true,
       },
-      messages: {
-        ...(messageTake ? { take: messageTake } : {}),
-        orderBy: { sentAt: 'asc' as const },
-        include: {
-          sender: {
-            select: {
-              displayName: true,
-              email: true,
-              phone: true,
-            },
+    },
+    messages: {
+      ...(messageTake ? { take: messageTake } : {}),
+      orderBy: messageOrderBy,
+      include: {
+        sender: {
+          select: {
+            displayName: true,
+            email: true,
+            phone: true,
           },
         },
       },
-    };
-  }
+    },
+  };
+}
 
   private socialPostInclude(requesterUserId?: string | null) {
     return {
