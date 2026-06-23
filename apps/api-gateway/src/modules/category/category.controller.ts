@@ -10,12 +10,12 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ActiveUserGuard, JwtAuthGuard, Roles, RolesGuard } from '@security';
-import { CategoryResponseDto, CreateCategoryDto } from '@products';
+import { CategoryResponseDto, CreateCategoryDto } from '@catalog-metadata';
 import { RateLimit } from '../../observability';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 @ApiTags('Category')
-@Controller('products')
+@Controller()
 export class CategoryController {
   constructor(private readonly catalogRpcService: CatalogRpcService) {}
 
@@ -38,7 +38,8 @@ export class CategoryController {
     type: CategoryResponseDto,
   })
   @ApiBadRequestResponse({
-    description: 'Du lieu category khong hop le hoac parent category khong ton tai.',
+    description:
+      'Du lieu category khong hop le hoac parent category khong ton tai.',
   })
   @ApiUnauthorizedResponse({
     description: 'Thieu access token hoac token khong hop le.',

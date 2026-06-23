@@ -51,6 +51,8 @@
       "@offer-assets/*": ["libs/offer-assets/src/*"],
       "@favorites": ["libs/favorites/src"],
       "@favorites/*": ["libs/favorites/src/*"],
+      "@catalog-metadata": ["libs/catalog-metadata/src"],
+      "@catalog-metadata/*": ["libs/catalog-metadata/src/*"],
       "@distribution": ["libs/distribution/src"],
       "@distribution/*": ["libs/distribution/src/*"],
       "@affiliate": ["libs/affiliate/src"],

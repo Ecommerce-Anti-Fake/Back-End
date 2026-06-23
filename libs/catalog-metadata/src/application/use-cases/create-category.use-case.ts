@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toCategoryResponse } from './products.mapper';
+import { toCategoryResponse } from '../catalog-metadata.mapper';
+import { CatalogMetadataRepository } from '../../infrastructure/persistence/catalog-metadata.repository';
 
 type CreateCategoryInput = {
   name: string;
@@ -10,18 +10,22 @@ type CreateCategoryInput = {
 
 @Injectable()
 export class CreateCategoryUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(
+    private readonly catalogMetadataRepository: CatalogMetadataRepository,
+  ) {}
 
   async execute(input: CreateCategoryInput) {
     if (input.parentId) {
-      const parent = await this.productRepository.findCategoryById(input.parentId);
+      const parent = await this.catalogMetadataRepository.findCategoryById(
+        input.parentId,
+      );
 
       if (!parent) {
         throw new BadRequestException('Parent category not found');
       }
     }
 
-    const category = await this.productRepository.createCategory({
+    const category = await this.catalogMetadataRepository.createCategory({
       name: input.name.trim(),
       parentId: input.parentId || null,
       riskTier: input.riskTier?.trim() || 'medium',

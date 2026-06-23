@@ -10,12 +10,12 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ActiveUserGuard, JwtAuthGuard, Roles, RolesGuard } from '@security';
-import { BrandResponseDto, CreateBrandDto } from '@products';
+import { BrandResponseDto, CreateBrandDto } from '@catalog-metadata';
 import { RateLimit } from '../../observability';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 @ApiTags('Brand')
-@Controller('products')
+@Controller()
 export class BrandController {
   constructor(private readonly catalogRpcService: CatalogRpcService) {}
 

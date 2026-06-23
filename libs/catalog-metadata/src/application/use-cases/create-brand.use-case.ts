@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toBrandResponse } from './products.mapper';
+import { toBrandResponse } from '../catalog-metadata.mapper';
+import { CatalogMetadataRepository } from '../../infrastructure/persistence/catalog-metadata.repository';
 
 type CreateBrandInput = {
   name: string;
@@ -9,10 +9,12 @@ type CreateBrandInput = {
 
 @Injectable()
 export class CreateBrandUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(
+    private readonly catalogMetadataRepository: CatalogMetadataRepository,
+  ) {}
 
   async execute(input: CreateBrandInput) {
-    const brand = await this.productRepository.createBrand({
+    const brand = await this.catalogMetadataRepository.createBrand({
       name: input.name.trim(),
       registryStatus: input.registryStatus?.trim() || 'verified',
     });

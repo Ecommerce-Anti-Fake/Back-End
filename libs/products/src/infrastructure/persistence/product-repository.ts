@@ -6,31 +6,6 @@ import { PrismaService } from '@database/prisma/prisma.service';
 export class ProductRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findAllBrands() {
-    return this.prisma.brand.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  createBrand(data: { name: string; registryStatus: string }) {
-    return this.prisma.brand.create({
-      data,
-    });
-  }
-
-  findAllCategories() {
-    return this.prisma.category.findMany({
-      orderBy: [{ parentId: 'asc' }, { name: 'asc' }],
-    });
-  }
-
-  findActiveShippingCarriers() {
-    return this.prisma.shippingCarrier.findMany({
-      where: { isActive: true },
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    });
-  }
-
   findActiveShippingCarriersByCodes(codes: string[]) {
     return this.prisma.shippingCarrier.findMany({
       where: {
@@ -38,16 +13,6 @@ export class ProductRepository {
         isActive: true,
       },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    });
-  }
-
-  createCategory(data: {
-    name: string;
-    parentId: string | null;
-    riskTier: string;
-  }) {
-    return this.prisma.category.create({
-      data,
     });
   }
 

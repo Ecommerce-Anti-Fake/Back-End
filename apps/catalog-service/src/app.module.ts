@@ -10,6 +10,7 @@ import { LiveCommerceModule } from '@live-commerce/live-commerce.module';
 import { ReviewsModule } from '@reviews/reviews.module';
 import { OfferAssetsModule } from '@offer-assets/offer-assets.module';
 import { FavoritesModule } from '@favorites/favorites.module';
+import { CatalogMetadataModule } from '@catalog-metadata/catalog-metadata.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { FavoritesModule } from '@favorites/favorites.module';
     ReviewsModule,
     OfferAssetsModule,
     FavoritesModule,
+    CatalogMetadataModule,
     ShopsModule,
   ],
 })
