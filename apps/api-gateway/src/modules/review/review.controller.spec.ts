@@ -1,4 +1,5 @@
 import { INestApplication } from '@nestjs/common';
+import { PATH_METADATA } from '@nestjs/common/constants';
 import { Test } from '@nestjs/testing';
 import { ActiveUserGuard, JwtAuthGuard } from '@security';
 import request from 'supertest';
@@ -25,6 +26,40 @@ describe('ReviewController', () => {
 
   afterAll(() => app?.close());
   beforeEach(() => jest.clearAllMocks());
+
+  it('exposes review routes without the legacy products prefix', () => {
+    expect(Reflect.getMetadata(PATH_METADATA, ReviewController)).toBe('/');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        ReviewController.prototype.findOfferReviews,
+      ),
+    ).toBe('offers/:offerId/reviews');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        ReviewController.prototype.createOfferReview,
+      ),
+    ).toBe('offers/:offerId/reviews');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        ReviewController.prototype.createOrderItemReview,
+      ),
+    ).toBe('order-items/:orderItemId/review');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        ReviewController.prototype.getReviewMediaUploadSignatures,
+      ),
+    ).toBe('reviews/:reviewId/media/upload-signatures');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        ReviewController.prototype.addReviewMediaBatch,
+      ),
+    ).toBe('reviews/:reviewId/media');
+  });
 
   it('exposes GET /offers/:offerId/reviews and validates offerId as UUID', async () => {
     catalogRpcService.findOfferReviews.mockResolvedValue({

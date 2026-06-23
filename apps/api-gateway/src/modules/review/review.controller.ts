@@ -38,7 +38,7 @@ export class ReviewController {
     type: OfferReviewsResponseDto,
   })
   @RateLimit({ profile: 'publicCatalog' })
-  @Get(['offers/:offerId/reviews', 'products/offers/:offerId/reviews'])
+  @Get('offers/:offerId/reviews')
   findOfferReviews(
     @Param('offerId', new ParseUUIDPipe({ version: '4' })) offerId: string,
   ) {
@@ -52,7 +52,7 @@ export class ReviewController {
     type: OfferReviewResponseDto,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post('products/offers/:offerId/reviews')
+  @Post('offers/:offerId/reviews')
   createOfferReview(
     @Param('offerId') offerId: string,
     @CurrentUserId() fromUserId: string,
@@ -75,7 +75,7 @@ export class ReviewController {
     type: OfferReviewResponseDto,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post('products/order-items/:orderItemId/review')
+  @Post('order-items/:orderItemId/review')
   createOrderItemReview(
     @Param('orderItemId') orderItemId: string,
     @CurrentUserId() fromUserId: string,
@@ -98,7 +98,7 @@ export class ReviewController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @RateLimit({ profile: 'uploadSignature' })
-  @Post('products/reviews/:reviewId/media/upload-signatures')
+  @Post('reviews/:reviewId/media/upload-signatures')
   getReviewMediaUploadSignatures(
     @Param('reviewId') reviewId: string,
     @CurrentUserId() requesterUserId: string,
@@ -119,7 +119,7 @@ export class ReviewController {
     isArray: true,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post('products/reviews/:reviewId/media')
+  @Post('reviews/:reviewId/media')
   addReviewMediaBatch(
     @Param('reviewId') reviewId: string,
     @CurrentUserId() requesterUserId: string,

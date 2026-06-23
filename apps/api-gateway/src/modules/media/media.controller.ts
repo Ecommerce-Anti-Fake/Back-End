@@ -29,7 +29,7 @@ import { RateLimit } from '../../observability';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 @ApiTags('Media')
-@Controller('products')
+@Controller()
 export class MediaController {
   constructor(private readonly catalogRpcService: CatalogRpcService) {}
 
