@@ -130,7 +130,7 @@ export const REALTIME_EVENT_DEFINITIONS = {
     allowedAudienceScopes: ['user', 'shop'],
     dedupeKeyFields: ['threadId', 'messageId'],
     persistence: 'postgres',
-    recovery: { method: 'GET', path: '/products/chat/threads/:threadId' },
+    recovery: { method: 'GET', path: '/chat/threads/:threadId' },
     transports: ['websocket', 'sse'],
     replayable: true,
     recoverable: true,

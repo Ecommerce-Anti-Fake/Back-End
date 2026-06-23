@@ -14,7 +14,7 @@ import { RateLimit } from '../../observability';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 @ApiTags('Social')
-@Controller('products')
+@Controller()
 export class SocialController {
   constructor(private readonly catalogRpcService: CatalogRpcService) {}
 

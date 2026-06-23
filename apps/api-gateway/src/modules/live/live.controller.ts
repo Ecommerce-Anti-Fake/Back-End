@@ -18,7 +18,7 @@ import { CatalogRpcService } from '../offer/catalog-rpc.service';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 
 @ApiTags('Live')
-@Controller('products')
+@Controller()
 export class LiveController {
   constructor(
     private readonly catalogRpcService: CatalogRpcService,

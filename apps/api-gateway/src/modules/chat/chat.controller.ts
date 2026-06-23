@@ -12,7 +12,7 @@ import {
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 @ApiTags('Chat')
-@Controller('products')
+@Controller()
 export class ChatController {
   constructor(private readonly catalogRpcService: CatalogRpcService) {}
 
