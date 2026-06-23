@@ -20,7 +20,7 @@ import {
 } from '../../application/use-cases';
 
 @Controller()
-export class ProductsRpcController {
+export class OffersRpcController {
   constructor(
     private readonly createOfferUseCase: CreateOfferUseCase,
     private readonly updateOfferUseCase: UpdateOfferUseCase,

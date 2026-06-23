@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '@database/prisma/prisma.module';
 import { DistributionModule } from '@distribution/distribution.module';
-import { ProductsModule } from '@products/products.module';
+import { OffersModule } from '@offers/offers.module';
 import { ShopsModule } from '@shops/shops.module';
 import { ChatModule } from '@chat/chat.module';
 import { SocialModule } from '@social/social.module';
@@ -19,7 +19,7 @@ import { CatalogMetadataModule } from '@catalog-metadata/catalog-metadata.module
     }),
     PrismaModule,
     DistributionModule,
-    ProductsModule,
+    OffersModule,
     ChatModule,
     SocialModule,
     LiveCommerceModule,

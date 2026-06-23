@@ -1,6 +1,6 @@
-import { ProductRepository } from './product-repository';
+import { OffersRepository } from './offers.repository';
 
-describe('ProductRepository', () => {
+describe('OffersRepository', () => {
   it('should apply public catalog search filters to offer queries', async () => {
     const prisma = {
       offer: {
@@ -8,7 +8,7 @@ describe('ProductRepository', () => {
         count: jest.fn().mockResolvedValue(0),
       },
     };
-    const repository = new ProductRepository(prisma as never);
+    const repository = new OffersRepository(prisma as never);
 
     await repository.findAllOffers({
       q: 'spf',
@@ -72,7 +72,7 @@ describe('ProductRepository', () => {
       },
       $transaction: jest.fn((queries) => Promise.all(queries)),
     };
-    const repository = new ProductRepository(prisma as never);
+    const repository = new OffersRepository(prisma as never);
 
     await expect(
       repository.findAllOffers({ page: 2, pageSize: 10 }),

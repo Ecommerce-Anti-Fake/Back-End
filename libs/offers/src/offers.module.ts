@@ -8,14 +8,14 @@ import {
   ListOffersUseCase,
   UpdateOfferUseCase,
 } from './application/use-cases';
-import { ProductRepository } from './infrastructure/persistence/product-repository';
-import { ProductsRpcController } from './presentation/rpc/products.rpc-controller';
+import { OffersRepository } from './infrastructure/persistence/offers.repository';
+import { OffersRpcController } from './presentation/rpc/offers.rpc-controller';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [ProductsRpcController],
+  controllers: [OffersRpcController],
   providers: [
-    ProductRepository,
+    OffersRepository,
     CreateOfferUseCase,
     UpdateOfferUseCase,
     AllocateOfferBatchesUseCase,
@@ -24,7 +24,7 @@ import { ProductsRpcController } from './presentation/rpc/products.rpc-controlle
     GetOfferByIdUseCase,
   ],
   exports: [
-    ProductRepository,
+    OffersRepository,
     CreateOfferUseCase,
     UpdateOfferUseCase,
     AllocateOfferBatchesUseCase,
@@ -33,4 +33,4 @@ import { ProductsRpcController } from './presentation/rpc/products.rpc-controlle
     GetOfferByIdUseCase,
   ],
 })
-export class ProductsModule {}
+export class OffersModule {}

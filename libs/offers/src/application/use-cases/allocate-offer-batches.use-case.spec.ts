@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AllocateOfferBatchesUseCase } from './allocate-offer-batches.use-case';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
+import { OffersRepository } from '../../infrastructure/persistence/offers.repository';
 
 describe('AllocateOfferBatchesUseCase', () => {
   let useCase: AllocateOfferBatchesUseCase;
@@ -17,11 +17,13 @@ describe('AllocateOfferBatchesUseCase', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AllocateOfferBatchesUseCase,
-        { provide: ProductRepository, useValue: productRepositoryMock },
+        { provide: OffersRepository, useValue: productRepositoryMock },
       ],
     }).compile();
 
-    useCase = module.get<AllocateOfferBatchesUseCase>(AllocateOfferBatchesUseCase);
+    useCase = module.get<AllocateOfferBatchesUseCase>(
+      AllocateOfferBatchesUseCase,
+    );
   });
 
   it('should reject allocation when new total is lower than already sold quantity', async () => {
@@ -33,9 +35,7 @@ describe('AllocateOfferBatchesUseCase', () => {
         id: 'shop-1',
         shopStatus: 'active',
       },
-      batchLinks: [
-        { allocatedQuantity: 5 },
-      ],
+      batchLinks: [{ allocatedQuantity: 5 }],
     });
     productRepositoryMock.findAllocatableBatches.mockResolvedValueOnce([
       {
@@ -58,7 +58,9 @@ describe('AllocateOfferBatchesUseCase', () => {
           },
         ],
       }),
-    ).rejects.toThrow('Allocated quantity cannot be lower than the quantity already sold');
+    ).rejects.toThrow(
+      'Allocated quantity cannot be lower than the quantity already sold',
+    );
   });
 
   it('should replace allocations and return mapped links', async () => {
@@ -142,9 +144,7 @@ describe('AllocateOfferBatchesUseCase', () => {
         id: 'shop-1',
         shopStatus: 'active',
       },
-      batchLinks: [
-        { allocatedQuantity: 5 },
-      ],
+      batchLinks: [{ allocatedQuantity: 5 }],
     });
     productRepositoryMock.findAllocatableBatches.mockResolvedValueOnce([]);
     productRepositoryMock.replaceOfferBatchLinks.mockResolvedValueOnce([]);

@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toOfferResponse } from './products.mapper';
+import { OffersRepository } from '../../infrastructure/persistence/offers.repository';
+import { toOfferResponse } from './offers.mapper';
 
 @Injectable()
 export class GetOfferByIdUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(private readonly productRepository: OffersRepository) {}
 
   async execute(id: string) {
     const offer = await this.productRepository.findOfferById(id);

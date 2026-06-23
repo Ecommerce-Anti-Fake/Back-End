@@ -1,10 +1,14 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toOfferResponse } from './products.mapper';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { OffersRepository } from '../../infrastructure/persistence/offers.repository';
+import { toOfferResponse } from './offers.mapper';
 
 @Injectable()
 export class UpdateOfferUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(private readonly productRepository: OffersRepository) {}
 
   async execute(input: {
     offerId: string;
@@ -20,7 +24,10 @@ export class UpdateOfferUseCase {
     parcelWidthCm?: number | null;
     parcelHeightCm?: number | null;
   }) {
-    const offer = await this.productRepository.findOwnedOffer(input.offerId, input.sellerUserId);
+    const offer = await this.productRepository.findOwnedOffer(
+      input.offerId,
+      input.sellerUserId,
+    );
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
@@ -48,7 +55,9 @@ export class UpdateOfferUseCase {
     if (input.description !== undefined) {
       const description = input.description.trim();
       if (description.length < 3) {
-        throw new BadRequestException('Description must be at least 3 characters');
+        throw new BadRequestException(
+          'Description must be at least 3 characters',
+        );
       }
       data.description = description;
     }
@@ -69,7 +78,9 @@ export class UpdateOfferUseCase {
 
     if (input.offerStatus !== undefined) {
       if (!['active', 'inactive', 'draft'].includes(input.offerStatus)) {
-        throw new BadRequestException('Offer status must be active, inactive, or draft');
+        throw new BadRequestException(
+          'Offer status must be active, inactive, or draft',
+        );
       }
       if (input.offerStatus === 'active' && offer.offerStatus === 'draft') {
         this.assertCanPublishDraft(offer, input.availableQuantity);
@@ -77,7 +88,12 @@ export class UpdateOfferUseCase {
       data.offerStatus = input.offerStatus;
     }
 
-    for (const key of ['parcelWeightGrams', 'parcelLengthCm', 'parcelWidthCm', 'parcelHeightCm'] as const) {
+    for (const key of [
+      'parcelWeightGrams',
+      'parcelLengthCm',
+      'parcelWidthCm',
+      'parcelHeightCm',
+    ] as const) {
       if (input[key] !== undefined) {
         const value = input[key];
         if (value !== null && value < 1) {
@@ -88,34 +104,70 @@ export class UpdateOfferUseCase {
     }
 
     if (input.shippingProviderCodes !== undefined) {
-      const shippingProviderCodes = this.normalizeShippingProviderCodes(input.shippingProviderCodes);
-      this.assertParcelReadyForProviders({ ...offer, ...data }, shippingProviderCodes);
+      const shippingProviderCodes = this.normalizeShippingProviderCodes(
+        input.shippingProviderCodes,
+      );
+      this.assertParcelReadyForProviders(
+        { ...offer, ...data },
+        shippingProviderCodes,
+      );
       await this.assertShippingProvidersExist(shippingProviderCodes);
       const updatedOffer = Object.keys(data).length
-        ? await this.productRepository.updateOwnedOffer(input.offerId, input.sellerUserId, data)
+        ? await this.productRepository.updateOwnedOffer(
+            input.offerId,
+            input.sellerUserId,
+            data,
+          )
         : offer;
-      return toOfferResponse(await this.productRepository.replaceOfferShippingMethods(updatedOffer.id, shippingProviderCodes));
+      return toOfferResponse(
+        await this.productRepository.replaceOfferShippingMethods(
+          updatedOffer.id,
+          shippingProviderCodes,
+        ),
+      );
     }
 
     if (Object.keys(data).length === 0) {
-      return toOfferResponse(await this.productRepository.updateOwnedOffer(input.offerId, input.sellerUserId, {}));
+      return toOfferResponse(
+        await this.productRepository.updateOwnedOffer(
+          input.offerId,
+          input.sellerUserId,
+          {},
+        ),
+      );
     }
 
-    this.assertParcelReadyForProviders({ ...offer, ...data }, offer.shippingMethods?.map((method) => method.providerCode) ?? []);
+    this.assertParcelReadyForProviders(
+      { ...offer, ...data },
+      offer.shippingMethods?.map((method) => method.providerCode) ?? [],
+    );
 
-    const updatedOffer = await this.productRepository.updateOwnedOffer(input.offerId, input.sellerUserId, data);
+    const updatedOffer = await this.productRepository.updateOwnedOffer(
+      input.offerId,
+      input.sellerUserId,
+      data,
+    );
     return toOfferResponse(updatedOffer);
   }
 
   private normalizeShippingProviderCodes(providerCodes: string[]) {
-    const codes = Array.from(new Set(providerCodes.map((code) => code.trim().toUpperCase()).filter(Boolean)));
+    const codes = Array.from(
+      new Set(
+        providerCodes.map((code) => code.trim().toUpperCase()).filter(Boolean),
+      ),
+    );
     return codes.length ? codes : ['SELF_DELIVERY'];
   }
 
   private async assertShippingProvidersExist(providerCodes: string[]) {
-    const carriers = await this.productRepository.findActiveShippingCarriersByCodes(providerCodes);
+    const carriers =
+      await this.productRepository.findActiveShippingCarriersByCodes(
+        providerCodes,
+      );
     if (carriers.length !== providerCodes.length) {
-      throw new BadRequestException('One or more shipping providers are invalid');
+      throw new BadRequestException(
+        'One or more shipping providers are invalid',
+      );
     }
   }
 
@@ -132,8 +184,15 @@ export class UpdateOfferUseCase {
       return;
     }
 
-    if (!offer.parcelWeightGrams || !offer.parcelLengthCm || !offer.parcelWidthCm || !offer.parcelHeightCm) {
-      throw new BadRequestException('Parcel weight and dimensions are required for integrated shipping providers');
+    if (
+      !offer.parcelWeightGrams ||
+      !offer.parcelLengthCm ||
+      !offer.parcelWidthCm ||
+      !offer.parcelHeightCm
+    ) {
+      throw new BadRequestException(
+        'Parcel weight and dimensions are required for integrated shipping providers',
+      );
     }
   }
 
@@ -162,21 +221,30 @@ export class UpdateOfferUseCase {
     },
     nextAvailableQuantity?: number,
   ) {
-    if (offer.shop.registrationType !== 'DISTRIBUTOR' || !offer.distributionNodeId) {
+    if (
+      offer.shop.registrationType !== 'DISTRIBUTOR' ||
+      !offer.distributionNodeId
+    ) {
       return;
     }
 
     if (!['WHOLESALE', 'BOTH'].includes(offer.salesMode)) {
-      throw new BadRequestException('Resale draft must be a wholesale offer before publishing');
+      throw new BadRequestException(
+        'Resale draft must be a wholesale offer before publishing',
+      );
     }
 
     if (!offer.minWholesaleQty || offer.minWholesaleQty < 1) {
-      throw new BadRequestException('Resale draft must define minimum wholesale quantity before publishing');
+      throw new BadRequestException(
+        'Resale draft must define minimum wholesale quantity before publishing',
+      );
     }
 
     const availableQuantity = nextAvailableQuantity ?? offer.availableQuantity;
     if (!Number.isInteger(availableQuantity) || availableQuantity < 1) {
-      throw new BadRequestException('Resale draft must have available stock before publishing');
+      throw new BadRequestException(
+        'Resale draft must have available stock before publishing',
+      );
     }
 
     if (
@@ -184,7 +252,9 @@ export class UpdateOfferUseCase {
       offer.distributionNode.relationshipStatus !== 'ACTIVE' ||
       offer.distributionNode.shop.shopStatus !== 'active'
     ) {
-      throw new BadRequestException('Resale draft distribution node must be active before publishing');
+      throw new BadRequestException(
+        'Resale draft distribution node must be active before publishing',
+      );
     }
 
     const resaleBatchLinks = offer.batchLinks.filter(
@@ -192,9 +262,14 @@ export class UpdateOfferUseCase {
         link.batch?.sourceType === 'WHOLESALE_ORDER' &&
         link.batch.distributionNodeId === offer.distributionNodeId,
     );
-    const allocatedQuantity = resaleBatchLinks.reduce((sum, link) => sum + link.allocatedQuantity, 0);
+    const allocatedQuantity = resaleBatchLinks.reduce(
+      (sum, link) => sum + link.allocatedQuantity,
+      0,
+    );
     if (allocatedQuantity < availableQuantity) {
-      throw new BadRequestException('Resale draft must have enough attached batch stock before publishing');
+      throw new BadRequestException(
+        'Resale draft must have enough attached batch stock before publishing',
+      );
     }
   }
 }

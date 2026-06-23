@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
+import { OffersRepository } from '../../infrastructure/persistence/offers.repository';
 import { UpdateOfferUseCase } from './update-offer.use-case';
 
 describe('UpdateOfferUseCase', () => {
@@ -16,7 +16,7 @@ describe('UpdateOfferUseCase', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UpdateOfferUseCase,
-        { provide: ProductRepository, useValue: productRepositoryMock },
+        { provide: OffersRepository, useValue: productRepositoryMock },
       ],
     }).compile();
 
@@ -24,7 +24,9 @@ describe('UpdateOfferUseCase', () => {
   });
 
   it('should reject invalid offer status', async () => {
-    productRepositoryMock.findOwnedOffer.mockResolvedValueOnce({ id: 'offer-1' });
+    productRepositoryMock.findOwnedOffer.mockResolvedValueOnce({
+      id: 'offer-1',
+    });
 
     await expect(
       useCase.execute({
@@ -57,7 +59,9 @@ describe('UpdateOfferUseCase', () => {
         availableQuantity: 5,
         offerStatus: 'active',
       }),
-    ).rejects.toThrow('Resale draft must have enough attached batch stock before publishing');
+    ).rejects.toThrow(
+      'Resale draft must have enough attached batch stock before publishing',
+    );
     expect(productRepositoryMock.updateOwnedOffer).not.toHaveBeenCalled();
   });
 
@@ -80,12 +84,16 @@ describe('UpdateOfferUseCase', () => {
         sellerUserId: 'user-1',
         offerStatus: 'active',
       }),
-    ).rejects.toThrow('Resale draft distribution node must be active before publishing');
+    ).rejects.toThrow(
+      'Resale draft distribution node must be active before publishing',
+    );
     expect(productRepositoryMock.updateOwnedOffer).not.toHaveBeenCalled();
   });
 
   it('should publish eligible resale draft offer', async () => {
-    productRepositoryMock.findOwnedOffer.mockResolvedValueOnce(createOwnedOffer());
+    productRepositoryMock.findOwnedOffer.mockResolvedValueOnce(
+      createOwnedOffer(),
+    );
     productRepositoryMock.updateOwnedOffer.mockResolvedValueOnce({
       ...createOwnedOffer(),
       offerStatus: 'active',
@@ -102,9 +110,13 @@ describe('UpdateOfferUseCase', () => {
       offerStatus: 'active',
     });
 
-    expect(productRepositoryMock.updateOwnedOffer).toHaveBeenCalledWith('offer-1', 'user-1', {
-      offerStatus: 'active',
-    });
+    expect(productRepositoryMock.updateOwnedOffer).toHaveBeenCalledWith(
+      'offer-1',
+      'user-1',
+      {
+        offerStatus: 'active',
+      },
+    );
   });
 });
 

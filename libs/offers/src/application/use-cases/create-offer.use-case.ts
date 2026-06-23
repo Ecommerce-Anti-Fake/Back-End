@@ -1,10 +1,14 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toOfferResponse } from './products.mapper';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { OffersRepository } from '../../infrastructure/persistence/offers.repository';
+import { toOfferResponse } from './offers.mapper';
 
 @Injectable()
 export class CreateOfferUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(private readonly productRepository: OffersRepository) {}
 
   async execute(input: {
     sellerUserId: string;
@@ -28,13 +32,18 @@ export class CreateOfferUseCase {
     parcelWidthCm?: number | null;
     parcelHeightCm?: number | null;
   }) {
-    const ownedShop = await this.productRepository.findOwnedShop(input.shopId, input.sellerUserId);
+    const ownedShop = await this.productRepository.findOwnedShop(
+      input.shopId,
+      input.sellerUserId,
+    );
     if (!ownedShop) {
       throw new BadRequestException('Shop does not belong to current user');
     }
 
     if (ownedShop.shopStatus !== 'active') {
-      throw new BadRequestException('Shop must complete KYC approval before creating offers');
+      throw new BadRequestException(
+        'Shop must complete KYC approval before creating offers',
+      );
     }
 
     const title = input.title.trim();
@@ -44,35 +53,45 @@ export class CreateOfferUseCase {
       throw new BadRequestException('Title and description are required');
     }
 
-    const category = await this.productRepository.findCategoryById(input.categoryId);
+    const category = await this.productRepository.findCategoryById(
+      input.categoryId,
+    );
     if (!category) {
       throw new NotFoundException('Category not found');
     }
 
-    const approvedCategoryRegistration = await this.productRepository.findApprovedShopCategoryRegistration(
-      input.shopId,
-      input.categoryId,
-    );
+    const approvedCategoryRegistration =
+      await this.productRepository.findApprovedShopCategoryRegistration(
+        input.shopId,
+        input.categoryId,
+      );
     if (!approvedCategoryRegistration) {
-      throw new BadRequestException('Shop category must be approved before creating offers in this category');
+      throw new BadRequestException(
+        'Shop category must be approved before creating offers in this category',
+      );
     }
 
     const productIdentity = await this.resolveProductIdentity(input, title);
 
     const distributionNodeId = input.distributionNodeId?.trim() || null;
     if (distributionNodeId) {
-      const distributionNode = await this.productRepository.findOwnedDistributionNode(
-        distributionNodeId,
-        input.shopId,
-        input.sellerUserId,
-      );
+      const distributionNode =
+        await this.productRepository.findOwnedDistributionNode(
+          distributionNodeId,
+          input.shopId,
+          input.sellerUserId,
+        );
 
       if (!distributionNode) {
-        throw new BadRequestException('Distribution node is invalid for the selected shop');
+        throw new BadRequestException(
+          'Distribution node is invalid for the selected shop',
+        );
       }
 
       if (distributionNode.relationshipStatus !== 'ACTIVE') {
-        throw new BadRequestException('Distribution node must be active before creating offers');
+        throw new BadRequestException(
+          'Distribution node must be active before creating offers',
+        );
       }
     }
 
@@ -87,7 +106,10 @@ export class CreateOfferUseCase {
       throw new BadRequestException('Price must be greater than 0');
     }
 
-    if (!Number.isInteger(input.availableQuantity) || input.availableQuantity < 1) {
+    if (
+      !Number.isInteger(input.availableQuantity) ||
+      input.availableQuantity < 1
+    ) {
       throw new BadRequestException('Available quantity must be at least 1');
     }
 
@@ -95,22 +117,33 @@ export class CreateOfferUseCase {
       throw new BadRequestException('Sales mode is invalid');
     }
 
-    if ((salesMode === 'WHOLESALE' || salesMode === 'BOTH') && (!minWholesaleQty || minWholesaleQty < 1)) {
-      throw new BadRequestException('Wholesale offers must define minWholesaleQty');
+    if (
+      (salesMode === 'WHOLESALE' || salesMode === 'BOTH') &&
+      (!minWholesaleQty || minWholesaleQty < 1)
+    ) {
+      throw new BadRequestException(
+        'Wholesale offers must define minWholesaleQty',
+      );
     }
 
     if (!['active', 'inactive', 'draft'].includes(offerStatus)) {
-      throw new BadRequestException('Offer status must be active, inactive, or draft');
+      throw new BadRequestException(
+        'Offer status must be active, inactive, or draft',
+      );
     }
 
     if (
       (salesMode === 'WHOLESALE' || salesMode === 'BOTH') &&
       !['MANUFACTURER', 'DISTRIBUTOR'].includes(ownedShop.registrationType)
     ) {
-      throw new BadRequestException('Only manufacturer or distributor shops can create wholesale offers');
+      throw new BadRequestException(
+        'Only manufacturer or distributor shops can create wholesale offers',
+      );
     }
 
-    const shippingProviderCodes = this.normalizeShippingProviderCodes(input.shippingProviderCodes);
+    const shippingProviderCodes = this.normalizeShippingProviderCodes(
+      input.shippingProviderCodes,
+    );
     await this.assertShippingProvidersExist(shippingProviderCodes);
     const parcel = this.resolveParcelSnapshot(input, shippingProviderCodes);
 
@@ -166,14 +199,25 @@ export class CreateOfferUseCase {
   }
 
   private normalizeShippingProviderCodes(providerCodes?: string[]) {
-    const codes = Array.from(new Set((providerCodes ?? []).map((code) => code.trim().toUpperCase()).filter(Boolean)));
+    const codes = Array.from(
+      new Set(
+        (providerCodes ?? [])
+          .map((code) => code.trim().toUpperCase())
+          .filter(Boolean),
+      ),
+    );
     return codes.length ? codes : ['SELF_DELIVERY'];
   }
 
   private async assertShippingProvidersExist(providerCodes: string[]) {
-    const carriers = await this.productRepository.findActiveShippingCarriersByCodes(providerCodes);
+    const carriers =
+      await this.productRepository.findActiveShippingCarriersByCodes(
+        providerCodes,
+      );
     if (carriers.length !== providerCodes.length) {
-      throw new BadRequestException('One or more shipping providers are invalid');
+      throw new BadRequestException(
+        'One or more shipping providers are invalid',
+      );
     }
   }
 
@@ -193,8 +237,13 @@ export class CreateOfferUseCase {
       parcelHeightCm: input.parcelHeightCm ?? null,
     };
 
-    if (providerCodes.some((code) => code !== 'SELF_DELIVERY') && Object.values(parcel).some((value) => !value || value < 1)) {
-      throw new BadRequestException('Parcel weight and dimensions are required for integrated shipping providers');
+    if (
+      providerCodes.some((code) => code !== 'SELF_DELIVERY') &&
+      Object.values(parcel).some((value) => !value || value < 1)
+    ) {
+      throw new BadRequestException(
+        'Parcel weight and dimensions are required for integrated shipping providers',
+      );
     }
 
     return parcel;

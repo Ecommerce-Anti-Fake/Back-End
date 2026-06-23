@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -20,13 +29,13 @@ import {
   PublicOfferDetailResponseDto,
   CreateOfferDto,
   UpdateOfferDto,
-} from '@products';
+} from '@offers';
 import { RateLimit } from '../../observability';
 import { CatalogRpcService } from './catalog-rpc.service';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 
 @ApiTags('Offer')
-@Controller('products')
+@Controller()
 export class OfferController {
   constructor(
     private readonly catalogRpcService: CatalogRpcService,
@@ -40,14 +49,18 @@ export class OfferController {
     type: OfferResponseDto,
   })
   @ApiBadRequestResponse({
-    description: 'Shop khong thuoc user hien tai hoac du lieu offer khong hop le.',
+    description:
+      'Shop khong thuoc user hien tai hoac du lieu offer khong hop le.',
   })
   @ApiUnauthorizedResponse({
     description: 'Thieu access token hoac token khong hop le.',
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('offers')
-  async createOffer(@CurrentUserId() sellerUserId: string, @Body() dto: CreateOfferDto) {
+  async createOffer(
+    @CurrentUserId() sellerUserId: string,
+    @Body() dto: CreateOfferDto,
+  ) {
     const result = await this.catalogRpcService.createOffer({
       sellerUserId,
       shopId: dto.shopId,
@@ -70,7 +83,9 @@ export class OfferController {
       parcelWidthCm: dto.parcelWidthCm,
       parcelHeightCm: dto.parcelHeightCm,
     });
-    this.dashboardSseBrokerService.notifyShop(shopIdFromResult(result) ?? dto.shopId);
+    this.dashboardSseBrokerService.notifyShop(
+      shopIdFromResult(result) ?? dto.shopId,
+    );
 
     return result;
   }
@@ -135,7 +150,8 @@ export class OfferController {
 
   @ApiOperation({ summary: 'Lay danh sach offer' })
   @ApiOkResponse({
-    description: 'Danh sach offer public co phan trang. De trong filter params de lay offer active.',
+    description:
+      'Danh sach offer public co phan trang. De trong filter params de lay offer active.',
     type: PaginatedOfferListResponseDto,
   })
   @RateLimit({ profile: 'publicCatalog' })
@@ -181,7 +197,9 @@ export class OfferController {
     return toPublicOfferDetail(offer);
   }
 
-  @ApiOperation({ summary: 'Gan supply batch vao offer va dong bo available quantity' })
+  @ApiOperation({
+    summary: 'Gan supply batch vao offer va dong bo available quantity',
+  })
   @ApiBearerAuth('access-token')
   @ApiCreatedResponse({
     description: 'Danh sach batch allocation cua offer sau khi cap nhat.',
@@ -224,7 +242,10 @@ function shopIdFromResult(result: unknown) {
 }
 
 function toOfferListItem(offer: unknown): OfferListItemResponseDto {
-  const record = offer && typeof offer === 'object' ? (offer as Record<string, unknown>) : {};
+  const record =
+    offer && typeof offer === 'object'
+      ? (offer as Record<string, unknown>)
+      : {};
 
   return {
     id: stringValue(record.id),
@@ -240,12 +261,18 @@ function toOfferListItem(offer: unknown): OfferListItemResponseDto {
     categoryId: nullableStringValue(record.categoryId),
     brandId: nullableStringValue(record.brandId),
     thumbnailUrl: nullableStringValue(record.thumbnailUrl),
-    createdAt: record.createdAt instanceof Date ? record.createdAt : new Date(stringValue(record.createdAt)),
+    createdAt:
+      record.createdAt instanceof Date
+        ? record.createdAt
+        : new Date(stringValue(record.createdAt)),
   };
 }
 
 function toPublicOfferDetail(offer: unknown): PublicOfferDetailResponseDto {
-  const record = offer && typeof offer === 'object' ? (offer as Record<string, unknown>) : {};
+  const record =
+    offer && typeof offer === 'object'
+      ? (offer as Record<string, unknown>)
+      : {};
 
   return {
     id: stringValue(record.id),
@@ -274,12 +301,26 @@ function toPublicOfferDetail(offer: unknown): PublicOfferDetailResponseDto {
     productModelName: stringValue(record.productModelName),
     thumbnailUrl: nullableStringValue(record.thumbnailUrl),
     imageUrls: stringArrayValue(record.imageUrls),
-    createdAt: record.createdAt instanceof Date ? record.createdAt : new Date(stringValue(record.createdAt)),
+    createdAt:
+      record.createdAt instanceof Date
+        ? record.createdAt
+        : new Date(stringValue(record.createdAt)),
   };
 }
 
-function isPaginatedOfferResult(value: unknown): value is { total: unknown; page: unknown; pageSize: unknown; items: unknown[] } {
-  return Boolean(value && typeof value === 'object' && Array.isArray((value as { items?: unknown }).items));
+function isPaginatedOfferResult(
+  value: unknown,
+): value is {
+  total: unknown;
+  page: unknown;
+  pageSize: unknown;
+  items: unknown[];
+} {
+  return Boolean(
+    value &&
+    typeof value === 'object' &&
+    Array.isArray((value as { items?: unknown }).items),
+  );
 }
 
 function stringValue(value: unknown) {

@@ -1,6 +1,38 @@
 import { OfferController } from './offer.controller';
+import { PATH_METADATA } from '@nestjs/common/constants';
 
 describe('OfferController', () => {
+  it('exposes core offers without the legacy products prefix', () => {
+    expect(Reflect.getMetadata(PATH_METADATA, OfferController)).toBe('/');
+    expect(
+      Reflect.getMetadata(PATH_METADATA, OfferController.prototype.createOffer),
+    ).toBe('offers');
+    expect(
+      Reflect.getMetadata(PATH_METADATA, OfferController.prototype.updateOffer),
+    ).toBe('offers/:offerId');
+    expect(
+      Reflect.getMetadata(PATH_METADATA, OfferController.prototype.findOffers),
+    ).toBe('offers');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        OfferController.prototype.findOfferById,
+      ),
+    ).toBe('offers/:id');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        OfferController.prototype.allocateOfferBatches,
+      ),
+    ).toBe('offers/:offerId/batch-links');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        OfferController.prototype.findOfferBatchLinks,
+      ),
+    ).toBe('offers/:offerId/batch-links');
+  });
+
   it('returns compact public offer list items', async () => {
     const catalogRpcService = {
       findOffers: jest.fn().mockResolvedValue({
@@ -33,16 +65,22 @@ describe('OfferController', () => {
             distributionNodeId: 'node-1',
             distributionNetworkId: 'network-1',
             productModelName: 'Kem chong nang',
-            thumbnailUrl: 'https://res.cloudinary.com/demo/image/upload/product.jpg',
+            thumbnailUrl:
+              'https://res.cloudinary.com/demo/image/upload/product.jpg',
             shippingMethods: [{ providerCode: 'GHN' }],
             createdAt: '2026-04-14T10:00:00.000Z',
           },
         ],
       }),
     };
-    const controller = new OfferController(catalogRpcService as never, { notifyShop: jest.fn() } as never);
+    const controller = new OfferController(
+      catalogRpcService as never,
+      { notifyShop: jest.fn() } as never,
+    );
 
-    await expect(controller.findOffers({ page: 2, pageSize: 10 })).resolves.toEqual({
+    await expect(
+      controller.findOffers({ page: 2, pageSize: 10 }),
+    ).resolves.toEqual({
       total: 1,
       page: 2,
       pageSize: 10,
@@ -60,7 +98,8 @@ describe('OfferController', () => {
           offerStatus: 'active',
           categoryId: 'category-1',
           brandId: 'brand-1',
-          thumbnailUrl: 'https://res.cloudinary.com/demo/image/upload/product.jpg',
+          thumbnailUrl:
+            'https://res.cloudinary.com/demo/image/upload/product.jpg',
           createdAt: new Date('2026-04-14T10:00:00.000Z'),
         },
       ],
@@ -82,7 +121,10 @@ describe('OfferController', () => {
         items: [],
       }),
     };
-    const controller = new OfferController(catalogRpcService as never, { notifyShop: jest.fn() } as never);
+    const controller = new OfferController(
+      catalogRpcService as never,
+      { notifyShop: jest.fn() } as never,
+    );
 
     await expect(controller.findOffers({})).resolves.toEqual({
       total: 0,
@@ -128,7 +170,8 @@ describe('OfferController', () => {
         distributionNodeId: null,
         distributionNetworkId: null,
         productModelName: 'Kem chong nang',
-        thumbnailUrl: 'https://res.cloudinary.com/demo/image/upload/product.jpg',
+        thumbnailUrl:
+          'https://res.cloudinary.com/demo/image/upload/product.jpg',
         imageUrls: [
           'https://res.cloudinary.com/demo/image/upload/product.jpg',
           'https://res.cloudinary.com/demo/image/upload/gallery-1.jpg',
@@ -139,7 +182,10 @@ describe('OfferController', () => {
         createdAt: new Date('2026-04-14T10:00:00.000Z'),
       }),
     };
-    const controller = new OfferController(catalogRpcService as never, { notifyShop: jest.fn() } as never);
+    const controller = new OfferController(
+      catalogRpcService as never,
+      { notifyShop: jest.fn() } as never,
+    );
 
     const result = await controller.findOfferById('offer-1');
 

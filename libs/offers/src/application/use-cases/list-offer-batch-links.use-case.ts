@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
-import { toOfferBatchLinkResponse } from './products.mapper';
+import { OffersRepository } from '../../infrastructure/persistence/offers.repository';
+import { toOfferBatchLinkResponse } from './offers.mapper';
 
 @Injectable()
 export class ListOfferBatchLinksUseCase {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(private readonly productRepository: OffersRepository) {}
 
   async execute(offerId: string) {
     const links = await this.productRepository.findOfferBatchLinks(offerId);

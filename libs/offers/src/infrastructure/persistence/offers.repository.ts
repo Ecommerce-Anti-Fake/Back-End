@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '@database/prisma/prisma.service';
 
 @Injectable()
-export class ProductRepository {
+export class OffersRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   findActiveShippingCarriersByCodes(codes: string[]) {

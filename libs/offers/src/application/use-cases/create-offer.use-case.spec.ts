@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CreateOfferUseCase } from './create-offer.use-case';
-import { ProductRepository } from '../../infrastructure/persistence/product-repository';
+import { OffersRepository } from '../../infrastructure/persistence/offers.repository';
 
 describe('CreateOfferUseCase', () => {
   let useCase: CreateOfferUseCase;
@@ -20,14 +20,14 @@ describe('CreateOfferUseCase', () => {
 
   beforeEach(async () => {
     jest.resetAllMocks();
-    productRepositoryMock.findActiveShippingCarriersByCodes.mockImplementation(async (codes: string[]) =>
-      codes.map((code) => ({ code })),
+    productRepositoryMock.findActiveShippingCarriersByCodes.mockImplementation(
+      async (codes: string[]) => codes.map((code) => ({ code })),
     );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CreateOfferUseCase,
-        { provide: ProductRepository, useValue: productRepositoryMock },
+        { provide: OffersRepository, useValue: productRepositoryMock },
       ],
     }).compile();
 
@@ -40,11 +40,15 @@ describe('CreateOfferUseCase', () => {
       shopStatus: 'active',
       registrationType: 'NORMAL',
     });
-    productRepositoryMock.findBrandById.mockResolvedValueOnce({ id: 'brand-1' });
+    productRepositoryMock.findBrandById.mockResolvedValueOnce({
+      id: 'brand-1',
+    });
     productRepositoryMock.findCategoryById.mockResolvedValueOnce({
       id: 'category-1',
     });
-    productRepositoryMock.findApprovedShopCategoryRegistration.mockResolvedValueOnce({ id: 'registration-1' });
+    productRepositoryMock.findApprovedShopCategoryRegistration.mockResolvedValueOnce(
+      { id: 'registration-1' },
+    );
   }
 
   it('should reject non-positive offer price', async () => {
@@ -108,11 +112,15 @@ describe('CreateOfferUseCase', () => {
       shopStatus: 'active',
       registrationType: 'NORMAL',
     });
-    productRepositoryMock.findBrandById.mockResolvedValueOnce({ id: 'brand-1' });
+    productRepositoryMock.findBrandById.mockResolvedValueOnce({
+      id: 'brand-1',
+    });
     productRepositoryMock.findCategoryById.mockResolvedValueOnce({
       id: 'category-1',
     });
-    productRepositoryMock.findApprovedShopCategoryRegistration.mockResolvedValueOnce(null);
+    productRepositoryMock.findApprovedShopCategoryRegistration.mockResolvedValueOnce(
+      null,
+    );
 
     await expect(
       useCase.execute({
@@ -125,7 +133,9 @@ describe('CreateOfferUseCase', () => {
         price: 100000,
         availableQuantity: 10,
       }),
-    ).rejects.toThrow('Shop category must be approved before creating offers in this category');
+    ).rejects.toThrow(
+      'Shop category must be approved before creating offers in this category',
+    );
   });
 
   it('should reject wholesale offer creation for normal shops', async () => {
@@ -137,8 +147,12 @@ describe('CreateOfferUseCase', () => {
     productRepositoryMock.findCategoryById.mockResolvedValueOnce({
       id: 'category-1',
     });
-    productRepositoryMock.findApprovedShopCategoryRegistration.mockResolvedValueOnce({ id: 'registration-1' });
-    productRepositoryMock.findBrandById.mockResolvedValueOnce({ id: 'brand-1' });
+    productRepositoryMock.findApprovedShopCategoryRegistration.mockResolvedValueOnce(
+      { id: 'registration-1' },
+    );
+    productRepositoryMock.findBrandById.mockResolvedValueOnce({
+      id: 'brand-1',
+    });
 
     await expect(
       useCase.execute({
@@ -153,7 +167,9 @@ describe('CreateOfferUseCase', () => {
         salesMode: 'WHOLESALE',
         minWholesaleQty: 10,
       }),
-    ).rejects.toThrow('Only manufacturer or distributor shops can create wholesale offers');
+    ).rejects.toThrow(
+      'Only manufacturer or distributor shops can create wholesale offers',
+    );
   });
 
   it('should create a draft distributor resale offer for an active distribution node', async () => {
@@ -165,8 +181,12 @@ describe('CreateOfferUseCase', () => {
     productRepositoryMock.findCategoryById.mockResolvedValueOnce({
       id: 'category-1',
     });
-    productRepositoryMock.findApprovedShopCategoryRegistration.mockResolvedValueOnce({ id: 'registration-1' });
-    productRepositoryMock.findBrandById.mockResolvedValueOnce({ id: 'brand-1' });
+    productRepositoryMock.findApprovedShopCategoryRegistration.mockResolvedValueOnce(
+      { id: 'registration-1' },
+    );
+    productRepositoryMock.findBrandById.mockResolvedValueOnce({
+      id: 'brand-1',
+    });
     productRepositoryMock.findOwnedDistributionNode.mockResolvedValueOnce({
       id: 'node-1',
       relationshipStatus: 'ACTIVE',
@@ -237,8 +257,12 @@ describe('CreateOfferUseCase', () => {
     productRepositoryMock.findCategoryById.mockResolvedValueOnce({
       id: 'category-1',
     });
-    productRepositoryMock.findApprovedShopCategoryRegistration.mockResolvedValueOnce({ id: 'registration-1' });
-    productRepositoryMock.findBrandById.mockResolvedValueOnce({ id: 'brand-1' });
+    productRepositoryMock.findApprovedShopCategoryRegistration.mockResolvedValueOnce(
+      { id: 'registration-1' },
+    );
+    productRepositoryMock.findBrandById.mockResolvedValueOnce({
+      id: 'brand-1',
+    });
     productRepositoryMock.createOffer.mockResolvedValueOnce({
       id: 'offer-1',
       title: 'Offer first product',
@@ -291,7 +315,9 @@ describe('CreateOfferUseCase', () => {
 
   it('should reject unknown shipping providers', async () => {
     mockActiveApprovedShop();
-    productRepositoryMock.findActiveShippingCarriersByCodes.mockResolvedValueOnce([{ code: 'SELF_DELIVERY' }]);
+    productRepositoryMock.findActiveShippingCarriersByCodes.mockResolvedValueOnce(
+      [{ code: 'SELF_DELIVERY' }],
+    );
 
     await expect(
       useCase.execute({
