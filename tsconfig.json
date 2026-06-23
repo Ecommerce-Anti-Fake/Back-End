@@ -49,6 +49,8 @@
       "@reviews/*": ["libs/reviews/src/*"],
       "@offer-assets": ["libs/offer-assets/src"],
       "@offer-assets/*": ["libs/offer-assets/src/*"],
+      "@favorites": ["libs/favorites/src"],
+      "@favorites/*": ["libs/favorites/src/*"],
       "@distribution": ["libs/distribution/src"],
       "@distribution/*": ["libs/distribution/src/*"],
       "@affiliate": ["libs/affiliate/src"],

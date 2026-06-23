@@ -1,10 +1,22 @@
-import { Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 @ApiTags('Favorite')
-@Controller('products')
+@Controller()
 export class FavoriteController {
   constructor(private readonly catalogRpcService: CatalogRpcService) {}
 
@@ -26,7 +38,10 @@ export class FavoriteController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('offers/:offerId/favorite')
-  addFavoriteOffer(@Param('offerId') offerId: string, @CurrentUserId() userId: string) {
+  addFavoriteOffer(
+    @Param('offerId') offerId: string,
+    @CurrentUserId() userId: string,
+  ) {
     return this.catalogRpcService.addFavoriteOffer({ userId, offerId });
   }
 
@@ -37,7 +52,10 @@ export class FavoriteController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Delete('offers/:offerId/favorite')
-  removeFavoriteOffer(@Param('offerId') offerId: string, @CurrentUserId() userId: string) {
+  removeFavoriteOffer(
+    @Param('offerId') offerId: string,
+    @CurrentUserId() userId: string,
+  ) {
     return this.catalogRpcService.removeFavoriteOffer({ userId, offerId });
   }
 }

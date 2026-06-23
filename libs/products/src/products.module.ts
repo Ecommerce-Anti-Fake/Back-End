@@ -2,18 +2,15 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '@database/prisma/prisma.module';
 import {
   AllocateOfferBatchesUseCase,
-  AddFavoriteOfferUseCase,
   CreateBrandUseCase,
   CreateCategoryUseCase,
   CreateOfferUseCase,
   GetOfferByIdUseCase,
-  ListFavoriteOffersUseCase,
   ListBrandsUseCase,
   ListCategoriesUseCase,
   ListOfferBatchLinksUseCase,
   ListOffersUseCase,
   ListShippingCarriersUseCase,
-  RemoveFavoriteOfferUseCase,
   UpdateOfferUseCase,
 } from './application/use-cases';
 import { ProductRepository } from './infrastructure/persistence/product-repository';
@@ -35,9 +32,6 @@ import { ProductsRpcController } from './presentation/rpc/products.rpc-controlle
     ListOfferBatchLinksUseCase,
     ListOffersUseCase,
     GetOfferByIdUseCase,
-    ListFavoriteOffersUseCase,
-    AddFavoriteOfferUseCase,
-    RemoveFavoriteOfferUseCase,
   ],
   exports: [
     ProductRepository,
@@ -52,9 +46,6 @@ import { ProductsRpcController } from './presentation/rpc/products.rpc-controlle
     ListOfferBatchLinksUseCase,
     ListOffersUseCase,
     GetOfferByIdUseCase,
-    ListFavoriteOffersUseCase,
-    AddFavoriteOfferUseCase,
-    RemoveFavoriteOfferUseCase,
   ],
 })
 export class ProductsModule {}

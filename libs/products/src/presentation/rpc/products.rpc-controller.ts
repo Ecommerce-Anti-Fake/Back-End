@@ -6,8 +6,6 @@ import type {
   CreateBrandMessage,
   CreateCategoryMessage,
   CreateOfferMessage,
-  FavoriteOfferMessage,
-  FavoriteOffersLookupMessage,
   ListOffersMessage,
   OfferBatchLinksLookupMessage,
   OfferLookupMessage,
@@ -16,7 +14,6 @@ import type {
 import { throwRpcException } from '@common';
 import {
   AllocateOfferBatchesUseCase,
-  AddFavoriteOfferUseCase,
   CreateBrandUseCase,
   CreateCategoryUseCase,
   CreateOfferUseCase,
@@ -25,9 +22,7 @@ import {
   ListCategoriesUseCase,
   ListOfferBatchLinksUseCase,
   ListOffersUseCase,
-  ListFavoriteOffersUseCase,
   ListShippingCarriersUseCase,
-  RemoveFavoriteOfferUseCase,
   UpdateOfferUseCase,
 } from '../../application/use-cases';
 
@@ -45,9 +40,6 @@ export class ProductsRpcController {
     private readonly listOfferBatchLinksUseCase: ListOfferBatchLinksUseCase,
     private readonly listOffersUseCase: ListOffersUseCase,
     private readonly getOfferByIdUseCase: GetOfferByIdUseCase,
-    private readonly listFavoriteOffersUseCase: ListFavoriteOffersUseCase,
-    private readonly addFavoriteOfferUseCase: AddFavoriteOfferUseCase,
-    private readonly removeFavoriteOfferUseCase: RemoveFavoriteOfferUseCase,
   ) {}
 
   @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findBrands)
@@ -144,33 +136,6 @@ export class ProductsRpcController {
   async findOfferById(@Payload() payload: OfferLookupMessage) {
     try {
       return await this.getOfferByIdUseCase.execute(payload.id);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findFavoriteOffers)
-  async findFavoriteOffers(@Payload() payload: FavoriteOffersLookupMessage) {
-    try {
-      return await this.listFavoriteOffersUseCase.execute(payload.userId);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.addFavoriteOffer)
-  async addFavoriteOffer(@Payload() payload: FavoriteOfferMessage) {
-    try {
-      return await this.addFavoriteOfferUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.removeFavoriteOffer)
-  async removeFavoriteOffer(@Payload() payload: FavoriteOfferMessage) {
-    try {
-      return await this.removeFavoriteOfferUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

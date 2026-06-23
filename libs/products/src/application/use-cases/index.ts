@@ -9,6 +9,3 @@ export * from './list-offer-batch-links.use-case';
 export * from './list-offers.use-case';
 export * from './list-shipping-carriers.use-case';
 export * from './get-offer-by-id.use-case';
-export * from './list-favorite-offers.use-case';
-export * from './add-favorite-offer.use-case';
-export * from './remove-favorite-offer.use-case';

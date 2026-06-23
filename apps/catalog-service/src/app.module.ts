@@ -9,6 +9,7 @@ import { SocialModule } from '@social/social.module';
 import { LiveCommerceModule } from '@live-commerce/live-commerce.module';
 import { ReviewsModule } from '@reviews/reviews.module';
 import { OfferAssetsModule } from '@offer-assets/offer-assets.module';
+import { FavoritesModule } from '@favorites/favorites.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { OfferAssetsModule } from '@offer-assets/offer-assets.module';
     LiveCommerceModule,
     ReviewsModule,
     OfferAssetsModule,
+    FavoritesModule,
     ShopsModule,
   ],
 })
