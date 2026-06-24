@@ -137,6 +137,14 @@ export class ChatThreadResponseDto {
   createdAt!: Date;
 }
 
+export class StartChatThreadResponseDto {
+  @ApiProperty({ example: true })
+  success!: boolean;
+
+  @ApiProperty({ example: 'chat-thread-id' })
+  threadId!: string;
+}
+
 export class SendChatMessageDto {
   @ApiProperty({ example: 'Minh can them thong tin xac thuc.' })
   @IsString()

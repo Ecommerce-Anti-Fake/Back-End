@@ -5,6 +5,7 @@ import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard } from '@secu
 import {
   ChatThreadDetailResponseDto,
   ChatThreadListItemResponseDto,
+  StartChatThreadResponseDto,
   ChatThreadResponseDto,
   SendChatMessageDto,
 } from '@chat';
@@ -71,7 +72,7 @@ export class ChatController {
   @ApiBearerAuth('access-token')
   @ApiCreatedResponse({
     description: 'Chat thread da san sang.',
-    type: ChatThreadResponseDto,
+    type: StartChatThreadResponseDto,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('shops/:shopId/chat-thread')

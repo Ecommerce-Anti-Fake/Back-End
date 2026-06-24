@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ChatRepository } from '../../infrastructure/persistence/chat.repository';
-import { toChatThreadResponse } from '../chat.mapper';
 
 @Injectable()
 export class StartChatThreadUseCase {
@@ -29,6 +28,9 @@ export class StartChatThreadUseCase {
         sellerUserId: shop.ownerUserId,
       }));
 
-    return toChatThreadResponse(thread);
+    return {
+      success: true,
+      threadId: thread.id,
+    };
   }
 }
