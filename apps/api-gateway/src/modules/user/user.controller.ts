@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -10,7 +10,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
-import { ListUsersQueryDto, ProfileCompletionResponseDto, UpdateUserDto, UserResponseDto } from '@users';
+import { ProfileCompletionResponseDto, UpdateUserDto, UserResponseDto } from '@users';
 import { DashboardSseBrokerService } from './dashboard-sse-broker.service';
 import { UsersRpcService } from './users-rpc.service';
 
@@ -21,26 +21,6 @@ export class UserController {
     private readonly usersRpcService: UsersRpcService,
     private readonly dashboardSseBrokerService: DashboardSseBrokerService,
   ) {}
-
-  @ApiOperation({ summary: 'Admin lay danh sach user' })
-  @ApiBearerAuth('access-token')
-  @ApiOkResponse({
-    description: 'Danh sach user.',
-    type: UserResponseDto,
-    isArray: true,
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Thieu access token hoac token khong hop le.',
-  })
-  @ApiForbiddenResponse({
-    description: 'Chi admin moi co quyen truy cap.',
-  })
-  @Roles('admin')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
-  @Get()
-  findAll(@Query() query: ListUsersQueryDto) {
-    return this.usersRpcService.findAll(query);
-  }
 
   @ApiOperation({ summary: 'Lay thong tin user hien tai tu access token' })
   @ApiBearerAuth('access-token')
@@ -77,26 +57,6 @@ export class UserController {
     return this.usersRpcService.getProfileCompletion({ userId });
   }
 
-  @ApiOperation({ summary: 'Admin lay chi tiet mot user' })
-  @ApiBearerAuth('access-token')
-  @ApiParam({ name: 'id', description: 'ID user can xem chi tiet.' })
-  @ApiOkResponse({
-    description: 'Thong tin chi tiet user.',
-    type: UserResponseDto,
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Thieu access token hoac token khong hop le.',
-  })
-  @ApiForbiddenResponse({
-    description: 'Chi admin moi co quyen truy cap.',
-  })
-  @Roles('admin')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
-  @Get(':id')
-  getById(@Param('id') id: string) {
-    return this.usersRpcService.getUserById({ id });
-  }
-
   @ApiOperation({ summary: 'Admin cap nhat user' })
   @ApiBearerAuth('access-token')
   @ApiParam({ name: 'id', description: 'ID user can cap nhat.' })
@@ -123,23 +83,4 @@ export class UserController {
     return result;
   }
 
-  @ApiOperation({ summary: 'Admin khoa mem user bang cach chuyen accountStatus sang inactive' })
-  @ApiBearerAuth('access-token')
-  @ApiParam({ name: 'id', description: 'ID user can vo hieu hoa.' })
-  @ApiOkResponse({
-    description: 'Vo hieu hoa user thanh cong.',
-    type: UserResponseDto,
-  })
-  @ApiUnauthorizedResponse({
-    description: 'Thieu access token hoac token khong hop le.',
-  })
-  @ApiForbiddenResponse({
-    description: 'Chi admin moi co quyen truy cap.',
-  })
-  @Roles('admin')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersRpcService.deleteUser({ id });
-  }
 }
