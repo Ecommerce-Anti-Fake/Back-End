@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { MediaAssetType, MediaResourceType } from '@prisma/client';
 import { CloudinaryService } from '../../infrastructure/cloudinary/cloudinary.service';
 import { MediaRepository } from '../../infrastructure/persistence/media.repository';
 
@@ -23,30 +24,23 @@ export class MediaService {
   }
 
   createCloudinaryAsset(input: {
-    ownerUserId: string;
-    assetType: 'IMAGE' | 'VIDEO' | 'RAW';
-    resourceType:
-      | 'DISPUTE_EVIDENCE'
-      | 'KYC_DOCUMENT'
-      | 'SHOP_DOCUMENT'
-      | 'PRODUCT_IMAGE'
-      | 'REVIEW_IMAGE'
-      | 'OFFER_DOCUMENT'
-      | 'BATCH_DOCUMENT';
-    publicId: string;
-    secureUrl: string;
-    mimeType?: string | null;
-    folder?: string | null;
-  }) {
-    return this.mediaRepository.createAsset({
-      ownerUserId: input.ownerUserId,
-      provider: 'CLOUDINARY',
-      assetType: input.assetType,
-      resourceType: input.resourceType,
-      publicId: input.publicId,
-      secureUrl: input.secureUrl,
-      mimeType: input.mimeType ?? null,
-      folder: input.folder ?? null,
-    });
-  }
+  ownerUserId: string;
+  assetType: MediaAssetType;
+  resourceType: MediaResourceType;
+  publicId: string;
+  secureUrl: string;
+  mimeType?: string | null;
+  folder?: string | null;
+}) {
+  return this.mediaRepository.createAsset({
+    ownerUserId: input.ownerUserId,
+    provider: 'CLOUDINARY',
+    assetType: input.assetType,
+    resourceType: input.resourceType,
+    publicId: input.publicId,
+    secureUrl: input.secureUrl,
+    mimeType: input.mimeType ?? null,
+    folder: input.folder ?? null,
+  });
+}
 }

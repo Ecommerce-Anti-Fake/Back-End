@@ -20,6 +20,9 @@ model MediaAsset {
   offerDocument             OfferDocument?
   batchDocument             BatchDocument?
   brandAuthorization        BrandAuthorization?
+  userAvatar                User?                      @relation("UserAvatarMedia")
+  shopAvatar                Shop[]                     @relation("ShopAvatar")
+  shopBanner                Shop[]                     @relation("ShopBanner")
 
   @@index([ownerUserId])
   @@index([resourceType])

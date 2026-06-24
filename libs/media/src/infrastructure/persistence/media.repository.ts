@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, MediaAssetType, MediaResourceType } from '@prisma/client';
 import { PrismaService } from '@database/prisma/prisma.service';
 
 const mediaAssetArgs = Prisma.validator<Prisma.MediaAssetDefaultArgs>()({});
@@ -13,15 +13,8 @@ export class MediaRepository {
   createAsset(input: {
     ownerUserId: string;
     provider: 'CLOUDINARY';
-    assetType: 'IMAGE' | 'VIDEO' | 'RAW';
-    resourceType:
-      | 'DISPUTE_EVIDENCE'
-      | 'KYC_DOCUMENT'
-      | 'SHOP_DOCUMENT'
-      | 'PRODUCT_IMAGE'
-      | 'REVIEW_IMAGE'
-      | 'OFFER_DOCUMENT'
-      | 'BATCH_DOCUMENT';
+    assetType: MediaAssetType;
+    resourceType: MediaResourceType;
     publicId: string | null;
     secureUrl: string;
     mimeType: string | null;

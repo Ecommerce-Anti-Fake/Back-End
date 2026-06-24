@@ -121,6 +121,9 @@ enum MediaResourceType {
   REVIEW_IMAGE
   OFFER_DOCUMENT
   BATCH_DOCUMENT
+  USER_AVATAR     
+  SHOP_AVATAR     
+  SHOP_BANNER     
 }
 
 enum KycDocumentSide {

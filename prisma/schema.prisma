@@ -129,6 +129,9 @@ enum MediaResourceType {
   REVIEW_IMAGE
   OFFER_DOCUMENT
   BATCH_DOCUMENT
+  USER_AVATAR     
+  SHOP_AVATAR     
+  SHOP_BANNER     
 }
 
 enum KycDocumentSide {
@@ -748,6 +751,9 @@ model MediaAsset {
   offerDocument             OfferDocument?
   batchDocument             BatchDocument?
   brandAuthorization        BrandAuthorization?
+  userAvatar                User?                      @relation("UserAvatarMedia")
+  shopAvatar                Shop[]                     @relation("ShopAvatar")
+  shopBanner                Shop[]                     @relation("ShopBanner")
 
   @@index([ownerUserId])
   @@index([resourceType])
@@ -1251,7 +1257,11 @@ model Shop {
   businessType               String                 @map("business_type")
   taxCode                    String?                @map("tax_code")
   shopStatus                 String                 @map("shop_status")
+  avatarMediaId              String?                @map("avatar_media_id") @unique
+  bannerMediaId              String?                @map("banner_media_id") @unique
   createdAt                  DateTime               @default(now()) @map("created_at")
+  avatarMedia                MediaAsset?            @relation("ShopAvatar", fields: [avatarMediaId], references: [id])
+  bannerMedia                MediaAsset?            @relation("ShopBanner", fields: [bannerMediaId], references: [id])
   owner                      User                   @relation("ShopOwner", fields: [ownerUserId], references: [id])
   shopType                   ShopType?              @relation(fields: [shopTypeId], references: [id])
   documents                  ShopDocument[]
@@ -1478,6 +1488,8 @@ model User {
   password             String?
   role                 String                @default("user")
   accountStatus        String                @default("active") @map("account_status")
+  avatarMediaId        String?               @map("avatar_media_id") @unique
+  avatarMedia          MediaAsset?           @relation("UserAvatarMedia", fields: [avatarMediaId], references: [id])
   createdAt            DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
   authSessions         AuthSession[]

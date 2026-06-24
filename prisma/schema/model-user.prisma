@@ -6,6 +6,8 @@ model User {
   password             String?
   role                 String                @default("user")
   accountStatus        String                @default("active") @map("account_status")
+  avatarMediaId        String?               @map("avatar_media_id") @unique
+  avatarMedia          MediaAsset?           @relation("UserAvatarMedia", fields: [avatarMediaId], references: [id])
   createdAt            DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
   authSessions         AuthSession[]
