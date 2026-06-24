@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ChatRepository } from '../../infrastructure/persistence/chat.repository';
 import { toChatThreadResponse } from '../chat.mapper';
 
@@ -6,16 +6,21 @@ import { toChatThreadResponse } from '../chat.mapper';
 export class StartChatThreadUseCase {
   constructor(private readonly chatRepository: ChatRepository) {}
 
-  async execute(input: { requesterUserId: string; shopId: string; initialMessage?: string | null }) {
+  async execute(input: { requesterUserId: string; shopId: string }) {
     const shop = await this.chatRepository.findShopForChat(input.shopId);
     if (!shop) {
       throw new NotFoundException('Shop not found');
     }
+
     if (shop.ownerUserId === input.requesterUserId) {
       throw new BadRequestException('Seller cannot start a buyer chat with own shop');
     }
 
-    const existing = await this.chatRepository.findChatThreadByShopAndBuyer(input.shopId, input.requesterUserId);
+    const existing = await this.chatRepository.findChatThreadByShopAndBuyer(
+      input.shopId,
+      input.requesterUserId,
+    );
+
     const thread =
       existing ??
       (await this.chatRepository.createChatThread({
@@ -24,27 +29,6 @@ export class StartChatThreadUseCase {
         sellerUserId: shop.ownerUserId,
       }));
 
-    const body = input.initialMessage?.trim();
-    if (body) {
-      await this.assertParticipant(thread, input.requesterUserId);
-      const updatedThread = await this.chatRepository.createChatMessage({
-        threadId: thread.id,
-        senderUserId: input.requesterUserId,
-        body,
-        messageType: 'TEXT',
-      });
-      if (!updatedThread) {
-        throw new NotFoundException('Chat thread not found');
-      }
-      return toChatThreadResponse(updatedThread);
-    }
-
     return toChatThreadResponse(thread);
-  }
-
-  private async assertParticipant(thread: { buyerUserId: string; sellerUserId: string }, requesterUserId: string) {
-    if (thread.buyerUserId !== requesterUserId && thread.sellerUserId !== requesterUserId) {
-      throw new ForbiddenException('Only chat participants can send messages');
-    }
   }
 }

@@ -137,14 +137,6 @@ export class ChatThreadResponseDto {
   createdAt!: Date;
 }
 
-export class StartChatThreadDto {
-  @ApiPropertyOptional({ example: 'Shop tu van giup minh san pham nay.' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(1000)
-  initialMessage?: string;
-}
-
 export class SendChatMessageDto {
   @ApiProperty({ example: 'Minh can them thong tin xac thuc.' })
   @IsString()

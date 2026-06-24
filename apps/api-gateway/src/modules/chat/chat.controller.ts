@@ -7,7 +7,6 @@ import {
   ChatThreadListItemResponseDto,
   ChatThreadResponseDto,
   SendChatMessageDto,
-  StartChatThreadDto,
 } from '@chat';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
@@ -79,12 +78,10 @@ export class ChatController {
   startChatThread(
     @Param('shopId') shopId: string,
     @CurrentUserId() requesterUserId: string,
-    @Body() dto: StartChatThreadDto,
   ) {
     return this.catalogRpcService.startChatThread({
       shopId,
-      requesterUserId,
-      initialMessage: dto.initialMessage ?? null,
+      requesterUserId
     });
   }
 
