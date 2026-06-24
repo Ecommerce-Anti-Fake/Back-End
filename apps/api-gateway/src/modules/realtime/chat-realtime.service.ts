@@ -9,8 +9,8 @@ import {
 } from '@common';
 import type { AccessTokenPayload } from '@contracts';
 import { Server, Socket } from 'socket.io';
+import { CatalogRpcService } from '../offer/catalog-rpc.service';
 import { LiveReactionsRealtimeService } from './live-reactions-realtime.service';
-import { CatalogRpcService } from './catalog-rpc.service';
 
 type ChatSocketPrincipal = {
   userId: string;

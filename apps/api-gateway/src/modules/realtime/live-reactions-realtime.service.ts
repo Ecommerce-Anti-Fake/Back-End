@@ -10,7 +10,7 @@ import {
 } from '@common';
 import type { AccessTokenPayload } from '@contracts';
 import { Server, Socket } from 'socket.io';
-import { CatalogRpcService } from './catalog-rpc.service';
+import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
 type LiveSocketPrincipal = {
   userId: string;

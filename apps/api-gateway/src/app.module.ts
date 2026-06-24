@@ -22,6 +22,7 @@ import { GatewayOrderShippingModule } from './modules/order-shipping/order-shipp
 import { GatewayPaymentModule } from './modules/payment/payment.module';
 import { GatewayReviewModule } from './modules/review/review.module';
 import { GatewayReportModule } from './modules/report/report.module';
+import { GatewayRealtimeModule } from './modules/realtime/realtime.module';
 import { GatewayShippingModule } from './modules/shipping/shipping.module';
 import { GatewayShopModule } from './modules/shop/shop.module';
 import { GatewayChatModule } from './modules/chat/chat.module';
@@ -61,6 +62,7 @@ import {
     GatewayPaymentModule,
     GatewayReviewModule,
     GatewayReportModule,
+    GatewayRealtimeModule,
     GatewayShippingModule,
     GatewayShopModule,
     GatewaySocialModule,

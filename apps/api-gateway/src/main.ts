@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { configureHttpCors, configureRootSwaggerRedirect } from './bootstrap-http';
-import { ChatRealtimeService } from './modules/offer/chat-realtime.service';
+import { ChatRealtimeService } from './modules/realtime/chat-realtime.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

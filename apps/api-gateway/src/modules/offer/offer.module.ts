@@ -1,20 +1,16 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
-import { RealtimeOperationsModule } from '@common';
 import { CATALOG_SERVICE_CLIENT } from '@contracts';
 import { AuthGuardsModule } from '@security';
 import { GatewayUserModule } from '../user/user.module';
 import { CatalogRpcService } from './catalog-rpc.service';
-import { ChatRealtimeService } from './chat-realtime.service';
-import { LiveReactionsRealtimeService } from './live-reactions-realtime.service';
 import { OfferController } from './offer.controller';
 
 @Module({
   imports: [
     ConfigModule,
     AuthGuardsModule,
-    RealtimeOperationsModule,
     GatewayUserModule,
     ClientsModule.registerAsync([
       {
@@ -38,7 +34,7 @@ import { OfferController } from './offer.controller';
     ]),
   ],
   controllers: [OfferController],
-  providers: [CatalogRpcService, ChatRealtimeService, LiveReactionsRealtimeService],
-  exports: [CatalogRpcService, ChatRealtimeService],
+  providers: [CatalogRpcService],
+  exports: [CatalogRpcService],
 })
 export class GatewayOfferModule {}
