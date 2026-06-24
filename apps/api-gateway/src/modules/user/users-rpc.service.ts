@@ -53,6 +53,10 @@ export class UsersRpcService {
     return this.send(USERS_MESSAGE_PATTERNS.listAddresses, payload);
   }
 
+  getDefaultAddress(payload: CurrentUserProfileMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.getDefaultAddress, payload);
+  }
+
   createAddress(payload: CreateUserAddressMessage) {
     return this.send(USERS_MESSAGE_PATTERNS.createAddress, payload);
   }

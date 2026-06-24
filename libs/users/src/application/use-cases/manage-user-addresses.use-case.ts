@@ -40,6 +40,16 @@ export class ListUserAddressesUseCase {
 }
 
 @Injectable()
+export class GetDefaultUserAddressUseCase {
+  constructor(private readonly usersRepository: UsersRepository) {}
+
+  async execute(userId: string) {
+    const address = await this.usersRepository.findDefaultAddressByUserId(userId);
+    return address ? toUserAddress(address) : null;
+  }
+}
+
+@Injectable()
 export class CreateUserAddressUseCase {
   constructor(private readonly usersRepository: UsersRepository) {}
 

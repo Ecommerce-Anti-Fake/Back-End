@@ -21,6 +21,7 @@ export const USERS_MESSAGE_PATTERNS = {
   getCurrentProfile: 'users.get-current-profile',
   getProfileCompletion: 'users.get-profile-completion',
   listAddresses: 'users.list-addresses',
+  getDefaultAddress: 'users.get-default-address',
   createAddress: 'users.create-address',
   updateAddress: 'users.update-address',
   setDefaultAddress: 'users.set-default-address',

@@ -33,6 +33,7 @@ import {
   DeleteUserUseCase,
   GetAdminKycDetailUseCase,
   GetAdminKycSummaryUseCase,
+  GetDefaultUserAddressUseCase,
   GetCurrentUserKycUseCase,
   GetCurrentUserProfileCompletionUseCase,
   GetCurrentUserProfileUseCase,
@@ -68,6 +69,7 @@ export class UsersRpcController {
     private readonly getCurrentUserProfileUseCase: GetCurrentUserProfileUseCase,
     private readonly getCurrentUserProfileCompletionUseCase: GetCurrentUserProfileCompletionUseCase,
     private readonly listUserAddressesUseCase: ListUserAddressesUseCase,
+    private readonly getDefaultUserAddressUseCase: GetDefaultUserAddressUseCase,
     private readonly createUserAddressUseCase: CreateUserAddressUseCase,
     private readonly updateUserAddressUseCase: UpdateUserAddressUseCase,
     private readonly setDefaultUserAddressUseCase: SetDefaultUserAddressUseCase,
@@ -116,6 +118,15 @@ export class UsersRpcController {
   async listAddresses(@Payload() payload: CurrentUserProfileMessage) {
     try {
       return await this.listUserAddressesUseCase.execute(payload.userId);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(USERS_MESSAGE_PATTERNS.getDefaultAddress)
+  async getDefaultAddress(@Payload() payload: CurrentUserProfileMessage) {
+    try {
+      return await this.getDefaultUserAddressUseCase.execute(payload.userId);
     } catch (error) {
       throwRpcException(error);
     }

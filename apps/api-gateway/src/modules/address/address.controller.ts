@@ -1,11 +1,20 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiExtraModels,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+  getSchemaPath,
+} from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import { CreateUserAddressDto, UpdateUserAddressDto, UserAddressResponseDto } from '@users';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 import { UsersRpcService } from '../user/users-rpc.service';
 
 @ApiTags('Address')
+@ApiExtraModels(UserAddressResponseDto)
 @Controller('user')
 export class AddressController {
   constructor(
@@ -24,6 +33,20 @@ export class AddressController {
   @Get('addresses')
   listAddresses(@CurrentUserId() userId: string) {
     return this.usersRpcService.listAddresses({ userId });
+  }
+
+  @ApiOperation({ summary: 'Lay dia chi giao hang mac dinh cua user hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Dia chi giao hang mac dinh, hoac null neu user chua co dia chi mac dinh.',
+    schema: {
+      oneOf: [{ $ref: getSchemaPath(UserAddressResponseDto) }, { type: 'null' }],
+    },
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('addresses/default')
+  getDefaultAddress(@CurrentUserId() userId: string) {
+    return this.usersRpcService.getDefaultAddress({ userId });
   }
 
   @ApiOperation({ summary: 'Them dia chi giao hang cho user hien tai' })
