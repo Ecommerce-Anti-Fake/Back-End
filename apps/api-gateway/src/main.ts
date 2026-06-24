@@ -72,8 +72,14 @@ async function bootstrap() {
   });
 
   const port = configService.get<number>('PORT') ?? 3001;
-  await app.get(ChatRealtimeService).bind(app.getHttpServer());
-  await app.listen(port, '0.0.0.0');
+
+  await app.init();
+
+  const httpServer = app.getHttpServer();
+
+  await app.get(ChatRealtimeService).bind(httpServer);
+
+  httpServer.listen(port, '0.0.0.0');
 }
 
 bootstrap();
