@@ -64,11 +64,12 @@ export class ChatRealtimeService implements OnModuleDestroy {
     }
 
     const io = new Server(httpServer as never, {
-      cors: {
-        origin: true,
-        credentials: true,
-      },
-    });
+    path: '/api/socket.io',
+    cors: {
+      origin: true,
+      credentials: true,
+    },
+  });
     this.io = io;
 
     await this.attachRedisAdapter(io);
