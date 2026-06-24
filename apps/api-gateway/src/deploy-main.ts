@@ -5,6 +5,7 @@ import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule as ApiGatewayModule } from './app.module';
 import { configureHttpCors, configureRootSwaggerRedirect } from './bootstrap-http';
+import { ChatRealtimeService } from './modules/realtime/chat-realtime.service';
 import { AppModule as AffiliateServiceModule } from '../../affiliate-service/src/app.module';
 import { AppModule as AuthServiceModule } from '../../auth-service/src/app.module';
 import { AppModule as CatalogServiceModule } from '../../catalog-service/src/app.module';
@@ -107,8 +108,16 @@ async function bootstrapGateway() {
   });
 
   const port = configService.get<number>('PORT') ?? 10000;
-  await app.listen(port, '0.0.0.0');
-  console.log(`[api-gateway] listening on 0.0.0.0:${port}`);
+
+  await app.init();
+
+  const httpServer = app.getHttpServer();
+
+  await app.get(ChatRealtimeService).bind(httpServer);
+
+  httpServer.listen(port, '0.0.0.0', () => {
+    console.log(`[api-gateway] listening on 0.0.0.0:${port}`);
+  });
 }
 
 async function bootstrap() {
