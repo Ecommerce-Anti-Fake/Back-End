@@ -1,0 +1,12 @@
+model LiveSessionOffer {
+  id        String              @id @default(uuid())
+  sessionId String              @map("session_id")
+  offerId   String              @map("offer_id")
+  sortOrder Int                 @default(0) @map("sort_order")
+  session   LiveCommerceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  offer     Offer               @relation(fields: [offerId], references: [id])
+
+  @@unique([sessionId, offerId])
+  @@index([offerId])
+  @@map("live_session_offer")
+}

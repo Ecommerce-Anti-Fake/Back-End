@@ -1,0 +1,15 @@
+model UserKycSubmission {
+  id                 String                      @id @default(uuid())
+  userKycId          String                      @map("user_kyc_id")
+  submissionNumber   Int                         @map("submission_number")
+  verificationStatus String                      @default("pending") @map("verification_status")
+  reviewNote         String?                     @map("review_note")
+  reviewedAt         DateTime?                   @map("reviewed_at")
+  submittedAt        DateTime                    @default(now()) @map("submitted_at")
+  userKyc            UserKyc                     @relation(fields: [userKycId], references: [id])
+  documents          UserKycSubmissionDocument[]
+
+  @@unique([userKycId, submissionNumber])
+  @@index([userKycId, submittedAt])
+  @@map("user_kyc_submission")
+}

@@ -1,0 +1,12 @@
+model Report {
+  id             String   @id @default(uuid())
+  reporterUserId String   @map("reporter_user_id")
+  targetType     String   @map("target_type")
+  targetId       String   @map("target_id")
+  reason         String
+  reportStatus   String   @map("report_status")
+  createdAt      DateTime @default(now()) @map("created_at")
+  reporter       User     @relation("ReportReporter", fields: [reporterUserId], references: [id])
+
+  @@map("report")
+}

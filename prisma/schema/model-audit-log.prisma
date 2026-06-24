@@ -1,0 +1,17 @@
+model AuditLog {
+  id          String   @id @default(uuid())
+  targetType  String   @map("target_type")
+  targetId    String   @map("target_id")
+  actorUserId String   @map("actor_user_id")
+  action      String
+  fromStatus  String?  @map("from_status")
+  toStatus    String?  @map("to_status")
+  note        String?
+  metadata    Json?
+  createdAt   DateTime @default(now()) @map("created_at")
+  actor       User     @relation("AuditLogActor", fields: [actorUserId], references: [id])
+
+  @@index([targetType, targetId, createdAt])
+  @@index([actorUserId])
+  @@map("audit_log")
+}

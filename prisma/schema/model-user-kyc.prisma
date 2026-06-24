@@ -1,0 +1,17 @@
+model UserKyc {
+  id                 String              @id @default(uuid())
+  userId             String              @unique @map("user_id")
+  fullName           String              @map("full_name")
+  dateOfBirth        DateTime            @map("date_of_birth")
+  kycLevel           String              @map("kyc_level")
+  idType             String              @map("id_type")
+  idNumberHash       String              @map("id_number_hash")
+  verificationStatus String              @map("verification_status")
+  verifiedAt         DateTime?           @map("verified_at")
+  reviewNote         String?             @map("review_note")
+  user               User                @relation(fields: [userId], references: [id])
+  documents          UserKycDocument[]
+  submissions        UserKycSubmission[]
+
+  @@map("user_kyc")
+}

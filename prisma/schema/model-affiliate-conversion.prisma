@@ -1,0 +1,32 @@
+model AffiliateConversion {
+  id                String                      @id @default(uuid())
+  programId         String                      @map("program_id")
+  orderId           String?                     @unique @map("order_id")
+  offerId           String?                     @map("offer_id")
+  affiliateCodeId   String?                     @map("affiliate_code_id")
+  tier1AccountId    String                      @map("tier1_account_id")
+  tier2AccountId    String?                     @map("tier2_account_id")
+  customerUserId    String?                     @map("customer_user_id")
+  conversionStatus  AffiliateConversionStatus   @default(PENDING) @map("conversion_status")
+  orderAmount       Decimal?                    @map("order_amount") @db.Decimal(18, 2)
+  commissionBase    Decimal?                    @map("commission_base") @db.Decimal(18, 2)
+  metadata          Json?
+  recordedAt        DateTime                    @default(now()) @map("recorded_at")
+  approvedAt        DateTime?                   @map("approved_at")
+  program           AffiliateProgram            @relation(fields: [programId], references: [id])
+  order             Order?                      @relation(fields: [orderId], references: [id])
+  offer             Offer?                      @relation(fields: [offerId], references: [id])
+  affiliateCode     AffiliateCode?              @relation(fields: [affiliateCodeId], references: [id])
+  tier1Account      AffiliateAccount            @relation("AffiliateConversionTier1", fields: [tier1AccountId], references: [id])
+  tier2Account      AffiliateAccount?           @relation("AffiliateConversionTier2", fields: [tier2AccountId], references: [id])
+  customerUser      User?                       @relation("AffiliateConversionCustomer", fields: [customerUserId], references: [id])
+  commissionEntries AffiliateCommissionLedger[]
+
+  @@index([programId])
+  @@index([offerId])
+  @@index([affiliateCodeId])
+  @@index([tier1AccountId])
+  @@index([tier2AccountId])
+  @@index([customerUserId])
+  @@map("affiliate_conversion")
+}

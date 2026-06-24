@@ -1,0 +1,18 @@
+model ShopDocument {
+  id            String                   @id @default(uuid())
+  shopId        String                   @map("shop_id")
+  requirementId String?                  @map("requirement_id")
+  docType       String                   @map("doc_type")
+  reviewStatus  String                   @map("review_status")
+  reviewNote    String?                  @map("review_note")
+  reviewedAt    DateTime?                @map("reviewed_at")
+  uploadedAt    DateTime                 @default(now()) @map("uploaded_at")
+  shop          Shop                     @relation(fields: [shopId], references: [id])
+  requirement   VerificationRequirement? @relation(fields: [requirementId], references: [id])
+  files         ShopDocumentFile[]
+
+  @@index([shopId])
+  @@index([requirementId])
+  @@index([docType])
+  @@map("shop_document")
+}

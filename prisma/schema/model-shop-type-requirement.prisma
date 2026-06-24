@@ -1,0 +1,15 @@
+model ShopTypeRequirement {
+  id            String                  @id @default(uuid())
+  shopTypeId    String                  @map("shop_type_id")
+  requirementId String                  @map("requirement_id")
+  required      Boolean                 @default(true)
+  sortOrder     Int                     @default(0) @map("sort_order")
+  isActive      Boolean                 @default(true) @map("is_active")
+  shopType      ShopType                @relation(fields: [shopTypeId], references: [id], onDelete: Cascade)
+  requirement   VerificationRequirement @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@unique([shopTypeId, requirementId])
+  @@index([requirementId])
+  @@index([isActive, sortOrder])
+  @@map("shop_type_requirement")
+}

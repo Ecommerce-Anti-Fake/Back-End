@@ -1,0 +1,17 @@
+model AffiliateCode {
+  id          String                @id @default(uuid())
+  programId   String                @map("program_id")
+  accountId   String                @map("account_id")
+  code        String                @unique
+  landingUrl  String?               @map("landing_url")
+  isDefault   Boolean               @default(false) @map("is_default")
+  expiresAt   DateTime?             @map("expires_at")
+  createdAt   DateTime              @default(now()) @map("created_at")
+  program     AffiliateProgram      @relation(fields: [programId], references: [id])
+  account     AffiliateAccount      @relation(fields: [accountId], references: [id])
+  conversions AffiliateConversion[]
+
+  @@index([programId])
+  @@index([accountId])
+  @@map("affiliate_code")
+}

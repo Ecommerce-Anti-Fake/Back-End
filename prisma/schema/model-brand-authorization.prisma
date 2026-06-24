@@ -1,0 +1,19 @@
+model BrandAuthorization {
+  id                 String      @id @default(uuid())
+  shopId             String      @map("shop_id")
+  brandId            String      @map("brand_id")
+  mediaAssetId       String?     @unique @map("media_asset_id")
+  authorizationType  String      @map("authorization_type")
+  fileUrl            String?     @map("file_url")
+  verificationStatus String      @map("verification_status")
+  reviewNote         String?     @map("review_note")
+  verifiedAt         DateTime?   @map("verified_at")
+  createdAt          DateTime    @default(now()) @map("created_at")
+  shop               Shop        @relation(fields: [shopId], references: [id])
+  brand              Brand       @relation(fields: [brandId], references: [id])
+  mediaAsset         MediaAsset? @relation(fields: [mediaAssetId], references: [id])
+
+  @@unique([shopId, brandId])
+  @@index([mediaAssetId])
+  @@map("brand_authorization")
+}

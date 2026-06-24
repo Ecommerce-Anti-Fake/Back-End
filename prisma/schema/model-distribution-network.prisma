@@ -1,0 +1,19 @@
+model DistributionNetwork {
+  id                 String                      @id @default(uuid())
+  brandId            String                      @map("brand_id")
+  manufacturerShopId String                      @map("manufacturer_shop_id")
+  networkName        String                      @map("network_name")
+  networkStatus      String                      @default("active") @map("network_status")
+  maxAgentDepth      Int                         @default(3) @map("max_agent_depth")
+  rulesJson          Json?                       @map("rules_json")
+  createdAt          DateTime                    @default(now()) @map("created_at")
+  updatedAt          DateTime                    @updatedAt @map("updated_at")
+  brand              Brand                       @relation(fields: [brandId], references: [id])
+  manufacturerShop   Shop                        @relation("DistributionManufacturerShop", fields: [manufacturerShopId], references: [id])
+  nodes              DistributionNode[]
+  shipments          DistributionShipment[]
+  pricingPolicies    DistributionPricingPolicy[]
+
+  @@unique([brandId, manufacturerShopId])
+  @@map("distribution_network")
+}

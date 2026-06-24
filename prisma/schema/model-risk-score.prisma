@@ -1,0 +1,11 @@
+model RiskScore {
+  id            String   @id @default(uuid())
+  targetType    String   @map("target_type")
+  targetId      String   @map("target_id")
+  score         Decimal  @db.Decimal(5, 2)
+  riskLevel     String   @map("risk_level")
+  factorSummary String   @map("factor_summary")
+  calculatedAt  DateTime @map("calculated_at")
+
+  @@map("risk_score")
+}

@@ -1,0 +1,15 @@
+model VerificationLabel {
+  id          String            @id @default(uuid())
+  brandId     String            @map("brand_id")
+  labelType   String            @map("label_type")
+  codeHash    String            @map("code_hash")
+  issuerType  String            @map("issuer_type")
+  labelStatus String            @map("label_status")
+  scopeType   String            @map("scope_type")
+  scopeId     String            @map("scope_id")
+  issuedAt    DateTime          @map("issued_at")
+  brand       Brand             @relation(fields: [brandId], references: [id])
+  provenance  ProvenanceEvent[]
+
+  @@map("verification_label")
+}

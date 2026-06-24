@@ -1,0 +1,12 @@
+model OfferBatchLink {
+  id                String      @id @default(uuid())
+  offerId           String      @map("offer_id")
+  batchId           String      @map("batch_id")
+  allocatedQuantity Int         @map("allocated_quantity")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  offer             Offer       @relation(fields: [offerId], references: [id])
+  batch             SupplyBatch @relation(fields: [batchId], references: [id])
+
+  @@unique([offerId, batchId])
+  @@map("offer_batch_link")
+}

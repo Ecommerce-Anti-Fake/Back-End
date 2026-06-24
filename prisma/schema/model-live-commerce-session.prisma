@@ -1,0 +1,26 @@
+model LiveCommerceSession {
+  id          String            @id @default(uuid())
+  shopId      String            @map("shop_id")
+  title       String
+  description String?
+  coverUrl    String?           @map("cover_url")
+  startAt     DateTime          @map("start_at")
+  status      LiveSessionStatus @default(SCHEDULED)
+  playbackUrl String?           @map("playback_url")
+  streamProvider          String? @map("stream_provider")
+  streamProviderSessionId String? @map("stream_provider_session_id")
+  streamIngestUrl         String? @map("stream_ingest_url")
+  streamLatencyTargetMs   Int?    @map("stream_latency_target_ms")
+  recordingUrl            String? @map("recording_url")
+  recordingRetentionDays  Int?    @map("recording_retention_days")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  shop        Shop              @relation(fields: [shopId], references: [id])
+  offers      LiveSessionOffer[]
+  reminders   LiveSessionReminder[]
+  comments    LiveSessionComment[]
+
+  @@index([shopId, startAt])
+  @@index([status, startAt])
+  @@map("live_commerce_session")
+}

@@ -1,0 +1,14 @@
+model ShippingCarrier {
+  id                   String                @id @default(uuid())
+  code                 String                @unique
+  name                 String
+  description          String?
+  isActive             Boolean               @default(true) @map("is_active")
+  sortOrder            Int                   @default(0) @map("sort_order")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
+  offerShippingMethods OfferShippingMethod[]
+
+  @@index([isActive, sortOrder])
+  @@map("shipping_carrier")
+}

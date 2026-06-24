@@ -1,0 +1,12 @@
+model PaymentIntent {
+  id            String   @id @default(uuid())
+  orderId       String   @unique @map("order_id")
+  paymentMethod String   @map("payment_method")
+  paymentStatus String   @map("payment_status")
+  amount        Decimal  @db.Decimal(18, 2)
+  providerRef   String?  @map("provider_ref")
+  createdAt     DateTime @default(now()) @map("created_at")
+  order         Order    @relation(fields: [orderId], references: [id])
+
+  @@map("payment_intent")
+}

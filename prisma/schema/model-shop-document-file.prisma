@@ -1,0 +1,13 @@
+model ShopDocumentFile {
+  id             String       @id @default(uuid())
+  shopDocumentId String       @map("shop_document_id")
+  mediaAssetId   String       @unique @map("media_asset_id")
+  fileUrl        String       @map("file_url")
+  sortOrder      Int          @default(0) @map("sort_order")
+  uploadedAt     DateTime     @default(now()) @map("uploaded_at")
+  shopDocument   ShopDocument @relation(fields: [shopDocumentId], references: [id], onDelete: Cascade)
+  mediaAsset     MediaAsset   @relation(fields: [mediaAssetId], references: [id])
+
+  @@index([shopDocumentId])
+  @@map("shop_document_file")
+}

@@ -1,0 +1,13 @@
+model SocialReaction {
+  id           String             @id @default(uuid())
+  postId       String             @map("post_id")
+  userId       String             @map("user_id")
+  reactionType SocialReactionType @default(LIKE) @map("reaction_type")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  post         SocialPost         @relation(fields: [postId], references: [id])
+  user         User               @relation(fields: [userId], references: [id])
+
+  @@unique([postId, userId, reactionType])
+  @@index([userId, createdAt])
+  @@map("social_reaction")
+}

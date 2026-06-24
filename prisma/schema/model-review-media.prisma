@@ -1,0 +1,15 @@
+model ReviewMedia {
+  id           String      @id @default(uuid())
+  reviewId     String      @map("review_id")
+  mediaAssetId String?     @unique @map("media_asset_id")
+  fileUrl      String      @map("file_url")
+  mimeType     String?     @map("mime_type")
+  publicId     String?     @map("public_id")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  review       Review      @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset? @relation(fields: [mediaAssetId], references: [id])
+
+  @@index([reviewId])
+  @@index([mediaAssetId])
+  @@map("review_media")
+}

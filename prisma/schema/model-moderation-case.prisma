@@ -1,0 +1,14 @@
+model ModerationCase {
+  id                  String    @id @default(uuid())
+  targetType          String    @map("target_type")
+  targetId            String    @map("target_id")
+  reason              String
+  caseStatus          String    @map("case_status")
+  internalNote        String?   @map("internal_note")
+  assignedAdminUserId String?   @map("assigned_admin_user_id")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  resolvedAt          DateTime? @map("resolved_at")
+  assignedAdmin       User?     @relation("ModerationCaseAssignee", fields: [assignedAdminUserId], references: [id])
+
+  @@map("moderation_case")
+}

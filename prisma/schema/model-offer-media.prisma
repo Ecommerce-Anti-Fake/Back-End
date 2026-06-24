@@ -1,0 +1,14 @@
+model OfferMedia {
+  id           String      @id @default(uuid())
+  offerId      String      @map("offer_id")
+  mediaAssetId String?     @unique @map("media_asset_id")
+  mediaType    String      @map("media_type")
+  fileUrl      String      @map("file_url")
+  phash        String?
+  createdAt    DateTime    @default(now()) @map("created_at")
+  offer        Offer       @relation(fields: [offerId], references: [id])
+  mediaAsset   MediaAsset? @relation(fields: [mediaAssetId], references: [id])
+
+  @@index([mediaAssetId])
+  @@map("offer_media")
+}

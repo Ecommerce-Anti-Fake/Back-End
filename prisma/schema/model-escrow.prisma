@@ -1,0 +1,11 @@
+model Escrow {
+  id           String    @id @default(uuid())
+  orderId      String    @unique @map("order_id")
+  escrowStatus String    @map("escrow_status")
+  heldAmount   Decimal   @map("held_amount") @db.Decimal(18, 2)
+  holdAt       DateTime? @map("hold_at")
+  releaseAt    DateTime? @map("release_at")
+  order        Order     @relation(fields: [orderId], references: [id])
+
+  @@map("escrow")
+}

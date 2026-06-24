@@ -1,0 +1,25 @@
+model AffiliateAccount {
+  id                String                      @id @default(uuid())
+  programId         String                      @map("program_id")
+  userId            String                      @map("user_id")
+  parentAccountId   String?                     @map("parent_account_id")
+  accountStatus     AffiliateAccountStatus      @default(PENDING) @map("account_status")
+  referralPath      String?                     @map("referral_path")
+  joinedAt          DateTime                    @default(now()) @map("joined_at")
+  approvedAt        DateTime?                   @map("approved_at")
+  createdAt         DateTime                    @default(now()) @map("created_at")
+  updatedAt         DateTime                    @updatedAt @map("updated_at")
+  program           AffiliateProgram            @relation(fields: [programId], references: [id])
+  user              User                        @relation(fields: [userId], references: [id])
+  parentAccount     AffiliateAccount?           @relation("AffiliateAccountHierarchy", fields: [parentAccountId], references: [id])
+  childAccounts     AffiliateAccount[]          @relation("AffiliateAccountHierarchy")
+  codes             AffiliateCode[]
+  tier1Conversions  AffiliateConversion[]       @relation("AffiliateConversionTier1")
+  tier2Conversions  AffiliateConversion[]       @relation("AffiliateConversionTier2")
+  commissionEntries AffiliateCommissionLedger[]
+  payouts           AffiliatePayout[]
+
+  @@unique([programId, userId])
+  @@index([parentAccountId])
+  @@map("affiliate_account")
+}

@@ -1,0 +1,46 @@
+model Offer {
+  id                   String                @id @default(uuid())
+  sellerUserId         String                @map("seller_user_id")
+  shopId               String                @map("shop_id")
+  categoryId           String                @map("category_id")
+  brandId              String                @map("brand_id")
+  distributionNodeId   String?               @map("distribution_node_id")
+  modelName            String                @map("model_name")
+  gtin                 String?
+  verificationPolicy   String                @map("verification_policy")
+  title                String
+  description          String
+  price                Decimal               @db.Decimal(18, 2)
+  currency             String
+  salesMode            OfferSalesMode        @default(RETAIL) @map("sales_mode")
+  minWholesaleQty      Int?                  @map("min_wholesale_qty")
+  itemCondition        String                @map("item_condition")
+  availableQuantity    Int                   @map("available_quantity")
+  verificationLevel    String                @map("verification_level")
+  offerStatus          String                @map("offer_status")
+  parcelWeightGrams    Int?                  @map("parcel_weight_grams")
+  parcelLengthCm       Int?                  @map("parcel_length_cm")
+  parcelWidthCm        Int?                  @map("parcel_width_cm")
+  parcelHeightCm       Int?                  @map("parcel_height_cm")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  seller               User                  @relation("OfferSeller", fields: [sellerUserId], references: [id])
+  shop                 Shop                  @relation(fields: [shopId], references: [id])
+  category             Category              @relation(fields: [categoryId], references: [id])
+  brand                Brand                 @relation(fields: [brandId], references: [id])
+  distributionNode     DistributionNode?     @relation(fields: [distributionNodeId], references: [id])
+  media                OfferMedia[]
+  documents            OfferDocument[]
+  batchLinks           OfferBatchLink[]
+  orderItems           OrderItem[]
+  cartItems            CartItem[]
+  affiliatePrograms    AffiliateProgram[]
+  affiliateConversions AffiliateConversion[]
+  shippingMethods      OfferShippingMethod[]
+  favoritedBy          UserFavoriteOffer[]
+  socialPosts          SocialPost[]
+  liveSessionOffers    LiveSessionOffer[]
+
+  @@index([brandId])
+  @@index([distributionNodeId])
+  @@map("offer")
+}

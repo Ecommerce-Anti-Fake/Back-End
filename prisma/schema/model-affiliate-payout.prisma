@@ -1,0 +1,21 @@
+model AffiliatePayout {
+  id                String                      @id @default(uuid())
+  programId         String                      @map("program_id")
+  accountId         String                      @map("account_id")
+  periodStart       DateTime                    @map("period_start")
+  periodEnd         DateTime                    @map("period_end")
+  totalAmount       Decimal                     @map("total_amount") @db.Decimal(18, 2)
+  currency          String                      @default("VND")
+  payoutStatus      PayoutStatus                @default(PENDING) @map("payout_status")
+  externalRef       String?                     @map("external_ref")
+  paidAt            DateTime?                   @map("paid_at")
+  createdAt         DateTime                    @default(now()) @map("created_at")
+  updatedAt         DateTime                    @updatedAt @map("updated_at")
+  program           AffiliateProgram            @relation(fields: [programId], references: [id])
+  account           AffiliateAccount            @relation(fields: [accountId], references: [id])
+  commissionEntries AffiliateCommissionLedger[]
+
+  @@index([programId])
+  @@index([accountId])
+  @@map("affiliate_payout")
+}

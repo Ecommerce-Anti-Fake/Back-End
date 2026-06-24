@@ -1,0 +1,18 @@
+model NotificationDeliveryAttempt {
+  id             String       @id @default(uuid())
+  userId         String       @map("user_id")
+  notificationId String?      @map("notification_id")
+  eventName      String       @map("event_name")
+  provider       String
+  status         String
+  errorCode      String?      @map("error_code")
+  errorMessage   String?      @map("error_message")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notification   Notification? @relation(fields: [notificationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([notificationId])
+  @@index([provider, status, createdAt])
+  @@map("notification_delivery_attempt")
+}

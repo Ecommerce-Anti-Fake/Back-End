@@ -1,0 +1,16 @@
+model ProvenanceEvent {
+  id          String            @id @default(uuid())
+  labelId     String            @map("label_id")
+  eventType   String            @map("event_type")
+  actorUserId String            @map("actor_user_id")
+  actorRole   String            @map("actor_role")
+  channel     String
+  contextType String            @map("context_type")
+  contextId   String            @map("context_id")
+  payloadHash String            @map("payload_hash")
+  occurredAt  DateTime          @map("occurred_at")
+  label       VerificationLabel @relation(fields: [labelId], references: [id])
+  actor       User              @relation("ProvenanceEventActor", fields: [actorUserId], references: [id])
+
+  @@map("provenance_event")
+}

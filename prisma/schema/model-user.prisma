@@ -1,0 +1,46 @@
+model User {
+  id                   String                @id @default(uuid())
+  phone                String?               @unique
+  email                String?               @unique
+  displayName          String?               @map("display_name")
+  password             String?
+  role                 String                @default("user")
+  accountStatus        String                @default("active") @map("account_status")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
+  authSessions         AuthSession[]
+  passwordResetTokens  PasswordResetToken[]
+  kyc                  UserKyc?
+  ownedShops           Shop[]                @relation("ShopOwner")
+  offers               Offer[]               @relation("OfferSeller")
+  carts                Cart[]
+  orders               Order[]               @relation("OrderBuyer")
+  disputesOpened       Dispute[]             @relation("DisputeOpenedBy")
+  disputeEvidence      DisputeEvidence[]     @relation("DisputeEvidenceUploadedBy")
+  mediaAssets          MediaAsset[]          @relation("MediaAssetOwner")
+  auditLogs            AuditLog[]            @relation("AuditLogActor")
+  reviewsGiven         Review[]              @relation("ReviewFromUser")
+  reviewsReceived      Review[]              @relation("ReviewToUser")
+  chatThreadsAsBuyer   ChatThread[]          @relation("ChatThreadBuyer")
+  chatThreadsAsSeller  ChatThread[]          @relation("ChatThreadSeller")
+  chatMessages         ChatMessage[]         @relation("ChatMessageSender")
+  reports              Report[]              @relation("ReportReporter")
+  moderationCases      ModerationCase[]      @relation("ModerationCaseAssignee")
+  provenanceEvents     ProvenanceEvent[]     @relation("ProvenanceEventActor")
+  affiliateAccounts    AffiliateAccount[]
+  affiliateConversions AffiliateConversion[] @relation("AffiliateConversionCustomer")
+  addresses            UserAddress[]
+  notifications        Notification[]
+  notificationFcmTokens NotificationFcmToken[]
+  notificationDeliveryAttempts NotificationDeliveryAttempt[]
+  favoriteOffers       UserFavoriteOffer[]
+  socialPosts          SocialPost[]
+  socialComments       SocialComment[]
+  socialReactions      SocialReaction[]
+  socialShares         SocialShare[]
+  liveSessionReminders LiveSessionReminder[]
+  liveSessionComments  LiveSessionComment[] @relation("LiveCommentAuthor")
+  hiddenLiveSessionComments LiveSessionComment[] @relation("LiveCommentHiddenBy")
+
+  @@map("user")
+}

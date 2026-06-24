@@ -1,0 +1,25 @@
+model SocialPost {
+  id             String               @id @default(uuid())
+  authorUserId   String               @map("author_user_id")
+  authorShopId   String?              @map("author_shop_id")
+  offerId        String?              @map("offer_id")
+  postType       SocialPostType       @map("post_type")
+  body           String
+  visibility     SocialPostVisibility @default(PUBLIC)
+  hiddenAt       DateTime?            @map("hidden_at")
+  hiddenByUserId String?              @map("hidden_by_user_id")
+  createdAt      DateTime             @default(now()) @map("created_at")
+  updatedAt      DateTime             @updatedAt @map("updated_at")
+  author         User                 @relation(fields: [authorUserId], references: [id])
+  authorShop     Shop?                @relation(fields: [authorShopId], references: [id])
+  offer          Offer?               @relation(fields: [offerId], references: [id])
+  comments       SocialComment[]
+  reactions      SocialReaction[]
+  shares         SocialShare[]
+
+  @@index([authorUserId, createdAt])
+  @@index([authorShopId, createdAt])
+  @@index([offerId])
+  @@index([visibility, createdAt])
+  @@map("social_post")
+}

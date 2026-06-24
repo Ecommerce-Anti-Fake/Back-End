@@ -1,0 +1,17 @@
+model ShopBusinessCategory {
+  id                 String                 @id @default(uuid())
+  shopId             String                 @map("shop_id")
+  categoryId         String                 @map("category_id")
+  registrationStatus String                 @default("pending") @map("registration_status")
+  approvedAt         DateTime?              @map("approved_at")
+  reviewNote         String?                @map("review_note")
+  createdAt          DateTime               @default(now()) @map("created_at")
+  shop               Shop                   @relation(fields: [shopId], references: [id])
+  category           Category               @relation(fields: [categoryId], references: [id])
+  documents          ShopCategoryDocument[]
+
+  @@unique([shopId, categoryId])
+  @@index([shopId])
+  @@index([categoryId])
+  @@map("shop_business_category")
+}

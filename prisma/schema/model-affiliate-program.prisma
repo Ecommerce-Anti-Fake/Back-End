@@ -1,0 +1,31 @@
+model AffiliateProgram {
+  id                    String                 @id @default(uuid())
+  ownerShopId           String?                @map("owner_shop_id")
+  brandId               String?                @map("brand_id")
+  offerId               String?                @map("offer_id")
+  scopeType             AffiliateScopeType     @map("scope_type")
+  name                  String
+  slug                  String                 @unique
+  programStatus         AffiliateProgramStatus @default(DRAFT) @map("program_status")
+  attributionWindowDays Int                    @default(30) @map("attribution_window_days")
+  commissionModel       String                 @default("revenue_share") @map("commission_model")
+  tier1Rate             Decimal                @map("tier1_rate") @db.Decimal(5, 2)
+  tier2Rate             Decimal                @map("tier2_rate") @db.Decimal(5, 2)
+  rulesJson             Json?                  @map("rules_json")
+  startedAt             DateTime?              @map("started_at")
+  endedAt               DateTime?              @map("ended_at")
+  createdAt             DateTime               @default(now()) @map("created_at")
+  updatedAt             DateTime               @updatedAt @map("updated_at")
+  ownerShop             Shop?                  @relation(fields: [ownerShopId], references: [id])
+  brand                 Brand?                 @relation(fields: [brandId], references: [id])
+  offer                 Offer?                 @relation(fields: [offerId], references: [id])
+  accounts              AffiliateAccount[]
+  codes                 AffiliateCode[]
+  conversions           AffiliateConversion[]
+  payouts               AffiliatePayout[]
+
+  @@index([ownerShopId])
+  @@index([brandId])
+  @@index([offerId])
+  @@map("affiliate_program")
+}

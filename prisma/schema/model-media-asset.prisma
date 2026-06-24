@@ -1,0 +1,27 @@
+model MediaAsset {
+  id                        String                     @id @default(uuid())
+  ownerUserId               String                     @map("owner_user_id")
+  provider                  MediaProvider
+  assetType                 MediaAssetType             @map("asset_type")
+  resourceType              MediaResourceType          @map("resource_type")
+  publicId                  String?                    @map("public_id")
+  secureUrl                 String                     @map("secure_url")
+  mimeType                  String?                    @map("mime_type")
+  folder                    String?                    @map("folder")
+  uploadedAt                DateTime                   @default(now()) @map("uploaded_at")
+  owner                     User                       @relation("MediaAssetOwner", fields: [ownerUserId], references: [id])
+  disputeEvidence           DisputeEvidence[]
+  userKycDocument           UserKycDocument?
+  shopDocumentFiles         ShopDocumentFile[]
+  shopCategoryDocument      ShopCategoryDocument?
+  userKycSubmissionDocument UserKycSubmissionDocument?
+  offerMedia                OfferMedia?
+  reviewMedia               ReviewMedia[]
+  offerDocument             OfferDocument?
+  batchDocument             BatchDocument?
+  brandAuthorization        BrandAuthorization?
+
+  @@index([ownerUserId])
+  @@index([resourceType])
+  @@map("media_asset")
+}

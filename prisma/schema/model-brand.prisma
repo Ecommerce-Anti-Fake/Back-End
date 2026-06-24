@@ -1,0 +1,15 @@
+model Brand {
+  id                   String                @id @default(uuid())
+  name                 String
+  registryStatus       String                @map("registry_status")
+  createdAt            DateTime              @default(now()) @map("created_at")
+  offers               Offer[]
+  supplyBatches        SupplyBatch[]
+  shipmentItems        DistributionShipmentItem[]
+  authorizations       BrandAuthorization[]
+  verificationLabels   VerificationLabel[]
+  distributionNetworks DistributionNetwork[]
+  affiliatePrograms    AffiliateProgram[]
+
+  @@map("brand")
+}

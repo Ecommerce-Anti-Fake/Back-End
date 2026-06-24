@@ -1,0 +1,22 @@
+model AffiliateCommissionLedger {
+  id                   String                    @id @default(uuid())
+  conversionId         String                    @map("conversion_id")
+  beneficiaryAccountId String?                   @map("beneficiary_account_id")
+  beneficiaryType      CommissionBeneficiaryType @map("beneficiary_type")
+  tierLevel            Int?                      @map("tier_level")
+  amount               Decimal                   @db.Decimal(18, 2)
+  currency             String                    @default("VND")
+  commissionStatus     AffiliateCommissionStatus @default(PENDING) @map("commission_status")
+  lockedAt             DateTime?                 @map("locked_at")
+  paidAt               DateTime?                 @map("paid_at")
+  payoutId             String?                   @map("payout_id")
+  createdAt            DateTime                  @default(now()) @map("created_at")
+  conversion           AffiliateConversion       @relation(fields: [conversionId], references: [id])
+  beneficiaryAccount   AffiliateAccount?         @relation(fields: [beneficiaryAccountId], references: [id])
+  payout               AffiliatePayout?          @relation(fields: [payoutId], references: [id])
+
+  @@index([conversionId])
+  @@index([beneficiaryAccountId])
+  @@index([payoutId])
+  @@map("affiliate_commission_ledger")
+}

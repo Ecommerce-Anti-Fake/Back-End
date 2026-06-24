@@ -1,0 +1,14 @@
+model Dispute {
+  id             String            @id @default(uuid())
+  orderId        String            @map("order_id")
+  openedByUserId String            @map("opened_by_user_id")
+  reason         String
+  disputeStatus  String            @map("dispute_status")
+  openedAt       DateTime          @default(now()) @map("opened_at")
+  resolvedAt     DateTime?         @map("resolved_at")
+  order          Order             @relation(fields: [orderId], references: [id])
+  openedBy       User              @relation("DisputeOpenedBy", fields: [openedByUserId], references: [id])
+  evidence       DisputeEvidence[]
+
+  @@map("dispute")
+}

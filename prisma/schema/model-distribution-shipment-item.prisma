@@ -1,0 +1,22 @@
+model DistributionShipmentItem {
+  id                 String               @id @default(uuid())
+  shipmentId         String               @map("shipment_id")
+  batchId            String               @map("batch_id")
+  brandId            String               @map("brand_id")
+  categoryId         String               @map("category_id")
+  modelName          String               @map("model_name")
+  gtin               String?
+  verificationPolicy String               @map("verification_policy")
+  quantity           Int
+  unitCost           Decimal?             @map("unit_cost") @db.Decimal(18, 2)
+  createdAt          DateTime             @default(now()) @map("created_at")
+  shipment           DistributionShipment @relation(fields: [shipmentId], references: [id])
+  batch              SupplyBatch          @relation(fields: [batchId], references: [id])
+  brand              Brand                @relation(fields: [brandId], references: [id])
+  category           Category             @relation(fields: [categoryId], references: [id])
+
+  @@index([batchId])
+  @@index([brandId])
+  @@index([categoryId])
+  @@map("distribution_shipment_item")
+}

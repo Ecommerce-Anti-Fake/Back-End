@@ -1,0 +1,18 @@
+model OrderItem {
+  id                        String                     @id @default(uuid())
+  orderId                   String                     @map("order_id")
+  offerId                   String                     @map("offer_id")
+  offerTitleSnapshot        String                     @map("offer_title_snapshot")
+  unitPrice                 Decimal                    @map("unit_price") @db.Decimal(18, 2)
+  quantity                  Int
+  verificationLevelSnapshot String                     @map("verification_level_snapshot")
+  order                     Order                      @relation(fields: [orderId], references: [id])
+  offer                     Offer                      @relation(fields: [offerId], references: [id])
+  batchAllocations          OrderItemBatchAllocation[]
+  reviews                   Review[]
+  sourceSupplyBatches       SupplyBatch[]                @relation("SupplyBatchSourceOrderItem")
+
+  @@index([orderId])
+  @@index([offerId])
+  @@map("order_item")
+}

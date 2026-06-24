@@ -1,0 +1,21 @@
+model LiveSessionComment {
+  id              String               @id @default(uuid())
+  sessionId       String               @map("session_id")
+  authorUserId    String               @map("author_user_id")
+  body            String
+  visibility      SocialPostVisibility @default(PUBLIC)
+  clientMessageId String?              @map("client_message_id")
+  hiddenAt        DateTime?            @map("hidden_at")
+  hiddenByUserId  String?              @map("hidden_by_user_id")
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+  session         LiveCommerceSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  author          User                 @relation("LiveCommentAuthor", fields: [authorUserId], references: [id])
+  hiddenBy        User?                @relation("LiveCommentHiddenBy", fields: [hiddenByUserId], references: [id])
+
+  @@unique([sessionId, authorUserId, clientMessageId])
+  @@index([sessionId, createdAt])
+  @@index([sessionId, visibility, createdAt])
+  @@index([authorUserId, createdAt])
+  @@map("live_session_comment")
+}

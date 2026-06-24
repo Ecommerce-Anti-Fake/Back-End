@@ -1,0 +1,29 @@
+model Shop {
+  id                         String                 @id @default(uuid())
+  ownerUserId                String                 @map("owner_user_id")
+  shopTypeId                 String?                @map("shop_type_id")
+  shopName                   String                 @map("shop_name")
+  registrationType           ShopRegistrationType   @map("registration_type")
+  businessType               String                 @map("business_type")
+  taxCode                    String?                @map("tax_code")
+  shopStatus                 String                 @map("shop_status")
+  createdAt                  DateTime               @default(now()) @map("created_at")
+  owner                      User                   @relation("ShopOwner", fields: [ownerUserId], references: [id])
+  shopType                   ShopType?              @relation(fields: [shopTypeId], references: [id])
+  documents                  ShopDocument[]
+  registeredCategories       ShopBusinessCategory[]
+  brandAuthorizations        BrandAuthorization[]
+  offers                     Offer[]
+  supplyBatches              SupplyBatch[]
+  orders                     Order[]
+  wholesaleOrders            Order[]                @relation("OrderBuyerShop")
+  distributionNetworksAsRoot DistributionNetwork[]  @relation("DistributionManufacturerShop")
+  distributionNodes          DistributionNode[]
+  affiliatePrograms          AffiliateProgram[]
+  chatThreads                ChatThread[]
+  socialPosts                SocialPost[]
+  liveSessions               LiveCommerceSession[]
+
+  @@index([shopTypeId])
+  @@map("shop")
+}

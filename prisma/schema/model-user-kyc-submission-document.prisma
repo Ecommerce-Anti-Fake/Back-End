@@ -1,0 +1,13 @@
+model UserKycSubmissionDocument {
+  id           String            @id @default(uuid())
+  submissionId String            @map("submission_id")
+  mediaAssetId String            @unique @map("media_asset_id")
+  side         KycDocumentSide
+  uploadedAt   DateTime          @default(now()) @map("uploaded_at")
+  submission   UserKycSubmission @relation(fields: [submissionId], references: [id])
+  mediaAsset   MediaAsset        @relation(fields: [mediaAssetId], references: [id])
+
+  @@unique([submissionId, side])
+  @@index([submissionId])
+  @@map("user_kyc_submission_document")
+}

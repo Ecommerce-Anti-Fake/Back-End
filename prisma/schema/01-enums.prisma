@@ -1,0 +1,151 @@
+enum DistributionNodeType {
+  MANUFACTURER
+  AGENT_LEVEL_1
+  AGENT_LEVEL_2
+  AGENT_LEVEL_3
+}
+
+enum DistributionRelationshipStatus {
+  INVITED
+  DECLINED
+  ACTIVE
+  SUSPENDED
+  TERMINATED
+  EXPIRED
+}
+
+enum DistributionShipmentStatus {
+  DRAFT
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+  RETURNED
+}
+
+enum AffiliateScopeType {
+  PLATFORM
+  SHOP
+  BRAND
+  OFFER
+}
+
+enum AffiliateProgramStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  CLOSED
+}
+
+enum AffiliateAccountStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  BLOCKED
+}
+
+enum AffiliateConversionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum AffiliateCommissionStatus {
+  PENDING
+  APPROVED
+  LOCKED
+  PAID
+  CANCELLED
+}
+
+enum CommissionBeneficiaryType {
+  AFFILIATE_TIER_1
+  AFFILIATE_TIER_2
+  PLATFORM
+  SHOP
+}
+
+enum PayoutStatus {
+  PENDING
+  PROCESSING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum ShopRegistrationType {
+  NORMAL
+  HANDMADE
+  MANUFACTURER
+  DISTRIBUTOR
+}
+
+enum OfferSalesMode {
+  RETAIL
+  WHOLESALE
+  BOTH
+}
+
+enum DistributionDiscountType {
+  PERCENT
+  FIXED_AMOUNT
+  FIXED_PRICE
+}
+
+enum DistributionPricingScope {
+  NETWORK_DEFAULT
+  NODE_LEVEL
+  NODE_SPECIFIC
+}
+
+enum OrderMode {
+  RETAIL
+  WHOLESALE
+}
+
+enum MediaProvider {
+  CLOUDINARY
+}
+
+enum MediaAssetType {
+  IMAGE
+  VIDEO
+  RAW
+}
+
+enum MediaResourceType {
+  DISPUTE_EVIDENCE
+  KYC_DOCUMENT
+  SHOP_DOCUMENT
+  PRODUCT_IMAGE
+  REVIEW_IMAGE
+  OFFER_DOCUMENT
+  BATCH_DOCUMENT
+}
+
+enum KycDocumentSide {
+  FRONT
+  BACK
+}
+
+enum SocialPostType {
+  SHARE
+  QUESTION
+  PRODUCT_SHARE
+}
+
+enum SocialPostVisibility {
+  PUBLIC
+  HIDDEN
+}
+
+enum SocialReactionType {
+  LIKE
+}
+
+enum LiveSessionStatus {
+  SCHEDULED
+  LIVE
+  ENDED
+  CANCELLED
+}

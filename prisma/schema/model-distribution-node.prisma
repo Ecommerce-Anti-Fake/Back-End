@@ -1,0 +1,31 @@
+model DistributionNode {
+  id                 String                         @id @default(uuid())
+  networkId          String                         @map("network_id")
+  shopId             String                         @map("shop_id")
+  parentNodeId       String?                        @map("parent_node_id")
+  level              Int
+  nodeType           DistributionNodeType           @map("node_type")
+  relationshipStatus DistributionRelationshipStatus @default(ACTIVE) @map("relationship_status")
+  contractCode       String?                        @map("contract_code")
+  lineageCode        String?                        @map("lineage_code")
+  territoryCode      String?                        @map("territory_code")
+  activatedAt        DateTime?                      @map("activated_at")
+  terminatedAt       DateTime?                      @map("terminated_at")
+  createdAt          DateTime                       @default(now()) @map("created_at")
+  updatedAt          DateTime                       @updatedAt @map("updated_at")
+  network            DistributionNetwork            @relation(fields: [networkId], references: [id])
+  shop               Shop                           @relation(fields: [shopId], references: [id])
+  parent             DistributionNode?              @relation("DistributionNodeHierarchy", fields: [parentNodeId], references: [id])
+  children           DistributionNode[]             @relation("DistributionNodeHierarchy")
+  offers             Offer[]
+  supplyBatches      SupplyBatch[]
+  outboundShipments  DistributionShipment[]         @relation("DistributionShipmentFrom")
+  inboundShipments   DistributionShipment[]         @relation("DistributionShipmentTo")
+  pricingPolicies    DistributionPricingPolicy[]
+  wholesaleOrders    Order[]                        @relation("OrderBuyerDistributionNode")
+
+  @@unique([networkId, shopId])
+  @@index([parentNodeId])
+  @@index([networkId, level])
+  @@map("distribution_node")
+}

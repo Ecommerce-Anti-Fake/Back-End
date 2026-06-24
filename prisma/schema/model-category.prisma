@@ -1,0 +1,15 @@
+model Category {
+  id                          String                      @id @default(uuid())
+  parentId                    String?                     @map("parent_id")
+  name                        String
+  riskTier                    String                      @map("risk_tier")
+  parent                      Category?                   @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children                    Category[]                  @relation("CategoryHierarchy")
+  offers                      Offer[]
+  supplyBatches               SupplyBatch[]
+  shipmentItems               DistributionShipmentItem[]
+  shopBusinessCategories      ShopBusinessCategory[]
+  distributionPricingPolicies DistributionPricingPolicy[]
+
+  @@map("category")
+}

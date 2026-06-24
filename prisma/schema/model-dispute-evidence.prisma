@@ -1,0 +1,15 @@
+model DisputeEvidence {
+  id               String      @id @default(uuid())
+  disputeId        String      @map("dispute_id")
+  uploadedByUserId String      @map("uploaded_by_user_id")
+  mediaAssetId     String?     @map("media_asset_id")
+  fileType         String      @map("file_type")
+  fileUrl          String      @map("file_url")
+  uploadedAt       DateTime    @default(now()) @map("uploaded_at")
+  dispute          Dispute     @relation(fields: [disputeId], references: [id])
+  uploadedBy       User        @relation("DisputeEvidenceUploadedBy", fields: [uploadedByUserId], references: [id])
+  mediaAsset       MediaAsset? @relation(fields: [mediaAssetId], references: [id])
+
+  @@index([mediaAssetId])
+  @@map("dispute_evidence")
+}

@@ -1,0 +1,14 @@
+model UserKycDocument {
+  id           String          @id @default(uuid())
+  userKycId    String          @map("user_kyc_id")
+  mediaAssetId String          @map("media_asset_id")
+  side         KycDocumentSide
+  uploadedAt   DateTime        @default(now()) @map("uploaded_at")
+  userKyc      UserKyc         @relation(fields: [userKycId], references: [id])
+  mediaAsset   MediaAsset      @relation(fields: [mediaAssetId], references: [id])
+
+  @@unique([userKycId, side])
+  @@unique([mediaAssetId])
+  @@index([userKycId])
+  @@map("user_kyc_document")
+}

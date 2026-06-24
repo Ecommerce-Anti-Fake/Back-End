@@ -1,0 +1,51 @@
+model Order {
+  id                      String               @id @default(uuid())
+  buyerUserId             String?              @map("buyer_user_id")
+  buyerShopId             String?              @map("buyer_shop_id")
+  buyerDistributionNodeId String?              @map("buyer_distribution_node_id")
+  shopId                  String               @map("shop_id")
+  orderMode               OrderMode            @default(RETAIL) @map("order_mode")
+  orderType               String               @map("order_type")
+  orderStatus             String               @map("order_status")
+  fulfillmentStatus       String               @default("PENDING") @map("fulfillment_status")
+  baseAmount              Decimal              @map("base_amount") @db.Decimal(18, 2)
+  discountAmount          Decimal              @default(0) @map("discount_amount") @db.Decimal(18, 2)
+  platformFeeAmount       Decimal              @default(0) @map("platform_fee_amount") @db.Decimal(18, 2)
+  buyerPayableAmount      Decimal              @map("buyer_payable_amount") @db.Decimal(18, 2)
+  sellerReceivableAmount  Decimal              @map("seller_receivable_amount") @db.Decimal(18, 2)
+  totalAmount             Decimal              @map("total_amount") @db.Decimal(18, 2)
+  shippingName            String?              @map("shipping_name")
+  shippingPhone           String?              @map("shipping_phone")
+  shippingAddress         String?              @map("shipping_address")
+  shippingDistrictId      Int?                 @map("shipping_district_id")
+  shippingDistrictName    String?              @map("shipping_district_name")
+  shippingWardCode        String?              @map("shipping_ward_code")
+  shippingWardName        String?              @map("shipping_ward_name")
+  shippingProviderCode    String?              @map("shipping_provider_code")
+  shippingProviderName    String?              @map("shipping_provider_name")
+  shippingServiceId       Int?                 @map("shipping_service_id")
+  shippingServiceTypeId   Int?                 @map("shipping_service_type_id")
+  shippingFeeAmount       Decimal              @default(0) @map("shipping_fee_amount") @db.Decimal(18, 2)
+  shippingTrackingCode    String?              @map("shipping_tracking_code")
+  parcelWeightGrams       Int?                 @map("parcel_weight_grams")
+  parcelLengthCm          Int?                 @map("parcel_length_cm")
+  parcelWidthCm           Int?                 @map("parcel_width_cm")
+  parcelHeightCm          Int?                 @map("parcel_height_cm")
+  createdAt               DateTime             @default(now()) @map("created_at")
+  buyer                   User?                @relation("OrderBuyer", fields: [buyerUserId], references: [id])
+  buyerShop               Shop?                @relation("OrderBuyerShop", fields: [buyerShopId], references: [id])
+  buyerDistributionNode   DistributionNode?    @relation("OrderBuyerDistributionNode", fields: [buyerDistributionNodeId], references: [id])
+  shop                    Shop                 @relation(fields: [shopId], references: [id])
+  items                   OrderItem[]
+  paymentIntent           PaymentIntent?
+  escrow                  Escrow?
+  disputes                Dispute[]
+  reviews                 Review[]
+  affiliateConversion     AffiliateConversion?
+  sourceSupplyBatches     SupplyBatch[]        @relation("SupplyBatchSourceOrder")
+
+  @@index([buyerUserId])
+  @@index([buyerShopId])
+  @@index([buyerDistributionNodeId])
+  @@map("order")
+}

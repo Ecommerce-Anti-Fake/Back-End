@@ -1,0 +1,16 @@
+model BatchDocument {
+  id                 String      @id @default(uuid())
+  batchId            String      @map("batch_id")
+  mediaAssetId       String?     @unique @map("media_asset_id")
+  docType            String      @map("doc_type")
+  fileUrl            String      @map("file_url")
+  issuerName         String?     @map("issuer_name")
+  documentNumberHash String?     @map("document_number_hash")
+  reviewStatus       String      @map("review_status")
+  uploadedAt         DateTime    @default(now()) @map("uploaded_at")
+  batch              SupplyBatch @relation(fields: [batchId], references: [id])
+  mediaAsset         MediaAsset? @relation(fields: [mediaAssetId], references: [id])
+
+  @@index([mediaAssetId])
+  @@map("batch_document")
+}

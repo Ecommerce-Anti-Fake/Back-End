@@ -1,0 +1,22 @@
+model DistributionShipment {
+  id             String                     @id @default(uuid())
+  networkId      String                     @map("network_id")
+  fromNodeId     String                     @map("from_node_id")
+  toNodeId       String                     @map("to_node_id")
+  shipmentCode   String                     @map("shipment_code")
+  shipmentStatus DistributionShipmentStatus @default(DRAFT) @map("shipment_status")
+  note           String?
+  shippedAt      DateTime?                  @map("shipped_at")
+  receivedAt     DateTime?                  @map("received_at")
+  createdAt      DateTime                   @default(now()) @map("created_at")
+  updatedAt      DateTime                   @updatedAt @map("updated_at")
+  network        DistributionNetwork        @relation(fields: [networkId], references: [id])
+  fromNode       DistributionNode           @relation("DistributionShipmentFrom", fields: [fromNodeId], references: [id])
+  toNode         DistributionNode           @relation("DistributionShipmentTo", fields: [toNodeId], references: [id])
+  items          DistributionShipmentItem[]
+
+  @@unique([networkId, shipmentCode])
+  @@index([fromNodeId])
+  @@index([toNodeId])
+  @@map("distribution_shipment")
+}
