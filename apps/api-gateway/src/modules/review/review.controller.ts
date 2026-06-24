@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Param,
-  ParseUUIDPipe,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -39,10 +38,8 @@ export class ReviewController {
   })
   @RateLimit({ profile: 'publicCatalog' })
   @Get('offers/:offerId/reviews')
-  findOfferReviews(
-    @Param('offerId', new ParseUUIDPipe({ version: '4' })) offerId: string,
-  ) {
-    return this.catalogRpcService.findOfferReviews({ offerId });
+  findOfferReviews(@Param('offerId') offerId: string) {
+  return this.catalogRpcService.findOfferReviews({ offerId });
   }
 
   @ApiOperation({ summary: 'Tao danh gia cho offer da mua' })
