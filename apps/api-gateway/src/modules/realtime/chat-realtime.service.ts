@@ -60,24 +60,31 @@ export class ChatRealtimeService implements OnModuleDestroy {
 
   async bind(httpServer: unknown) {
     if (this.io) {
+      this.logger.log('Socket.IO already bound; skipping');
       return;
     }
 
+    this.logger.log('Binding Socket.IO server on path /api/socket.io');
+
     const io = new Server(httpServer as never, {
-    path: '/api/socket.io',
-    cors: {
-      origin: true,
-      credentials: true,
-    },
-  });
+      path: '/api/socket.io',
+      cors: {
+        origin: true,
+        credentials: true,
+      },
+    });
+
     this.io = io;
 
     await this.attachRedisAdapter(io);
     this.liveReactionsRealtimeService.bind(io);
 
     io.on('connection', (socket) => {
+      this.logger.log(`Socket.IO client connected: ${socket.id}`);
       void this.handleConnection(socket);
     });
+
+    this.logger.log('Socket.IO server bound successfully');
   }
 
   async onModuleDestroy() {

@@ -79,7 +79,9 @@ async function bootstrap() {
 
   await app.get(ChatRealtimeService).bind(httpServer);
 
-  httpServer.listen(port, '0.0.0.0');
+  httpServer.listen(port, '0.0.0.0', () => {
+    console.log(`API Gateway listening on port ${port}`);
+  });
 }
 
 bootstrap();
