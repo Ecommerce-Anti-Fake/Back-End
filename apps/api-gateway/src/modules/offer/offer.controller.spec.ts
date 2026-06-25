@@ -1,5 +1,5 @@
 import { OfferController } from './offer.controller';
-import { PATH_METADATA } from '@nestjs/common/constants';
+import { GUARDS_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 
 describe('OfferController', () => {
   it('exposes core offers without the legacy products prefix', () => {
@@ -22,6 +22,12 @@ describe('OfferController', () => {
     expect(
       Reflect.getMetadata(
         PATH_METADATA,
+        OfferController.prototype.findShopOffers,
+      ),
+    ).toBe('shops/:shopId/offers');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
         OfferController.prototype.allocateOfferBatches,
       ),
     ).toBe('offers/:offerId/batch-links');
@@ -31,6 +37,28 @@ describe('OfferController', () => {
         OfferController.prototype.findOfferBatchLinks,
       ),
     ).toBe('offers/:offerId/batch-links');
+  });
+
+  it('exposes shop offers publicly without seller auth or inactive offers', async () => {
+    const catalogRpcService = {
+      findOffers: jest.fn().mockResolvedValue([]),
+    };
+    const controller = new OfferController(
+      catalogRpcService as never,
+      { notifyShop: jest.fn() } as never,
+    );
+
+    await expect(controller.findShopOffers('shop-1')).resolves.toEqual([]);
+
+    expect(
+      Reflect.getMetadata(
+        GUARDS_METADATA,
+        OfferController.prototype.findShopOffers,
+      ),
+    ).toBeUndefined();
+    expect(catalogRpcService.findOffers).toHaveBeenCalledWith({
+      shopId: 'shop-1',
+    });
   });
 
   it('returns compact public offer list items', async () => {

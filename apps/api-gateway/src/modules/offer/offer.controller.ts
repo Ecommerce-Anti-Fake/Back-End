@@ -128,23 +128,16 @@ export class OfferController {
     return result;
   }
 
-  @ApiOperation({ summary: 'Lay danh sach offer cua shop hien tai' })
-  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Lay danh sach offer cua shop' })
   @ApiOkResponse({
-    description: 'Danh sach offer cua seller.',
+    description: 'Danh sach offer active cua shop.',
     type: OfferResponseDto,
     isArray: true,
   })
-  @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Get('seller/shops/:shopId/offers')
-  findSellerShopOffers(
-    @Param('shopId') shopId: string,
-    @CurrentUserId() sellerUserId: string,
-  ) {
+  @Get('shops/:shopId/offers')
+  findShopOffers(@Param('shopId') shopId: string) {
     return this.catalogRpcService.findOffers({
       shopId,
-      sellerUserId,
-      includeInactive: true,
     });
   }
 
