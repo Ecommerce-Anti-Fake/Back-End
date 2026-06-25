@@ -33,7 +33,7 @@ describe('AllocateOfferBatchesUseCase', () => {
       availableQuantity: 3,
       shop: {
         id: 'shop-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
       batchLinks: [{ allocatedQuantity: 5 }],
     });
@@ -70,7 +70,7 @@ describe('AllocateOfferBatchesUseCase', () => {
       availableQuantity: 5,
       shop: {
         id: 'shop-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
       batchLinks: [],
     });
@@ -142,7 +142,7 @@ describe('AllocateOfferBatchesUseCase', () => {
       availableQuantity: 5,
       shop: {
         id: 'shop-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
       batchLinks: [{ allocatedQuantity: 5 }],
     });

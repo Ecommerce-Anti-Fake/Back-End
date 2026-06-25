@@ -66,7 +66,7 @@ export class CreateLiveSessionUseCase {
     if (shop.ownerUserId !== input.requesterUserId) {
       throw new ForbiddenException('Only shop owner can create live sessions');
     }
-    if (shop.shopStatus !== 'active') {
+    if (shop.shopStatus !== 'verified') {
       throw new BadRequestException(
         'Only active shops can create live sessions',
       );

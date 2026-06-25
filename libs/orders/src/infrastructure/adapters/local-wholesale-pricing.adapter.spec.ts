@@ -55,7 +55,7 @@ describe('LocalWholesalePricingAdapter', () => {
       parentNodeId: 'seller-node-1',
       relationshipStatus: 'ACTIVE',
       shop: {
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     ordersRepositoryMock.findApplicablePricingPolicies.mockResolvedValueOnce([
@@ -75,7 +75,7 @@ describe('LocalWholesalePricingAdapter', () => {
           level: 0,
           relationshipStatus: 'ACTIVE',
           shop: {
-            shopStatus: 'active',
+            shopStatus: 'verified',
           },
         },
       }),
@@ -104,7 +104,7 @@ describe('LocalWholesalePricingAdapter', () => {
       parentNodeId: 'seller-node-1',
       relationshipStatus: 'ACTIVE',
       shop: {
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     ordersRepositoryMock.findApplicablePricingPolicies.mockResolvedValueOnce([]);
@@ -120,7 +120,7 @@ describe('LocalWholesalePricingAdapter', () => {
           level: 1,
           relationshipStatus: 'ACTIVE',
           shop: {
-            shopStatus: 'active',
+            shopStatus: 'verified',
           },
         },
       }),
@@ -149,7 +149,7 @@ describe('LocalWholesalePricingAdapter', () => {
       parentNodeId: 'other-level-1-node',
       relationshipStatus: 'ACTIVE',
       shop: {
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
 
@@ -164,7 +164,7 @@ describe('LocalWholesalePricingAdapter', () => {
             level: 1,
             relationshipStatus: 'ACTIVE',
             shop: {
-              shopStatus: 'active',
+              shopStatus: 'verified',
             },
           },
         }),
@@ -182,7 +182,7 @@ describe('LocalWholesalePricingAdapter', () => {
       parentNodeId: 'seller-node-1',
       relationshipStatus: 'ACTIVE',
       shop: {
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
 

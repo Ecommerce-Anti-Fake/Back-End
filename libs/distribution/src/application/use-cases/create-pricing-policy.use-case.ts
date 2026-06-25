@@ -25,7 +25,7 @@ export class CreatePricingPolicyUseCase {
       throw new NotFoundException('Distribution network not found or not owned by current user');
     }
 
-    if (network.manufacturerShop.shopStatus !== 'active') {
+    if (network.manufacturerShop.shopStatus !== 'verified') {
       throw new BadRequestException('Only active manufacturer shops can manage distribution pricing');
     }
 
@@ -52,7 +52,7 @@ export class CreatePricingPolicyUseCase {
         throw new BadRequestException('Distribution node is invalid for this network');
       }
 
-      if (node.relationshipStatus !== 'ACTIVE' || node.shop.shopStatus !== 'active') {
+      if (node.relationshipStatus !== 'ACTIVE' || node.shop.shopStatus !== 'verified') {
         throw new BadRequestException('Pricing policy can only target active distribution nodes');
       }
 

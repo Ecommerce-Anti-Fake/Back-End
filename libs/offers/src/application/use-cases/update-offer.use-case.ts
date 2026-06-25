@@ -250,7 +250,7 @@ export class UpdateOfferUseCase {
     if (
       !offer.distributionNode ||
       offer.distributionNode.relationshipStatus !== 'ACTIVE' ||
-      offer.distributionNode.shop.shopStatus !== 'active'
+      offer.distributionNode.shop.shopStatus !== 'verified'
     ) {
       throw new BadRequestException(
         'Resale draft distribution node must be active before publishing',

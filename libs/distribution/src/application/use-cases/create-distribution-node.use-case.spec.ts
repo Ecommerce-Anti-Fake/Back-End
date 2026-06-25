@@ -32,7 +32,7 @@ describe('CreateDistributionNodeUseCase', () => {
       manufacturerShopId: 'shop-mnf-1',
       manufacturerShop: {
         id: 'shop-mnf-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.findNodeById.mockResolvedValueOnce({
@@ -43,7 +43,7 @@ describe('CreateDistributionNodeUseCase', () => {
       relationshipStatus: 'ACTIVE',
       shop: {
         id: 'shop-mnf-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.findAgentShopById.mockResolvedValueOnce({ id: 'shop-dist-1' });
@@ -89,7 +89,7 @@ describe('CreateDistributionNodeUseCase', () => {
       manufacturerShopId: 'shop-mnf-1',
       manufacturerShop: {
         id: 'shop-mnf-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.findNodeById.mockResolvedValueOnce({
@@ -100,7 +100,7 @@ describe('CreateDistributionNodeUseCase', () => {
       relationshipStatus: 'ACTIVE',
       shop: {
         id: 'shop-mnf-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.findAgentShopById.mockResolvedValueOnce(null);
@@ -121,7 +121,7 @@ describe('CreateDistributionNodeUseCase', () => {
       manufacturerShopId: 'shop-mnf-1',
       manufacturerShop: {
         id: 'shop-mnf-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.findNodeById.mockResolvedValueOnce({
@@ -132,7 +132,7 @@ describe('CreateDistributionNodeUseCase', () => {
       relationshipStatus: 'ACTIVE',
       shop: {
         id: 'shop-dist-3',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.findAgentShopById.mockResolvedValueOnce({ id: 'shop-dist-4' });
@@ -154,7 +154,7 @@ describe('CreateDistributionNodeUseCase', () => {
       manufacturerShopId: 'shop-mnf-1',
       manufacturerShop: {
         id: 'shop-mnf-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.findNodeById.mockResolvedValueOnce({
@@ -165,7 +165,7 @@ describe('CreateDistributionNodeUseCase', () => {
       relationshipStatus: 'ACTIVE',
       shop: {
         id: 'shop-mnf-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.findAgentShopById.mockResolvedValueOnce({ id: 'shop-dist-1' });

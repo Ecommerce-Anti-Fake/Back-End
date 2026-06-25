@@ -59,7 +59,7 @@ describe('CreateSocialPostUseCase in SocialModule', () => {
     repository.findShopForSocialPost.mockResolvedValue({
       id: 'shop-1',
       ownerUserId: 'user-1',
-      shopStatus: 'active',
+      shopStatus: 'verified',
       shopName: 'Shop A',
     });
     repository.countSocialPostsSince.mockResolvedValue(29);
@@ -86,7 +86,7 @@ describe('CreateSocialPostUseCase in SocialModule', () => {
     repository.findShopForSocialPost.mockResolvedValue({
       id: 'shop-1',
       ownerUserId: 'other-user',
-      shopStatus: 'active',
+      shopStatus: 'verified',
       shopName: 'Shop A',
     });
 

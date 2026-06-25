@@ -35,7 +35,7 @@ describe('GetOfferMediaUploadSignaturesUseCase in OfferAssetsModule', () => {
       id: 'offer-1',
       shop: {
         id: 'shop-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     mediaServiceMock.createCloudinaryUploadSignature.mockReturnValue({

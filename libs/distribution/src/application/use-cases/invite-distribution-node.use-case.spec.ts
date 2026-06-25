@@ -30,7 +30,7 @@ describe('InviteDistributionNodeUseCase', () => {
     repositoryMock.findOwnedNetworkByUser.mockResolvedValueOnce({
       id: 'network-1',
       manufacturerShop: {
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.findNodeById.mockResolvedValueOnce({
@@ -40,7 +40,7 @@ describe('InviteDistributionNodeUseCase', () => {
       relationshipStatus: 'ACTIVE',
       shop: {
         id: 'shop-root',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.findAgentShopById.mockResolvedValueOnce({ id: 'shop-dist-1' });

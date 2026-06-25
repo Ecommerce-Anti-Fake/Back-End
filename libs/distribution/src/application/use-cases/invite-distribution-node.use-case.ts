@@ -17,7 +17,7 @@ export class InviteDistributionNodeUseCase {
       throw new NotFoundException('Distribution network not found or not owned by current user');
     }
 
-    if (network.manufacturerShop.shopStatus !== 'active') {
+    if (network.manufacturerShop.shopStatus !== 'verified') {
       throw new BadRequestException('Only active manufacturer shops can invite distributor nodes');
     }
 
@@ -26,7 +26,7 @@ export class InviteDistributionNodeUseCase {
       throw new BadRequestException('Parent node is invalid for this network');
     }
 
-    if (parentNode.relationshipStatus !== 'ACTIVE' || parentNode.shop.shopStatus !== 'active') {
+    if (parentNode.relationshipStatus !== 'ACTIVE' || parentNode.shop.shopStatus !== 'verified') {
       throw new BadRequestException('Parent node must belong to an active shop and active relationship');
     }
 

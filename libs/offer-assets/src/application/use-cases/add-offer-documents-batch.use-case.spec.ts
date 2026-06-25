@@ -37,7 +37,7 @@ describe('AddOfferDocumentsBatchUseCase in OfferAssetsModule', () => {
       id: 'offer-1',
       shop: {
         id: 'shop-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     mediaServiceMock.isOwnedCloudinaryUrl.mockReturnValue(true);
@@ -98,7 +98,7 @@ describe('AddOfferDocumentsBatchUseCase in OfferAssetsModule', () => {
       id: 'offer-1',
       shop: {
         id: 'shop-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     mediaServiceMock.isOwnedCloudinaryUrl.mockReturnValue(true);

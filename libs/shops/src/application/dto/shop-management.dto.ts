@@ -17,7 +17,7 @@ import { Type } from 'class-transformer';
 
 const SHOP_REGISTRATION_TYPES = ['NORMAL', 'HANDMADE', 'MANUFACTURER', 'DISTRIBUTOR'] as const;
 const REVIEW_STATUSES = ['approved', 'rejected'] as const;
-const SHOP_LOOKUP_STATUSES = ['pending_kyc', 'pending_verification', 'active'] as const;
+const SHOP_LOOKUP_STATUSES = ['pending_kyc', 'pending_verification', 'verified'] as const;
 const SHOP_SORT_FIELDS = ['createdAt', 'shopName'] as const;
 const SORT_ORDERS = ['asc', 'desc'] as const;
 
@@ -82,7 +82,7 @@ export class ShopResponseDto {
 
   @ApiProperty({
     description: 'Trang thai cua shop.',
-    example: 'active',
+    example: 'verified',
   })
   shopStatus!: string;
 
@@ -113,14 +113,8 @@ export class PublicShopSummaryResponseDto {
   @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/shop-banner.jpg' })
   shopBanner!: string;
 
-  @ApiProperty({ example: true })
-  verify!: boolean;
-
   @ApiProperty({ example: 4.8 })
   rating!: number;
-
-  @ApiProperty({ example: 128 })
-  totalReview!: number;
 
   @ApiProperty({ example: 32 })
   totalOffer!: number;
@@ -128,8 +122,46 @@ export class PublicShopSummaryResponseDto {
   @ApiProperty({ example: 2450 })
   totalSale!: number;
 
+  @ApiProperty({ example: 128 })
+  totalReview!: number;
+
   @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
   createdAt!: string;
+
+  @ApiProperty({ example: true })
+  verify!: boolean;
+}
+
+export class PublicShopDetailResponseDto {
+  @ApiProperty({ example: '5b6ef5e7-1a03-4b17-baf3-8c4be0f5f001' })
+  shopId!: string;
+
+  @ApiProperty({ example: 'Cong ty TNHH San Xuat ABC' })
+  shopName!: string;
+
+  @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/shop.jpg' })
+  shopAvatar!: string;
+
+  @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/shop-banner.jpg' })
+  shopBanner!: string;
+
+  @ApiProperty({ example: 4.8 })
+  rating!: number;
+
+  @ApiProperty({ example: 32 })
+  totalOffer!: number;
+
+  @ApiProperty({ example: 2450 })
+  totalSale!: number;
+
+  @ApiProperty({ example: 128 })
+  totalReview!: number;
+
+  @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
+  createdAt!: string;
+
+  @ApiProperty({ example: true })
+  verify!: boolean;
 }
 
 export class PaginatedPublicShopSummaryResponseDto {
@@ -433,7 +465,7 @@ export class PendingVerificationShopQueryDto {
   @IsOptional()
   @IsString()
   @IsIn(SHOP_LOOKUP_STATUSES)
-  shopStatus?: 'pending_kyc' | 'pending_verification' | 'active';
+  shopStatus?: 'pending_kyc' | 'pending_verification' | 'verified';
 
   @ApiPropertyOptional({
     description: 'Loc theo loai dang ky cua shop.',

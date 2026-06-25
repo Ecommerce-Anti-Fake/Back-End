@@ -37,7 +37,7 @@ describe('CreateOfferUseCase', () => {
   function mockActiveApprovedShop() {
     productRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'shop-1',
-      shopStatus: 'active',
+      shopStatus: 'verified',
       registrationType: 'NORMAL',
     });
     productRepositoryMock.findBrandById.mockResolvedValueOnce({
@@ -109,7 +109,7 @@ describe('CreateOfferUseCase', () => {
   it('should reject offer creation when shop category is not approved', async () => {
     productRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'shop-1',
-      shopStatus: 'active',
+      shopStatus: 'verified',
       registrationType: 'NORMAL',
     });
     productRepositoryMock.findBrandById.mockResolvedValueOnce({
@@ -141,7 +141,7 @@ describe('CreateOfferUseCase', () => {
   it('should reject wholesale offer creation for normal shops', async () => {
     productRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'shop-1',
-      shopStatus: 'active',
+      shopStatus: 'verified',
       registrationType: 'NORMAL',
     });
     productRepositoryMock.findCategoryById.mockResolvedValueOnce({
@@ -175,7 +175,7 @@ describe('CreateOfferUseCase', () => {
   it('should create a draft distributor resale offer for an active distribution node', async () => {
     productRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'shop-1',
-      shopStatus: 'active',
+      shopStatus: 'verified',
       registrationType: 'DISTRIBUTOR',
     });
     productRepositoryMock.findCategoryById.mockResolvedValueOnce({
@@ -251,7 +251,7 @@ describe('CreateOfferUseCase', () => {
   it('should create an offer identity snapshot without productModelId', async () => {
     productRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'shop-1',
-      shopStatus: 'active',
+      shopStatus: 'verified',
       registrationType: 'NORMAL',
     });
     productRepositoryMock.findCategoryById.mockResolvedValueOnce({

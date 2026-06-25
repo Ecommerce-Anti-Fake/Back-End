@@ -32,7 +32,7 @@ describe('CreatePricingPolicyUseCase', () => {
       manufacturerShopId: 'shop-1',
       manufacturerShop: {
         id: 'shop-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     pricingRepositoryMock.findComparablePolicies.mockResolvedValueOnce([
@@ -92,7 +92,7 @@ describe('CreatePricingPolicyUseCase', () => {
       manufacturerShopId: 'shop-1',
       manufacturerShop: {
         id: 'shop-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     pricingRepositoryMock.findComparablePolicies.mockResolvedValueOnce([
@@ -120,7 +120,7 @@ describe('CreatePricingPolicyUseCase', () => {
       manufacturerShopId: 'shop-1',
       manufacturerShop: {
         id: 'shop-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     pricingRepositoryMock.findNodeById.mockResolvedValueOnce({
@@ -131,7 +131,7 @@ describe('CreatePricingPolicyUseCase', () => {
       relationshipStatus: 'ACTIVE',
       shop: {
         id: 'shop-2',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     pricingRepositoryMock.findComparablePolicies.mockResolvedValueOnce([]);

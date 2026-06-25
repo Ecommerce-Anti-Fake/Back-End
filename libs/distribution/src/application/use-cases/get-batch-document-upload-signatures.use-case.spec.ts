@@ -33,7 +33,7 @@ describe('GetBatchDocumentUploadSignaturesUseCase', () => {
       id: 'batch-1',
       shop: {
         id: 'shop-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     mediaServiceMock.createCloudinaryUploadSignature.mockReturnValue({

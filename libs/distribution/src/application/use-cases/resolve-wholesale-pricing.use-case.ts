@@ -36,7 +36,7 @@ export class ResolveWholesalePricingUseCase {
         throw new BadRequestException('Distribution node does not belong to current user');
       }
 
-      if (buyerNode.relationshipStatus !== 'ACTIVE' || buyerNode.shop.shopStatus !== 'active') {
+      if (buyerNode.relationshipStatus !== 'ACTIVE' || buyerNode.shop.shopStatus !== 'verified') {
         throw new BadRequestException('Buyer distribution node must be active before using in-network pricing');
       }
 
@@ -53,7 +53,7 @@ export class ResolveWholesalePricingUseCase {
         throw new BadRequestException('Seller distribution node is invalid for this network');
       }
 
-      if (sellerNode.relationshipStatus !== 'ACTIVE' || sellerNode.shop.shopStatus !== 'active') {
+      if (sellerNode.relationshipStatus !== 'ACTIVE' || sellerNode.shop.shopStatus !== 'verified') {
         throw new BadRequestException('Seller distribution node must be active before using in-network pricing');
       }
 

@@ -28,7 +28,7 @@ export class GetOfferDocumentUploadSignaturesUseCase {
       throw new NotFoundException('Offer not found');
     }
 
-    if (offer.shop.shopStatus !== 'active') {
+    if (offer.shop.shopStatus !== 'verified') {
       throw new BadRequestException(
         'Only active shops can upload offer documents',
       );

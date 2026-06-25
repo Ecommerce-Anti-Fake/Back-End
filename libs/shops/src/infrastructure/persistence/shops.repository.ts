@@ -346,6 +346,35 @@ export class ShopsRepository {
     });
   }
 
+  async findPublicShopDetailById(id: string) {
+    const shop = await this.prisma.shop.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        shopName: true,
+        shopStatus: true,
+        createdAt: true,
+        avatarMedia: {
+          select: {
+            secureUrl: true,
+          },
+        },
+        bannerMedia: {
+          select: {
+            secureUrl: true,
+          },
+        },
+        _count: {
+          select: {
+            offers: true,
+          },
+        },
+      },
+    });
+
+    return shop ? this.toPublicShopSummary(shop) : null;
+  }
+
   findByOwnerUserId(ownerUserId: string) {
     return this.prisma.shop.findMany({
       where: { ownerUserId },
@@ -371,7 +400,7 @@ export class ShopsRepository {
   async findPublicShopSummaries(input: { page?: number; pageSize?: number } = {}) {
     const page = Math.max(1, input.page ?? 1);
     const pageSize = Math.min(100, Math.max(1, input.pageSize ?? 20));
-    const where = { shopStatus: 'active' };
+    const where = { shopStatus: 'verified' };
     const [total, shops] = await this.prisma.$transaction([
       this.prisma.shop.count({ where }),
       this.prisma.shop.findMany({
@@ -492,7 +521,7 @@ export class ShopsRepository {
       totalSale: saleStats._sum.quantity ?? 0,
       totalReview: reviewStats._count._all,
       createdAt: shop.createdAt.toISOString(),
-      verify: shop.shopStatus === 'active',
+      verify: shop.shopStatus === 'verified',
     };
   }
 
@@ -548,7 +577,7 @@ export class ShopsRepository {
   }
 
   async findPendingVerificationShops(filters?: {
-    shopStatus?: 'pending_kyc' | 'pending_verification' | 'active';
+    shopStatus?: 'pending_kyc' | 'pending_verification' | 'verified';
     registrationType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
     categoryId?: string;
     search?: string;
@@ -666,7 +695,7 @@ export class ShopsRepository {
     const [
       pendingKyc,
       pendingVerification,
-      active,
+      verified,
       normal,
       handmade,
       manufacturer,
@@ -674,7 +703,7 @@ export class ShopsRepository {
     ] = await this.prisma.$transaction([
       this.prisma.shop.count({ where: { shopStatus: 'pending_kyc' } }),
       this.prisma.shop.count({ where: { shopStatus: 'pending_verification' } }),
-      this.prisma.shop.count({ where: { shopStatus: 'active' } }),
+      this.prisma.shop.count({ where: { shopStatus: 'verified' } }),
       this.prisma.shop.count({ where: { registrationType: ShopRegistrationType.NORMAL } }),
       this.prisma.shop.count({ where: { registrationType: ShopRegistrationType.HANDMADE } }),
       this.prisma.shop.count({ where: { registrationType: ShopRegistrationType.MANUFACTURER } }),
@@ -685,7 +714,7 @@ export class ShopsRepository {
       byShopStatus: {
         pending_kyc: pendingKyc,
         pending_verification: pendingVerification,
-        active,
+        verified,
       },
       byRegistrationType: {
         NORMAL: normal,
@@ -1228,7 +1257,7 @@ export class ShopsRepository {
       ) {
         nextStatus = 'pending_verification';
       } else {
-        nextStatus = 'active';
+        nextStatus = 'verified';
       }
     }
 

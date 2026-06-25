@@ -27,7 +27,7 @@ export class AddBatchDocumentsBatchUseCase {
       throw new NotFoundException('Supply batch not found');
     }
 
-    if (batch.shop.shopStatus !== 'active') {
+    if (batch.shop.shopStatus !== 'verified') {
       throw new BadRequestException('Only active shops can upload batch documents');
     }
 

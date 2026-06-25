@@ -85,7 +85,7 @@ describe('ResolveWholesalePricingUseCase', () => {
         shop: {
           id: 'buyer-shop-3',
           ownerUserId: 'other-user',
-          shopStatus: 'active',
+          shopStatus: 'verified',
         },
       }),
     );
@@ -120,7 +120,7 @@ function createNode(overrides?: Partial<any>) {
     shop: {
       id: 'buyer-shop-3',
       ownerUserId: 'buyer-user',
-      shopStatus: 'active',
+      shopStatus: 'verified',
     },
     ...overrides,
   };

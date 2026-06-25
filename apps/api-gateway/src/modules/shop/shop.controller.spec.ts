@@ -81,4 +81,36 @@ describe('ShopController', () => {
     });
     expect(shopsRpcService.findByOffer).toHaveBeenCalledWith({ offerId: 'offer-1' });
   });
+
+  it('gets public shop detail by shop id', async () => {
+    const shopsRpcService = {
+      findById: jest.fn().mockResolvedValue({
+        shopId: 'shop-1',
+        shopName: 'Shop ABC',
+        shopAvatar: 'https://cdn.test/shop-avatar.jpg',
+        shopBanner: 'https://cdn.test/shop-banner.jpg',
+        rating: 4.7,
+        totalOffer: 8,
+        totalSale: 21,
+        totalReview: 3,
+        createdAt: '2026-06-24T02:00:00.000Z',
+        verify: true,
+      }),
+    };
+    const controller = new ShopController(shopsRpcService as never);
+
+    await expect(controller.findById('shop-1')).resolves.toEqual({
+      shopId: 'shop-1',
+      shopName: 'Shop ABC',
+      shopAvatar: 'https://cdn.test/shop-avatar.jpg',
+      shopBanner: 'https://cdn.test/shop-banner.jpg',
+      rating: 4.7,
+      totalOffer: 8,
+      totalSale: 21,
+      totalReview: 3,
+      createdAt: '2026-06-24T02:00:00.000Z',
+      verify: true,
+    });
+    expect(shopsRpcService.findById).toHaveBeenCalledWith({ id: 'shop-1' });
+  });
 });

@@ -9,7 +9,7 @@ describe('ShopsRepository', () => {
           {
             id: 'shop-1',
             shopName: 'Shop ABC',
-            shopStatus: 'active',
+            shopStatus: 'verified',
             createdAt: new Date('2026-06-24T02:00:00.000Z'),
             avatarMedia: {
               secureUrl: 'https://cdn.test/shop-avatar.jpg',
@@ -60,7 +60,7 @@ describe('ShopsRepository', () => {
 
     expect(prisma.shop.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { shopStatus: 'active' },
+        where: { shopStatus: 'verified' },
         skip: 10,
         take: 10,
       }),
@@ -74,7 +74,7 @@ describe('ShopsRepository', () => {
           shop: {
           id: 'shop-1',
           shopName: 'Shop ABC',
-          shopStatus: 'active',
+          shopStatus: 'verified',
           createdAt: new Date('2026-06-24T02:00:00.000Z'),
           avatarMedia: {
             secureUrl: 'https://cdn.test/shop-avatar.jpg',
@@ -119,6 +119,61 @@ describe('ShopsRepository', () => {
       where: { id: 'offer-1' },
       select: expect.objectContaining({
         shop: expect.any(Object),
+      }),
+    });
+  });
+
+  it('returns a public shop detail by shop id', async () => {
+    const prisma = {
+      shop: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'shop-1',
+          shopName: 'Shop ABC',
+          shopStatus: 'verified',
+          createdAt: new Date('2026-06-24T02:00:00.000Z'),
+          avatarMedia: {
+            secureUrl: 'https://cdn.test/shop-avatar.jpg',
+          },
+          bannerMedia: {
+            secureUrl: 'https://cdn.test/shop-banner.jpg',
+          },
+          _count: {
+            offers: 8,
+          },
+        }),
+      },
+      review: {
+        aggregate: jest.fn().mockResolvedValue({
+          _avg: { rating: 4.666 },
+          _count: { _all: 3 },
+        }),
+      },
+      orderItem: {
+        aggregate: jest.fn().mockResolvedValue({
+          _sum: { quantity: 21 },
+        }),
+      },
+    };
+    const repository = new ShopsRepository(prisma as never);
+
+    await expect(repository.findPublicShopDetailById('shop-1')).resolves.toEqual({
+      shopId: 'shop-1',
+      shopName: 'Shop ABC',
+      shopAvatar: 'https://cdn.test/shop-avatar.jpg',
+      shopBanner: 'https://cdn.test/shop-banner.jpg',
+      rating: 4.7,
+      totalOffer: 8,
+      totalSale: 21,
+      totalReview: 3,
+      createdAt: '2026-06-24T02:00:00.000Z',
+      verify: true,
+    });
+
+    expect(prisma.shop.findUnique).toHaveBeenCalledWith({
+      where: { id: 'shop-1' },
+      select: expect.objectContaining({
+        id: true,
+        shopName: true,
       }),
     });
   });

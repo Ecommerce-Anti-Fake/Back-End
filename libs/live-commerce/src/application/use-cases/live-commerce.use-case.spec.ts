@@ -21,7 +21,7 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
       id: 'shop-1',
       ownerUserId: 'seller-user-1',
       shopName: 'Seller Shop',
-      shopStatus: 'active',
+      shopStatus: 'verified',
     });
     repository.findOffersForLiveSession.mockResolvedValue([
       {

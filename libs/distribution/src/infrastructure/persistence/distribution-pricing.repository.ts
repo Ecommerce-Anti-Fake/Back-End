@@ -13,7 +13,7 @@ export class DistributionPricingRepository {
         id: shopId,
         ownerUserId: requesterUserId,
         registrationType: ShopRegistrationType.MANUFACTURER,
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
       select: {
         id: true,
@@ -26,7 +26,7 @@ export class DistributionPricingRepository {
       where: {
         id: shopId,
         ownerUserId: requesterUserId,
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
       select: {
         id: true,
@@ -155,7 +155,7 @@ export class DistributionPricingRepository {
       where: {
         id,
         registrationType: ShopRegistrationType.DISTRIBUTOR,
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
       select: {
         id: true,

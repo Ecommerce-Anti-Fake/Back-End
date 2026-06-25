@@ -24,7 +24,7 @@ export class CreateDistributionShipmentUseCase {
       throw new NotFoundException('Distribution network not found or not owned by current user');
     }
 
-    if (network.manufacturerShop.shopStatus !== 'active') {
+    if (network.manufacturerShop.shopStatus !== 'verified') {
       throw new BadRequestException('Only active manufacturer shops can manage distribution shipments');
     }
 
@@ -45,8 +45,8 @@ export class CreateDistributionShipmentUseCase {
     if (
       fromNode.relationshipStatus !== 'ACTIVE' ||
       toNode.relationshipStatus !== 'ACTIVE' ||
-      fromNode.shop.shopStatus !== 'active' ||
-      toNode.shop.shopStatus !== 'active'
+      fromNode.shop.shopStatus !== 'verified' ||
+      toNode.shop.shopStatus !== 'verified'
     ) {
       throw new BadRequestException('Shipments require both source and destination nodes to be active');
     }

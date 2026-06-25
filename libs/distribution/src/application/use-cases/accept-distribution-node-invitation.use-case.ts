@@ -26,12 +26,12 @@ export class AcceptDistributionNodeInvitationUseCase {
 
     if (node.parentNodeId) {
       const parentNode = await this.repository.findNodeById(node.parentNodeId);
-      if (!parentNode || parentNode.relationshipStatus !== 'ACTIVE' || parentNode.shop.shopStatus !== 'active') {
+      if (!parentNode || parentNode.relationshipStatus !== 'ACTIVE' || parentNode.shop.shopStatus !== 'verified') {
         throw new BadRequestException('Parent node must be active before accepting invitation');
       }
     }
 
-    if (node.shop.shopStatus !== 'active') {
+    if (node.shop.shopStatus !== 'verified') {
       throw new BadRequestException('Distributor shop must be active before accepting invitation');
     }
 

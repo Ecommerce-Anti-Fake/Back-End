@@ -47,7 +47,7 @@ export class CreateSocialPostUseCase {
       if (shop.ownerUserId !== input.requesterUserId) {
         throw new ForbiddenException('Only shop owner can post as this shop');
       }
-      if (shop.shopStatus !== 'active') {
+      if (shop.shopStatus !== 'verified') {
         throw new BadRequestException('Only active shops can post as shop');
       }
     }

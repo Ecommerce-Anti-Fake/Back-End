@@ -34,7 +34,7 @@ describe('DeclineDistributionNodeInvitationUseCase', () => {
       shop: {
         id: 'shop-dist-1',
         ownerUserId: 'owner-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.updateNodeRelationshipStatus.mockResolvedValueOnce({

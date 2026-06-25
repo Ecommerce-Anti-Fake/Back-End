@@ -40,7 +40,7 @@ export class CreateOfferUseCase {
       throw new BadRequestException('Shop does not belong to current user');
     }
 
-    if (ownedShop.shopStatus !== 'active') {
+    if (ownedShop.shopStatus !== 'verified') {
       throw new BadRequestException(
         'Shop must complete KYC approval before creating offers',
       );

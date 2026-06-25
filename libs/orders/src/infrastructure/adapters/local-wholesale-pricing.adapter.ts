@@ -26,7 +26,7 @@ export class LocalWholesalePricingAdapter implements WholesalePricingPort {
         throw new BadRequestException('Distribution node does not belong to buyer shop');
       }
 
-      if (buyerNode.relationshipStatus !== 'ACTIVE' || buyerNode.shop.shopStatus !== 'active') {
+      if (buyerNode.relationshipStatus !== 'ACTIVE' || buyerNode.shop.shopStatus !== 'verified') {
         throw new BadRequestException('Buyer distribution node must be active before using in-network pricing');
       }
 
@@ -40,7 +40,7 @@ export class LocalWholesalePricingAdapter implements WholesalePricingPort {
 
       if (
         input.offer.distributionNode.relationshipStatus !== 'ACTIVE' ||
-        input.offer.distributionNode.shop.shopStatus !== 'active'
+        input.offer.distributionNode.shop.shopStatus !== 'verified'
       ) {
         throw new BadRequestException('Seller distribution node must be active before using in-network pricing');
       }

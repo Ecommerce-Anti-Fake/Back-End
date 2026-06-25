@@ -72,7 +72,7 @@ describe('UpdateOfferUseCase', () => {
           id: 'node-1',
           relationshipStatus: 'SUSPENDED',
           shop: {
-            shopStatus: 'active',
+            shopStatus: 'verified',
           },
         },
       }),
@@ -140,7 +140,7 @@ function createOwnedOffer(overrides: Record<string, unknown> = {}) {
     shop: {
       id: 'shop-1',
       shopName: 'Distributor shop',
-      shopStatus: 'active',
+      shopStatus: 'verified',
       registrationType: 'DISTRIBUTOR',
     },
     category: { name: 'Category' },
@@ -149,7 +149,7 @@ function createOwnedOffer(overrides: Record<string, unknown> = {}) {
       id: 'node-1',
       relationshipStatus: 'ACTIVE',
       shop: {
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     },
     batchLinks: [

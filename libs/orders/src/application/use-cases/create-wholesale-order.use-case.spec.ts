@@ -55,7 +55,7 @@ describe('CreateWholesaleOrderUseCase', () => {
     );
     ordersRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'buyer-shop-1',
-      shopStatus: 'active',
+      shopStatus: 'verified',
       registrationType: 'DISTRIBUTOR',
     });
     wholesalePricingPortMock.resolve.mockResolvedValueOnce({
@@ -141,7 +141,7 @@ describe('CreateWholesaleOrderUseCase', () => {
     );
     ordersRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'buyer-shop-1',
-      shopStatus: 'active',
+      shopStatus: 'verified',
       registrationType: 'DISTRIBUTOR',
     });
     wholesalePricingPortMock.resolve.mockResolvedValueOnce({
@@ -231,7 +231,7 @@ describe('CreateWholesaleOrderUseCase', () => {
     );
     ordersRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'buyer-shop-1',
-      shopStatus: 'active',
+      shopStatus: 'verified',
       registrationType: 'DISTRIBUTOR',
     });
     wholesalePricingPortMock.resolve.mockRejectedValueOnce(
@@ -266,7 +266,7 @@ describe('CreateWholesaleOrderUseCase', () => {
     );
     ordersRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'buyer-shop-1',
-      shopStatus: 'active',
+      shopStatus: 'verified',
       registrationType: 'DISTRIBUTOR',
     });
     wholesalePricingPortMock.resolve.mockRejectedValueOnce(
@@ -323,13 +323,13 @@ describe('CreateWholesaleOrderUseCase', () => {
           networkId: 'network-1',
           level: 1,
           relationshipStatus: 'ACTIVE',
-          shop: { shopStatus: 'active' },
+          shop: { shopStatus: 'verified' },
         },
       }),
     );
     ordersRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'buyer-shop-1',
-      shopStatus: 'active',
+      shopStatus: 'verified',
       registrationType: 'DISTRIBUTOR',
     });
 
@@ -365,13 +365,13 @@ describe('CreateWholesaleOrderUseCase', () => {
           networkId: 'network-1',
           level: 1,
           relationshipStatus: 'ACTIVE',
-          shop: { shopStatus: 'active' },
+          shop: { shopStatus: 'verified' },
         },
       }),
     );
     ordersRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'buyer-shop-1',
-      shopStatus: 'active',
+      shopStatus: 'verified',
       registrationType: 'DISTRIBUTOR',
     });
     wholesalePricingPortMock.resolve.mockResolvedValueOnce({
@@ -420,13 +420,13 @@ describe('CreateWholesaleOrderUseCase', () => {
           networkId: 'network-1',
           level: 1,
           relationshipStatus: 'ACTIVE',
-          shop: { shopStatus: 'active' },
+          shop: { shopStatus: 'verified' },
         },
       }),
     );
     ordersRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'buyer-shop-1',
-      shopStatus: 'active',
+      shopStatus: 'verified',
       registrationType: 'DISTRIBUTOR',
     });
     wholesalePricingPortMock.resolve.mockResolvedValueOnce({

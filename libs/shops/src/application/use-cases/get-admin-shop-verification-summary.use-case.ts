@@ -13,7 +13,7 @@ export class GetAdminShopVerificationSummaryUseCase {
       byShopStatus: {
         pending_kyc: counts.byShopStatus.pending_kyc ?? 0,
         pending_verification: counts.byShopStatus.pending_verification ?? 0,
-        active: counts.byShopStatus.active ?? 0,
+        verified: counts.byShopStatus.verified ?? 0,
       },
       byRegistrationType: {
         NORMAL: counts.byRegistrationType.NORMAL ?? 0,

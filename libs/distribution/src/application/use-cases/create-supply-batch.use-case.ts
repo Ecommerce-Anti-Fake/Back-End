@@ -72,7 +72,7 @@ export class CreateSupplyBatchUseCase {
         throw new BadRequestException('Distribution node does not belong to the selected shop');
       }
 
-      if (node.relationshipStatus !== 'ACTIVE' || node.shop.shopStatus !== 'active') {
+      if (node.relationshipStatus !== 'ACTIVE' || node.shop.shopStatus !== 'verified') {
         throw new BadRequestException('Distribution node must be active');
       }
     }

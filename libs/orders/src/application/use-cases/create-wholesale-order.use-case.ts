@@ -61,7 +61,7 @@ export class CreateWholesaleOrderUseCase {
       throw new BadRequestException('Buyer shop does not belong to current user');
     }
 
-    if (buyerShop.shopStatus !== 'active') {
+    if (buyerShop.shopStatus !== 'verified') {
       throw new BadRequestException('Buyer shop must be active before creating wholesale orders');
     }
 

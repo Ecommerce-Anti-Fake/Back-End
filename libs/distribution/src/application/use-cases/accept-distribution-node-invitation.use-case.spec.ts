@@ -35,7 +35,7 @@ describe('AcceptDistributionNodeInvitationUseCase', () => {
         shop: {
           id: 'shop-dist-1',
           ownerUserId: 'owner-1',
-          shopStatus: 'active',
+          shopStatus: 'verified',
         },
       })
       .mockResolvedValueOnce({
@@ -48,7 +48,7 @@ describe('AcceptDistributionNodeInvitationUseCase', () => {
         shop: {
           id: 'shop-root',
           ownerUserId: 'manufacturer-1',
-          shopStatus: 'active',
+          shopStatus: 'verified',
         },
       });
     repositoryMock.updateNodeRelationshipStatus.mockResolvedValueOnce({
@@ -85,7 +85,7 @@ describe('AcceptDistributionNodeInvitationUseCase', () => {
       shop: {
         id: 'shop-dist-1',
         ownerUserId: 'owner-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
 

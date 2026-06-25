@@ -4,6 +4,7 @@ import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
   CreateShopDto,
   PaginatedPublicShopSummaryResponseDto,
+  PublicShopDetailResponseDto,
   PublicShopSummaryResponseDto,
   PublicShopsQueryDto,
   UpdateShopProfileDto,
@@ -74,6 +75,7 @@ export class ShopController {
   }
 
   @ApiOperation({ summary: 'Lay thong tin chi tiet mot shop' })
+  @ApiOkResponse({ type: PublicShopDetailResponseDto })
   @Get(':id')
   findById(@Param('id') id: string) {
     return this.shopsRpcService.findById({ id });

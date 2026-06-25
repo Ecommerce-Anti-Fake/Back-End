@@ -29,7 +29,7 @@ describe('UpdateDistributionNodeStatusUseCase', () => {
     repositoryMock.findOwnedNetworkByUser.mockResolvedValueOnce({
       id: 'network-1',
       manufacturerShop: {
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.findNodeById.mockResolvedValueOnce({
@@ -41,7 +41,7 @@ describe('UpdateDistributionNodeStatusUseCase', () => {
       relationshipStatus: 'ACTIVE',
       shop: {
         id: 'shop-root',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
 
@@ -59,7 +59,7 @@ describe('UpdateDistributionNodeStatusUseCase', () => {
     repositoryMock.findOwnedNetworkByUser.mockResolvedValueOnce({
       id: 'network-1',
       manufacturerShop: {
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.findNodeById.mockResolvedValueOnce({
@@ -71,7 +71,7 @@ describe('UpdateDistributionNodeStatusUseCase', () => {
       relationshipStatus: 'ACTIVE',
       shop: {
         id: 'shop-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.findActiveChildNodes.mockResolvedValueOnce([{ id: 'child-node-1' }]);
@@ -90,7 +90,7 @@ describe('UpdateDistributionNodeStatusUseCase', () => {
     repositoryMock.findOwnedNetworkByUser.mockResolvedValueOnce({
       id: 'network-1',
       manufacturerShop: {
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.findNodeById
@@ -103,7 +103,7 @@ describe('UpdateDistributionNodeStatusUseCase', () => {
         relationshipStatus: 'SUSPENDED',
         shop: {
           id: 'shop-1',
-          shopStatus: 'active',
+          shopStatus: 'verified',
         },
       })
       .mockResolvedValueOnce({
@@ -115,7 +115,7 @@ describe('UpdateDistributionNodeStatusUseCase', () => {
         relationshipStatus: 'ACTIVE',
         shop: {
           id: 'shop-parent',
-          shopStatus: 'active',
+          shopStatus: 'verified',
         },
       });
     repositoryMock.updateNodeRelationshipStatus.mockResolvedValueOnce({

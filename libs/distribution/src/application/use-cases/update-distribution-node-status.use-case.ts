@@ -17,7 +17,7 @@ export class UpdateDistributionNodeStatusUseCase {
       throw new NotFoundException('Distribution network not found or not owned by current user');
     }
 
-    if (network.manufacturerShop.shopStatus !== 'active') {
+    if (network.manufacturerShop.shopStatus !== 'verified') {
       throw new BadRequestException('Only active manufacturer shops can manage distribution nodes');
     }
 
@@ -37,12 +37,12 @@ export class UpdateDistributionNodeStatusUseCase {
     if (input.relationshipStatus === 'ACTIVE') {
       if (node.parentNodeId) {
         const parentNode = await this.repository.findNodeById(node.parentNodeId);
-        if (!parentNode || parentNode.relationshipStatus !== 'ACTIVE' || parentNode.shop.shopStatus !== 'active') {
+        if (!parentNode || parentNode.relationshipStatus !== 'ACTIVE' || parentNode.shop.shopStatus !== 'verified') {
           throw new BadRequestException('Parent node must be active before reactivating this distributor');
         }
       }
 
-      if (node.shop.shopStatus !== 'active') {
+      if (node.shop.shopStatus !== 'verified') {
         throw new BadRequestException('Distributor shop must be active before reactivating the node');
       }
     }

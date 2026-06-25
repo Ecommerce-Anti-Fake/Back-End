@@ -28,7 +28,7 @@ export class AllocateOfferBatchesUseCase {
       );
     }
 
-    if (ownedOffer.shop.shopStatus !== 'active') {
+    if (ownedOffer.shop.shopStatus !== 'verified') {
       throw new BadRequestException(
         'Only active shops can manage offer inventory allocation',
       );

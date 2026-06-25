@@ -7,7 +7,7 @@ export class ListPendingVerificationShopsUseCase {
   constructor(private readonly shopsRepository: ShopsRepository) {}
 
   async execute(filters?: {
-    shopStatus?: 'pending_kyc' | 'pending_verification' | 'active';
+    shopStatus?: 'pending_kyc' | 'pending_verification' | 'verified';
     registrationType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
     categoryId?: string;
     search?: string;

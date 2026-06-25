@@ -30,7 +30,7 @@ describe('CreateDistributionShipmentUseCase', () => {
       id: 'network-1',
       manufacturerShop: {
         id: 'shop-mnf-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.findNodeById
@@ -41,7 +41,7 @@ describe('CreateDistributionShipmentUseCase', () => {
         relationshipStatus: 'ACTIVE',
         shop: {
           id: 'shop-parent',
-          shopStatus: 'active',
+          shopStatus: 'verified',
         },
       })
       .mockResolvedValueOnce({
@@ -51,7 +51,7 @@ describe('CreateDistributionShipmentUseCase', () => {
         relationshipStatus: 'ACTIVE',
         shop: {
           id: 'shop-child',
-          shopStatus: 'active',
+          shopStatus: 'verified',
         },
       });
     repositoryMock.findBatchesByIdsAndNode.mockResolvedValueOnce([
@@ -136,7 +136,7 @@ describe('CreateDistributionShipmentUseCase', () => {
       id: 'network-1',
       manufacturerShop: {
         id: 'shop-mnf-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     repositoryMock.findNodeById
@@ -147,7 +147,7 @@ describe('CreateDistributionShipmentUseCase', () => {
         relationshipStatus: 'ACTIVE',
         shop: {
           id: 'shop-a',
-          shopStatus: 'active',
+          shopStatus: 'verified',
         },
       })
       .mockResolvedValueOnce({
@@ -157,7 +157,7 @@ describe('CreateDistributionShipmentUseCase', () => {
         relationshipStatus: 'ACTIVE',
         shop: {
           id: 'shop-b',
-          shopStatus: 'active',
+          shopStatus: 'verified',
         },
       });
 

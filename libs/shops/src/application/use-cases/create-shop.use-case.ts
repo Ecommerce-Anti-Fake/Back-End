@@ -86,6 +86,6 @@ export class CreateShopUseCase {
       return 'pending_verification';
     }
 
-    return 'active';
+    return 'verified';
   }
 }

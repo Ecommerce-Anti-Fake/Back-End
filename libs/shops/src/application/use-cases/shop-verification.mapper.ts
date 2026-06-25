@@ -172,7 +172,7 @@ export function toShopVerificationSummaryResponse(shop: VerificationSummaryRecor
     shopId: shop.id,
     shopStatus: shop.shopStatus,
     registrationType: shop.registrationType,
-    canOperate: shop.shopStatus === 'active',
+    canOperate: shop.shopStatus === 'verified',
     kycStatus:
       kycStatus === 'approved' || kycStatus === 'pending' || kycStatus === 'rejected' ? kycStatus : 'missing',
     hasRequiredKycDocuments,

@@ -35,7 +35,7 @@ describe('AddBatchDocumentsBatchUseCase', () => {
       id: 'batch-1',
       shop: {
         id: 'shop-1',
-        shopStatus: 'active',
+        shopStatus: 'verified',
       },
     });
     mediaServiceMock.isOwnedCloudinaryUrl.mockReturnValue(true);
