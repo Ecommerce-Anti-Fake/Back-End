@@ -299,6 +299,30 @@ export class PaginatedOfferListResponseDto {
   items!: OfferListItemResponseDto[];
 }
 
+export class ListShopOffersQueryDto {
+  @ApiPropertyOptional({
+    description: '1-based page number.',
+    example: 1,
+    default: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({
+    description: 'Items per page. Maximum 100.',
+    example: 20,
+    default: 20,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  pageSize?: number;
+}
+
 export class OfferBatchLinkItemDto {
   @ApiProperty({ example: 'batch-id' })
   @IsString()

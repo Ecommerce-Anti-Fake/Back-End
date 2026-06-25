@@ -22,6 +22,7 @@ import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
   AllocateOfferBatchesDto,
   ListOffersQueryDto,
+  ListShopOffersQueryDto,
   OfferBatchLinkResponseDto,
   OfferListItemResponseDto,
   OfferResponseDto,
@@ -130,17 +131,31 @@ export class OfferController {
 
   @ApiOperation({ summary: 'Lay danh sach offer cua shop' })
   @ApiOkResponse({
-    description: 'Danh sach offer active cua shop.',
-    type: OfferListItemResponseDto,
-    isArray: true,
+    description: 'Danh sach offer active cua shop co phan trang.',
+    type: PaginatedOfferListResponseDto,
   })
   @Get('shops/:shopId/offers')
-  async findShopOffers(@Param('shopId') shopId: string) {
+  async findShopOffers(
+    @Param('shopId') shopId: string,
+    @Query() query: ListShopOffersQueryDto = {},
+  ) {
     const result = await this.catalogRpcService.findOffers({
       shopId,
+      page: query.page ?? 1,
+      pageSize: query.pageSize ?? 20,
     });
 
-    return Array.isArray(result) ? result.map(toOfferListItem) : result;
+    if (isPaginatedOfferResult(result)) {
+      return toPaginatedOfferList(result);
+    }
+
+    const items = Array.isArray(result) ? result.map(toOfferListItem) : [];
+    return {
+      total: items.length,
+      page: query.page ?? 1,
+      pageSize: query.pageSize ?? 20,
+      items,
+    };
   }
 
   @ApiOperation({ summary: 'Lay danh sach offer' })
@@ -168,12 +183,7 @@ export class OfferController {
       pageSize: query.pageSize ?? 20,
     });
     if (isPaginatedOfferResult(result)) {
-      return {
-        total: numberValue(result.total),
-        page: numberValue(result.page),
-        pageSize: numberValue(result.pageSize),
-        items: result.items.map(toOfferListItem),
-      };
+      return toPaginatedOfferList(result);
     }
 
     return Array.isArray(result) ? result.map(toOfferListItem) : result;
@@ -316,6 +326,20 @@ function isPaginatedOfferResult(
     typeof value === 'object' &&
     Array.isArray((value as { items?: unknown }).items),
   );
+}
+
+function toPaginatedOfferList(result: {
+  total: unknown;
+  page: unknown;
+  pageSize: unknown;
+  items: unknown[];
+}): PaginatedOfferListResponseDto {
+  return {
+    total: numberValue(result.total),
+    page: numberValue(result.page),
+    pageSize: numberValue(result.pageSize),
+    items: result.items.map(toOfferListItem),
+  };
 }
 
 function stringValue(value: unknown) {

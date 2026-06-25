@@ -41,37 +41,45 @@ describe('OfferController', () => {
 
   it('returns compact public offer list items for shop offers', async () => {
     const catalogRpcService = {
-      findOffers: jest.fn().mockResolvedValue([
-        {
-          id: 'offer-1',
-          title: 'Kem chong nang SPF50',
-          description: 'internal detail description',
-          price: 150000,
-          currency: 'VND',
-          salesMode: 'RETAIL',
-          minWholesaleQty: null,
-          itemCondition: 'new',
-          availableQuantity: 12,
-          soldQuantity: 3,
-          verificationLevel: 'standard',
-          offerStatus: 'active',
-          shopId: 'shop-1',
-          shopName: 'Shop ABC',
-          categoryId: 'category-1',
-          brandId: 'brand-1',
-          thumbnailUrl:
-            'https://res.cloudinary.com/demo/image/upload/product.jpg',
-          shippingMethods: [{ providerCode: 'GHN' }],
-          createdAt: '2026-04-14T10:00:00.000Z',
-        },
-      ]),
+      findOffers: jest.fn().mockResolvedValue({
+        total: 1,
+        page: 2,
+        pageSize: 10,
+        items: [
+          {
+            id: 'offer-1',
+            title: 'Kem chong nang SPF50',
+            description: 'internal detail description',
+            price: 150000,
+            currency: 'VND',
+            salesMode: 'RETAIL',
+            minWholesaleQty: null,
+            itemCondition: 'new',
+            availableQuantity: 12,
+            soldQuantity: 3,
+            verificationLevel: 'standard',
+            offerStatus: 'active',
+            shopId: 'shop-1',
+            shopName: 'Shop ABC',
+            categoryId: 'category-1',
+            brandId: 'brand-1',
+            thumbnailUrl:
+              'https://res.cloudinary.com/demo/image/upload/product.jpg',
+            shippingMethods: [{ providerCode: 'GHN' }],
+            createdAt: '2026-04-14T10:00:00.000Z',
+          },
+        ],
+      }),
     };
     const controller = new OfferController(
       catalogRpcService as never,
       { notifyShop: jest.fn() } as never,
     );
 
-    const result = await controller.findShopOffers('shop-1');
+    const result = await controller.findShopOffers('shop-1', {
+      page: 2,
+      pageSize: 10,
+    });
 
     expect(
       Reflect.getMetadata(
@@ -81,29 +89,36 @@ describe('OfferController', () => {
     ).toBeUndefined();
     expect(catalogRpcService.findOffers).toHaveBeenCalledWith({
       shopId: 'shop-1',
+      page: 2,
+      pageSize: 10,
     });
-    expect(result).toEqual([
-      {
-        id: 'offer-1',
-        title: 'Kem chong nang SPF50',
-        price: 150000,
-        currency: 'VND',
-        salesMode: 'RETAIL',
-        minWholesaleQty: null,
-        availableQuantity: 12,
-        soldQuantity: 3,
-        verificationLevel: 'standard',
-        offerStatus: 'active',
-        categoryId: 'category-1',
-        brandId: 'brand-1',
-        thumbnailUrl:
-          'https://res.cloudinary.com/demo/image/upload/product.jpg',
-        createdAt: new Date('2026-04-14T10:00:00.000Z'),
-      },
-    ]);
-    expect(result[0]).not.toHaveProperty('description');
-    expect(result[0]).not.toHaveProperty('shopName');
-    expect(result[0]).not.toHaveProperty('shippingMethods');
+    expect(result).toEqual({
+      total: 1,
+      page: 2,
+      pageSize: 10,
+      items: [
+        {
+          id: 'offer-1',
+          title: 'Kem chong nang SPF50',
+          price: 150000,
+          currency: 'VND',
+          salesMode: 'RETAIL',
+          minWholesaleQty: null,
+          availableQuantity: 12,
+          soldQuantity: 3,
+          verificationLevel: 'standard',
+          offerStatus: 'active',
+          categoryId: 'category-1',
+          brandId: 'brand-1',
+          thumbnailUrl:
+            'https://res.cloudinary.com/demo/image/upload/product.jpg',
+          createdAt: new Date('2026-04-14T10:00:00.000Z'),
+        },
+      ],
+    });
+    expect(result.items[0]).not.toHaveProperty('description');
+    expect(result.items[0]).not.toHaveProperty('shopName');
+    expect(result.items[0]).not.toHaveProperty('shippingMethods');
   });
 
   it('returns compact public offer list items', async () => {
