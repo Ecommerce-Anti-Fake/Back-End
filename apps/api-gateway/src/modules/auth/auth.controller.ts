@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -24,18 +25,30 @@ import {
   LoginResponseDto,
   LogoutResponseDto,
   RefreshResponseDto,
-  RefreshTokenDto,
   RegisterDto,
   RegisterResponseDto,
   ResetPasswordDto,
 } from '@auth';
 import { RateLimit } from '../../observability';
 import { AuthRpcService } from './auth-rpc.service';
+import type { Request, Response } from 'express';
+
+type InternalTokenResponse = {
+  accessToken: string;
+  refreshToken: string;
+  user: AuthUserResponseDto;
+};
+
+const REFRESH_TOKEN_COOKIE = 'eaf_refresh_token';
+const REFRESH_TOKEN_COOKIE_PATH = '/api/auth';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authRpcService: AuthRpcService) {}
+  constructor(
+    private readonly authRpcService: AuthRpcService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @ApiOperation({ summary: 'Dang ky tai khoan bang email hoac so dien thoai' })
   @ApiBody({ type: RegisterDto })
@@ -52,7 +65,7 @@ export class AuthController {
     return this.authRpcService.register(dto);
   }
 
-  @ApiOperation({ summary: 'Dang nhap va nhan access token cung refresh token' })
+  @ApiOperation({ summary: 'Dang nhap va luu refresh token trong httpOnly cookie' })
   @ApiBody({ type: LoginDto })
   @ApiOkResponse({
     description: 'Dang nhap thanh cong.',
@@ -66,8 +79,8 @@ export class AuthController {
   })
   @RateLimit({ profile: 'auth' })
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.authRpcService.login(dto);
+  async login(@Body() dto: LoginDto, @Res({ passthrough: true }) response: Response) {
+    return this.exposeAccessToken(await this.authRpcService.login(dto), response);
   }
 
   @ApiOperation({ summary: 'Dang nhap/dang ky bang Firebase Auth da xac thuc' })
@@ -84,14 +97,13 @@ export class AuthController {
   })
   @RateLimit({ profile: 'auth' })
   @Post('firebase-login')
-  firebaseLogin(@Body() dto: FirebaseLoginDto) {
-    return this.authRpcService.firebaseLogin(dto);
+  async firebaseLogin(@Body() dto: FirebaseLoginDto, @Res({ passthrough: true }) response: Response) {
+    return this.exposeAccessToken(await this.authRpcService.firebaseLogin(dto), response);
   }
 
-  @ApiOperation({ summary: 'Dung refresh token hien tai de rotate sang cap token moi' })
-  @ApiBody({ type: RefreshTokenDto })
+  @ApiOperation({ summary: 'Dung refresh token trong httpOnly cookie de rotate sang cap token moi' })
   @ApiOkResponse({
-    description: 'Refresh thanh cong va tra ve access token cung refresh token moi.',
+    description: 'Refresh thanh cong, tra ve access token va set refresh token moi trong cookie.',
     type: RefreshResponseDto,
   })
   @ApiUnauthorizedResponse({
@@ -102,12 +114,14 @@ export class AuthController {
   })
   @RateLimit({ profile: 'auth' })
   @Post('refresh')
-  refresh(@Body() dto: RefreshTokenDto) {
-    return this.authRpcService.refresh(dto);
+  async refresh(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
+    return this.exposeAccessToken(
+      await this.authRpcService.refresh({ refreshToken: this.readRefreshTokenCookie(request) }),
+      response,
+    );
   }
 
   @ApiOperation({ summary: 'Dang xuat va revoke session refresh token hien tai' })
-  @ApiBody({ type: RefreshTokenDto })
   @ApiOkResponse({
     description: 'Dang xuat thanh cong.',
     type: LogoutResponseDto,
@@ -116,8 +130,14 @@ export class AuthController {
     description: 'Refresh token khong hop le hoac da bi reuse.',
   })
   @Post('logout')
-  logout(@Body() dto: RefreshTokenDto) {
-    return this.authRpcService.logout(dto);
+  async logout(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
+    try {
+      return await this.authRpcService.logout({
+        refreshToken: this.readRefreshTokenCookie(request),
+      });
+    } finally {
+      this.clearRefreshTokenCookie(response);
+    }
   }
 
   @ApiOperation({ summary: 'Tao password reset token neu tai khoan ton tai' })
@@ -198,5 +218,77 @@ export class AuthController {
       message: 'Admin access granted',
       user,
     };
+  }
+
+  private exposeAccessToken(tokenResponse: InternalTokenResponse, response: Response): RefreshResponseDto {
+    this.setRefreshTokenCookie(response, tokenResponse.refreshToken);
+    return {
+      accessToken: tokenResponse.accessToken,
+      user: tokenResponse.user,
+    };
+  }
+
+  private readRefreshTokenCookie(request: Request): string {
+    const refreshToken = this.parseCookieHeader(request.headers.cookie)[REFRESH_TOKEN_COOKIE];
+    if (!refreshToken) {
+      throw new UnauthorizedException('Missing refresh token');
+    }
+
+    return refreshToken;
+  }
+
+  private setRefreshTokenCookie(response: Response, refreshToken: string) {
+    response.cookie(REFRESH_TOKEN_COOKIE, refreshToken, {
+      httpOnly: true,
+      secure: this.isSecureCookieEnabled(),
+      sameSite: 'lax',
+      path: REFRESH_TOKEN_COOKIE_PATH,
+      maxAge: this.getRefreshTokenMaxAgeMs(),
+    });
+  }
+
+  private clearRefreshTokenCookie(response: Response) {
+    response.clearCookie(REFRESH_TOKEN_COOKIE, {
+      httpOnly: true,
+      secure: this.isSecureCookieEnabled(),
+      sameSite: 'lax',
+      path: REFRESH_TOKEN_COOKIE_PATH,
+    });
+  }
+
+  private parseCookieHeader(header?: string): Record<string, string> {
+    return (header ?? '').split(';').reduce<Record<string, string>>((cookies, part) => {
+      const separatorIndex = part.indexOf('=');
+      if (separatorIndex <= 0) {
+        return cookies;
+      }
+
+      const name = part.slice(0, separatorIndex).trim();
+      const value = part.slice(separatorIndex + 1).trim();
+      cookies[name] = decodeURIComponent(value);
+      return cookies;
+    }, {});
+  }
+
+  private isSecureCookieEnabled() {
+    return this.configService.get<string>('NODE_ENV') === 'production';
+  }
+
+  private getRefreshTokenMaxAgeMs() {
+    const ttl = this.configService.get<string>('REFRESH_TOKEN_TTL')?.trim() || '7d';
+    const match = /^(\d+)([smhd])$/.exec(ttl);
+    if (!match) {
+      return 7 * 24 * 60 * 60 * 1000;
+    }
+
+    const value = Number(match[1]);
+    const multipliers: Record<string, number> = {
+      s: 1000,
+      m: 60 * 1000,
+      h: 60 * 60 * 1000,
+      d: 24 * 60 * 60 * 1000,
+    };
+
+    return value * multipliers[match[2]];
   }
 }

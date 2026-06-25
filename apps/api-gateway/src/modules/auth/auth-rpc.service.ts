@@ -4,9 +4,27 @@ import {
   AUTH_MESSAGE_PATTERNS,
   AUTH_SERVICE_CLIENT,
 } from '@contracts';
-import { ChangePasswordDto, FirebaseLoginDto, ForgotPasswordDto, LoginDto, RefreshTokenDto, RegisterDto, ResetPasswordDto } from '@auth';
+import {
+  AccountSecurityResponseDto,
+  FirebaseLoginDto,
+  ForgotPasswordDto,
+  ForgotPasswordResponseDto,
+  LoginDto,
+  LogoutResponseDto,
+  RefreshTokenDto,
+  RegisterDto,
+  RegisterResponseDto,
+  ResetPasswordDto,
+  ChangePasswordDto,
+} from '@auth';
 import { throwHttpExceptionFromRpc } from '@common';
 import { lastValueFrom } from 'rxjs';
+
+type InternalTokenResponse = {
+  accessToken: string;
+  refreshToken: string;
+  user: RegisterResponseDto;
+};
 
 @Injectable()
 export class AuthRpcService {
@@ -16,35 +34,35 @@ export class AuthRpcService {
   ) {}
 
   register(dto: RegisterDto) {
-    return this.send(AUTH_MESSAGE_PATTERNS.register, dto);
+    return this.send<RegisterResponseDto>(AUTH_MESSAGE_PATTERNS.register, dto);
   }
 
   login(dto: LoginDto) {
-    return this.send(AUTH_MESSAGE_PATTERNS.login, dto);
+    return this.send<InternalTokenResponse>(AUTH_MESSAGE_PATTERNS.login, dto);
   }
 
   firebaseLogin(dto: FirebaseLoginDto) {
-    return this.send(AUTH_MESSAGE_PATTERNS.firebaseLogin, dto);
+    return this.send<InternalTokenResponse>(AUTH_MESSAGE_PATTERNS.firebaseLogin, dto);
   }
 
   refresh(dto: RefreshTokenDto) {
-    return this.send(AUTH_MESSAGE_PATTERNS.refresh, dto);
+    return this.send<InternalTokenResponse>(AUTH_MESSAGE_PATTERNS.refresh, dto);
   }
 
   logout(dto: RefreshTokenDto) {
-    return this.send(AUTH_MESSAGE_PATTERNS.logout, dto);
+    return this.send<LogoutResponseDto>(AUTH_MESSAGE_PATTERNS.logout, dto);
   }
 
   requestPasswordReset(dto: ForgotPasswordDto) {
-    return this.send(AUTH_MESSAGE_PATTERNS.requestPasswordReset, dto);
+    return this.send<ForgotPasswordResponseDto>(AUTH_MESSAGE_PATTERNS.requestPasswordReset, dto);
   }
 
   resetPassword(dto: ResetPasswordDto) {
-    return this.send(AUTH_MESSAGE_PATTERNS.resetPassword, dto);
+    return this.send<AccountSecurityResponseDto>(AUTH_MESSAGE_PATTERNS.resetPassword, dto);
   }
 
   changePassword(userId: string, dto: ChangePasswordDto) {
-    return this.send(AUTH_MESSAGE_PATTERNS.changePassword, { userId, dto });
+    return this.send<AccountSecurityResponseDto>(AUTH_MESSAGE_PATTERNS.changePassword, { userId, dto });
   }
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {

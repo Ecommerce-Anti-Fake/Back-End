@@ -63,12 +63,6 @@ export class TokenPairResponseDto {
   accessToken!: string;
 
   @ApiProperty({
-    description: 'Refresh token dung de lay cap token moi.',
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.refresh.signature',
-  })
-  refreshToken!: string;
-
-  @ApiProperty({
     description: 'Thong tin user an toan, khong chua password.',
     type: AuthUserResponseDto,
   })
