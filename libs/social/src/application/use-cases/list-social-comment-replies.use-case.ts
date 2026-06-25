@@ -33,6 +33,7 @@ export class ListSocialCommentRepliesUseCase {
       this.socialRepository.countSocialCommentReplies(input.commentId),
       this.socialRepository.listSocialCommentReplies({
         commentId: input.commentId,
+        requesterUserId: input.requesterUserId,
         page,
         pageSize,
       }),

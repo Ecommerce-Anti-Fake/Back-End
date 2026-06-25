@@ -8,6 +8,7 @@ model SocialCommentReply {
   updatedAt    DateTime             @updatedAt @map("updated_at")
   comment      SocialComment        @relation(fields: [commentId], references: [id])
   author       User                 @relation(fields: [authorUserId], references: [id])
+  likes        SocialCommentReplyLike[]
 
   @@index([commentId, createdAt])
   @@index([authorUserId, createdAt])

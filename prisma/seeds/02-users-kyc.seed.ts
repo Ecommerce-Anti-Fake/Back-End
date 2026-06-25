@@ -40,7 +40,7 @@ export async function seedUsersAndKyc(prisma: PrismaClient, ctx: SeedContext) {
 
   for (let i = 0; i < COUNTS.users; i += 1) {
     const role = i >= 18 ? 'admin' : 'user';
-    const user = await prisma.user.create({
+    let user = await prisma.user.create({
       data: {
         id: id(),
         email: `seed.user${String(i + 1).padStart(2, '0')}@antifake.local`,
@@ -52,15 +52,19 @@ export async function seedUsersAndKyc(prisma: PrismaClient, ctx: SeedContext) {
         createdAt: recentDate(60 - i),
       },
     });
-    ctx.users.push(user);
 
-    await createMediaAsset(prisma, {
+    const avatar = await createMediaAsset(prisma, {
       ownerUserId: user.id,
-      resourceType: 'PRODUCT_IMAGE',
+      resourceType: 'USER_AVATAR',
       secureUrl: avatarUrl(user.id),
       publicId: `seed/users/${user.id}/avatar`,
       folder: 'seed/users/avatars',
     });
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { avatarMediaId: avatar.id },
+    });
+    ctx.users.push(user);
 
     if (role === 'admin') ctx.admins.push(user);
     else if (i < 8) ctx.buyers.push(user);

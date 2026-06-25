@@ -1,5 +1,5 @@
 import { PrismaClient, ShopRegistrationType } from '@prisma/client';
-import { COUNTS, createMediaAsset, documentUrl, id, pick, recentDate, SeedContext, taxCode } from './00-utils';
+import { COUNTS, avatarUrl, createMediaAsset, documentUrl, id, imageUrl, pick, recentDate, SeedContext, taxCode } from './00-utils';
 
 const shopNames = [
   'Vinamilk Official Store',
@@ -32,7 +32,7 @@ export async function seedShops(prisma: PrismaClient, ctx: SeedContext) {
     const owner = pick(ctx.shopOwners.length ? ctx.shopOwners : ctx.users, i);
     const shopType = ctx.shopTypes[registrationType];
     const status = i % 9 === 0 ? 'pending_verification' : 'verified';
-    const shop = await prisma.shop.create({
+    let shop = await prisma.shop.create({
       data: {
         id: id(),
         ownerUserId: owner.id,
@@ -43,6 +43,27 @@ export async function seedShops(prisma: PrismaClient, ctx: SeedContext) {
         taxCode: taxCode(i + 1),
         shopStatus: status,
         createdAt: recentDate(90 - i),
+      },
+    });
+    const avatar = await createMediaAsset(prisma, {
+      ownerUserId: owner.id,
+      resourceType: 'SHOP_AVATAR',
+      secureUrl: avatarUrl(`shop-${shop.id}`),
+      publicId: `seed/shops/${shop.id}/avatar`,
+      folder: 'seed/shops/avatars',
+    });
+    const banner = await createMediaAsset(prisma, {
+      ownerUserId: owner.id,
+      resourceType: 'SHOP_BANNER',
+      secureUrl: imageUrl(`shop-banner-${shop.id}`, 1440, 480),
+      publicId: `seed/shops/${shop.id}/banner`,
+      folder: 'seed/shops/banners',
+    });
+    shop = await prisma.shop.update({
+      where: { id: shop.id },
+      data: {
+        avatarMediaId: avatar.id,
+        bannerMediaId: banner.id,
       },
     });
     ctx.shops.push(shop);

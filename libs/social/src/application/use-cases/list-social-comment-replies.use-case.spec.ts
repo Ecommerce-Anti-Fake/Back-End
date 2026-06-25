@@ -25,6 +25,8 @@ describe('ListSocialCommentRepliesUseCase', () => {
         avatar: 'https://cdn.example.com/u100.jpg',
         body: 'Cam on ban da phan hoi.',
         createdAt: new Date('2026-06-25T10:00:00.000Z'),
+        likedByViewer: false,
+        likeCount: 1,
       }),
       socialReply({
         id: 'reply_002',
@@ -33,6 +35,8 @@ describe('ListSocialCommentRepliesUseCase', () => {
         avatar: 'https://cdn.example.com/u101.jpg',
         body: 'Neu can ho tro them hay lien he shop.',
         createdAt: new Date('2026-06-25T10:03:00.000Z'),
+        likedByViewer: true,
+        likeCount: 2,
       }),
     ]);
   });
@@ -47,6 +51,7 @@ describe('ListSocialCommentRepliesUseCase', () => {
 
     expect(repository.listSocialCommentReplies).toHaveBeenCalledWith({
       commentId: 'comment-1',
+      requesterUserId: 'viewer-1',
       page: 1,
       pageSize: 5,
     });
@@ -65,7 +70,7 @@ describe('ListSocialCommentRepliesUseCase', () => {
           },
           body: 'Cam on ban da phan hoi.',
           createdAt: new Date('2026-06-25T10:00:00.000Z'),
-          likeCount: 0,
+          likeCount: 1,
           viewerLiked: false,
         },
         {
@@ -77,8 +82,8 @@ describe('ListSocialCommentRepliesUseCase', () => {
           },
           body: 'Neu can ho tro them hay lien he shop.',
           createdAt: new Date('2026-06-25T10:03:00.000Z'),
-          likeCount: 0,
-          viewerLiked: false,
+          likeCount: 2,
+          viewerLiked: true,
         },
       ],
     });
@@ -104,6 +109,8 @@ function socialReply(input: {
   avatar: string;
   body: string;
   createdAt: Date;
+  likedByViewer: boolean;
+  likeCount: number;
 }) {
   return {
     id: input.id,
@@ -119,5 +126,7 @@ function socialReply(input: {
       phone: null,
       avatarMedia: { secureUrl: input.avatar },
     },
+    likes: input.likedByViewer ? [{ userId: 'viewer-1' }] : [],
+    _count: { likes: input.likeCount },
   };
 }

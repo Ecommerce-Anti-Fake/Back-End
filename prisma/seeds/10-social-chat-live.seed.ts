@@ -4,6 +4,7 @@ import { COUNTS, createMediaAsset, id, imageUrl, pick, recentDate, SeedContext }
 export async function seedSocialChatLive(prisma: PrismaClient, ctx: SeedContext) {
   const posts: { id: string }[] = [];
   const comments: { id: string; authorUserId: string }[] = [];
+  const replies: { id: string; authorUserId: string }[] = [];
   for (let i = 0; i < COUNTS.socialPosts; i += 1) {
     const offer = pick(ctx.offers, i);
     const shop = ctx.shops.find((item) => item.id === offer.shopId) ?? pick(ctx.shops, i);
@@ -67,7 +68,7 @@ export async function seedSocialChatLive(prisma: PrismaClient, ctx: SeedContext)
 
   for (let i = 0; i < COUNTS.socialCommentReplies; i += 1) {
     const comment = pick(comments, i);
-    await prisma.socialCommentReply.create({
+    const reply = await prisma.socialCommentReply.create({
       data: {
         id: id(),
         commentId: comment.id,
@@ -75,6 +76,23 @@ export async function seedSocialChatLive(prisma: PrismaClient, ctx: SeedContext)
         body: socialCommentReplyBody(i),
         visibility: i % 31 === 0 ? 'HIDDEN' : 'PUBLIC',
         createdAt: recentDate(7 - (i % 7)),
+      },
+    });
+    replies.push(reply);
+  }
+
+  for (let i = 0; i < COUNTS.socialCommentReplyLikes; i += 1) {
+    const reply = pick(replies, i);
+    const liker = pick(ctx.users, i + 9);
+    if (liker.id === reply.authorUserId) continue;
+    await prisma.socialCommentReplyLike.upsert({
+      where: { replyId_userId: { replyId: reply.id, userId: liker.id } },
+      update: {},
+      create: {
+        id: id(),
+        replyId: reply.id,
+        userId: liker.id,
+        createdAt: recentDate(6 - (i % 6)),
       },
     });
   }
