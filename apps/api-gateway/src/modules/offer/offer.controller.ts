@@ -131,14 +131,16 @@ export class OfferController {
   @ApiOperation({ summary: 'Lay danh sach offer cua shop' })
   @ApiOkResponse({
     description: 'Danh sach offer active cua shop.',
-    type: OfferResponseDto,
+    type: OfferListItemResponseDto,
     isArray: true,
   })
   @Get('shops/:shopId/offers')
-  findShopOffers(@Param('shopId') shopId: string) {
-    return this.catalogRpcService.findOffers({
+  async findShopOffers(@Param('shopId') shopId: string) {
+    const result = await this.catalogRpcService.findOffers({
       shopId,
     });
+
+    return Array.isArray(result) ? result.map(toOfferListItem) : result;
   }
 
   @ApiOperation({ summary: 'Lay danh sach offer' })
