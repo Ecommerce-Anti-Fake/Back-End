@@ -151,8 +151,33 @@ export class SocialRepository {
 
   private socialPostInclude(requesterUserId?: string | null) {
     return {
-      author: { select: { displayName: true, email: true, phone: true } },
-      authorShop: { select: { shopName: true } },
+      author: {
+        select: {
+          id: true,
+          displayName: true,
+          email: true,
+          phone: true,
+          avatarMedia: { select: { secureUrl: true } },
+        },
+      },
+      authorShop: {
+        select: {
+          shopName: true,
+          avatarMedia: { select: { secureUrl: true } },
+        },
+      },
+      offer: {
+        select: {
+          media: {
+            orderBy: { createdAt: 'asc' as const },
+            take: 1,
+            select: {
+              fileUrl: true,
+              mediaAsset: { select: { secureUrl: true } },
+            },
+          },
+        },
+      },
       comments: {
         where: { visibility: 'PUBLIC' as const },
         orderBy: { createdAt: 'asc' as const },

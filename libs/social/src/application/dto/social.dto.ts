@@ -87,21 +87,33 @@ export class SocialCommentResponseDto {
   @ApiProperty() createdAt!: Date;
 }
 
+export class SocialPostAuthorResponseDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() name!: string;
+  @ApiPropertyOptional() avatar?: string | null;
+  @ApiPropertyOptional() shopName?: string | null;
+}
+
+export class SocialPostStatsResponseDto {
+  @ApiProperty() reactions!: number;
+  @ApiProperty() comments!: number;
+  @ApiProperty() shares!: number;
+}
+
+export class SocialPostViewerResponseDto {
+  @ApiProperty() liked!: boolean;
+}
+
 export class SocialPostResponseDto {
   @ApiProperty() id!: string;
-  @ApiProperty() authorUserId!: string;
-  @ApiPropertyOptional() authorShopId?: string | null;
-  @ApiProperty() authorName!: string;
-  @ApiPropertyOptional() authorShopName?: string | null;
-  @ApiPropertyOptional() offerId?: string | null;
+  @ApiProperty({ type: SocialPostAuthorResponseDto })
+  author!: SocialPostAuthorResponseDto;
   @ApiProperty({ enum: SOCIAL_POST_TYPES }) postType!: string;
   @ApiProperty() body!: string;
-  @ApiProperty() visibility!: string;
-  @ApiProperty() reactionCount!: number;
-  @ApiProperty() commentCount!: number;
-  @ApiProperty() shareCount!: number;
-  @ApiProperty() viewerHasLiked!: boolean;
-  @ApiProperty({ type: SocialCommentResponseDto, isArray: true })
-  comments!: SocialCommentResponseDto[];
+  @ApiPropertyOptional() image?: string | null;
   @ApiProperty() createdAt!: Date;
+  @ApiProperty({ type: SocialPostStatsResponseDto })
+  stats!: SocialPostStatsResponseDto;
+  @ApiProperty({ type: SocialPostViewerResponseDto })
+  viewer!: SocialPostViewerResponseDto;
 }

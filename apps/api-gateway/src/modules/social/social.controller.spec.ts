@@ -8,6 +8,9 @@ describe('SocialController routes', () => {
       Reflect.getMetadata(PATH_METADATA, SocialController.prototype.listSocialPosts),
     ).toBe('social/posts');
     expect(
+      Reflect.getMetadata(PATH_METADATA, SocialController.prototype.getSocialPost),
+    ).toBe('social/posts/:postId');
+    expect(
       Reflect.getMetadata(PATH_METADATA, SocialController.prototype.createSocialPost),
     ).toBe('social/posts');
     expect(

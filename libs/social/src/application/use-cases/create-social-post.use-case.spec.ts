@@ -79,7 +79,7 @@ describe('CreateSocialPostUseCase in SocialModule', () => {
         authorShopId: 'shop-1',
       }),
     );
-    expect(result.authorShopId).toBe('shop-1');
+    expect(result.author.shopName).toBe('Shop A');
   });
 
   it('blocks posting as another user shop', async () => {

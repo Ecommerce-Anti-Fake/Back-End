@@ -3,6 +3,7 @@ import { PrismaModule } from '@database/prisma/prisma.module';
 import {
   CreateSocialCommentUseCase,
   CreateSocialPostUseCase,
+  GetSocialPostUseCase,
   ListSocialPostsUseCase,
   RemoveSocialReactionUseCase,
   SetSocialReactionUseCase,
@@ -18,6 +19,7 @@ import { SocialRpcController } from './presentation/rpc/social.rpc-controller';
   providers: [
     SocialRepository,
     ListSocialPostsUseCase,
+    GetSocialPostUseCase,
     CreateSocialPostUseCase,
     CreateSocialCommentUseCase,
     SetSocialReactionUseCase,

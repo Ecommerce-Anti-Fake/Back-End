@@ -188,6 +188,10 @@ export class CatalogRpcService {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.listSocialPosts, payload);
   }
 
+  getSocialPost(payload: SocialPostLookupMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.getSocialPost, payload);
+  }
+
   createSocialPost(payload: CreateSocialPostMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.createSocialPost, payload);
   }

@@ -35,6 +35,24 @@ export class SocialController {
     });
   }
 
+  @ApiOperation({ summary: 'Lay chi tiet bai viet cong dong' })
+  @ApiOkResponse({
+    description: 'Chi tiet bai viet cong dong.',
+    type: SocialPostResponseDto,
+  })
+  @RateLimit({ profile: 'publicCatalog' })
+  @Get('social/posts/:postId')
+  getSocialPost(
+    @Param('postId') postId: string,
+    @CurrentUser() requester?: AuthenticatedUser,
+  ) {
+    return this.catalogRpcService.getSocialPost({
+      postId,
+      requesterUserId: requester?.id ?? '',
+      requesterRole: requester?.role,
+    });
+  }
+
   @ApiOperation({ summary: 'Tao bai viet cong dong' })
   @ApiBearerAuth('access-token')
   @ApiCreatedResponse({

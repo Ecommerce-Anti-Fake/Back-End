@@ -1,7 +1,9 @@
 type SocialUserRecord = {
+  id?: string;
   displayName: string | null;
   email: string | null;
   phone: string | null;
+  avatarMedia?: { secureUrl: string } | null;
 };
 
 type SocialCommentWithAuthor = {
@@ -24,7 +26,16 @@ type SocialPostWithRelations = {
   visibility: string;
   createdAt: Date;
   author: SocialUserRecord;
-  authorShop?: { shopName: string } | null;
+  authorShop?: {
+    shopName: string;
+    avatarMedia?: { secureUrl: string } | null;
+  } | null;
+  offer?: {
+    media?: Array<{
+      fileUrl: string;
+      mediaAsset?: { secureUrl: string } | null;
+    }>;
+  } | null;
   comments?: SocialCommentWithAuthor[];
   reactions?: Array<{ userId: string; reactionType: string }>;
   _count?: { comments?: number; reactions?: number; shares?: number };
@@ -36,26 +47,34 @@ export function toSocialPostResponse(
 ) {
   return {
     id: post.id,
-    authorUserId: post.authorUserId,
-    authorShopId: post.authorShopId,
-    authorName: displayName(post.author),
-    authorShopName: post.authorShop?.shopName ?? null,
-    offerId: post.offerId,
+    author: {
+      id: post.authorUserId,
+      name: displayName(post.author),
+      avatar:
+        post.authorShop?.avatarMedia?.secureUrl ??
+        post.author.avatarMedia?.secureUrl ??
+        null,
+      shopName: post.authorShop?.shopName ?? null,
+    },
     postType: post.postType,
     body: post.body,
-    visibility: post.visibility,
-    reactionCount: post._count?.reactions ?? post.reactions?.length ?? 0,
-    commentCount: post._count?.comments ?? post.comments?.length ?? 0,
-    shareCount: post._count?.shares ?? 0,
-    viewerHasLiked: Boolean(
-      viewerUserId &&
-      post.reactions?.some(
-        (reaction) =>
-          reaction.userId === viewerUserId && reaction.reactionType === 'LIKE',
-      ),
-    ),
-    comments: (post.comments ?? []).map(toSocialCommentResponse),
+    image: firstOfferImage(post),
     createdAt: post.createdAt,
+    stats: {
+      reactions: post._count?.reactions ?? post.reactions?.length ?? 0,
+      comments: post._count?.comments ?? post.comments?.length ?? 0,
+      shares: post._count?.shares ?? 0,
+    },
+    viewer: {
+      liked: Boolean(
+        viewerUserId &&
+          post.reactions?.some(
+            (reaction) =>
+              reaction.userId === viewerUserId &&
+              reaction.reactionType === 'LIKE',
+          ),
+      ),
+    },
   };
 }
 
@@ -73,4 +92,9 @@ export function toSocialCommentResponse(comment: SocialCommentWithAuthor) {
 
 function displayName(user: SocialUserRecord) {
   return user.displayName || user.email || user.phone || 'Nguoi dung ACF';
+}
+
+function firstOfferImage(post: SocialPostWithRelations) {
+  const media = post.offer?.media?.[0];
+  return media?.mediaAsset?.secureUrl ?? media?.fileUrl ?? null;
 }

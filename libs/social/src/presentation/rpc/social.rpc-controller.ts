@@ -13,6 +13,7 @@ import type {
 import {
   CreateSocialCommentUseCase,
   CreateSocialPostUseCase,
+  GetSocialPostUseCase,
   ListSocialPostsUseCase,
   RemoveSocialReactionUseCase,
   SetSocialReactionUseCase,
@@ -24,6 +25,7 @@ import {
 export class SocialRpcController {
   constructor(
     private readonly listSocialPostsUseCase: ListSocialPostsUseCase,
+    private readonly getSocialPostUseCase: GetSocialPostUseCase,
     private readonly createSocialPostUseCase: CreateSocialPostUseCase,
     private readonly createSocialCommentUseCase: CreateSocialCommentUseCase,
     private readonly setSocialReactionUseCase: SetSocialReactionUseCase,
@@ -36,6 +38,15 @@ export class SocialRpcController {
   async listSocialPosts(@Payload() payload: ListSocialPostsMessage) {
     try {
       return await this.listSocialPostsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.getSocialPost)
+  async getSocialPost(@Payload() payload: SocialPostLookupMessage) {
+    try {
+      return await this.getSocialPostUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

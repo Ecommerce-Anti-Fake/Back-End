@@ -94,6 +94,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   startChatThread: 'products.start-chat-thread',
   sendChatMessage: 'products.send-chat-message',
   listSocialPosts: 'products.list-social-posts',
+  getSocialPost: 'products.get-social-post',
   createSocialPost: 'products.create-social-post',
   createSocialComment: 'products.create-social-comment',
   setSocialReaction: 'products.set-social-reaction',
