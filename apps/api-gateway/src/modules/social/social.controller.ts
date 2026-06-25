@@ -5,7 +5,9 @@ import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard } from '@secu
 import {
   CreateSocialCommentDto,
   CreateSocialPostDto,
+  ListSocialCommentsQueryDto,
   ListSocialPostsQueryDto,
+  SocialCommentsPageResponseDto,
   SetSocialReactionDto,
   SocialPostResponseDto,
   UpdateSocialPostVisibilityDto,
@@ -50,6 +52,27 @@ export class SocialController {
       postId,
       requesterUserId: requester?.id ?? '',
       requesterRole: requester?.role,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay binh luan cua bai viet cong dong' })
+  @ApiOkResponse({
+    description: 'Danh sach binh luan cua bai viet.',
+    type: SocialCommentsPageResponseDto,
+  })
+  @RateLimit({ profile: 'publicCatalog' })
+  @Get('social/posts/:postId/comments')
+  listSocialComments(
+    @Param('postId') postId: string,
+    @Query() query: ListSocialCommentsQueryDto,
+    @CurrentUser() requester?: AuthenticatedUser,
+  ) {
+    return this.catalogRpcService.listSocialComments({
+      postId,
+      requesterUserId: requester?.id ?? null,
+      requesterRole: requester?.role,
+      page: query.page,
+      pageSize: query.pageSize,
     });
   }
 

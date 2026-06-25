@@ -34,6 +34,22 @@ export class ListSocialPostsQueryDto {
   includeHidden?: string;
 }
 
+export class ListSocialCommentsQueryDto {
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  pageSize?: number;
+}
+
 export class CreateSocialPostDto {
   @ApiProperty({ enum: SOCIAL_POST_TYPES, example: 'QUESTION' })
   @IsIn(SOCIAL_POST_TYPES)
@@ -77,21 +93,28 @@ export class UpdateSocialPostVisibilityDto {
   visibility!: (typeof SOCIAL_POST_VISIBILITIES)[number];
 }
 
-export class SocialCommentResponseDto {
-  @ApiProperty() id!: string;
-  @ApiProperty() postId!: string;
-  @ApiProperty() authorUserId!: string;
-  @ApiProperty() authorName!: string;
-  @ApiProperty() body!: string;
-  @ApiProperty() visibility!: string;
-  @ApiProperty() createdAt!: Date;
-}
-
 export class SocialPostAuthorResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() name!: string;
   @ApiPropertyOptional() avatar?: string | null;
   @ApiPropertyOptional() shopName?: string | null;
+}
+
+export class SocialCommentAuthorResponseDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() name!: string;
+  @ApiPropertyOptional() avatar?: string | null;
+}
+
+export class SocialCommentResponseDto {
+  @ApiProperty() id!: string;
+  @ApiProperty({ type: SocialCommentAuthorResponseDto })
+  author!: SocialCommentAuthorResponseDto;
+  @ApiProperty() body!: string;
+  @ApiProperty() createdAt!: Date;
+  @ApiProperty() likeCount!: number;
+  @ApiProperty() viewerLiked!: boolean;
+  @ApiProperty() replyCount!: number;
 }
 
 export class SocialPostStatsResponseDto {
@@ -116,4 +139,13 @@ export class SocialPostResponseDto {
   stats!: SocialPostStatsResponseDto;
   @ApiProperty({ type: SocialPostViewerResponseDto })
   viewer!: SocialPostViewerResponseDto;
+}
+
+export class SocialCommentsPageResponseDto {
+  @ApiProperty() page!: number;
+  @ApiProperty() pageSize!: number;
+  @ApiProperty() totalItems!: number;
+  @ApiProperty() totalPages!: number;
+  @ApiProperty({ type: SocialCommentResponseDto, isArray: true })
+  items!: SocialCommentResponseDto[];
 }

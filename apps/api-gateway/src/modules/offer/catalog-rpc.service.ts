@@ -24,6 +24,7 @@ import {
   ListLiveCommentsMessage,
   ListLiveSessionsMessage,
   ListOffersMessage,
+  ListSocialCommentsMessage,
   ListSocialPostsMessage,
   OfferDocumentUploadSignaturesMessage,
   OfferBatchLinksLookupMessage,
@@ -190,6 +191,10 @@ export class CatalogRpcService {
 
   getSocialPost(payload: SocialPostLookupMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.getSocialPost, payload);
+  }
+
+  listSocialComments(payload: ListSocialCommentsMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.listSocialComments, payload);
   }
 
   createSocialPost(payload: CreateSocialPostMessage) {

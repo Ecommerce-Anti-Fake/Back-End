@@ -95,6 +95,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   sendChatMessage: 'products.send-chat-message',
   listSocialPosts: 'products.list-social-posts',
   getSocialPost: 'products.get-social-post',
+  listSocialComments: 'products.list-social-comments',
   createSocialPost: 'products.create-social-post',
   createSocialComment: 'products.create-social-comment',
   setSocialReaction: 'products.set-social-reaction',
@@ -631,6 +632,14 @@ export type SocialPostLookupMessage = {
   requesterUserId: string;
   requesterRole?: string | null;
   postId: string;
+};
+
+export type ListSocialCommentsMessage = {
+  requesterUserId?: string | null;
+  requesterRole?: string | null;
+  postId: string;
+  page?: number;
+  pageSize?: number;
 };
 
 export type CreateSocialCommentMessage = SocialPostLookupMessage & {

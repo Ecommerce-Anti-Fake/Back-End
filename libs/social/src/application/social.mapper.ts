@@ -81,12 +81,16 @@ export function toSocialPostResponse(
 export function toSocialCommentResponse(comment: SocialCommentWithAuthor) {
   return {
     id: comment.id,
-    postId: comment.postId,
-    authorUserId: comment.authorUserId,
-    authorName: displayName(comment.author),
+    author: {
+      id: comment.authorUserId,
+      name: displayName(comment.author),
+      avatar: comment.author.avatarMedia?.secureUrl ?? null,
+    },
     body: comment.body,
-    visibility: comment.visibility,
     createdAt: comment.createdAt,
+    likeCount: 0,
+    viewerLiked: false,
+    replyCount: 0,
   };
 }
 
