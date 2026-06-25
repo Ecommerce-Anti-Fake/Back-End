@@ -5,8 +5,10 @@ import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard } from '@secu
 import {
   CreateSocialCommentDto,
   CreateSocialPostDto,
+  ListSocialCommentRepliesQueryDto,
   ListSocialCommentsQueryDto,
   ListSocialPostsQueryDto,
+  SocialCommentRepliesPageResponseDto,
   SocialCommentsPageResponseDto,
   SetSocialReactionDto,
   SocialPostResponseDto,
@@ -69,6 +71,27 @@ export class SocialController {
   ) {
     return this.catalogRpcService.listSocialComments({
       postId,
+      requesterUserId: requester?.id ?? null,
+      requesterRole: requester?.role,
+      page: query.page,
+      pageSize: query.pageSize,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay phan hoi cua binh luan cong dong' })
+  @ApiOkResponse({
+    description: 'Danh sach phan hoi cua binh luan.',
+    type: SocialCommentRepliesPageResponseDto,
+  })
+  @RateLimit({ profile: 'publicCatalog' })
+  @Get('social/comments/:commentId/replies')
+  listSocialCommentReplies(
+    @Param('commentId') commentId: string,
+    @Query() query: ListSocialCommentRepliesQueryDto,
+    @CurrentUser() requester?: AuthenticatedUser,
+  ) {
+    return this.catalogRpcService.listSocialCommentReplies({
+      commentId,
       requesterUserId: requester?.id ?? null,
       requesterRole: requester?.role,
       page: query.page,

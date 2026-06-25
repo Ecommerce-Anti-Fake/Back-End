@@ -50,6 +50,22 @@ export class ListSocialCommentsQueryDto {
   pageSize?: number;
 }
 
+export class ListSocialCommentRepliesQueryDto {
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 5 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  pageSize?: number;
+}
+
 export class CreateSocialPostDto {
   @ApiProperty({ enum: SOCIAL_POST_TYPES, example: 'QUESTION' })
   @IsIn(SOCIAL_POST_TYPES)
@@ -117,6 +133,16 @@ export class SocialCommentResponseDto {
   @ApiProperty() replyCount!: number;
 }
 
+export class SocialCommentReplyResponseDto {
+  @ApiProperty() id!: string;
+  @ApiProperty({ type: SocialCommentAuthorResponseDto })
+  author!: SocialCommentAuthorResponseDto;
+  @ApiProperty() body!: string;
+  @ApiProperty() createdAt!: Date;
+  @ApiProperty() likeCount!: number;
+  @ApiProperty() viewerLiked!: boolean;
+}
+
 export class SocialPostStatsResponseDto {
   @ApiProperty() reactions!: number;
   @ApiProperty() comments!: number;
@@ -148,4 +174,13 @@ export class SocialCommentsPageResponseDto {
   @ApiProperty() totalPages!: number;
   @ApiProperty({ type: SocialCommentResponseDto, isArray: true })
   items!: SocialCommentResponseDto[];
+}
+
+export class SocialCommentRepliesPageResponseDto {
+  @ApiProperty() page!: number;
+  @ApiProperty() pageSize!: number;
+  @ApiProperty() totalItems!: number;
+  @ApiProperty() totalPages!: number;
+  @ApiProperty({ type: SocialCommentReplyResponseDto, isArray: true })
+  items!: SocialCommentReplyResponseDto[];
 }

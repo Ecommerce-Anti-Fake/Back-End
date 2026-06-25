@@ -18,6 +18,16 @@ type SocialCommentWithAuthor = {
   _count?: { likes?: number; replies?: number };
 };
 
+type SocialCommentReplyWithAuthor = {
+  id: string;
+  commentId: string;
+  authorUserId: string;
+  body: string;
+  visibility: string;
+  createdAt: Date;
+  author: SocialUserRecord;
+};
+
 type SocialPostWithRelations = {
   id: string;
   authorUserId: string;
@@ -93,6 +103,23 @@ export function toSocialCommentResponse(comment: SocialCommentWithAuthor) {
     likeCount: comment._count?.likes ?? comment.likes?.length ?? 0,
     viewerLiked: Boolean(comment.likes?.length),
     replyCount: comment._count?.replies ?? 0,
+  };
+}
+
+export function toSocialCommentReplyResponse(
+  reply: SocialCommentReplyWithAuthor,
+) {
+  return {
+    id: reply.id,
+    author: {
+      id: reply.authorUserId,
+      name: displayName(reply.author),
+      avatar: reply.author.avatarMedia?.secureUrl ?? null,
+    },
+    body: reply.body,
+    createdAt: reply.createdAt,
+    likeCount: 0,
+    viewerLiked: false,
   };
 }
 

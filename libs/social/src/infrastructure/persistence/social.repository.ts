@@ -116,6 +116,47 @@ export class SocialRepository {
     });
   }
 
+  findSocialCommentById(commentId: string, requesterUserId?: string | null) {
+    return this.prisma.socialComment.findUnique({
+      where: { id: commentId },
+      include: {
+        post: { include: this.socialPostInclude(requesterUserId) },
+      },
+    });
+  }
+
+  listSocialCommentReplies(input: {
+    commentId: string;
+    page?: number;
+    pageSize?: number;
+  }) {
+    const page = Math.max(1, input.page ?? 1);
+    const pageSize = Math.min(50, Math.max(1, input.pageSize ?? 5));
+    return this.prisma.socialCommentReply.findMany({
+      where: { commentId: input.commentId, visibility: 'PUBLIC' },
+      include: {
+        author: {
+          select: {
+            id: true,
+            displayName: true,
+            email: true,
+            phone: true,
+            avatarMedia: { select: { secureUrl: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+  }
+
+  countSocialCommentReplies(commentId: string) {
+    return this.prisma.socialCommentReply.count({
+      where: { commentId, visibility: 'PUBLIC' },
+    });
+  }
+
   async createSocialComment(input: {
     postId: string;
     authorUserId: string;

@@ -4,6 +4,7 @@ import {
   CreateSocialCommentUseCase,
   CreateSocialPostUseCase,
   GetSocialPostUseCase,
+  ListSocialCommentRepliesUseCase,
   ListSocialCommentsUseCase,
   ListSocialPostsUseCase,
   RemoveSocialReactionUseCase,
@@ -20,6 +21,7 @@ import { SocialRpcController } from './presentation/rpc/social.rpc-controller';
   providers: [
     SocialRepository,
     ListSocialPostsUseCase,
+    ListSocialCommentRepliesUseCase,
     ListSocialCommentsUseCase,
     GetSocialPostUseCase,
     CreateSocialPostUseCase,

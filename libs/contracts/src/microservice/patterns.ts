@@ -96,6 +96,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   listSocialPosts: 'products.list-social-posts',
   getSocialPost: 'products.get-social-post',
   listSocialComments: 'products.list-social-comments',
+  listSocialCommentReplies: 'products.list-social-comment-replies',
   createSocialPost: 'products.create-social-post',
   createSocialComment: 'products.create-social-comment',
   setSocialReaction: 'products.set-social-reaction',
@@ -638,6 +639,14 @@ export type ListSocialCommentsMessage = {
   requesterUserId?: string | null;
   requesterRole?: string | null;
   postId: string;
+  page?: number;
+  pageSize?: number;
+};
+
+export type ListSocialCommentRepliesMessage = {
+  requesterUserId?: string | null;
+  requesterRole?: string | null;
+  commentId: string;
   page?: number;
   pageSize?: number;
 };
