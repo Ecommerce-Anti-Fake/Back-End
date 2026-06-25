@@ -177,4 +177,42 @@ describe('ShopsRepository', () => {
       }),
     });
   });
+
+  it('returns approved public shop categories by shop id', async () => {
+    const prisma = {
+      shop: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'shop-1',
+          shopStatus: 'verified',
+          registeredCategories: [
+            {
+              category: {
+                id: 'category-1',
+                name: 'My pham',
+              },
+            },
+          ],
+        }),
+      },
+    };
+    const repository = new ShopsRepository(prisma as never);
+
+    await expect(repository.findPublicShopCategoriesByShopId('shop-1')).resolves.toEqual([
+      {
+        categoryId: 'category-1',
+        categoryName: 'My pham',
+      },
+    ]);
+
+    expect(prisma.shop.findUnique).toHaveBeenCalledWith({
+      where: { id: 'shop-1' },
+      select: expect.objectContaining({
+        id: true,
+        shopStatus: true,
+        registeredCategories: expect.objectContaining({
+          where: { registrationStatus: 'approved' },
+        }),
+      }),
+    });
+  });
 });

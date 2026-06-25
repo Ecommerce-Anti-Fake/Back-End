@@ -55,6 +55,7 @@ export const SHOPS_MESSAGE_PATTERNS = {
   findPublic: 'shops.find-public',
   findByOffer: 'shops.find-by-offer',
   findById: 'shops.find-by-id',
+  findCategoriesByShopId: 'shops.find-categories-by-shop-id',
   findMine: 'shops.find-mine',
   getVerificationSummary: 'shops.get-verification-summary',
   findPendingVerification: 'shops.find-pending-verification',
@@ -409,6 +410,10 @@ export type ShopLookupMessage = {
 
 export type ShopByOfferLookupMessage = {
   offerId: string;
+};
+
+export type ShopCategoriesLookupMessage = {
+  shopId: string;
 };
 
 export type PublicShopsLookupMessage = {

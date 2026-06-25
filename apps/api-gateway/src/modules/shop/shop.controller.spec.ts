@@ -113,4 +113,24 @@ describe('ShopController', () => {
     });
     expect(shopsRpcService.findById).toHaveBeenCalledWith({ id: 'shop-1' });
   });
+
+  it('lists public approved categories by shop id', async () => {
+    const shopsRpcService = {
+      findCategoriesByShopId: jest.fn().mockResolvedValue([
+        {
+          categoryId: 'category-1',
+          categoryName: 'My pham',
+        },
+      ]),
+    };
+    const controller = new ShopController(shopsRpcService as never);
+
+    await expect(controller.findCategoriesByShopId('shop-1')).resolves.toEqual([
+      {
+        categoryId: 'category-1',
+        categoryName: 'My pham',
+      },
+    ]);
+    expect(shopsRpcService.findCategoriesByShopId).toHaveBeenCalledWith({ shopId: 'shop-1' });
+  });
 });

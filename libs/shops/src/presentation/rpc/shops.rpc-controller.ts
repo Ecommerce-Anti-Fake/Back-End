@@ -16,6 +16,7 @@ import type {
   ReviewShopCategoryMessage,
   ReviewBrandAuthorizationMessage,
   ReviewShopDocumentMessage,
+  ShopCategoriesLookupMessage,
   ShopDocumentRequirementsLookupMessage,
   ShopDocumentsLookupMessage,
   ShopDocumentUploadSignaturesMessage,
@@ -44,6 +45,7 @@ import {
   ListCategoryDocumentsUseCase,
   ListMyShopsUseCase,
   ListPendingVerificationShopsUseCase,
+  ListPublicShopCategoriesUseCase,
   ListPublicShopsUseCase,
   ListShopDocumentRequirementsUseCase,
   ListShopDocumentsUseCase,
@@ -79,6 +81,7 @@ export class ShopsRpcController {
     private readonly getShopByIdUseCase: GetShopByIdUseCase,
     private readonly listAdminBrandAuthorizationsUseCase: ListAdminBrandAuthorizationsUseCase,
     private readonly listBrandAuthorizationsUseCase: ListBrandAuthorizationsUseCase,
+    private readonly listPublicShopCategoriesUseCase: ListPublicShopCategoriesUseCase,
     private readonly listPublicShopsUseCase: ListPublicShopsUseCase,
     private readonly listMyShopsUseCase: ListMyShopsUseCase,
     private readonly submitBrandAuthorizationUseCase: SubmitBrandAuthorizationUseCase,
@@ -298,6 +301,15 @@ export class ShopsRpcController {
   async findByOffer(@Payload() payload: ShopByOfferLookupMessage) {
     try {
       return await this.getPublicShopByOfferUseCase.execute(payload.offerId);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(SHOPS_MESSAGE_PATTERNS.findCategoriesByShopId)
+  async findCategoriesByShopId(@Payload() payload: ShopCategoriesLookupMessage) {
+    try {
+      return await this.listPublicShopCategoriesUseCase.execute(payload.shopId);
     } catch (error) {
       throwRpcException(error);
     }

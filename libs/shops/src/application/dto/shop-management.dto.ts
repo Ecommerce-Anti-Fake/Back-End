@@ -164,6 +164,14 @@ export class PublicShopDetailResponseDto {
   verify!: boolean;
 }
 
+export class PublicShopCategoryResponseDto {
+  @ApiProperty({ example: '6bd31d93-63d8-4c5a-a9af-c86b4fef3001' })
+  categoryId!: string;
+
+  @ApiProperty({ example: 'My pham' })
+  categoryName!: string;
+}
+
 export class PaginatedPublicShopSummaryResponseDto {
   @ApiProperty({ example: 120 })
   total!: number;

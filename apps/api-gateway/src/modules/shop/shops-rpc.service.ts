@@ -18,6 +18,7 @@ import {
   ReviewShopDocumentMessage,
   SHOPS_MESSAGE_PATTERNS,
   ShopByOfferLookupMessage,
+  ShopCategoriesLookupMessage,
   ShopDocumentRequirementsLookupMessage,
   ShopDocumentsLookupMessage,
   ShopDocumentUploadSignaturesMessage,
@@ -85,6 +86,10 @@ export class ShopsRpcService {
 
   findByOffer(payload: ShopByOfferLookupMessage) {
     return this.send(SHOPS_MESSAGE_PATTERNS.findByOffer, payload);
+  }
+
+  findCategoriesByShopId(payload: ShopCategoriesLookupMessage) {
+    return this.send(SHOPS_MESSAGE_PATTERNS.findCategoriesByShopId, payload);
   }
 
   findPendingVerification(payload: PendingVerificationShopsLookupMessage = {}) {

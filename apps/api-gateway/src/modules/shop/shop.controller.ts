@@ -4,6 +4,7 @@ import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
   CreateShopDto,
   PaginatedPublicShopSummaryResponseDto,
+  PublicShopCategoryResponseDto,
   PublicShopDetailResponseDto,
   PublicShopSummaryResponseDto,
   PublicShopsQueryDto,
@@ -72,6 +73,13 @@ export class ShopController {
   @Get('by-offer/:offerId')
   findByOfferId(@Param('offerId') offerId: string) {
     return this.shopsRpcService.findByOffer({ offerId });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach category public cua shop' })
+  @ApiOkResponse({ type: PublicShopCategoryResponseDto, isArray: true })
+  @Get(':shopId/categories')
+  findCategoriesByShopId(@Param('shopId') shopId: string) {
+    return this.shopsRpcService.findCategoriesByShopId({ shopId });
   }
 
   @ApiOperation({ summary: 'Lay thong tin chi tiet mot shop' })

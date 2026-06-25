@@ -5,6 +5,7 @@ export * from './get-shop-by-id.use-case';
 export * from './get-public-shop-by-offer.use-case';
 export * from './list-my-shops.use-case';
 export * from './list-public-shops.use-case';
+export * from './list-public-shop-categories.use-case';
 export * from './get-shop-verification-summary.use-case';
 export * from './list-pending-verification-shops.use-case';
 export * from './get-admin-shop-verification-summary.use-case';

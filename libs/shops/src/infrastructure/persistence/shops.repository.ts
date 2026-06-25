@@ -475,6 +475,39 @@ export class ShopsRepository {
     return offer?.shop ? this.toPublicShopSummary(offer.shop) : null;
   }
 
+  async findPublicShopCategoriesByShopId(shopId: string) {
+    const shop = await this.prisma.shop.findUnique({
+      where: { id: shopId },
+      select: {
+        id: true,
+        shopStatus: true,
+        registeredCategories: {
+          where: { registrationStatus: 'approved' },
+          select: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+      },
+    });
+
+    if (!shop || shop.shopStatus !== 'verified') {
+      return null;
+    }
+
+    return shop.registeredCategories.map((item) => ({
+      categoryId: item.category.id,
+      categoryName: item.category.name,
+    }));
+  }
+
   private async toPublicShopSummary(shop: {
     id: string;
     shopName: string;
