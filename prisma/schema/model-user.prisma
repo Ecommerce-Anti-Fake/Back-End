@@ -38,6 +38,8 @@ model User {
   favoriteOffers       UserFavoriteOffer[]
   socialPosts          SocialPost[]
   socialComments       SocialComment[]
+  socialCommentLikes   SocialCommentLike[]
+  socialCommentReplies SocialCommentReply[]
   socialReactions      SocialReaction[]
   socialShares         SocialShare[]
   liveSessionReminders LiveSessionReminder[]

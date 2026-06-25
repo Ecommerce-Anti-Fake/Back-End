@@ -1,17 +1,15 @@
-model SocialComment {
+model SocialCommentReply {
   id           String               @id @default(uuid())
-  postId       String               @map("post_id")
+  commentId    String               @map("comment_id")
   authorUserId String               @map("author_user_id")
   body         String
   visibility   SocialPostVisibility @default(PUBLIC)
   createdAt    DateTime             @default(now()) @map("created_at")
   updatedAt    DateTime             @updatedAt @map("updated_at")
-  post         SocialPost           @relation(fields: [postId], references: [id])
+  comment      SocialComment        @relation(fields: [commentId], references: [id])
   author       User                 @relation(fields: [authorUserId], references: [id])
-  likes        SocialCommentLike[]
-  replies      SocialCommentReply[]
 
-  @@index([postId, createdAt])
+  @@index([commentId, createdAt])
   @@index([authorUserId, createdAt])
-  @@map("social_comment")
+  @@map("social_comment_reply")
 }

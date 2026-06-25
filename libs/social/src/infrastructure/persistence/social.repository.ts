@@ -78,6 +78,7 @@ export class SocialRepository {
 
   listSocialComments(input: {
     postId: string;
+    requesterUserId?: string | null;
     page?: number;
     pageSize?: number;
   }) {
@@ -95,6 +96,13 @@ export class SocialRepository {
             avatarMedia: { select: { secureUrl: true } },
           },
         },
+        likes: input.requesterUserId
+          ? {
+              where: { userId: input.requesterUserId },
+              select: { userId: true },
+            }
+          : { take: 0, select: { userId: true } },
+        _count: { select: { likes: true, replies: true } },
       },
       orderBy: { createdAt: 'asc' },
       skip: (page - 1) * pageSize,

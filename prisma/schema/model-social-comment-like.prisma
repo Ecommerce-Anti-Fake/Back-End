@@ -1,0 +1,12 @@
+model SocialCommentLike {
+  id        String        @id @default(uuid())
+  commentId String        @map("comment_id")
+  userId    String        @map("user_id")
+  createdAt DateTime      @default(now()) @map("created_at")
+  comment   SocialComment @relation(fields: [commentId], references: [id])
+  user      User          @relation(fields: [userId], references: [id])
+
+  @@unique([commentId, userId])
+  @@index([userId, createdAt])
+  @@map("social_comment_like")
+}

@@ -25,6 +25,9 @@ describe('ListSocialCommentsUseCase', () => {
         avatar: 'https://cdn.example.com/u001.jpg',
         body: 'Da quet QR va xac thuc thanh cong.',
         createdAt: new Date('2026-06-25T09:30:00.000Z'),
+        likedByViewer: true,
+        likeCount: 12,
+        replyCount: 3,
       }),
       socialComment({
         id: 'cmt_002',
@@ -33,6 +36,9 @@ describe('ListSocialCommentsUseCase', () => {
         avatar: 'https://cdn.example.com/u002.jpg',
         body: 'Shop giao hang rat nhanh.',
         createdAt: new Date('2026-06-25T09:40:00.000Z'),
+        likedByViewer: false,
+        likeCount: 2,
+        replyCount: 0,
       }),
     ]);
   });
@@ -47,6 +53,7 @@ describe('ListSocialCommentsUseCase', () => {
 
     expect(repository.listSocialComments).toHaveBeenCalledWith({
       postId: 'post-1',
+      requesterUserId: 'viewer-1',
       page: 1,
       pageSize: 10,
     });
@@ -65,9 +72,9 @@ describe('ListSocialCommentsUseCase', () => {
           },
           body: 'Da quet QR va xac thuc thanh cong.',
           createdAt: new Date('2026-06-25T09:30:00.000Z'),
-          likeCount: 0,
-          viewerLiked: false,
-          replyCount: 0,
+          likeCount: 12,
+          viewerLiked: true,
+          replyCount: 3,
         },
         {
           id: 'cmt_002',
@@ -78,7 +85,7 @@ describe('ListSocialCommentsUseCase', () => {
           },
           body: 'Shop giao hang rat nhanh.',
           createdAt: new Date('2026-06-25T09:40:00.000Z'),
-          likeCount: 0,
+          likeCount: 2,
           viewerLiked: false,
           replyCount: 0,
         },
@@ -106,6 +113,9 @@ function socialComment(input: {
   avatar: string;
   body: string;
   createdAt: Date;
+  likedByViewer: boolean;
+  likeCount: number;
+  replyCount: number;
 }) {
   return {
     id: input.id,
@@ -121,5 +131,7 @@ function socialComment(input: {
       phone: null,
       avatarMedia: { secureUrl: input.avatar },
     },
+    likes: input.likedByViewer ? [{ userId: 'viewer-1' }] : [],
+    _count: { likes: input.likeCount, replies: input.replyCount },
   };
 }

@@ -32,6 +32,7 @@ export class ListSocialCommentsUseCase {
       this.socialRepository.countSocialComments(input.postId),
       this.socialRepository.listSocialComments({
         postId: input.postId,
+        requesterUserId: input.requesterUserId,
         page,
         pageSize,
       }),

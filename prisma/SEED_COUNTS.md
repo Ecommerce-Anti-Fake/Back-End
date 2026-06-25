@@ -76,6 +76,8 @@ This package contains the complete replacement seed files for the AntiFake backe
 - AffiliatePayout: 4
 - SocialPost: 20
 - SocialComment: 100
+- SocialCommentLike: up to 180, unique by comment-user
+- SocialCommentReply: 75
 - SocialReaction: up to 300, unique by post-user-reaction
 - SocialShare: up to 50, unique by post-user
 - ChatThread: up to 20, unique by buyer-shop

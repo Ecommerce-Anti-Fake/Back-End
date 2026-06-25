@@ -14,6 +14,8 @@ type SocialCommentWithAuthor = {
   visibility: string;
   createdAt: Date;
   author: SocialUserRecord;
+  likes?: Array<{ userId: string }>;
+  _count?: { likes?: number; replies?: number };
 };
 
 type SocialPostWithRelations = {
@@ -88,9 +90,9 @@ export function toSocialCommentResponse(comment: SocialCommentWithAuthor) {
     },
     body: comment.body,
     createdAt: comment.createdAt,
-    likeCount: 0,
-    viewerLiked: false,
-    replyCount: 0,
+    likeCount: comment._count?.likes ?? comment.likes?.length ?? 0,
+    viewerLiked: Boolean(comment.likes?.length),
+    replyCount: comment._count?.replies ?? 0,
   };
 }
 
