@@ -15,7 +15,7 @@
   "start:prod": "node dist/apps/api-gateway/main",
   "start:prod:all": "node scripts/start-all.js",
   "smoke:deploy": "node scripts/deploy-smoke.js",
-  "deploy:start": "npm run prisma:merge && npx prisma migrate deploy && node scripts/start-deploy.js",
+  "deploy:start": "npm run prisma:merge && node scripts/prisma-migrate-deploy-with-retry.js && node scripts/start-deploy.js",
   "start:dev:gateway": "nest start api-gateway --watch",
   "start:dev:auth": "nest start auth-service --watch",
   "start:dev:users": "nest start users-service --watch",
