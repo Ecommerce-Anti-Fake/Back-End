@@ -1631,11 +1631,12 @@ export class GhnServiceResponseDto {
 }
 
 export class CreateWholesaleOrderDto {
-  @ApiProperty({ example: 'buyer-shop-id' })
+  @ApiPropertyOptional({ example: 'buyer-shop-id', nullable: true })
+  @IsOptional()
   @IsString()
-  buyerShopId!: string;
+  buyerShopId?: string;
 
-  @ApiPropertyOptional({ example: 'buyer-node-id' })
+  @ApiPropertyOptional({ example: 'buyer-node-id', nullable: true })
   @IsOptional()
   @IsString()
   buyerDistributionNodeId?: string;

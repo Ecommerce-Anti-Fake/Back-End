@@ -91,16 +91,11 @@ describe('CreateWholesaleOrderUseCase', () => {
       shippingAddress: '12 Nguyen Trai, Quan 1, TP.HCM',
     });
 
-    expect(wholesalePricingPort.resolve).toHaveBeenCalledWith(
-      expect.objectContaining({
-        buyerShopId: 'buyer-shop-1',
-        buyerDistributionNodeId: undefined,
-        quantity: 2,
-      }),
-    );
+    expect(wholesalePricingPort.resolve).not.toHaveBeenCalled();
     expect(orderPlacementService.createOrder).toHaveBeenCalledWith(
       expect.objectContaining({
         order: expect.objectContaining({
+          buyerShopId: 'buyer-shop-1',
           buyerDistributionNodeId: null,
           baseAmount: 200,
           discountAmount: 0,
@@ -119,6 +114,66 @@ describe('CreateWholesaleOrderUseCase', () => {
       buyerPayableAmount: 200,
       sellerReceivableAmount: 160,
       platformFeeAmount: 40,
+    });
+  });
+
+  it('should allow a normal buyer to create a wholesale order without buyer shop membership', async () => {
+    ordersRepositoryMock.findUserById.mockResolvedValueOnce({
+      id: 'user-1',
+      phone: '0987654321',
+      displayName: 'Buyer',
+    });
+    ordersRepositoryMock.findOfferForOrdering.mockResolvedValueOnce(
+      createOffer({
+        price: 125,
+        salesMode: 'WHOLESALE',
+        minWholesaleQty: 2,
+      }),
+    );
+    orderPlacementServiceMock.createOrder.mockResolvedValueOnce(
+      createOrderRecord({
+        buyerShopId: null,
+        baseAmount: 250,
+        discountAmount: 0,
+        platformFeeAmount: 50,
+        buyerPayableAmount: 250,
+        sellerReceivableAmount: 200,
+        totalAmount: 250,
+        unitPrice: 125,
+        quantity: 2,
+      }),
+    );
+
+    const result = await useCase.execute({
+      buyerUserId: 'user-1',
+      offerId: 'offer-1',
+      quantity: 2,
+      shippingPhone: '0987654321',
+      shippingAddress: '12 Nguyen Trai, Quan 1, TP.HCM',
+    });
+
+    expect(ordersRepositoryMock.findOwnedShop).not.toHaveBeenCalled();
+    expect(wholesalePricingPort.resolve).not.toHaveBeenCalled();
+    expect(orderPlacementService.createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({
+        order: expect.objectContaining({
+          buyerUserId: 'user-1',
+          buyerShopId: null,
+          buyerDistributionNodeId: null,
+          orderMode: 'WHOLESALE',
+          orderType: 'wholesale_purchase',
+          baseAmount: 250,
+          platformFeeAmount: 50,
+          buyerPayableAmount: 250,
+          sellerReceivableAmount: 200,
+        }),
+      }),
+    );
+    expect(result).toMatchObject({
+      orderMode: 'WHOLESALE',
+      buyerShopId: null,
+      buyerDistributionNodeId: null,
+      buyerPayableAmount: 250,
     });
   });
 
@@ -310,7 +365,7 @@ describe('CreateWholesaleOrderUseCase', () => {
     expect(orderPlacementService.createOrder).not.toHaveBeenCalled();
   });
 
-  it('should require buyer distribution node for distribution wholesale checkout', async () => {
+  it('should require buyer shop only when buyer distribution node is provided', async () => {
     ordersRepositoryMock.findUserById.mockResolvedValueOnce({
       id: 'user-1',
       phone: '0987654321',
@@ -336,12 +391,12 @@ describe('CreateWholesaleOrderUseCase', () => {
     await expect(
       useCase.execute({
         buyerUserId: 'user-1',
-        buyerShopId: 'buyer-shop-1',
+        buyerDistributionNodeId: 'buyer-node-1',
         offerId: 'offer-1',
         quantity: 1,
         shippingAddress: '12 Nguyen Trai, Quan 1, TP.HCM',
       }),
-    ).rejects.toThrow('Buyer distribution node is required for distribution wholesale checkout');
+    ).rejects.toThrow('Buyer shop is required when buyer distribution node is provided');
     expect(wholesalePricingPort.resolve).not.toHaveBeenCalled();
     expect(orderPlacementService.createOrder).not.toHaveBeenCalled();
   });
@@ -506,6 +561,7 @@ function createOffer(overrides?: Partial<any>) {
 }
 
 function createOrderRecord(input: {
+  buyerShopId?: string | null;
   buyerDistributionNodeId?: string | null;
   baseAmount: number;
   discountAmount: number;
@@ -522,7 +578,7 @@ function createOrderRecord(input: {
     orderStatus: 'pending',
     shopId: 'seller-shop-1',
     buyerUserId: 'user-1',
-    buyerShopId: 'buyer-shop-1',
+    buyerShopId: input.buyerShopId === undefined ? 'buyer-shop-1' : input.buyerShopId,
     buyerDistributionNodeId: input.buyerDistributionNodeId ?? null,
     baseAmount: new Prisma.Decimal(input.baseAmount),
     discountAmount: new Prisma.Decimal(input.discountAmount),

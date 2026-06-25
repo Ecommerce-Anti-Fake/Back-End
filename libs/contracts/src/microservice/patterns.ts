@@ -925,8 +925,8 @@ export type QuoteCartItemShippingOptionsMessage = {
 
 export type CreateWholesaleOrderMessage = {
   buyerUserId: string;
-  buyerShopId: string;
-  buyerDistributionNodeId?: string;
+  buyerShopId?: string | null;
+  buyerDistributionNodeId?: string | null;
   offerId: string;
   quantity: number;
   affiliateCode?: string | null;

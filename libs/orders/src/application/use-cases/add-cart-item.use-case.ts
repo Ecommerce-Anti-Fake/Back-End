@@ -16,10 +16,6 @@ export class AddCartItemUseCase {
       throw new NotFoundException('Offer not found');
     }
 
-    if (offer.salesMode === 'WHOLESALE') {
-      throw new BadRequestException('This offer only supports wholesale orders');
-    }
-
     if (input.quantity > offer.availableQuantity) {
       throw new BadRequestException('Quantity exceeds available stock');
     }

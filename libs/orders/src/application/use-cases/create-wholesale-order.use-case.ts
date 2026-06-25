@@ -15,8 +15,8 @@ export class CreateWholesaleOrderUseCase {
 
   async execute(input: {
     buyerUserId: string;
-    buyerShopId: string;
-    buyerDistributionNodeId?: string;
+    buyerShopId?: string | null;
+    buyerDistributionNodeId?: string | null;
     offerId: string;
     quantity: number;
     affiliateCode?: string | null;
@@ -56,31 +56,36 @@ export class CreateWholesaleOrderUseCase {
       throw new BadRequestException('Quantity does not meet minimum wholesale quantity');
     }
 
-    const buyerShop = await this.ordersRepository.findOwnedShop(input.buyerShopId, input.buyerUserId);
-    if (!buyerShop) {
-      throw new BadRequestException('Buyer shop does not belong to current user');
+    if (input.buyerDistributionNodeId && !input.buyerShopId) {
+      throw new BadRequestException('Buyer shop is required when buyer distribution node is provided');
     }
 
-    if (buyerShop.shopStatus !== 'verified') {
-      throw new BadRequestException('Buyer shop must be active before creating wholesale orders');
+    if (input.buyerShopId) {
+      const buyerShop = await this.ordersRepository.findOwnedShop(input.buyerShopId, input.buyerUserId);
+      if (!buyerShop) {
+        throw new BadRequestException('Buyer shop does not belong to current user');
+      }
+
+      if (buyerShop.shopStatus !== 'verified') {
+        throw new BadRequestException('Buyer shop must be active before creating wholesale orders');
+      }
+
+      if (offer.shopId === input.buyerShopId) {
+        throw new BadRequestException('Buyer shop cannot create wholesale order for its own offer');
+      }
     }
 
-    if (offer.shopId === input.buyerShopId) {
-      throw new BadRequestException('Buyer shop cannot create wholesale order for its own offer');
-    }
+    const pricing =
+      input.buyerShopId && input.buyerDistributionNodeId
+        ? await this.wholesalePricingPort.resolve({
+            buyerShopId: input.buyerShopId,
+            buyerDistributionNodeId: input.buyerDistributionNodeId,
+            offer,
+            quantity: input.quantity,
+          })
+        : this.resolvePublicWholesalePricing(offer, input.quantity);
 
-    if (offer.distributionNode && !input.buyerDistributionNodeId) {
-      throw new BadRequestException('Buyer distribution node is required for distribution wholesale checkout');
-    }
-
-    const pricing = await this.wholesalePricingPort.resolve({
-      buyerShopId: input.buyerShopId,
-      buyerDistributionNodeId: input.buyerDistributionNodeId,
-      offer,
-      quantity: input.quantity,
-    });
-
-    if (offer.distributionNode && !pricing.isInNetworkTrade) {
+    if (input.buyerDistributionNodeId && offer.distributionNode && !pricing.isInNetworkTrade) {
       throw new BadRequestException('Distribution wholesale checkout must use in-network pricing');
     }
 
@@ -94,7 +99,7 @@ export class CreateWholesaleOrderUseCase {
     const order = await this.orderPlacementService.createOrder({
       order: {
         buyerUserId: input.buyerUserId,
-        buyerShopId: input.buyerShopId,
+        buyerShopId: input.buyerShopId ?? null,
         buyerDistributionNodeId: pricing.buyerDistributionNodeId,
         shopId: offer.shopId,
         orderMode: 'WHOLESALE',
@@ -131,6 +136,30 @@ export class CreateWholesaleOrderUseCase {
     });
 
     return toOrderResponse(order);
+  }
+
+  private resolvePublicWholesalePricing(offer: OfferForOrdering, quantity: number) {
+    const unitPrice = Number(offer.price.toString());
+    const baseAmount = this.roundMoney(unitPrice * quantity);
+    const platformFeeAmount = this.roundMoney(baseAmount * 0.2);
+    const buyerPayableAmount = baseAmount;
+
+    return {
+      buyerDistributionNodeId: null,
+      unitPrice,
+      discountPercent: 0,
+      baseAmount,
+      discountAmount: 0,
+      platformFeeAmount,
+      buyerPayableAmount,
+      sellerReceivableAmount: this.roundMoney(baseAmount - platformFeeAmount),
+      totalAmount: buyerPayableAmount,
+      isInNetworkTrade: false,
+    };
+  }
+
+  private roundMoney(value: number) {
+    return Math.round(value * 100) / 100;
   }
 
   private resolveShippingSnapshot(

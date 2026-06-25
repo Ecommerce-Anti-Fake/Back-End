@@ -53,8 +53,8 @@ export class OrderController {
   async createWholesale(@CurrentUserId() buyerUserId: string, @Body() dto: CreateWholesaleOrderDto) {
     const result = await this.ordersRpcService.createWholesale({
       buyerUserId,
-      buyerShopId: dto.buyerShopId,
-      buyerDistributionNodeId: dto.buyerDistributionNodeId,
+      buyerShopId: dto.buyerShopId ?? null,
+      buyerDistributionNodeId: dto.buyerDistributionNodeId ?? null,
       offerId: dto.offerId,
       quantity: dto.quantity,
       affiliateCode: dto.affiliateCode ?? null,
