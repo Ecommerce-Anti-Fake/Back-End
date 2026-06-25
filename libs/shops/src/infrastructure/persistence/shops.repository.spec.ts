@@ -10,6 +10,16 @@ describe('ShopsRepository', () => {
             id: 'shop-1',
             shopName: 'Shop ABC',
             shopStatus: 'active',
+            createdAt: new Date('2026-06-24T02:00:00.000Z'),
+            avatarMedia: {
+              secureUrl: 'https://cdn.test/shop-avatar.jpg',
+            },
+            bannerMedia: {
+              secureUrl: 'https://cdn.test/shop-banner.jpg',
+            },
+            _count: {
+              offers: 7,
+            },
           },
         ]),
       },
@@ -34,13 +44,16 @@ describe('ShopsRepository', () => {
       pageSize: 10,
       items: [
         {
-          id: 'shop-1',
-          name: 'Shop ABC',
-          avatarUrl: '',
-          isVerified: true,
+          shopId: 'shop-1',
+          shopName: 'Shop ABC',
+          shopAvatar: 'https://cdn.test/shop-avatar.jpg',
+          shopBanner: 'https://cdn.test/shop-banner.jpg',
           rating: 4.5,
-          totalReviews: 2,
+          totalOffer: 7,
           totalSale: 15,
+          totalReview: 2,
+          createdAt: '2026-06-24T02:00:00.000Z',
+          verify: true,
         },
       ],
     });
@@ -59,11 +72,21 @@ describe('ShopsRepository', () => {
       offer: {
         findUnique: jest.fn().mockResolvedValue({
           shop: {
-            id: 'shop-1',
-            shopName: 'Shop ABC',
-            shopStatus: 'active',
+          id: 'shop-1',
+          shopName: 'Shop ABC',
+          shopStatus: 'active',
+          createdAt: new Date('2026-06-24T02:00:00.000Z'),
+          avatarMedia: {
+            secureUrl: 'https://cdn.test/shop-avatar.jpg',
           },
-        }),
+          bannerMedia: {
+            secureUrl: 'https://cdn.test/shop-banner.jpg',
+          },
+          _count: {
+            offers: 4,
+          },
+        },
+      }),
       },
       review: {
         aggregate: jest.fn().mockResolvedValue({
@@ -80,13 +103,16 @@ describe('ShopsRepository', () => {
     const repository = new ShopsRepository(prisma as never);
 
     await expect(repository.findPublicShopSummaryByOfferId('offer-1')).resolves.toEqual({
-      id: 'shop-1',
-      name: 'Shop ABC',
-      avatarUrl: '',
-      isVerified: true,
+      shopId: 'shop-1',
+      shopName: 'Shop ABC',
+      shopAvatar: 'https://cdn.test/shop-avatar.jpg',
+      shopBanner: 'https://cdn.test/shop-banner.jpg',
       rating: 5,
-      totalReviews: 1,
+      totalOffer: 4,
       totalSale: 3,
+      totalReview: 1,
+      createdAt: '2026-06-24T02:00:00.000Z',
+      verify: true,
     });
 
     expect(prisma.offer.findUnique).toHaveBeenCalledWith({

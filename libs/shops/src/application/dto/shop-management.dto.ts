@@ -102,25 +102,34 @@ export class ShopResponseDto {
 
 export class PublicShopSummaryResponseDto {
   @ApiProperty({ example: '5b6ef5e7-1a03-4b17-baf3-8c4be0f5f001' })
-  id!: string;
+  shopId!: string;
 
   @ApiProperty({ example: 'Cong ty TNHH San Xuat ABC' })
-  name!: string;
+  shopName!: string;
 
   @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/shop.jpg' })
-  avatarUrl!: string;
+  shopAvatar!: string;
+
+  @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/shop-banner.jpg' })
+  shopBanner!: string;
 
   @ApiProperty({ example: true })
-  isVerified!: boolean;
+  verify!: boolean;
 
   @ApiProperty({ example: 4.8 })
   rating!: number;
 
   @ApiProperty({ example: 128 })
-  totalReviews!: number;
+  totalReview!: number;
+
+  @ApiProperty({ example: 32 })
+  totalOffer!: number;
 
   @ApiProperty({ example: 2450 })
   totalSale!: number;
+
+  @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
+  createdAt!: string;
 }
 
 export class PaginatedPublicShopSummaryResponseDto {

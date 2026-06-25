@@ -380,6 +380,22 @@ export class ShopsRepository {
           id: true,
           shopName: true,
           shopStatus: true,
+          createdAt: true,
+          avatarMedia: {
+            select: {
+              secureUrl: true,
+            },
+          },
+          bannerMedia: {
+            select: {
+              secureUrl: true,
+            },
+          },
+          _count: {
+            select: {
+              offers: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
@@ -406,6 +422,22 @@ export class ShopsRepository {
             id: true,
             shopName: true,
             shopStatus: true,
+            createdAt: true,
+            avatarMedia: {
+              select: {
+                secureUrl: true,
+              },
+            },
+            bannerMedia: {
+              select: {
+                secureUrl: true,
+              },
+            },
+            _count: {
+              select: {
+                offers: true,
+              },
+            },
           },
         },
       },
@@ -414,7 +446,15 @@ export class ShopsRepository {
     return offer?.shop ? this.toPublicShopSummary(offer.shop) : null;
   }
 
-  private async toPublicShopSummary(shop: { id: string; shopName: string; shopStatus: string }) {
+  private async toPublicShopSummary(shop: {
+    id: string;
+    shopName: string;
+    shopStatus: string;
+    createdAt: Date;
+    avatarMedia?: { secureUrl: string } | null;
+    bannerMedia?: { secureUrl: string } | null;
+    _count?: { offers: number };
+  }) {
     const [reviewStats, saleStats] = await Promise.all([
       this.prisma.review.aggregate({
         where: {
@@ -443,13 +483,16 @@ export class ShopsRepository {
     ]);
 
     return {
-      id: shop.id,
-      name: shop.shopName,
-      avatarUrl: '',
-      isVerified: shop.shopStatus === 'active',
+      shopId: shop.id,
+      shopName: shop.shopName,
+      shopAvatar: shop.avatarMedia?.secureUrl ?? '',
+      shopBanner: shop.bannerMedia?.secureUrl ?? '',
       rating: Number((reviewStats._avg.rating ?? 0).toFixed(1)),
-      totalReviews: reviewStats._count._all,
+      totalOffer: shop._count?.offers ?? 0,
       totalSale: saleStats._sum.quantity ?? 0,
+      totalReview: reviewStats._count._all,
+      createdAt: shop.createdAt.toISOString(),
+      verify: shop.shopStatus === 'active',
     };
   }
 

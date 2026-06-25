@@ -9,13 +9,16 @@ describe('ShopController', () => {
         pageSize: 20,
         items: [
           {
-            id: 'shop-1',
-            name: 'Shop ABC',
-            avatarUrl: '',
-            isVerified: true,
+            shopId: 'shop-1',
+            shopName: 'Shop ABC',
+            shopAvatar: 'https://cdn.test/shop-avatar.jpg',
+            shopBanner: 'https://cdn.test/shop-banner.jpg',
             rating: 4.5,
-            totalReviews: 2,
+            totalOffer: 7,
             totalSale: 15,
+            totalReview: 2,
+            createdAt: '2026-06-24T02:00:00.000Z',
+            verify: true,
           },
         ],
       }),
@@ -28,13 +31,16 @@ describe('ShopController', () => {
       pageSize: 20,
       items: [
         {
-          id: 'shop-1',
-          name: 'Shop ABC',
-          avatarUrl: '',
-          isVerified: true,
+          shopId: 'shop-1',
+          shopName: 'Shop ABC',
+          shopAvatar: 'https://cdn.test/shop-avatar.jpg',
+          shopBanner: 'https://cdn.test/shop-banner.jpg',
           rating: 4.5,
-          totalReviews: 2,
+          totalOffer: 7,
           totalSale: 15,
+          totalReview: 2,
+          createdAt: '2026-06-24T02:00:00.000Z',
+          verify: true,
         },
       ],
     });
@@ -47,25 +53,31 @@ describe('ShopController', () => {
   it('gets public shop summary by offer id', async () => {
     const shopsRpcService = {
       findByOffer: jest.fn().mockResolvedValue({
-        id: 'shop-1',
-        name: 'Shop ABC',
-        avatarUrl: '',
-        isVerified: true,
+        shopId: 'shop-1',
+        shopName: 'Shop ABC',
+        shopAvatar: 'https://cdn.test/shop-avatar.jpg',
+        shopBanner: 'https://cdn.test/shop-banner.jpg',
         rating: 5,
-        totalReviews: 1,
+        totalOffer: 4,
         totalSale: 3,
+        totalReview: 1,
+        createdAt: '2026-06-24T02:00:00.000Z',
+        verify: true,
       }),
     };
     const controller = new ShopController(shopsRpcService as never);
 
     await expect(controller.findByOfferId('offer-1')).resolves.toEqual({
-      id: 'shop-1',
-      name: 'Shop ABC',
-      avatarUrl: '',
-      isVerified: true,
+      shopId: 'shop-1',
+      shopName: 'Shop ABC',
+      shopAvatar: 'https://cdn.test/shop-avatar.jpg',
+      shopBanner: 'https://cdn.test/shop-banner.jpg',
       rating: 5,
-      totalReviews: 1,
+      totalOffer: 4,
       totalSale: 3,
+      totalReview: 1,
+      createdAt: '2026-06-24T02:00:00.000Z',
+      verify: true,
     });
     expect(shopsRpcService.findByOffer).toHaveBeenCalledWith({ offerId: 'offer-1' });
   });
