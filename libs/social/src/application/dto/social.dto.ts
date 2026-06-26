@@ -151,6 +151,9 @@ export class SocialCommentReplyResponseDto {
   @ApiProperty() createdAt!: Date;
   @ApiProperty() likeCount!: number;
   @ApiProperty() viewerLiked!: boolean;
+  @ApiProperty() replyCount!: number;
+  @ApiPropertyOptional() parentCommentId?: string | null;
+  @ApiProperty() depth!: number;
   @ApiPropertyOptional({ type: SocialCommentReplyToUserResponseDto, nullable: true })
   replyToUser?: SocialCommentReplyToUserResponseDto | null;
 }

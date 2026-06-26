@@ -129,7 +129,7 @@ export class SocialRepository {
     });
   }
 
-  listSocialCommentReplies(input: {
+  async listSocialCommentReplies(input: {
     commentId: string;
     requesterUserId?: string | null;
     page?: number;
@@ -137,8 +137,33 @@ export class SocialRepository {
   }) {
     const page = Math.max(1, input.page ?? 1);
     const pageSize = Math.min(50, Math.max(1, input.pageSize ?? 5));
-    return this.prisma.socialComment.findMany({
-      where: { parentCommentId: input.commentId, visibility: 'PUBLIC' },
+    const descendantRows = await this.prisma.$queryRaw<
+      Array<{ id: string; depth: number }>
+    >`
+      WITH RECURSIVE comment_tree AS (
+        SELECT c.id, c.created_at, 1 AS depth
+        FROM social_comment c
+        WHERE c.parent_comment_id = ${input.commentId}
+          AND c.visibility = 'PUBLIC'
+
+        UNION ALL
+
+        SELECT child.id, child.created_at, comment_tree.depth + 1 AS depth
+        FROM social_comment child
+        INNER JOIN comment_tree ON child.parent_comment_id = comment_tree.id
+        WHERE child.visibility = 'PUBLIC'
+      )
+      SELECT id, depth
+      FROM comment_tree
+      ORDER BY depth ASC, created_at ASC
+      LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}
+    `;
+    if (descendantRows.length === 0) {
+      return [];
+    }
+
+    const replies = await this.prisma.socialComment.findMany({
+      where: { id: { in: descendantRows.map((row) => row.id) } },
       include: {
         author: {
           select: {
@@ -169,18 +194,35 @@ export class SocialRepository {
               select: { userId: true },
             }
           : { take: 0, select: { userId: true } },
-        _count: { select: { likes: true } },
+        _count: { select: { likes: true, replies: true } },
       },
-      orderBy: { createdAt: 'asc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+    });
+    const repliesById = new Map(replies.map((reply) => [reply.id, reply]));
+    return descendantRows.flatMap((row) => {
+      const reply = repliesById.get(row.id);
+      return reply ? [{ ...reply, depth: Number(row.depth) }] : [];
     });
   }
 
-  countSocialCommentReplies(commentId: string) {
-    return this.prisma.socialComment.count({
-      where: { parentCommentId: commentId, visibility: 'PUBLIC' },
-    });
+  async countSocialCommentReplies(commentId: string) {
+    const rows = await this.prisma.$queryRaw<Array<{ count: bigint }>>`
+      WITH RECURSIVE comment_tree AS (
+        SELECT c.id
+        FROM social_comment c
+        WHERE c.parent_comment_id = ${commentId}
+          AND c.visibility = 'PUBLIC'
+
+        UNION ALL
+
+        SELECT child.id
+        FROM social_comment child
+        INNER JOIN comment_tree ON child.parent_comment_id = comment_tree.id
+        WHERE child.visibility = 'PUBLIC'
+      )
+      SELECT COUNT(*) AS count
+      FROM comment_tree
+    `;
+    return Number(rows[0]?.count ?? 0);
   }
 
   async createSocialComment(input: {

@@ -16,7 +16,7 @@ describe('ListSocialCommentRepliesUseCase', () => {
       visibility: 'PUBLIC',
       post: { visibility: 'PUBLIC', authorUserId: 'post-author' },
     });
-    repository.countSocialCommentReplies.mockResolvedValue(12);
+    repository.countSocialCommentReplies.mockResolvedValue(3);
     repository.listSocialCommentReplies.mockResolvedValue([
       socialReply({
         id: 'reply_001',
@@ -27,6 +27,11 @@ describe('ListSocialCommentRepliesUseCase', () => {
         createdAt: new Date('2026-06-25T10:00:00.000Z'),
         likedByViewer: false,
         likeCount: 1,
+        replyCount: 1,
+        depth: 1,
+        parentCommentId: 'comment-1',
+        parentAuthorUserId: 'u001',
+        parentDisplayName: 'Le Phuong Thao',
       }),
       socialReply({
         id: 'reply_002',
@@ -37,6 +42,26 @@ describe('ListSocialCommentRepliesUseCase', () => {
         createdAt: new Date('2026-06-25T10:03:00.000Z'),
         likedByViewer: true,
         likeCount: 2,
+        replyCount: 1,
+        depth: 2,
+        parentCommentId: 'reply_001',
+        parentAuthorUserId: 'u100',
+        parentDisplayName: 'Admin AntiFake',
+      }),
+      socialReply({
+        id: 'reply_003',
+        authorUserId: 'u102',
+        displayName: 'Nguyen Van B',
+        avatar: 'https://cdn.example.com/u102.jpg',
+        body: 'Minh da hieu, cam on ban.',
+        createdAt: new Date('2026-06-25T10:05:00.000Z'),
+        likedByViewer: false,
+        likeCount: 0,
+        replyCount: 0,
+        depth: 3,
+        parentCommentId: 'reply_002',
+        parentAuthorUserId: 'u101',
+        parentDisplayName: 'Shop Chinh Hang',
       }),
     ]);
   });
@@ -58,8 +83,8 @@ describe('ListSocialCommentRepliesUseCase', () => {
     expect(result).toEqual({
       page: 1,
       pageSize: 5,
-      totalItems: 12,
-      totalPages: 3,
+      totalItems: 3,
+      totalPages: 1,
       items: [
         {
           id: 'reply_001',
@@ -72,6 +97,9 @@ describe('ListSocialCommentRepliesUseCase', () => {
           createdAt: new Date('2026-06-25T10:00:00.000Z'),
           likeCount: 1,
           viewerLiked: false,
+          replyCount: 1,
+          parentCommentId: 'comment-1',
+          depth: 1,
           replyToUser: {
             userId: 'u001',
             userName: 'Le Phuong Thao',
@@ -88,9 +116,31 @@ describe('ListSocialCommentRepliesUseCase', () => {
           createdAt: new Date('2026-06-25T10:03:00.000Z'),
           likeCount: 2,
           viewerLiked: true,
+          replyCount: 1,
+          parentCommentId: 'reply_001',
+          depth: 2,
           replyToUser: {
-            userId: 'u001',
-            userName: 'Le Phuong Thao',
+            userId: 'u100',
+            userName: 'Admin AntiFake',
+          },
+        },
+        {
+          id: 'reply_003',
+          author: {
+            id: 'u102',
+            name: 'Nguyen Van B',
+            avatar: 'https://cdn.example.com/u102.jpg',
+          },
+          body: 'Minh da hieu, cam on ban.',
+          createdAt: new Date('2026-06-25T10:05:00.000Z'),
+          likeCount: 0,
+          viewerLiked: false,
+          replyCount: 0,
+          parentCommentId: 'reply_002',
+          depth: 3,
+          replyToUser: {
+            userId: 'u101',
+            userName: 'Shop Chinh Hang',
           },
         },
       ],
@@ -119,11 +169,16 @@ function socialReply(input: {
   createdAt: Date;
   likedByViewer: boolean;
   likeCount: number;
+  replyCount: number;
+  depth: number;
+  parentCommentId: string;
+  parentAuthorUserId: string;
+  parentDisplayName: string;
 }) {
   return {
     id: input.id,
     postId: 'post-1',
-    parentCommentId: 'comment-1',
+    parentCommentId: input.parentCommentId,
     authorUserId: input.authorUserId,
     body: input.body,
     visibility: 'PUBLIC',
@@ -136,16 +191,17 @@ function socialReply(input: {
       avatarMedia: { secureUrl: input.avatar },
     },
     parentComment: {
-      authorUserId: 'u001',
+      authorUserId: input.parentAuthorUserId,
       author: {
-        id: 'u001',
-        displayName: 'Le Phuong Thao',
+        id: input.parentAuthorUserId,
+        displayName: input.parentDisplayName,
         email: 'thao@example.com',
         phone: null,
         avatarMedia: null,
       },
     },
     likes: input.likedByViewer ? [{ userId: 'viewer-1' }] : [],
-    _count: { likes: input.likeCount },
+    _count: { likes: input.likeCount, replies: input.replyCount },
+    depth: input.depth,
   };
 }

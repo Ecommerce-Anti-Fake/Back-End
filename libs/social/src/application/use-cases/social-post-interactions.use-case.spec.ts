@@ -94,7 +94,7 @@ describe('social post interaction use cases in SocialModule', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('rejects cross-post and nested replies', async () => {
+  it('rejects cross-post replies and permits nested replies', async () => {
     const useCase = new CreateSocialCommentUseCase(repository as never);
     repository.findSocialCommentById.mockResolvedValueOnce({
       id: 'comment-1',
@@ -119,14 +119,12 @@ describe('social post interaction use cases in SocialModule', () => {
       visibility: 'PUBLIC',
     });
 
-    await expect(
-      useCase.execute({
-        postId: 'post-1',
-        parentCommentId: 'comment-1',
-        requesterUserId: 'user-2',
-        body: 'Dong y',
-      }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    await useCase.execute({
+      postId: 'post-1',
+      parentCommentId: 'comment-1',
+      requesterUserId: 'user-2',
+      body: 'Dong y',
+    });
   });
 
   it('sets and removes a like reaction idempotently through repository upsert/delete', async () => {

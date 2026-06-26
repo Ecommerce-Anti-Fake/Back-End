@@ -41,9 +41,6 @@ export class CreateSocialCommentUseCase {
       if (parentComment.postId !== input.postId) {
         throw new BadRequestException('Parent comment belongs to another post');
       }
-      if (parentComment.parentCommentId !== null) {
-        throw new BadRequestException('Nested social comment replies are not supported');
-      }
     }
 
     const updatedPost = await this.socialRepository.createSocialComment({
