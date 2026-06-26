@@ -100,6 +100,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   listSocialCommentReplies: 'products.list-social-comment-replies',
   createSocialPost: 'products.create-social-post',
   createSocialComment: 'products.create-social-comment',
+  createSocialCommentReply: 'products.create-social-comment-reply',
   setSocialReaction: 'products.set-social-reaction',
   removeSocialReaction: 'products.remove-social-reaction',
   shareSocialPost: 'products.share-social-post',
@@ -658,7 +659,12 @@ export type ListSocialCommentRepliesMessage = {
 
 export type CreateSocialCommentMessage = SocialPostLookupMessage & {
   body: string;
-  parentCommentId?: string | null;
+};
+
+export type CreateSocialCommentReplyMessage = {
+  commentId: string;
+  requesterUserId: string;
+  body: string;
 };
 
 export type SetSocialReactionMessage = SocialPostLookupMessage & {

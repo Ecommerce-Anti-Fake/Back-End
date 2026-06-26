@@ -4,14 +4,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SocialRepository } from '../../infrastructure/persistence/social.repository';
-import { toSocialPostResponse } from '../social.mapper';
+import { toSocialCommentReplyResponse } from '../social.mapper';
 
 @Injectable()
-export class CreateSocialCommentUseCase {
+export class CreateSocialCommentReplyUseCase {
   constructor(private readonly socialRepository: SocialRepository) {}
 
   async execute(input: {
-    postId: string;
+    commentId: string;
     requesterUserId: string;
     body: string;
   }) {
@@ -20,23 +20,20 @@ export class CreateSocialCommentUseCase {
       throw new BadRequestException('Comment body is required');
     }
 
-    const post = await this.socialRepository.findSocialPostById(
-      input.postId,
+    const parentComment = await this.socialRepository.findSocialCommentById(
+      input.commentId,
       input.requesterUserId,
     );
-    if (!post || post.visibility !== 'PUBLIC') {
-      throw new NotFoundException('Social post not found');
+    if (!parentComment || parentComment.visibility !== 'PUBLIC') {
+      throw new NotFoundException('Parent social comment not found');
     }
 
-    const updatedPost = await this.socialRepository.createSocialComment({
-      postId: input.postId,
+    const reply = await this.socialRepository.createSocialCommentReply({
+      postId: parentComment.postId,
+      parentCommentId: parentComment.id,
       authorUserId: input.requesterUserId,
       body,
     });
-    if (!updatedPost) {
-      throw new NotFoundException('Social post not found');
-    }
-
-    return toSocialPostResponse(updatedPost, input.requesterUserId);
+    return toSocialCommentReplyResponse(reply);
   }
 }

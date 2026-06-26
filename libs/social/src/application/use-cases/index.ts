@@ -1,4 +1,5 @@
 export * from './create-social-comment.use-case';
+export * from './create-social-comment-reply.use-case';
 export * from './create-social-post.use-case';
 export * from './get-social-post.use-case';
 export * from './list-social-comment-replies.use-case';

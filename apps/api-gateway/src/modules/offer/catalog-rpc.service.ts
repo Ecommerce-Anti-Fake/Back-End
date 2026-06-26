@@ -13,6 +13,7 @@ import {
   CreateLiveCommentMessage,
   CreateLiveSessionMessage,
   CreateSocialCommentMessage,
+  CreateSocialCommentReplyMessage,
   CreateSocialPostMessage,
   DeleteOfferDocumentMessage,
   DeleteOfferMediaMessage,
@@ -208,6 +209,10 @@ export class CatalogRpcService {
 
   createSocialComment(payload: CreateSocialCommentMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.createSocialComment, payload);
+  }
+
+  createSocialCommentReply(payload: CreateSocialCommentReplyMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.createSocialCommentReply, payload);
   }
 
   setSocialReaction(payload: SetSocialReactionMessage) {

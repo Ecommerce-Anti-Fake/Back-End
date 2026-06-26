@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '@database/prisma/prisma.module';
 import {
   CreateSocialCommentUseCase,
+  CreateSocialCommentReplyUseCase,
   CreateSocialPostUseCase,
   GetSocialPostUseCase,
   ListSocialCommentRepliesUseCase,
@@ -26,6 +27,7 @@ import { SocialRpcController } from './presentation/rpc/social.rpc-controller';
     GetSocialPostUseCase,
     CreateSocialPostUseCase,
     CreateSocialCommentUseCase,
+    CreateSocialCommentReplyUseCase,
     SetSocialReactionUseCase,
     RemoveSocialReactionUseCase,
     ShareSocialPostUseCase,

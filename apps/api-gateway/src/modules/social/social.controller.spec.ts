@@ -24,6 +24,9 @@ describe('SocialController routes', () => {
       Reflect.getMetadata(PATH_METADATA, SocialController.prototype.createSocialComment),
     ).toBe('social/posts/:postId/comments');
     expect(
+      Reflect.getMetadata(PATH_METADATA, SocialController.prototype.createSocialCommentReply),
+    ).toBe('social/comments/:commentId/replies');
+    expect(
       Reflect.getMetadata(PATH_METADATA, SocialController.prototype.setSocialReaction),
     ).toBe('social/posts/:postId/reactions');
     expect(

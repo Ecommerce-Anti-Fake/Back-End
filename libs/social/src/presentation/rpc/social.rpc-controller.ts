@@ -4,6 +4,7 @@ import { throwRpcException } from '@common';
 import { PRODUCTS_MESSAGE_PATTERNS } from '@contracts';
 import type {
   CreateSocialCommentMessage,
+  CreateSocialCommentReplyMessage,
   CreateSocialPostMessage,
   ListSocialCommentRepliesMessage,
   ListSocialCommentsMessage,
@@ -14,6 +15,7 @@ import type {
 } from '@contracts';
 import {
   CreateSocialCommentUseCase,
+  CreateSocialCommentReplyUseCase,
   CreateSocialPostUseCase,
   GetSocialPostUseCase,
   ListSocialCommentRepliesUseCase,
@@ -34,6 +36,7 @@ export class SocialRpcController {
     private readonly listSocialCommentsUseCase: ListSocialCommentsUseCase,
     private readonly createSocialPostUseCase: CreateSocialPostUseCase,
     private readonly createSocialCommentUseCase: CreateSocialCommentUseCase,
+    private readonly createSocialCommentReplyUseCase: CreateSocialCommentReplyUseCase,
     private readonly setSocialReactionUseCase: SetSocialReactionUseCase,
     private readonly removeSocialReactionUseCase: RemoveSocialReactionUseCase,
     private readonly shareSocialPostUseCase: ShareSocialPostUseCase,
@@ -91,6 +94,17 @@ export class SocialRpcController {
   async createSocialComment(@Payload() payload: CreateSocialCommentMessage) {
     try {
       return await this.createSocialCommentUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.createSocialCommentReply)
+  async createSocialCommentReply(
+    @Payload() payload: CreateSocialCommentReplyMessage,
+  ) {
+    try {
+      return await this.createSocialCommentReplyUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

@@ -4,11 +4,13 @@ import type { AuthenticatedUser } from '@contracts';
 import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard, OptionalJwtAuthGuard } from '@security';
 import {
   CreateSocialCommentDto,
+  CreateSocialCommentReplyDto,
   CreateSocialPostDto,
   ListSocialCommentRepliesQueryDto,
   ListSocialCommentsQueryDto,
   ListSocialPostsQueryDto,
   SocialCommentRepliesPageResponseDto,
+  SocialCommentReplyResponseDto,
   SocialCommentsPageResponseDto,
   SetSocialReactionDto,
   SocialPostResponseDto,
@@ -138,7 +140,26 @@ export class SocialController {
       requesterUserId,
       requesterRole: requester?.role,
       body: dto.body,
-      parentCommentId: dto.parentCommentId ?? null,
+    });
+  }
+
+  @ApiOperation({ summary: 'Tra loi binh luan cong dong' })
+  @ApiBearerAuth('access-token')
+  @ApiCreatedResponse({
+    description: 'Phan hoi binh luan da duoc tao.',
+    type: SocialCommentReplyResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('social/comments/:commentId/replies')
+  createSocialCommentReply(
+    @Param('commentId') commentId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: CreateSocialCommentReplyDto,
+  ) {
+    return this.catalogRpcService.createSocialCommentReply({
+      commentId,
+      requesterUserId,
+      body: dto.body,
     });
   }
 

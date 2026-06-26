@@ -227,14 +227,41 @@ export class SocialRepository {
 
   async createSocialComment(input: {
     postId: string;
-    parentCommentId?: string | null;
     authorUserId: string;
     body: string;
   }) {
     await this.prisma.socialComment.create({
-      data: { ...input, parentCommentId: input.parentCommentId ?? null },
+      data: { ...input, parentCommentId: null },
     });
     return this.findSocialPostById(input.postId, input.authorUserId);
+  }
+
+  async createSocialCommentReply(input: {
+    postId: string;
+    parentCommentId: string;
+    authorUserId: string;
+    body: string;
+  }) {
+    const reply = await this.prisma.socialComment.create({
+      data: input,
+      include: this.socialCommentReplyInclude(input.authorUserId),
+    });
+    const rows = await this.prisma.$queryRaw<Array<{ depth: bigint }>>`
+      WITH RECURSIVE ancestor_tree AS (
+        SELECT id, parent_comment_id, 0 AS depth
+        FROM social_comment
+        WHERE id = ${reply.id}
+
+        UNION ALL
+
+        SELECT parent.id, parent.parent_comment_id, ancestor_tree.depth + 1
+        FROM social_comment parent
+        INNER JOIN ancestor_tree ON ancestor_tree.parent_comment_id = parent.id
+      )
+      SELECT MAX(depth) AS depth
+      FROM ancestor_tree
+    `;
+    return { ...reply, depth: Number(rows[0]?.depth ?? 0) };
   }
 
   async setSocialReaction(input: {
@@ -361,6 +388,41 @@ export class SocialRepository {
           shares: true,
         },
       },
+    };
+  }
+
+  private socialCommentReplyInclude(requesterUserId?: string | null) {
+    return {
+      author: {
+        select: {
+          id: true,
+          displayName: true,
+          email: true,
+          phone: true,
+          avatarMedia: { select: { secureUrl: true } },
+        },
+      },
+      parentComment: {
+        select: {
+          authorUserId: true,
+          author: {
+            select: {
+              id: true,
+              displayName: true,
+              email: true,
+              phone: true,
+              avatarMedia: { select: { secureUrl: true } },
+            },
+          },
+        },
+      },
+      likes: requesterUserId
+        ? {
+            where: { userId: requesterUserId },
+            select: { userId: true },
+          }
+        : { take: 0, select: { userId: true } },
+      _count: { select: { likes: true, replies: true } },
     };
   }
 }
