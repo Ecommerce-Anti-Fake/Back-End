@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { AuthenticatedUser } from '@contracts';
-import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard } from '@security';
+import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard, OptionalJwtAuthGuard } from '@security';
 import {
   CreateSocialCommentDto,
   CreateSocialPostDto,
@@ -29,6 +29,7 @@ export class SocialController {
     isArray: true,
   })
   @RateLimit({ profile: 'publicCatalog' })
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('social/posts')
   listSocialPosts(@Query() query: ListSocialPostsQueryDto, @CurrentUser() requester?: AuthenticatedUser) {
     return this.catalogRpcService.listSocialPosts({
@@ -45,6 +46,7 @@ export class SocialController {
     type: SocialPostResponseDto,
   })
   @RateLimit({ profile: 'publicCatalog' })
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('social/posts/:postId')
   getSocialPost(
     @Param('postId') postId: string,

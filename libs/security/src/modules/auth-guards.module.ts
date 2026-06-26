@@ -4,6 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import type { StringValue } from 'ms';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
 
 @Module({
@@ -28,7 +29,7 @@ import { RolesGuard } from '../guards/roles.guard';
       },
     }),
   ],
-  providers: [JwtAuthGuard, RolesGuard, Reflector],
-  exports: [JwtModule, JwtAuthGuard, RolesGuard],
+  providers: [JwtAuthGuard, OptionalJwtAuthGuard, RolesGuard, Reflector],
+  exports: [JwtModule, JwtAuthGuard, OptionalJwtAuthGuard, RolesGuard],
 })
 export class AuthGuardsModule {}

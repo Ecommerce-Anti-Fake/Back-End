@@ -1,4 +1,5 @@
-import { PATH_METADATA } from '@nestjs/common/constants';
+import { GUARDS_METADATA, PATH_METADATA } from '@nestjs/common/constants';
+import { OptionalJwtAuthGuard } from '@security';
 import { SocialController } from './social.controller';
 
 describe('SocialController routes', () => {
@@ -34,5 +35,14 @@ describe('SocialController routes', () => {
     expect(
       Reflect.getMetadata(PATH_METADATA, SocialController.prototype.updateSocialPostVisibility),
     ).toBe('social/posts/:postId/visibility');
+  });
+
+  it('optionally authenticates public post reads for viewer-specific state', () => {
+    expect(Reflect.getMetadata(GUARDS_METADATA, SocialController.prototype.listSocialPosts)).toEqual([
+      OptionalJwtAuthGuard,
+    ]);
+    expect(Reflect.getMetadata(GUARDS_METADATA, SocialController.prototype.getSocialPost)).toEqual([
+      OptionalJwtAuthGuard,
+    ]);
   });
 });
