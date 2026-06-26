@@ -251,7 +251,7 @@ export class AuthController {
     response.clearCookie(REFRESH_TOKEN_COOKIE, {
       httpOnly: true,
       secure: this.isSecureCookieEnabled(),
-      sameSite: 'lax',
+      sameSite: 'none',
       path: REFRESH_TOKEN_COOKIE_PATH,
     });
   }
