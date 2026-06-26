@@ -658,6 +658,7 @@ export type ListSocialCommentRepliesMessage = {
 
 export type CreateSocialCommentMessage = SocialPostLookupMessage & {
   body: string;
+  parentCommentId?: string | null;
 };
 
 export type SetSocialReactionMessage = SocialPostLookupMessage & {

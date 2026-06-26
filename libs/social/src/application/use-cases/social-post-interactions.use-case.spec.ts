@@ -1,4 +1,8 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateSocialCommentUseCase } from './create-social-comment.use-case';
 import {
   RemoveSocialReactionUseCase,
@@ -10,6 +14,7 @@ import { UpdateSocialPostVisibilityUseCase } from './update-social-post-visibili
 describe('social post interaction use cases in SocialModule', () => {
   const repository = {
     findSocialPostById: jest.fn(),
+    findSocialCommentById: jest.fn(),
     createSocialComment: jest.fn(),
     setSocialReaction: jest.fn(),
     removeSocialReaction: jest.fn(),
@@ -20,6 +25,12 @@ describe('social post interaction use cases in SocialModule', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     repository.findSocialPostById.mockResolvedValue(socialPost());
+    repository.findSocialCommentById.mockResolvedValue({
+      id: 'comment-1',
+      postId: 'post-1',
+      parentCommentId: null,
+      visibility: 'PUBLIC',
+    });
     repository.createSocialComment.mockResolvedValue(
       socialPost({ commentCount: 1 }),
     );
@@ -44,10 +55,78 @@ describe('social post interaction use cases in SocialModule', () => {
 
     expect(repository.createSocialComment).toHaveBeenCalledWith({
       postId: 'post-1',
+      parentCommentId: null,
       authorUserId: 'user-2',
       body: 'Dong y',
     });
     expect(result.stats.comments).toBe(1);
+  });
+
+  it('adds a first-level reply to a public root comment on the same post', async () => {
+    const useCase = new CreateSocialCommentUseCase(repository as never);
+
+    await useCase.execute({
+      postId: 'post-1',
+      parentCommentId: 'comment-1',
+      requesterUserId: 'user-2',
+      body: ' Dong y ',
+    });
+
+    expect(repository.createSocialComment).toHaveBeenCalledWith({
+      postId: 'post-1',
+      parentCommentId: 'comment-1',
+      authorUserId: 'user-2',
+      body: 'Dong y',
+    });
+  });
+
+  it('rejects replies to missing or hidden comments', async () => {
+    repository.findSocialCommentById.mockResolvedValue(null);
+    const useCase = new CreateSocialCommentUseCase(repository as never);
+
+    await expect(
+      useCase.execute({
+        postId: 'post-1',
+        parentCommentId: 'missing-comment',
+        requesterUserId: 'user-2',
+        body: 'Dong y',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects cross-post and nested replies', async () => {
+    const useCase = new CreateSocialCommentUseCase(repository as never);
+    repository.findSocialCommentById.mockResolvedValueOnce({
+      id: 'comment-1',
+      postId: 'other-post',
+      parentCommentId: null,
+      visibility: 'PUBLIC',
+    });
+
+    await expect(
+      useCase.execute({
+        postId: 'post-1',
+        parentCommentId: 'comment-1',
+        requesterUserId: 'user-2',
+        body: 'Dong y',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    repository.findSocialCommentById.mockResolvedValueOnce({
+      id: 'comment-1',
+      postId: 'post-1',
+      parentCommentId: 'root-comment',
+      visibility: 'PUBLIC',
+    });
+
+    await expect(
+      useCase.execute({
+        postId: 'post-1',
+        parentCommentId: 'comment-1',
+        requesterUserId: 'user-2',
+        body: 'Dong y',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('sets and removes a like reaction idempotently through repository upsert/delete', async () => {

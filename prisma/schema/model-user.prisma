@@ -39,8 +39,6 @@ model User {
   socialPosts          SocialPost[]
   socialComments       SocialComment[]
   socialCommentLikes   SocialCommentLike[]
-  socialCommentReplies SocialCommentReply[]
-  socialCommentReplyLikes SocialCommentReplyLike[]
   socialReactions      SocialReaction[]
   socialShares         SocialShare[]
   liveSessionReminders LiveSessionReminder[]

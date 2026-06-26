@@ -9,6 +9,7 @@ type SocialUserRecord = {
 type SocialCommentWithAuthor = {
   id: string;
   postId: string;
+  parentCommentId?: string | null;
   authorUserId: string;
   body: string;
   visibility: string;
@@ -16,18 +17,6 @@ type SocialCommentWithAuthor = {
   author: SocialUserRecord;
   likes?: Array<{ userId: string }>;
   _count?: { likes?: number; replies?: number };
-};
-
-type SocialCommentReplyWithAuthor = {
-  id: string;
-  commentId: string;
-  authorUserId: string;
-  body: string;
-  visibility: string;
-  createdAt: Date;
-  author: SocialUserRecord;
-  likes?: Array<{ userId: string }>;
-  _count?: { likes?: number };
 };
 
 type SocialPostWithRelations = {
@@ -109,7 +98,7 @@ export function toSocialCommentResponse(comment: SocialCommentWithAuthor) {
 }
 
 export function toSocialCommentReplyResponse(
-  reply: SocialCommentReplyWithAuthor,
+  reply: SocialCommentWithAuthor,
 ) {
   return {
     id: reply.id,

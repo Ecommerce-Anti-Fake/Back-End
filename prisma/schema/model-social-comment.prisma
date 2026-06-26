@@ -1,17 +1,20 @@
 model SocialComment {
-  id           String               @id @default(uuid())
-  postId       String               @map("post_id")
-  authorUserId String               @map("author_user_id")
-  body         String
-  visibility   SocialPostVisibility @default(PUBLIC)
-  createdAt    DateTime             @default(now()) @map("created_at")
-  updatedAt    DateTime             @updatedAt @map("updated_at")
-  post         SocialPost           @relation(fields: [postId], references: [id])
-  author       User                 @relation(fields: [authorUserId], references: [id])
-  likes        SocialCommentLike[]
-  replies      SocialCommentReply[]
+  id              String               @id @default(uuid())
+  postId          String               @map("post_id")
+  parentCommentId String?              @map("parent_comment_id")
+  authorUserId    String               @map("author_user_id")
+  body            String
+  visibility      SocialPostVisibility @default(PUBLIC)
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+  post            SocialPost           @relation(fields: [postId], references: [id])
+  parentComment   SocialComment?       @relation("SocialCommentThread", fields: [parentCommentId], references: [id])
+  replies         SocialComment[]      @relation("SocialCommentThread")
+  author          User                 @relation(fields: [authorUserId], references: [id])
+  likes           SocialCommentLike[]
 
   @@index([postId, createdAt])
+  @@index([parentCommentId, createdAt])
   @@index([authorUserId, createdAt])
   @@map("social_comment")
 }

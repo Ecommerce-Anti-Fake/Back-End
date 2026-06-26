@@ -94,6 +94,11 @@ export class CreateSocialCommentDto {
   @MinLength(1)
   @MaxLength(1000)
   body!: string;
+
+  @ApiPropertyOptional({ example: 'parent-comment-id' })
+  @IsOptional()
+  @IsString()
+  parentCommentId?: string | null;
 }
 
 export class SetSocialReactionDto {

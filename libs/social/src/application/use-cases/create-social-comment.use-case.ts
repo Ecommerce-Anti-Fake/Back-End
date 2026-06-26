@@ -12,6 +12,7 @@ export class CreateSocialCommentUseCase {
 
   async execute(input: {
     postId: string;
+    parentCommentId?: string | null;
     requesterUserId: string;
     body: string;
   }) {
@@ -28,8 +29,26 @@ export class CreateSocialCommentUseCase {
       throw new NotFoundException('Social post not found');
     }
 
+    const parentCommentId = input.parentCommentId ?? null;
+    if (parentCommentId) {
+      const parentComment = await this.socialRepository.findSocialCommentById(
+        parentCommentId,
+        input.requesterUserId,
+      );
+      if (!parentComment || parentComment.visibility !== 'PUBLIC') {
+        throw new NotFoundException('Parent social comment not found');
+      }
+      if (parentComment.postId !== input.postId) {
+        throw new BadRequestException('Parent comment belongs to another post');
+      }
+      if (parentComment.parentCommentId !== null) {
+        throw new BadRequestException('Nested social comment replies are not supported');
+      }
+    }
+
     const updatedPost = await this.socialRepository.createSocialComment({
       postId: input.postId,
+      parentCommentId,
       authorUserId: input.requesterUserId,
       body,
     });

@@ -138,6 +138,7 @@ export class SocialController {
       requesterUserId,
       requesterRole: requester?.role,
       body: dto.body,
+      parentCommentId: dto.parentCommentId ?? null,
     });
   }
 

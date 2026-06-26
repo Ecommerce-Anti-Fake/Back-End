@@ -85,7 +85,11 @@ export class SocialRepository {
     const page = Math.max(1, input.page ?? 1);
     const pageSize = Math.min(50, Math.max(1, input.pageSize ?? 10));
     return this.prisma.socialComment.findMany({
-      where: { postId: input.postId, visibility: 'PUBLIC' },
+      where: {
+        postId: input.postId,
+        parentCommentId: null,
+        visibility: 'PUBLIC',
+      },
       include: {
         author: {
           select: {
@@ -112,7 +116,7 @@ export class SocialRepository {
 
   countSocialComments(postId: string) {
     return this.prisma.socialComment.count({
-      where: { postId, visibility: 'PUBLIC' },
+      where: { postId, parentCommentId: null, visibility: 'PUBLIC' },
     });
   }
 
@@ -133,8 +137,8 @@ export class SocialRepository {
   }) {
     const page = Math.max(1, input.page ?? 1);
     const pageSize = Math.min(50, Math.max(1, input.pageSize ?? 5));
-    return this.prisma.socialCommentReply.findMany({
-      where: { commentId: input.commentId, visibility: 'PUBLIC' },
+    return this.prisma.socialComment.findMany({
+      where: { parentCommentId: input.commentId, visibility: 'PUBLIC' },
       include: {
         author: {
           select: {
@@ -160,17 +164,20 @@ export class SocialRepository {
   }
 
   countSocialCommentReplies(commentId: string) {
-    return this.prisma.socialCommentReply.count({
-      where: { commentId, visibility: 'PUBLIC' },
+    return this.prisma.socialComment.count({
+      where: { parentCommentId: commentId, visibility: 'PUBLIC' },
     });
   }
 
   async createSocialComment(input: {
     postId: string;
+    parentCommentId?: string | null;
     authorUserId: string;
     body: string;
   }) {
-    await this.prisma.socialComment.create({ data: input });
+    await this.prisma.socialComment.create({
+      data: { ...input, parentCommentId: input.parentCommentId ?? null },
+    });
     return this.findSocialPostById(input.postId, input.authorUserId);
   }
 
@@ -268,7 +275,7 @@ export class SocialRepository {
         },
       },
       comments: {
-        where: { visibility: 'PUBLIC' as const },
+        where: { visibility: 'PUBLIC' as const, parentCommentId: null },
         orderBy: { createdAt: 'asc' as const },
         take: 3,
         include: {
@@ -289,7 +296,15 @@ export class SocialRepository {
             select: { userId: true, reactionType: true },
           }
         : { take: 0, select: { userId: true, reactionType: true } },
-      _count: { select: { comments: true, reactions: true, shares: true } },
+      _count: {
+        select: {
+          comments: {
+            where: { visibility: 'PUBLIC' as const, parentCommentId: null },
+          },
+          reactions: true,
+          shares: true,
+        },
+      },
     };
   }
 }

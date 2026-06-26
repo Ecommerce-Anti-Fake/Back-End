@@ -114,7 +114,8 @@ function socialReply(input: {
 }) {
   return {
     id: input.id,
-    commentId: 'comment-1',
+    postId: 'post-1',
+    parentCommentId: 'comment-1',
     authorUserId: input.authorUserId,
     body: input.body,
     visibility: 'PUBLIC',
