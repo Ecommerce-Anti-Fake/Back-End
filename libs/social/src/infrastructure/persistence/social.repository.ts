@@ -149,6 +149,20 @@ export class SocialRepository {
             avatarMedia: { select: { secureUrl: true } },
           },
         },
+        parentComment: {
+          select: {
+            authorUserId: true,
+            author: {
+              select: {
+                id: true,
+                displayName: true,
+                email: true,
+                phone: true,
+                avatarMedia: { select: { secureUrl: true } },
+              },
+            },
+          },
+        },
         likes: input.requesterUserId
           ? {
               where: { userId: input.requesterUserId },

@@ -15,6 +15,10 @@ type SocialCommentWithAuthor = {
   visibility: string;
   createdAt: Date;
   author: SocialUserRecord;
+  parentComment?: {
+    authorUserId: string;
+    author: SocialUserRecord;
+  } | null;
   likes?: Array<{ userId: string }>;
   _count?: { likes?: number; replies?: number };
 };
@@ -111,6 +115,12 @@ export function toSocialCommentReplyResponse(
     createdAt: reply.createdAt,
     likeCount: reply._count?.likes ?? reply.likes?.length ?? 0,
     viewerLiked: Boolean(reply.likes?.length),
+    replyToUser: reply.parentComment
+      ? {
+          userId: reply.parentComment.authorUserId,
+          userName: displayName(reply.parentComment.author),
+        }
+      : null,
   };
 }
 

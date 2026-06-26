@@ -138,6 +138,11 @@ export class SocialCommentResponseDto {
   @ApiProperty() replyCount!: number;
 }
 
+export class SocialCommentReplyToUserResponseDto {
+  @ApiProperty() userId!: string;
+  @ApiProperty() userName!: string;
+}
+
 export class SocialCommentReplyResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty({ type: SocialCommentAuthorResponseDto })
@@ -146,6 +151,8 @@ export class SocialCommentReplyResponseDto {
   @ApiProperty() createdAt!: Date;
   @ApiProperty() likeCount!: number;
   @ApiProperty() viewerLiked!: boolean;
+  @ApiPropertyOptional({ type: SocialCommentReplyToUserResponseDto, nullable: true })
+  replyToUser?: SocialCommentReplyToUserResponseDto | null;
 }
 
 export class SocialPostStatsResponseDto {

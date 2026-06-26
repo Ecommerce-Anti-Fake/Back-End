@@ -42,6 +42,20 @@ describe('SocialRepository comment threading', () => {
       expect.objectContaining({
         where: { parentCommentId: 'comment-1', visibility: 'PUBLIC' },
         include: expect.objectContaining({
+          parentComment: {
+            select: {
+              authorUserId: true,
+              author: {
+                select: {
+                  id: true,
+                  displayName: true,
+                  email: true,
+                  phone: true,
+                  avatarMedia: { select: { secureUrl: true } },
+                },
+              },
+            },
+          },
           _count: { select: { likes: true } },
         }),
       }),

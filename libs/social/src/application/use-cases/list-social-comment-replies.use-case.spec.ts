@@ -72,6 +72,10 @@ describe('ListSocialCommentRepliesUseCase', () => {
           createdAt: new Date('2026-06-25T10:00:00.000Z'),
           likeCount: 1,
           viewerLiked: false,
+          replyToUser: {
+            userId: 'u001',
+            userName: 'Le Phuong Thao',
+          },
         },
         {
           id: 'reply_002',
@@ -84,6 +88,10 @@ describe('ListSocialCommentRepliesUseCase', () => {
           createdAt: new Date('2026-06-25T10:03:00.000Z'),
           likeCount: 2,
           viewerLiked: true,
+          replyToUser: {
+            userId: 'u001',
+            userName: 'Le Phuong Thao',
+          },
         },
       ],
     });
@@ -126,6 +134,16 @@ function socialReply(input: {
       email: null,
       phone: null,
       avatarMedia: { secureUrl: input.avatar },
+    },
+    parentComment: {
+      authorUserId: 'u001',
+      author: {
+        id: 'u001',
+        displayName: 'Le Phuong Thao',
+        email: 'thao@example.com',
+        phone: null,
+        avatarMedia: null,
+      },
     },
     likes: input.likedByViewer ? [{ userId: 'viewer-1' }] : [],
     _count: { likes: input.likeCount },
