@@ -629,10 +629,14 @@ export type ListSocialPostsMessage = {
 
 export type CreateSocialPostMessage = {
   requesterUserId: string;
-  authorShopId?: string | null;
   postType: 'SHARE' | 'QUESTION' | 'PRODUCT_SHARE';
   body: string;
-  offerId?: string | null;
+  media?: Array<{
+    buffer: Buffer;
+    mimetype: string;
+    originalname?: string;
+    size: number;
+  }>;
 };
 
 export type SocialPostLookupMessage = {

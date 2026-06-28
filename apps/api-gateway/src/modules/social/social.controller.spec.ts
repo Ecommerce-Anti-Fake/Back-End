@@ -48,4 +48,83 @@ describe('SocialController routes', () => {
       OptionalJwtAuthGuard,
     ]);
   });
+
+  it('returns only a success message after creating a social post', async () => {
+    const catalogRpcService = {
+      createSocialPost: jest.fn().mockResolvedValue({ id: 'post-id' }),
+    };
+    const controller = new SocialController(catalogRpcService as never);
+    const media = [
+      {
+        buffer: Buffer.from('image-bytes'),
+        mimetype: 'image/png',
+        originalname: 'photo.png',
+        size: 11,
+      },
+    ];
+
+    await expect(
+      controller.createSocialPost(
+        'user-id',
+        { postType: 'QUESTION', body: 'Kiem tra hang that the nao?' },
+        media,
+      ),
+    ).resolves.toEqual({ message: 'Post created successfully.' });
+    expect(catalogRpcService.createSocialPost).toHaveBeenCalledWith({
+      requesterUserId: 'user-id',
+      postType: 'QUESTION',
+      body: 'Kiem tra hang that the nao?',
+      media,
+    });
+  });
+
+  it('propagates social post creation errors', async () => {
+    const error = new Error('upload failed');
+    const catalogRpcService = {
+      createSocialPost: jest.fn().mockRejectedValue(error),
+    };
+    const controller = new SocialController(catalogRpcService as never);
+
+    await expect(
+      controller.createSocialPost('user-id', {
+        postType: 'QUESTION',
+        body: 'Kiem tra hang that the nao?',
+      }),
+    ).rejects.toBe(error);
+  });
+
+  it('returns only a success message after creating a comment reply', async () => {
+    const catalogRpcService = {
+      createSocialCommentReply: jest.fn().mockResolvedValue({
+        id: 'reply-id',
+        body: 'Cam on ban da chia se.',
+      }),
+    };
+    const controller = new SocialController(catalogRpcService as never);
+
+    await expect(
+      controller.createSocialCommentReply('comment-id', 'user-id', {
+        body: 'Cam on ban da chia se.',
+      }),
+    ).resolves.toEqual({ message: 'Reply created successfully.' });
+    expect(catalogRpcService.createSocialCommentReply).toHaveBeenCalledWith({
+      commentId: 'comment-id',
+      requesterUserId: 'user-id',
+      body: 'Cam on ban da chia se.',
+    });
+  });
+
+  it('propagates comment reply creation errors', async () => {
+    const error = new Error('comment not found');
+    const catalogRpcService = {
+      createSocialCommentReply: jest.fn().mockRejectedValue(error),
+    };
+    const controller = new SocialController(catalogRpcService as never);
+
+    await expect(
+      controller.createSocialCommentReply('comment-id', 'user-id', {
+        body: 'Cam on ban da chia se.',
+      }),
+    ).rejects.toBe(error);
+  });
 });

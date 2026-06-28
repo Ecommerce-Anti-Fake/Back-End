@@ -32,7 +32,15 @@ describe('GetSocialPostUseCase', () => {
       },
       postType: 'PRODUCT_SHARE',
       body: 'Kham pha san pham chinh hang',
-      image: 'https://cdn.example.com/offer.jpg',
+      media: [
+        {
+          id: 'post-media-1',
+          assetType: 'IMAGE',
+          url: 'https://cdn.example.com/social-post.jpg',
+          mimeType: 'image/jpeg',
+          sortOrder: 0,
+        },
+      ],
       createdAt: new Date('2026-06-23T04:08:46.691Z'),
       stats: {
         reactions: 1,
@@ -88,6 +96,17 @@ function socialPost(input: { visibility?: string } = {}) {
         },
       ],
     },
+    media: [
+      {
+        id: 'post-media-1',
+        sortOrder: 0,
+        mediaAsset: {
+          assetType: 'IMAGE',
+          secureUrl: 'https://cdn.example.com/social-post.jpg',
+          mimeType: 'image/jpeg',
+        },
+      },
+    ],
     comments: [],
     reactions: [{ userId: 'viewer-1', reactionType: 'LIKE' }],
     _count: { comments: 5, reactions: 1, shares: 1 },

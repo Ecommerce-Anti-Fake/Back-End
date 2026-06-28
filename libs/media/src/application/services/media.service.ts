@@ -19,6 +19,24 @@ export class MediaService {
     return this.cloudinaryService.createSignedUploadParams(input);
   }
 
+  uploadCloudinaryBuffer(input: {
+    buffer: Buffer;
+    folder: string;
+    requesterUserId: string;
+    assetType: 'IMAGE' | 'VIDEO';
+    mimeType: string;
+    sequence?: number;
+  }) {
+    return this.cloudinaryService.uploadBuffer(input);
+  }
+
+  deleteCloudinaryAsset(input: {
+    publicId: string;
+    assetType: 'IMAGE' | 'VIDEO';
+  }) {
+    return this.cloudinaryService.deleteAsset(input);
+  }
+
   isOwnedCloudinaryUrl(fileUrl: string) {
     return this.cloudinaryService.isOwnedUrl(fileUrl);
   }

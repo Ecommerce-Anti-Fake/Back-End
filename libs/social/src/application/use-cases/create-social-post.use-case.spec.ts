@@ -1,23 +1,25 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
 import { CreateSocialPostUseCase } from './create-social-post.use-case';
 
 describe('CreateSocialPostUseCase in SocialModule', () => {
   const repository = {
-    findShopForSocialPost: jest.fn(),
-    findOfferForSocialPost: jest.fn(),
     countSocialPostsSince: jest.fn(),
     createSocialPost: jest.fn(),
   };
-  const useCase = new CreateSocialPostUseCase(repository as never);
+  const mediaService = {
+    uploadCloudinaryBuffer: jest.fn(),
+    deleteCloudinaryAsset: jest.fn(),
+  };
+  const useCase = new CreateSocialPostUseCase(repository as never, mediaService as never);
 
   beforeEach(() => {
     jest.clearAllMocks();
     repository.countSocialPostsSince.mockResolvedValue(0);
     repository.createSocialPost.mockResolvedValue(socialPost());
+    mediaService.uploadCloudinaryBuffer.mockResolvedValue({
+      publicId: 'social/posts/user-1-1',
+      secureUrl: 'https://cdn.example.com/social-post.jpg',
+    });
   });
 
   it('creates a normal question post within the 3 per 7 days quota', async () => {
@@ -39,8 +41,48 @@ describe('CreateSocialPostUseCase in SocialModule', () => {
       offerId: null,
       postType: 'QUESTION',
       body: 'Kiem tra QR nhu the nao?',
+      media: [],
     });
     expect(result.postType).toBe('QUESTION');
+  });
+
+  it('uploads media and passes persisted metadata to the repository', async () => {
+    await useCase.execute({
+      requesterUserId: 'user-1',
+      postType: 'SHARE',
+      body: 'Anh that te',
+      media: [
+        {
+          buffer: Buffer.from('image-bytes'),
+          mimetype: 'image/png',
+          originalname: 'photo.png',
+          size: 11,
+        },
+      ],
+    });
+
+    expect(mediaService.uploadCloudinaryBuffer).toHaveBeenCalledWith({
+      buffer: Buffer.from('image-bytes'),
+      folder: 'social/posts',
+      requesterUserId: 'user-1',
+      assetType: 'IMAGE',
+      mimeType: 'image/png',
+      sequence: 1,
+    });
+    expect(repository.createSocialPost).toHaveBeenCalledWith(
+      expect.objectContaining({
+        media: [
+          {
+            assetType: 'IMAGE',
+            publicId: 'social/posts/user-1-1',
+            secureUrl: 'https://cdn.example.com/social-post.jpg',
+            mimeType: 'image/png',
+            folder: 'social/posts',
+            sortOrder: 0,
+          },
+        ],
+      }),
+    );
   });
 
   it('enforces normal user post quota', async () => {
@@ -55,78 +97,38 @@ describe('CreateSocialPostUseCase in SocialModule', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('allows active shop owner to use the shop quota', async () => {
-    repository.findShopForSocialPost.mockResolvedValue({
-      id: 'shop-1',
-      ownerUserId: 'user-1',
-      shopStatus: 'verified',
-      shopName: 'Shop A',
-    });
-    repository.countSocialPostsSince.mockResolvedValue(29);
-    repository.createSocialPost.mockResolvedValue(
-      socialPost({ authorShopId: 'shop-1' }),
-    );
-
-    const result = await useCase.execute({
-      requesterUserId: 'user-1',
-      authorShopId: 'shop-1',
-      postType: 'SHARE',
-      body: 'Hang moi ve',
-    });
-
-    expect(repository.createSocialPost).toHaveBeenCalledWith(
-      expect.objectContaining({
-        authorShopId: 'shop-1',
-      }),
-    );
-    expect(result.author.shopName).toBe('Shop A');
-  });
-
-  it('blocks posting as another user shop', async () => {
-    repository.findShopForSocialPost.mockResolvedValue({
-      id: 'shop-1',
-      ownerUserId: 'other-user',
-      shopStatus: 'verified',
-      shopName: 'Shop A',
-    });
-
+  it('rejects unsupported media file types', async () => {
     await expect(
       useCase.execute({
         requesterUserId: 'user-1',
-        authorShopId: 'shop-1',
         postType: 'SHARE',
-        body: 'Hang moi ve',
-      }),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-  });
-
-  it('requires an active offer for product-share posts', async () => {
-    repository.findOfferForSocialPost.mockResolvedValue({
-      id: 'offer-1',
-      offerStatus: 'inactive',
-    });
-
-    await expect(
-      useCase.execute({
-        requesterUserId: 'user-1',
-        postType: 'PRODUCT_SHARE',
-        offerId: 'offer-1',
-        body: 'San pham dang quan tam',
+        body: 'File dinh kem',
+        media: [
+          {
+            buffer: Buffer.from('pdf-bytes'),
+            mimetype: 'application/pdf',
+            originalname: 'file.pdf',
+            size: 9,
+          },
+        ],
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
-  it('returns not found for missing product-share offer', async () => {
-    repository.findOfferForSocialPost.mockResolvedValue(null);
-
+  it('rejects more than five media files', async () => {
     await expect(
       useCase.execute({
         requesterUserId: 'user-1',
-        postType: 'PRODUCT_SHARE',
-        offerId: 'missing',
-        body: 'San pham dang quan tam',
+        postType: 'SHARE',
+        body: 'Qua nhieu anh',
+        media: Array.from({ length: 6 }, (_, index) => ({
+          buffer: Buffer.from(`image-${index}`),
+          mimetype: 'image/png',
+          originalname: `photo-${index}.png`,
+          size: 7,
+        })),
       }),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });
 
@@ -142,6 +144,7 @@ function socialPost(input: { authorShopId?: string | null } = {}) {
     createdAt: new Date('2026-05-31T01:00:00.000Z'),
     author: { displayName: 'User A', email: null, phone: null },
     authorShop: input.authorShopId ? { shopName: 'Shop A' } : null,
+    media: [],
     comments: [],
     reactions: [],
     _count: { comments: 0, reactions: 0, shares: 0 },

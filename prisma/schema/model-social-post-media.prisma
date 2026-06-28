@@ -1,0 +1,14 @@
+model SocialPostMedia {
+  id           String     @id @default(uuid())
+  postId       String     @map("post_id")
+  mediaAssetId String     @map("media_asset_id")
+  sortOrder    Int        @default(0) @map("sort_order")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  post         SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset @relation(fields: [mediaAssetId], references: [id])
+
+  @@unique([postId, mediaAssetId])
+  @@index([postId, sortOrder])
+  @@index([mediaAssetId])
+  @@map("social_post_media")
+}

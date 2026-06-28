@@ -56,16 +56,57 @@ export class SocialRepository {
     offerId?: string | null;
     postType: 'SHARE' | 'QUESTION' | 'PRODUCT_SHARE';
     body: string;
+    media?: Array<{
+      assetType: 'IMAGE' | 'VIDEO';
+      publicId: string;
+      secureUrl: string;
+      mimeType: string;
+      folder: string;
+      sortOrder: number;
+    }>;
   }) {
-    return this.prisma.socialPost.create({
-      data: {
-        authorUserId: input.authorUserId,
-        authorShopId: input.authorShopId ?? null,
-        offerId: input.offerId ?? null,
-        postType: input.postType,
-        body: input.body,
-      },
-      include: this.socialPostInclude(input.authorUserId),
+    return this.prisma.$transaction(async (tx) => {
+      const post = await tx.socialPost.create({
+        data: {
+          authorUserId: input.authorUserId,
+          authorShopId: input.authorShopId ?? null,
+          offerId: input.offerId ?? null,
+          postType: input.postType,
+          body: input.body,
+        },
+      });
+
+      if (input.media?.length) {
+        const mediaAssets = await Promise.all(
+          input.media.map((item) =>
+            tx.mediaAsset.create({
+              data: {
+                ownerUserId: input.authorUserId,
+                provider: 'CLOUDINARY',
+                assetType: item.assetType,
+                resourceType: 'SOCIAL_POST',
+                publicId: item.publicId,
+                secureUrl: item.secureUrl,
+                mimeType: item.mimeType,
+                folder: item.folder,
+              },
+              select: { id: true },
+            }),
+          ),
+        );
+        await tx.socialPostMedia.createMany({
+          data: mediaAssets.map((asset, index) => ({
+            postId: post.id,
+            mediaAssetId: asset.id,
+            sortOrder: input.media?.[index]?.sortOrder ?? index,
+          })),
+        });
+      }
+
+      return tx.socialPost.findUniqueOrThrow({
+        where: { id: post.id },
+        include: this.socialPostInclude(input.authorUserId),
+      });
     });
   }
 
@@ -353,6 +394,20 @@ export class SocialRepository {
             select: {
               fileUrl: true,
               mediaAsset: { select: { secureUrl: true } },
+            },
+          },
+        },
+      },
+      media: {
+        orderBy: { sortOrder: 'asc' as const },
+        select: {
+          id: true,
+          sortOrder: true,
+          mediaAsset: {
+            select: {
+              assetType: true,
+              secureUrl: true,
+              mimeType: true,
             },
           },
         },

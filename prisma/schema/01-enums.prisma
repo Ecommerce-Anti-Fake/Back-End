@@ -124,6 +124,7 @@ enum MediaResourceType {
   USER_AVATAR     
   SHOP_AVATAR     
   SHOP_BANNER     
+  SOCIAL_POST
 }
 
 enum KycDocumentSide {

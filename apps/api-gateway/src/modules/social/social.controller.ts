@@ -1,5 +1,6 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { AuthenticatedUser } from '@contracts';
 import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard, OptionalJwtAuthGuard } from '@security';
 import {
@@ -9,9 +10,10 @@ import {
   ListSocialCommentRepliesQueryDto,
   ListSocialCommentsQueryDto,
   ListSocialPostsQueryDto,
+  SocialCommentReplyMutationResponseDto,
   SocialCommentRepliesPageResponseDto,
-  SocialCommentReplyResponseDto,
   SocialCommentsPageResponseDto,
+  SocialPostMutationResponseDto,
   SetSocialReactionDto,
   SocialPostResponseDto,
   UpdateSocialPostVisibilityDto,
@@ -105,20 +107,53 @@ export class SocialController {
 
   @ApiOperation({ summary: 'Tao bai viet cong dong' })
   @ApiBearerAuth('access-token')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['postType', 'body'],
+      properties: {
+        postType: { type: 'string', enum: ['SHARE', 'QUESTION', 'PRODUCT_SHARE'], example: 'QUESTION' },
+        body: { type: 'string', example: 'Lam sao de kiem tra san pham nay chinh hang?' },
+        media: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: 'Toi da 5 anh hoac video ngan.',
+        },
+      },
+    },
+  })
   @ApiCreatedResponse({
     description: 'Bai viet da duoc tao.',
-    type: SocialPostResponseDto,
+    type: SocialPostMutationResponseDto,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @UseInterceptors(
+    FilesInterceptor('media', 5, {
+      limits: { fileSize: 30 * 1024 * 1024 },
+    }),
+  )
   @Post('social/posts')
-  createSocialPost(@CurrentUserId() requesterUserId: string, @Body() dto: CreateSocialPostDto) {
-    return this.catalogRpcService.createSocialPost({
+  async createSocialPost(
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: CreateSocialPostDto,
+    @UploadedFiles() media: Array<{
+      buffer: Buffer;
+      mimetype: string;
+      originalname?: string;
+      size: number;
+    }> = [],
+  ) {
+    await this.catalogRpcService.createSocialPost({
       requesterUserId,
-      authorShopId: dto.authorShopId ?? null,
       postType: dto.postType,
       body: dto.body,
-      offerId: dto.offerId ?? null,
+      media,
     });
+
+    return {
+      message: 'Post created successfully.',
+    };
   }
 
   @ApiOperation({ summary: 'Binh luan bai viet cong dong' })
@@ -147,20 +182,24 @@ export class SocialController {
   @ApiBearerAuth('access-token')
   @ApiCreatedResponse({
     description: 'Phan hoi binh luan da duoc tao.',
-    type: SocialCommentReplyResponseDto,
+    type: SocialCommentReplyMutationResponseDto,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('social/comments/:commentId/replies')
-  createSocialCommentReply(
+  async createSocialCommentReply(
     @Param('commentId') commentId: string,
     @CurrentUserId() requesterUserId: string,
     @Body() dto: CreateSocialCommentReplyDto,
   ) {
-    return this.catalogRpcService.createSocialCommentReply({
+    await this.catalogRpcService.createSocialCommentReply({
       commentId,
       requesterUserId,
       body: dto.body,
     });
+
+    return {
+      message: 'Reply created successfully.',
+    };
   }
 
   @ApiOperation({ summary: 'Thich bai viet cong dong' })

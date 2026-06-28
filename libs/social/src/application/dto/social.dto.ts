@@ -76,16 +76,6 @@ export class CreateSocialPostDto {
   @MinLength(1)
   @MaxLength(2000)
   body!: string;
-
-  @ApiPropertyOptional({ example: 'shop-id' })
-  @IsOptional()
-  @IsString()
-  authorShopId?: string | null;
-
-  @ApiPropertyOptional({ example: 'offer-id' })
-  @IsOptional()
-  @IsString()
-  offerId?: string | null;
 }
 
 export class CreateSocialCommentDto {
@@ -161,6 +151,11 @@ export class SocialCommentReplyResponseDto {
   replyToUser?: SocialCommentReplyToUserResponseDto | null;
 }
 
+export class SocialCommentReplyMutationResponseDto {
+  @ApiProperty({ example: 'Reply created successfully.' })
+  message!: string;
+}
+
 export class SocialPostStatsResponseDto {
   @ApiProperty() reactions!: number;
   @ApiProperty() comments!: number;
@@ -171,13 +166,27 @@ export class SocialPostViewerResponseDto {
   @ApiProperty() liked!: boolean;
 }
 
+export class SocialPostMediaResponseDto {
+  @ApiProperty() id!: string;
+  @ApiProperty({ enum: ['IMAGE', 'VIDEO'] }) assetType!: 'IMAGE' | 'VIDEO';
+  @ApiProperty() url!: string;
+  @ApiPropertyOptional() mimeType?: string | null;
+  @ApiProperty() sortOrder!: number;
+}
+
+export class SocialPostMutationResponseDto {
+  @ApiProperty({ example: 'Post created successfully.' })
+  message!: string;
+}
+
 export class SocialPostResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty({ type: SocialPostAuthorResponseDto })
   author!: SocialPostAuthorResponseDto;
   @ApiProperty({ enum: SOCIAL_POST_TYPES }) postType!: string;
   @ApiProperty() body!: string;
-  @ApiPropertyOptional() image?: string | null;
+  @ApiProperty({ type: SocialPostMediaResponseDto, isArray: true })
+  media!: SocialPostMediaResponseDto[];
   @ApiProperty() createdAt!: Date;
   @ApiProperty({ type: SocialPostStatsResponseDto })
   stats!: SocialPostStatsResponseDto;

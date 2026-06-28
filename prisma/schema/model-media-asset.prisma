@@ -23,6 +23,7 @@ model MediaAsset {
   userAvatar                User?                      @relation("UserAvatarMedia")
   shopAvatar                Shop[]                     @relation("ShopAvatar")
   shopBanner                Shop[]                     @relation("ShopBanner")
+  socialPostMedia           SocialPostMedia[]
 
   @@index([ownerUserId])
   @@index([resourceType])

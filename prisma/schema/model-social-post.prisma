@@ -16,6 +16,7 @@ model SocialPost {
   comments       SocialComment[]
   reactions      SocialReaction[]
   shares         SocialShare[]
+  media          SocialPostMedia[]
 
   @@index([authorUserId, createdAt])
   @@index([authorShopId, createdAt])

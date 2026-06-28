@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '@database/prisma/prisma.module';
+import { MediaModule } from '@media';
 import {
   CreateSocialCommentUseCase,
   CreateSocialCommentReplyUseCase,
@@ -17,7 +18,7 @@ import { SocialRepository } from './infrastructure/persistence/social.repository
 import { SocialRpcController } from './presentation/rpc/social.rpc-controller';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, MediaModule],
   controllers: [SocialRpcController],
   providers: [
     SocialRepository,

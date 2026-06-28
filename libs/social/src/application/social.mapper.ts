@@ -44,6 +44,15 @@ type SocialPostWithRelations = {
       mediaAsset?: { secureUrl: string } | null;
     }>;
   } | null;
+  media?: Array<{
+    id: string;
+    sortOrder: number;
+    mediaAsset: {
+      assetType: 'IMAGE' | 'VIDEO' | 'RAW';
+      secureUrl: string;
+      mimeType: string | null;
+    };
+  }>;
   comments?: SocialCommentWithAuthor[];
   reactions?: Array<{ userId: string; reactionType: string }>;
   _count?: { comments?: number; reactions?: number; shares?: number };
@@ -66,7 +75,13 @@ export function toSocialPostResponse(
     },
     postType: post.postType,
     body: post.body,
-    image: firstOfferImage(post),
+    media: (post.media ?? []).map((item) => ({
+      id: item.id,
+      assetType: item.mediaAsset.assetType === 'VIDEO' ? 'VIDEO' : 'IMAGE',
+      url: item.mediaAsset.secureUrl,
+      mimeType: item.mediaAsset.mimeType,
+      sortOrder: item.sortOrder,
+    })),
     createdAt: post.createdAt,
     stats: {
       reactions: post._count?.reactions ?? post.reactions?.length ?? 0,
@@ -130,9 +145,4 @@ export function toSocialCommentReplyResponse(
 
 function displayName(user: SocialUserRecord) {
   return user.displayName || user.email || user.phone || 'Nguoi dung ACF';
-}
-
-function firstOfferImage(post: SocialPostWithRelations) {
-  const media = post.offer?.media?.[0];
-  return media?.mediaAsset?.secureUrl ?? media?.fileUrl ?? null;
 }

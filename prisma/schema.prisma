@@ -132,6 +132,7 @@ enum MediaResourceType {
   USER_AVATAR
   SHOP_AVATAR
   SHOP_BANNER
+  SOCIAL_POST
 }
 
 enum KycDocumentSide {
@@ -754,6 +755,7 @@ model MediaAsset {
   userAvatar                User?                      @relation("UserAvatarMedia")
   shopAvatar                Shop[]                     @relation("ShopAvatar")
   shopBanner                Shop[]                     @relation("ShopBanner")
+  socialPostMedia           SocialPostMedia[]
 
   @@index([ownerUserId])
   @@index([resourceType])
@@ -1316,6 +1318,21 @@ model SocialComment {
   @@map("social_comment")
 }
 
+model SocialPostMedia {
+  id           String     @id @default(uuid())
+  postId       String     @map("post_id")
+  mediaAssetId String     @map("media_asset_id")
+  sortOrder    Int        @default(0) @map("sort_order")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  post         SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset @relation(fields: [mediaAssetId], references: [id])
+
+  @@unique([postId, mediaAssetId])
+  @@index([postId, sortOrder])
+  @@index([mediaAssetId])
+  @@map("social_post_media")
+}
+
 model SocialPost {
   id             String               @id @default(uuid())
   authorUserId   String               @map("author_user_id")
@@ -1334,6 +1351,7 @@ model SocialPost {
   comments       SocialComment[]
   reactions      SocialReaction[]
   shares         SocialShare[]
+  media          SocialPostMedia[]
 
   @@index([authorUserId, createdAt])
   @@index([authorShopId, createdAt])
