@@ -156,6 +156,11 @@ export class SocialCommentReplyMutationResponseDto {
   message!: string;
 }
 
+export class SocialCommentMutationResponseDto {
+  @ApiProperty({ example: 'Comment created successfully.' })
+  message!: string;
+}
+
 export class SocialPostStatsResponseDto {
   @ApiProperty() reactions!: number;
   @ApiProperty() comments!: number;

@@ -93,6 +93,45 @@ describe('SocialController routes', () => {
     ).rejects.toBe(error);
   });
 
+  it('returns only a success message after creating a social comment', async () => {
+    const catalogRpcService = {
+      createSocialComment: jest.fn().mockResolvedValue({ id: 'post-id' }),
+    };
+    const controller = new SocialController(catalogRpcService as never);
+
+    await expect(
+      controller.createSocialComment(
+        'post-id',
+        'user-id',
+        { role: 'user' } as never,
+        { body: 'Minh da mua va thay tem QR hop le.' },
+      ),
+    ).resolves.toEqual({ message: 'Comment created successfully.' });
+    expect(catalogRpcService.createSocialComment).toHaveBeenCalledWith({
+      postId: 'post-id',
+      requesterUserId: 'user-id',
+      requesterRole: 'user',
+      body: 'Minh da mua va thay tem QR hop le.',
+    });
+  });
+
+  it('propagates social comment creation errors', async () => {
+    const error = new Error('post not found');
+    const catalogRpcService = {
+      createSocialComment: jest.fn().mockRejectedValue(error),
+    };
+    const controller = new SocialController(catalogRpcService as never);
+
+    await expect(
+      controller.createSocialComment(
+        'post-id',
+        'user-id',
+        undefined,
+        { body: 'Minh da mua va thay tem QR hop le.' },
+      ),
+    ).rejects.toBe(error);
+  });
+
   it('returns only a success message after creating a comment reply', async () => {
     const catalogRpcService = {
       createSocialCommentReply: jest.fn().mockResolvedValue({

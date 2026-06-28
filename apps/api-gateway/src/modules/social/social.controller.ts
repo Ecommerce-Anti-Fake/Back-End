@@ -10,6 +10,7 @@ import {
   ListSocialCommentRepliesQueryDto,
   ListSocialCommentsQueryDto,
   ListSocialPostsQueryDto,
+  SocialCommentMutationResponseDto,
   SocialCommentReplyMutationResponseDto,
   SocialCommentRepliesPageResponseDto,
   SocialCommentsPageResponseDto,
@@ -160,22 +161,26 @@ export class SocialController {
   @ApiBearerAuth('access-token')
   @ApiCreatedResponse({
     description: 'Binh luan da duoc tao.',
-    type: SocialPostResponseDto,
+    type: SocialCommentMutationResponseDto,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('social/posts/:postId/comments')
-  createSocialComment(
+  async createSocialComment(
     @Param('postId') postId: string,
     @CurrentUserId() requesterUserId: string,
     @CurrentUser() requester: AuthenticatedUser | undefined,
     @Body() dto: CreateSocialCommentDto,
   ) {
-    return this.catalogRpcService.createSocialComment({
+    await this.catalogRpcService.createSocialComment({
       postId,
       requesterUserId,
       requesterRole: requester?.role,
       body: dto.body,
     });
+
+    return {
+      message: 'Comment created successfully.',
+    };
   }
 
   @ApiOperation({ summary: 'Tra loi binh luan cong dong' })
