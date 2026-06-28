@@ -21,6 +21,8 @@ import type {
   ReviewKycMessage,
   RevokeNotificationFcmTokenMessage,
   SubmitKycMessage,
+  UploadCurrentUserAvatarMessage,
+  UpdateCurrentUserProfileMessage,
   UpdateUserMessage,
   UpdateUserAddressMessage,
   UserAddressLookupMessage,
@@ -52,6 +54,8 @@ import {
   ReviewUserKycUseCase,
   SetDefaultUserAddressUseCase,
   SubmitUserKycUseCase,
+  UploadCurrentUserAvatarUseCase,
+  UpdateCurrentUserProfileUseCase,
   UpdateUserAddressUseCase,
   UpdateUserUseCase,
 } from '../../application/use-cases';
@@ -67,6 +71,8 @@ export class UsersRpcController {
     private readonly getAdminKycDetailUseCase: GetAdminKycDetailUseCase,
     private readonly getAdminKycSummaryUseCase: GetAdminKycSummaryUseCase,
     private readonly getCurrentUserProfileUseCase: GetCurrentUserProfileUseCase,
+    private readonly updateCurrentUserProfileUseCase: UpdateCurrentUserProfileUseCase,
+    private readonly uploadCurrentUserAvatarUseCase: UploadCurrentUserAvatarUseCase,
     private readonly getCurrentUserProfileCompletionUseCase: GetCurrentUserProfileCompletionUseCase,
     private readonly listUserAddressesUseCase: ListUserAddressesUseCase,
     private readonly getDefaultUserAddressUseCase: GetDefaultUserAddressUseCase,
@@ -100,6 +106,24 @@ export class UsersRpcController {
   async getCurrentProfile(@Payload() payload: CurrentUserProfileMessage) {
     try {
       return await this.getCurrentUserProfileUseCase.execute(payload.userId);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(USERS_MESSAGE_PATTERNS.updateCurrentProfile)
+  async updateCurrentProfile(@Payload() payload: UpdateCurrentUserProfileMessage) {
+    try {
+      return await this.updateCurrentUserProfileUseCase.execute(payload.userId, payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(USERS_MESSAGE_PATTERNS.uploadCurrentAvatar)
+  async uploadCurrentAvatar(@Payload() payload: UploadCurrentUserAvatarMessage) {
+    try {
+      return await this.uploadCurrentUserAvatarUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

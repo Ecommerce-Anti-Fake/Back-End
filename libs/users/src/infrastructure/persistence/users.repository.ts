@@ -387,6 +387,32 @@ export class UsersRepository {
     });
   }
 
+  async replaceUserAvatar(userId: string, avatarMediaId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const current = await tx.user.findUniqueOrThrow({
+        where: { id: userId },
+        include: {
+          avatarMedia: {
+            select: {
+              id: true,
+              publicId: true,
+            },
+          },
+        },
+      });
+
+      const updated = await tx.user.update({
+        where: { id: userId },
+        data: { avatarMediaId },
+      });
+
+      return {
+        user: updated,
+        previousAvatar: current.avatarMedia,
+      };
+    });
+  }
+
   create(data: {
     email: string | null;
     phone: string | null;
@@ -624,6 +650,7 @@ export class UsersRepository {
       phone?: string | null;
       displayName?: string | null;
       accountStatus?: string;
+      avatarMediaId?: string | null;
     },
   ) {
     return this.prisma.user.update({

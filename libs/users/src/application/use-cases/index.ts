@@ -16,4 +16,6 @@ export * from './manage-notification-fcm-token.use-case';
 export * from './manage-user-addresses.use-case';
 export * from './review-user-kyc.use-case';
 export * from './submit-user-kyc.use-case';
+export * from './upload-current-user-avatar.use-case';
+export * from './update-current-user-profile.use-case';
 export * from './update-user.use-case';

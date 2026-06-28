@@ -19,6 +19,8 @@ export const AUTH_MESSAGE_PATTERNS = {
 export const USERS_MESSAGE_PATTERNS = {
   findAll: 'users.find-all',
   getCurrentProfile: 'users.get-current-profile',
+  updateCurrentProfile: 'users.update-current-profile',
+  uploadCurrentAvatar: 'users.upload-current-avatar',
   getProfileCompletion: 'users.get-profile-completion',
   listAddresses: 'users.list-addresses',
   getDefaultAddress: 'users.get-default-address',
@@ -235,6 +237,22 @@ export const AFFILIATE_MESSAGE_PATTERNS = {
 
 export type CurrentUserProfileMessage = {
   userId: string;
+};
+
+export type UpdateCurrentUserProfileMessage = {
+  userId: string;
+  phone?: string | null;
+  displayName?: string | null;
+};
+
+export type UploadCurrentUserAvatarMessage = {
+  userId: string;
+  avatar: {
+    buffer: Buffer;
+    mimetype: string;
+    originalname?: string;
+    size: number;
+  };
 };
 
 export type CurrentUserProfileCompletionMessage = {

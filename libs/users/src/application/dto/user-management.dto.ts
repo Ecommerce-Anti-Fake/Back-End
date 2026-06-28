@@ -330,6 +330,48 @@ export class UpdateUserDto {
 
 }
 
+export class UpdateCurrentUserProfileDto {
+  @ApiPropertyOptional({
+    description: 'So dien thoai cua user. Gui null hoac chuoi rong de xoa.',
+    example: '0987654321',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  phone?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Ten hien thi cua user. Gui null hoac chuoi rong de xoa.',
+    example: 'Nguyen Van A',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  displayName?: string | null;
+}
+
+export class ProfileMutationSuccessResponseDto {
+  @ApiProperty({ example: true })
+  success!: boolean;
+
+  @ApiProperty({ example: 'Profile updated successfully.' })
+  message!: string;
+}
+
+export class AvatarUploadResponseDto {
+  @ApiProperty({ example: true })
+  success!: boolean;
+
+  @ApiProperty({ example: 'Avatar uploaded successfully.' })
+  message!: string;
+
+  @ApiProperty({ example: 'media-asset-id' })
+  mediaAssetId!: string;
+
+  @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/v1/users/user-1/avatar.jpg' })
+  avatarUrl!: string;
+}
+
 export class ListUsersQueryDto {
   @ApiPropertyOptional({
     description: 'Loc theo vai tro user.',

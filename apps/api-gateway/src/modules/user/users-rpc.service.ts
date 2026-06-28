@@ -16,6 +16,8 @@ import type {
   ReviewKycMessage,
   RevokeNotificationFcmTokenMessage,
   SubmitKycMessage,
+  UploadCurrentUserAvatarMessage,
+  UpdateCurrentUserProfileMessage,
   UpdateUserMessage,
   UpdateUserAddressMessage,
   UserAddressLookupMessage,
@@ -43,6 +45,14 @@ export class UsersRpcService {
 
   getCurrentProfile(payload: CurrentUserProfileMessage) {
     return this.send(USERS_MESSAGE_PATTERNS.getCurrentProfile, payload);
+  }
+
+  updateCurrentProfile(payload: UpdateCurrentUserProfileMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.updateCurrentProfile, payload);
+  }
+
+  uploadCurrentAvatar(payload: UploadCurrentUserAvatarMessage) {
+    return this.send(USERS_MESSAGE_PATTERNS.uploadCurrentAvatar, payload);
   }
 
   getProfileCompletion(payload: CurrentUserProfileCompletionMessage) {
