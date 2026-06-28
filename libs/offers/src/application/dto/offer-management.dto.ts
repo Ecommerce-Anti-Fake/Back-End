@@ -146,6 +146,16 @@ export class OfferResponseDto {
   createdAt!: Date;
 }
 
+export class CreateOfferResponseDto {
+  @ApiProperty({ example: true })
+  success!: boolean;
+
+  @ApiProperty({
+    example: 'Offer created successfully and is pending moderation.',
+  })
+  message!: string;
+}
+
 export class PublicOfferDetailResponseDto {
   @ApiProperty({ example: '06b5f15b-4c48-4f57-a2d6-0f2eb45fd001' })
   id!: string;

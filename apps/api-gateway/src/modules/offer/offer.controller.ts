@@ -29,6 +29,7 @@ import {
   PaginatedOfferListResponseDto,
   PublicOfferDetailResponseDto,
   CreateOfferDto,
+  CreateOfferResponseDto,
   UpdateOfferDto,
 } from '@offers';
 import { RateLimit } from '../../observability';
@@ -46,8 +47,8 @@ export class OfferController {
   @ApiOperation({ summary: 'Tao offer moi cho shop hien tai' })
   @ApiBearerAuth('access-token')
   @ApiCreatedResponse({
-    description: 'Tao offer thanh cong.',
-    type: OfferResponseDto,
+    description: 'Tao offer thanh cong va cho kiem duyet.',
+    type: CreateOfferResponseDto,
   })
   @ApiBadRequestResponse({
     description:
@@ -88,7 +89,10 @@ export class OfferController {
       shopIdFromResult(result) ?? dto.shopId,
     );
 
-    return result;
+    return {
+      success: true,
+      message: 'Offer created successfully and is pending moderation.',
+    };
   }
 
   @ApiOperation({ summary: 'Cap nhat thong tin ban hang cua offer' })

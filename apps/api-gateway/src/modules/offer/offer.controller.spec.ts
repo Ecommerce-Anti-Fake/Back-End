@@ -121,6 +121,50 @@ describe('OfferController', () => {
     expect(result.items[0]).not.toHaveProperty('shippingMethods');
   });
 
+  it('returns only a success acknowledgement when creating an offer', async () => {
+    const catalogRpcService = {
+      createOffer: jest.fn().mockResolvedValue({
+        id: 'offer-1',
+        title: 'Kem chong nang SPF50',
+        shopId: 'shop-1',
+        price: 150000,
+      }),
+    };
+    const dashboardSseBrokerService = { notifyShop: jest.fn() };
+    const controller = new OfferController(
+      catalogRpcService as never,
+      dashboardSseBrokerService as never,
+    );
+
+    const result = await controller.createOffer('seller-1', {
+      shopId: 'shop-1',
+      categoryId: 'category-1',
+      brandId: 'brand-1',
+      title: 'Kem chong nang SPF50',
+      description: 'Mo ta san pham',
+      price: 150000,
+      availableQuantity: 12,
+    });
+
+    expect(catalogRpcService.createOffer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sellerUserId: 'seller-1',
+        shopId: 'shop-1',
+        categoryId: 'category-1',
+        brandId: 'brand-1',
+      }),
+    );
+    expect(dashboardSseBrokerService.notifyShop).toHaveBeenCalledWith('shop-1');
+    expect(result).toEqual({
+      success: true,
+      message: 'Offer created successfully and is pending moderation.',
+    });
+    expect(result).not.toHaveProperty('id');
+    expect(result).not.toHaveProperty('title');
+    expect(result).not.toHaveProperty('shopId');
+    expect(result).not.toHaveProperty('price');
+  });
+
   it('returns compact public offer list items', async () => {
     const catalogRpcService = {
       findOffers: jest.fn().mockResolvedValue({
