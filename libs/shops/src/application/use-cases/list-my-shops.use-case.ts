@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ShopsRepository } from '../../infrastructure/persistence/shops.repository';
-import { toShopResponse } from './shops.mapper';
+import { toMyShopResponse } from './shops.mapper';
 
 @Injectable()
 export class ListMyShopsUseCase {
@@ -8,6 +8,6 @@ export class ListMyShopsUseCase {
 
   async execute(ownerUserId: string) {
     const shops = await this.shopsRepository.findByOwnerUserId(ownerUserId);
-    return shops.map(toShopResponse);
+    return shops.map(toMyShopResponse);
   }
 }

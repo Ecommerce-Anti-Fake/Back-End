@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swa
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
   CreateShopDto,
+  MyShopResponseDto,
   PaginatedPublicShopSummaryResponseDto,
   PublicShopCategoryResponseDto,
   PublicShopDetailResponseDto,
@@ -69,6 +70,7 @@ export class ShopController {
 
   @ApiOperation({ summary: 'Lay danh sach shop cua user hien tai' })
   @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: MyShopResponseDto, isArray: true })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Get('mine')
   findMine(@CurrentUserId() ownerUserId: string) {

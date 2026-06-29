@@ -44,6 +44,24 @@ export function toShopResponse(shop: ShopWithCategories) {
   };
 }
 
+export function toMyShopResponse(shop: ShopWithCategories) {
+  return {
+    id: shop.id,
+    ownerUserId: shop.ownerUserId,
+    shopName: shop.shopName,
+    registrationType: shop.registrationType,
+    businessType: shop.businessType,
+    taxCode: shop.taxCode,
+    warehouseAddress: shop.warehouseAddress ?? null,
+    warehouseProvinceCode: shop.warehouseProvinceCode ?? null,
+    warehouseProvinceName: shop.warehouseProvinceName ?? null,
+    warehouseWardCode: shop.warehouseWardCode ?? null,
+    warehouseWardName: shop.warehouseWardName ?? null,
+    shopStatus: shop.shopStatus,
+    createdAt: shop.createdAt,
+  };
+}
+
 export function toBrandAuthorizationResponse(authorization: {
   id: string;
   shopId: string;

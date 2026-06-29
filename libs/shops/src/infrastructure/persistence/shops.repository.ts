@@ -388,21 +388,6 @@ export class ShopsRepository {
   findByOwnerUserId(ownerUserId: string) {
     return this.prisma.shop.findMany({
       where: { ownerUserId },
-      include: {
-        registeredCategories: {
-          include: {
-            category: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-          orderBy: {
-            createdAt: 'asc',
-          },
-        },
-      },
       orderBy: { createdAt: 'desc' },
     });
   }

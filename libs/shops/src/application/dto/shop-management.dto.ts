@@ -115,6 +115,73 @@ export class ShopResponseDto {
   registeredCategories!: ShopRegisteredCategoryResponseDto[];
 }
 
+export class MyShopResponseDto {
+  @ApiProperty({
+    description: 'ID cua shop.',
+    example: '5b6ef5e7-1a03-4b17-baf3-8c4be0f5f001',
+  })
+  id!: string;
+
+  @ApiProperty({
+    description: 'ID user chu so huu shop.',
+    example: '7f13cb95-4f56-4d93-b86d-dbb8e4f4a111',
+  })
+  ownerUserId!: string;
+
+  @ApiProperty({
+    description: 'Ten shop.',
+    example: 'Cong ty TNHH San Xuat ABC',
+  })
+  shopName!: string;
+
+  @ApiProperty({
+    description: 'Loai hinh dang ky cua shop.',
+    enum: SHOP_REGISTRATION_TYPES,
+    example: 'MANUFACTURER',
+  })
+  registrationType!: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
+
+  @ApiProperty({
+    description: 'Loai hinh kinh doanh.',
+    example: 'manufacturer',
+  })
+  businessType!: string;
+
+  @ApiPropertyOptional({
+    description: 'Ma so thue cua shop.',
+    example: '0312345678',
+    nullable: true,
+  })
+  taxCode!: string | null;
+
+  @ApiPropertyOptional({ description: 'Dia chi kho mac dinh cua shop.', example: '12 Nguyen Trai, Quan 1, TP.HCM', nullable: true })
+  warehouseAddress!: string | null;
+
+  @ApiPropertyOptional({ description: 'Ma tinh/thanh noi bo cua kho shop.', example: 'VN-P202', nullable: true })
+  warehouseProvinceCode!: string | null;
+
+  @ApiPropertyOptional({ description: 'Ten tinh/thanh cua kho shop.', example: 'TP Ho Chi Minh', nullable: true })
+  warehouseProvinceName!: string | null;
+
+  @ApiPropertyOptional({ description: 'Ma phuong/xa noi bo cua kho shop.', example: 'VN-P202-D1450-W21211', nullable: true })
+  warehouseWardCode!: string | null;
+
+  @ApiPropertyOptional({ description: 'Ten phuong/xa kho shop.', example: 'Phuong Ben Nghe', nullable: true })
+  warehouseWardName!: string | null;
+
+  @ApiProperty({
+    description: 'Trang thai cua shop.',
+    example: 'verified',
+  })
+  shopStatus!: string;
+
+  @ApiProperty({
+    description: 'Thoi diem tao shop.',
+    example: '2026-04-14T10:00:00.000Z',
+  })
+  createdAt!: Date;
+}
+
 export class PublicShopSummaryResponseDto {
   @ApiProperty({ example: '5b6ef5e7-1a03-4b17-baf3-8c4be0f5f001' })
   shopId!: string;
