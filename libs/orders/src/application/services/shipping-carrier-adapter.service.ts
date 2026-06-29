@@ -129,7 +129,7 @@ export class ShippingCarrierAdapterService {
 
   async listGhnProvinces(): Promise<GhnProvince[]> {
     const credentials = this.getGhnCredentials();
-    const payload = await this.fetchGhn<{ data?: Array<{ ProvinceID?: number; ProvinceName?: string }> }>(
+    const payload = await this.fetchGhnMasterData<{ data?: Array<{ ProvinceID?: number; ProvinceName?: string }> }>(
       this.resolveGhnMasterDataUrl(credentials.baseUrl, 'province'),
       credentials,
     );
@@ -144,7 +144,7 @@ export class ShippingCarrierAdapterService {
 
   async listGhnDistricts(provinceId: number): Promise<GhnDistrict[]> {
     const credentials = this.getGhnCredentials();
-    const payload = await this.fetchGhn<{ data?: Array<{ DistrictID?: number; DistrictName?: string }> }>(
+    const payload = await this.fetchGhnMasterData<{ data?: Array<{ DistrictID?: number; DistrictName?: string }> }>(
       `${this.resolveGhnMasterDataUrl(credentials.baseUrl, 'district')}?province_id=${encodeURIComponent(String(provinceId))}`,
       credentials,
     );
@@ -159,7 +159,7 @@ export class ShippingCarrierAdapterService {
 
   async listGhnWards(districtId: number): Promise<GhnWard[]> {
     const credentials = this.getGhnCredentials();
-    const payload = await this.fetchGhn<{ data?: Array<{ WardCode?: string; WardName?: string }> }>(
+    const payload = await this.fetchGhnMasterData<{ data?: Array<{ WardCode?: string; WardName?: string }> }>(
       `${this.resolveGhnMasterDataUrl(credentials.baseUrl, 'ward')}?district_id=${encodeURIComponent(String(districtId))}`,
       credentials,
     );
@@ -361,6 +361,21 @@ export class ShippingCarrierAdapterService {
       headers: {
         Token: credentials.token,
         ShopId: credentials.shopId,
+      },
+    });
+    const payload = (await response.json().catch(() => null)) as (T & { message?: string }) | null;
+
+    if (!response.ok || !payload) {
+      throw new ServiceUnavailableException(payload?.message || 'Could not load GHN data');
+    }
+
+    return payload;
+  }
+
+  private async fetchGhnMasterData<T>(url: string, credentials: { token: string }): Promise<T> {
+    const response = await fetch(url, {
+      headers: {
+        Token: credentials.token,
       },
     });
     const payload = (await response.json().catch(() => null)) as (T & { message?: string }) | null;

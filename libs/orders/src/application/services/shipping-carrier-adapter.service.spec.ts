@@ -199,14 +199,17 @@ describe('ShippingCarrierAdapterService', () => {
       expect.objectContaining({
         headers: {
           Token: 'token-1',
-          ShopId: '12345',
         },
       }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       2,
       'https://dev-online-gateway.ghn.vn/shiip/public-api/master-data/ward?district_id=1450',
-      expect.any(Object),
+      expect.objectContaining({
+        headers: {
+          Token: 'token-1',
+        },
+      }),
     );
   });
 
@@ -230,7 +233,11 @@ describe('ShippingCarrierAdapterService', () => {
     await expect(service.listGhnProvinces()).resolves.toEqual([{ provinceId: 202, provinceName: 'Ho Chi Minh' }]);
     expect(fetchMock).toHaveBeenCalledWith(
       'https://online-gateway.ghn.vn/shiip/public-api/master-data/province',
-      expect.any(Object),
+      expect.objectContaining({
+        headers: {
+          Token: 'token-1',
+        },
+      }),
     );
   });
 
