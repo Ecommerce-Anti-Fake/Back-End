@@ -5,7 +5,6 @@ import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard, Roles, Roles
 import {
   CreateRetailOrderDto,
   CreateWholesaleOrderDto,
-  SellerDashboardAnalyticsQueryDto,
   UpdateOrderFulfillmentDto,
 } from '@orders';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
@@ -83,25 +82,6 @@ export class OrderController {
     return this.ordersRpcService.findSellerShopOrders({
       shopId,
       requesterUserId,
-    });
-  }
-
-  @ApiTags('Dashboard')
-  @ApiOperation({ summary: 'Seller lay analytics dashboard cua mot shop' })
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Get('seller/shops/:shopId/dashboard-analytics')
-  getSellerShopDashboardAnalytics(
-    @Param('shopId') shopId: string,
-    @CurrentUserId() requesterUserId: string,
-    @Query() query: SellerDashboardAnalyticsQueryDto,
-  ) {
-    return this.ordersRpcService.getSellerShopDashboardAnalytics({
-      shopId,
-      requesterUserId,
-      days: query.days,
-      fromDate: query.fromDate,
-      toDate: query.toDate,
     });
   }
 

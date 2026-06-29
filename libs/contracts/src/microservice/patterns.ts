@@ -146,6 +146,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   findMine: 'orders.find-mine',
   findSellerShopOrders: 'orders.find-seller-shop-orders',
   getSellerShopDashboardAnalytics: 'orders.get-seller-shop-dashboard-analytics',
+  getSellerShopSummaryMetrics: 'orders.get-seller-shop-summary-metrics',
   findAdminOrders: 'orders.find-admin-orders',
   getAdminFinanceReconciliation: 'orders.get-admin-finance-reconciliation',
   findById: 'orders.find-by-id',
@@ -1027,6 +1028,13 @@ export type SellerShopDashboardAnalyticsMessage = {
   days?: number;
   fromDate?: string;
   toDate?: string;
+};
+
+export type SellerShopSummaryMetricsMessage = {
+  requesterUserId: string;
+  shopId: string;
+  from?: string;
+  to?: string;
 };
 
 export type AdminOrdersLookupMessage = {

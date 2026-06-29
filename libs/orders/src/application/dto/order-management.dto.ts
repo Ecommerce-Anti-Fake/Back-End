@@ -455,6 +455,46 @@ export class SellerDashboardAnalyticsResponseDto {
   revenueOrders!: SellerDashboardRevenueOrderDto[];
 }
 
+export class SellerShopSummaryMetricsQueryDto {
+  @ApiPropertyOptional({ example: '2026-06-01' })
+  @IsOptional()
+  @IsString()
+  from?: string;
+
+  @ApiPropertyOptional({ example: '2026-06-29' })
+  @IsOptional()
+  @IsString()
+  to?: string;
+}
+
+export class SellerShopSummaryMetricDto {
+  @ApiProperty({ example: 128500000 })
+  value!: number;
+
+  @ApiProperty({ example: 12.5 })
+  growthPercent!: number;
+}
+
+export class SellerShopSummaryMetricsResponseDto {
+  @ApiProperty({
+    example: {
+      from: '2026-06-01T00:00:00.000Z',
+      to: '2026-06-29T23:59:59.999Z',
+      days: 29,
+    },
+  })
+  range!: { from: string; to: string; days: number };
+
+  @ApiProperty({ type: SellerShopSummaryMetricDto })
+  revenue!: SellerShopSummaryMetricDto;
+
+  @ApiProperty({ type: SellerShopSummaryMetricDto })
+  orders!: SellerShopSummaryMetricDto;
+
+  @ApiProperty({ type: SellerShopSummaryMetricDto })
+  offers!: SellerShopSummaryMetricDto;
+}
+
 export class AdminFinanceReconciliationQueryDto {
   @ApiPropertyOptional({ example: '2026-05-01T00:00:00.000Z' })
   @IsOptional()

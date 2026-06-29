@@ -1,6 +1,10 @@
 import { ShopController } from './shop.controller';
 
 describe('ShopController', () => {
+  function createController(shopsRpcService: Record<string, unknown>, ordersRpcService: Record<string, unknown> = {}) {
+    return new ShopController(shopsRpcService as never, ordersRpcService as never);
+  }
+
   it('lists public shops with pagination defaults', async () => {
     const shopsRpcService = {
       findPublic: jest.fn().mockResolvedValue({
@@ -23,7 +27,7 @@ describe('ShopController', () => {
         ],
       }),
     };
-    const controller = new ShopController(shopsRpcService as never);
+    const controller = createController(shopsRpcService);
 
     await expect(controller.findPublic({})).resolves.toEqual({
       total: 1,
@@ -65,7 +69,7 @@ describe('ShopController', () => {
         verify: true,
       }),
     };
-    const controller = new ShopController(shopsRpcService as never);
+    const controller = createController(shopsRpcService);
 
     await expect(controller.findByOfferId('offer-1')).resolves.toEqual({
       shopId: 'shop-1',
@@ -97,7 +101,7 @@ describe('ShopController', () => {
         verify: true,
       }),
     };
-    const controller = new ShopController(shopsRpcService as never);
+    const controller = createController(shopsRpcService);
 
     await expect(controller.findById('shop-1')).resolves.toEqual({
       shopId: 'shop-1',
@@ -123,7 +127,7 @@ describe('ShopController', () => {
         },
       ]),
     };
-    const controller = new ShopController(shopsRpcService as never);
+    const controller = createController(shopsRpcService);
 
     await expect(controller.findCategoriesByShopId('shop-1')).resolves.toEqual([
       {
@@ -132,5 +136,75 @@ describe('ShopController', () => {
       },
     ]);
     expect(shopsRpcService.findCategoriesByShopId).toHaveBeenCalledWith({ shopId: 'shop-1' });
+  });
+
+  it('gets seller shop summary metrics from the shop route', async () => {
+    const shopsRpcService = {};
+    const ordersRpcService = {
+      getSellerShopSummaryMetrics: jest.fn().mockResolvedValue({
+        range: {
+          from: '2026-06-01T00:00:00.000Z',
+          to: '2026-06-29T23:59:59.999Z',
+          days: 29,
+        },
+        revenue: { value: 128500000, growthPercent: 12.5 },
+        orders: { value: 432, growthPercent: 9.2 },
+        offers: { value: 1024, growthPercent: -2.1 },
+      }),
+    };
+    const controller = createController(shopsRpcService, ordersRpcService);
+
+    const result = await controller.getSummaryMetrics('shop-1', 'seller-1', {
+      from: '2026-06-01',
+      to: '2026-06-29',
+    });
+
+    expect(ordersRpcService.getSellerShopSummaryMetrics).toHaveBeenCalledWith({
+      shopId: 'shop-1',
+      requesterUserId: 'seller-1',
+      from: '2026-06-01',
+      to: '2026-06-29',
+    });
+    expect(result).toMatchObject({
+      revenue: { value: 128500000 },
+      orders: { value: 432 },
+      offers: { value: 1024 },
+    });
+  });
+
+  it('gets seller shop dashboard analytics from the shop route', async () => {
+    const shopsRpcService = {};
+    const ordersRpcService = {
+      getSellerShopDashboardAnalytics: jest.fn().mockResolvedValue({
+        range: {
+          from: '2026-06-01T00:00:00.000Z',
+          to: '2026-06-29T23:59:59.999Z',
+          days: 29,
+        },
+        stats: {
+          revenue: { value: 128500000, growthPercent: -12.5 },
+        },
+      }),
+    };
+    const controller = createController(shopsRpcService, ordersRpcService);
+
+    const result = await controller.getDashboardAnalytics('shop-1', 'seller-1', {
+      days: 7,
+      fromDate: '2026-06-01',
+      toDate: '2026-06-29',
+    });
+
+    expect(ordersRpcService.getSellerShopDashboardAnalytics).toHaveBeenCalledWith({
+      shopId: 'shop-1',
+      requesterUserId: 'seller-1',
+      days: 7,
+      fromDate: '2026-06-01',
+      toDate: '2026-06-29',
+    });
+    expect(result).toMatchObject({
+      stats: {
+        revenue: { value: 128500000, growthPercent: -12.5 },
+      },
+    });
   });
 });

@@ -2,6 +2,12 @@ import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@ne
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
+  SellerDashboardAnalyticsQueryDto,
+  SellerDashboardAnalyticsResponseDto,
+  SellerShopSummaryMetricsQueryDto,
+  SellerShopSummaryMetricsResponseDto,
+} from '@orders';
+import {
   CreateShopDto,
   MyShopResponseDto,
   PaginatedPublicShopSummaryResponseDto,
@@ -12,12 +18,16 @@ import {
   ShopMutationResponseDto,
   UpdateShopProfileDto,
 } from '@shops';
+import { OrdersRpcService } from '../order/orders-rpc.service';
 import { ShopsRpcService } from './shops-rpc.service';
 
 @ApiTags('Shop')
 @Controller('shops')
 export class ShopController {
-  constructor(private readonly shopsRpcService: ShopsRpcService) {}
+  constructor(
+    private readonly shopsRpcService: ShopsRpcService,
+    private readonly ordersRpcService: OrdersRpcService,
+  ) {}
 
   @ApiOperation({ summary: 'Tao shop moi cho user hien tai' })
   @ApiBearerAuth('access-token')
@@ -75,6 +85,43 @@ export class ShopController {
   @Get('mine')
   findMine(@CurrentUserId() ownerUserId: string) {
     return this.shopsRpcService.findMine({ ownerUserId });
+  }
+
+  @ApiOperation({ summary: 'Lay 3 chi so tong quan cua shop theo khoang ngay' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: SellerShopSummaryMetricsResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get(':shopId/summary-metrics')
+  getSummaryMetrics(
+    @Param('shopId') shopId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Query() query: SellerShopSummaryMetricsQueryDto,
+  ) {
+    return this.ordersRpcService.getSellerShopSummaryMetrics({
+      shopId,
+      requesterUserId,
+      from: query.from,
+      to: query.to,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay analytics dashboard cua shop' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: SellerDashboardAnalyticsResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get(':shopId/dashboard-analytics')
+  getDashboardAnalytics(
+    @Param('shopId') shopId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Query() query: SellerDashboardAnalyticsQueryDto,
+  ) {
+    return this.ordersRpcService.getSellerShopDashboardAnalytics({
+      shopId,
+      requesterUserId,
+      days: query.days,
+      fromDate: query.fromDate,
+      toDate: query.toDate,
+    });
   }
 
   @ApiOperation({ summary: 'Lay danh sach shop public co phan trang' })
