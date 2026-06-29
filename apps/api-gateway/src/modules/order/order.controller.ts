@@ -1,10 +1,12 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { AuthenticatedUser } from '@contracts';
 import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import {
   CreateRetailOrderDto,
   CreateWholesaleOrderDto,
+  PaginatedSellerShopOrderResponseDto,
+  SellerShopOrdersQueryDto,
   UpdateOrderFulfillmentDto,
 } from '@orders';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
@@ -76,12 +78,20 @@ export class OrderController {
 
   @ApiOperation({ summary: 'Seller lay danh sach don cua mot shop' })
   @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: PaginatedSellerShopOrderResponseDto })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Get('seller/shops/:shopId')
-  findSellerShopOrders(@Param('shopId') shopId: string, @CurrentUserId() requesterUserId: string) {
+  findSellerShopOrders(
+    @Param('shopId') shopId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Query() query: SellerShopOrdersQueryDto,
+  ) {
     return this.ordersRpcService.findSellerShopOrders({
       shopId,
       requesterUserId,
+      orderStatus: query.orderStatus,
+      page: query.page,
+      pageSize: query.pageSize,
     });
   }
 

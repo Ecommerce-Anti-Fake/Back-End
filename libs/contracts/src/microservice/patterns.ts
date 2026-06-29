@@ -1016,6 +1016,9 @@ export type MyOrdersLookupMessage = {
 export type SellerShopOrdersLookupMessage = {
   requesterUserId: string;
   shopId: string;
+  orderStatus?: string;
+  page?: number;
+  pageSize?: number;
 };
 
 export type SellerShopDashboardAnalyticsMessage = {

@@ -171,6 +171,70 @@ export class OrderShopGroupResponseDto {
   items!: OrderItemResponseDto[];
 }
 
+export class SellerShopOrdersQueryDto {
+  @ApiPropertyOptional({
+    description: 'Loc theo trang thai don hang. Dung all hoac bo trong de lay tat ca.',
+    example: 'all',
+  })
+  @IsOptional()
+  @IsString()
+  orderStatus?: string;
+
+  @ApiPropertyOptional({ example: 1, minimum: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 20, minimum: 1, maximum: 50 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  pageSize?: number;
+}
+
+export class SellerShopOrderCustomerResponseDto {
+  @ApiPropertyOptional({ example: 'buyer-user-id', nullable: true })
+  id!: string | null;
+
+  @ApiPropertyOptional({ example: 'Nguyen Van A', nullable: true })
+  name!: string | null;
+
+  @ApiPropertyOptional({ example: 'buyer@example.com', nullable: true })
+  email!: string | null;
+}
+
+export class SellerShopOrderListItemResponseDto {
+  @ApiProperty({ example: 'order-id' })
+  orderId!: string;
+
+  @ApiProperty({ type: SellerShopOrderCustomerResponseDto })
+  customer!: SellerShopOrderCustomerResponseDto;
+
+  @ApiProperty({ example: 250000 })
+  orderAmount!: number;
+
+  @ApiProperty({ example: 'pending' })
+  orderStatus!: string;
+}
+
+export class PaginatedSellerShopOrderResponseDto {
+  @ApiProperty({ example: 42 })
+  total!: number;
+
+  @ApiProperty({ example: 1 })
+  page!: number;
+
+  @ApiProperty({ example: 20 })
+  pageSize!: number;
+
+  @ApiProperty({ type: SellerShopOrderListItemResponseDto, isArray: true })
+  items!: SellerShopOrderListItemResponseDto[];
+}
+
 export class OrderResponseDto {
   @ApiProperty({ example: 'order-id' })
   id!: string;

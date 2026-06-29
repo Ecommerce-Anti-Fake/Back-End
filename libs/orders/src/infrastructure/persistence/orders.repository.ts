@@ -119,6 +119,18 @@ const orderWithRelationsArgs = Prisma.validator<Prisma.OrderDefaultArgs>()({
   },
 });
 
+const sellerShopOrderListArgs = Prisma.validator<Prisma.OrderDefaultArgs>()({
+  include: {
+    buyer: {
+      select: {
+        id: true,
+        displayName: true,
+        email: true,
+      },
+    },
+  },
+});
+
 const disputeWithOrderArgs = Prisma.validator<Prisma.DisputeDefaultArgs>()({
   include: {
     order: {
@@ -278,6 +290,7 @@ const cartWithItemsArgs = Prisma.validator<Prisma.CartDefaultArgs>()({
 
 export type OfferForOrdering = Prisma.OfferGetPayload<typeof offerForOrderingArgs>;
 export type OrderWithRelations = Prisma.OrderGetPayload<typeof orderWithRelationsArgs>;
+export type SellerShopOrderRecord = Prisma.OrderGetPayload<typeof sellerShopOrderListArgs>;
 type FinanceOrderRecord = Prisma.OrderGetPayload<{
   include: {
     shop: {
@@ -1183,6 +1196,42 @@ export class OrdersRepository {
       },
       ...orderWithRelationsArgs,
     });
+  }
+
+  async findSellerShopOrders(input: {
+    requesterUserId: string;
+    shopId: string;
+    orderStatus?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<{ total: number; page: number; pageSize: number; items: SellerShopOrderRecord[] }> {
+    const shop = await this.findOwnedShop(input.shopId, input.requesterUserId);
+    if (!shop) {
+      throw new BadRequestException('Shop does not belong to current user');
+    }
+
+    const page = Math.max(1, Number(input.page ?? 1));
+    const pageSize = Math.min(50, Math.max(1, Number(input.pageSize ?? 20)));
+    const normalizedStatus = input.orderStatus?.trim();
+    const where: Prisma.OrderWhereInput = {
+      shopId: input.shopId,
+      ...(normalizedStatus && normalizedStatus !== 'all' ? { orderStatus: normalizedStatus } : {}),
+    };
+
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.order.count({ where }),
+      this.prisma.order.findMany({
+        where,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        ...sellerShopOrderListArgs,
+      }),
+    ]);
+
+    return { total, page, pageSize, items };
   }
 
   allocateOrderBatchesAndUpdateFulfillment(id: string, fulfillmentStatus: string): Promise<OrderWithRelations> {
