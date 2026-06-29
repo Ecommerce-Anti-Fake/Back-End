@@ -693,7 +693,6 @@ export class UsersRepository {
     userId: string;
     fullName: string;
     dateOfBirth: Date;
-    phone: string;
     idType: string;
     idNumberHash: string;
     documentMediaAssets: Array<{
@@ -702,14 +701,6 @@ export class UsersRepository {
     }>;
   }): Promise<UserKycWithDocuments> {
     return this.prisma.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id: input.userId },
-        data: {
-          phone: input.phone,
-          displayName: input.fullName,
-        },
-      });
-
       const userKyc = await tx.userKyc.upsert({
         where: { userId: input.userId },
         create: {

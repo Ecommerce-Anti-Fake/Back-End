@@ -4,6 +4,8 @@ import { MediaService } from '@media';
 import { UsersRepository } from '../../infrastructure/persistence/users.repository';
 import { toUserKycResponse } from './users-kyc.mapper';
 
+const DOCUMENT_ONLY_DATE_OF_BIRTH = new Date('1970-01-01T00:00:00.000Z');
+
 @Injectable()
 export class SubmitUserKycUseCase {
   constructor(
@@ -13,11 +15,7 @@ export class SubmitUserKycUseCase {
 
   async execute(input: {
     userId: string;
-    fullName: string;
-    dateOfBirth: string;
-    phone?: string;
     idType: string;
-    idNumber: string;
     documents: Array<{
       side: 'FRONT' | 'BACK';
       assetType: 'IMAGE';
@@ -33,37 +31,11 @@ export class SubmitUserKycUseCase {
 
     const existingKyc = await this.usersRepository.findUserKycByUserId(input.userId);
 
-    const fullName = input.fullName.trim();
-    const phone = (input.phone?.trim() || user.phone || '').trim();
+    const fullName = user.displayName?.trim() || user.email?.trim() || user.phone?.trim() || input.userId;
     const idType = input.idType.trim().toUpperCase();
-    const idNumber = input.idNumber.trim();
-    const dateOfBirth = new Date(input.dateOfBirth);
-
-    if (!fullName) {
-      throw new BadRequestException('Full name is required');
-    }
-
-    if (!phone) {
-      throw new BadRequestException('Phone number is required for KYC');
-    }
-
-    if (phone !== user.phone) {
-      const existing = await this.usersRepository.findUserByEmailOrPhone({ phone }, input.userId);
-      if (existing) {
-        throw new BadRequestException('A user with that phone already exists');
-      }
-    }
 
     if (!idType) {
       throw new BadRequestException('ID type is required');
-    }
-
-    if (!idNumber) {
-      throw new BadRequestException('ID number is required');
-    }
-
-    if (Number.isNaN(dateOfBirth.getTime()) || dateOfBirth > new Date()) {
-      throw new BadRequestException('Date of birth is invalid');
     }
 
     const uniqueSides = new Set(input.documents.map((document) => document.side));
@@ -115,10 +87,9 @@ export class SubmitUserKycUseCase {
     const kyc = await this.usersRepository.submitKyc({
       userId: input.userId,
       fullName,
-      dateOfBirth,
-      phone,
+      dateOfBirth: DOCUMENT_ONLY_DATE_OF_BIRTH,
       idType,
-      idNumberHash: this.hashIdNumber(idNumber),
+      idNumberHash: this.hashIdNumber(`document-only:${input.userId}:${idType}`),
       documentMediaAssets: createdAssets,
     });
 

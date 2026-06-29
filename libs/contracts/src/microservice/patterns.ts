@@ -355,11 +355,7 @@ export type KycUploadSignaturesMessage = {
 
 export type SubmitKycMessage = {
   userId: string;
-  fullName: string;
-  dateOfBirth: string;
-  phone?: string;
   idType: string;
-  idNumber: string;
   documents: Array<{
     side: 'FRONT' | 'BACK';
     assetType: 'IMAGE';

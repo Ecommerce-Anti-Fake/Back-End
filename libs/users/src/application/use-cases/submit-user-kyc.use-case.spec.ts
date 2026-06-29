@@ -33,13 +33,14 @@ describe('SubmitUserKycUseCase', () => {
     useCase = module.get<SubmitUserKycUseCase>(SubmitUserKycUseCase);
   });
 
-  it('should submit KYC with front and back CCCD images and update phone', async () => {
+  it('should submit KYC with only id type and front/back CCCD images', async () => {
     usersRepositoryMock.findUserById.mockResolvedValueOnce({
       id: 'user-1',
-      phone: null,
+      email: 'buyer@example.com',
+      phone: '0987654321',
+      displayName: 'Nguyen Van A',
     });
     usersRepositoryMock.findUserKycByUserId.mockResolvedValueOnce(null);
-    usersRepositoryMock.findUserByEmailOrPhone.mockResolvedValueOnce(null);
     mediaServiceMock.isOwnedCloudinaryUrl.mockReturnValue(true);
     mediaServiceMock.createCloudinaryAsset
       .mockResolvedValueOnce({
@@ -85,11 +86,7 @@ describe('SubmitUserKycUseCase', () => {
 
     const result = await useCase.execute({
       userId: 'user-1',
-      fullName: 'Nguyen Van A',
-      dateOfBirth: '1998-05-10',
-      phone: '0987654321',
       idType: 'CCCD',
-      idNumber: '079123456789',
       documents: [
         {
           side: 'FRONT',
@@ -111,8 +108,9 @@ describe('SubmitUserKycUseCase', () => {
     expect(usersRepositoryMock.submitKyc).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'user-1',
-        phone: '0987654321',
         idType: 'CCCD',
+        fullName: 'Nguyen Van A',
+        dateOfBirth: new Date('1970-01-01T00:00:00.000Z'),
         documentMediaAssets: [
           { side: 'FRONT', mediaAssetId: 'media-front' },
           { side: 'BACK', mediaAssetId: 'media-back' },

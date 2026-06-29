@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsDateString, IsIn, IsInt, IsOptional, IsString, IsUrl, Max, Min, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUrl, Max, Min, ValidateNested } from 'class-validator';
 
 const USER_MANAGEMENT_ROLES = ['user'] as const;
 const USER_ACCOUNT_STATUSES = ['active', 'inactive', 'blocked'] as const;
@@ -524,26 +524,9 @@ export class SubmitKycDocumentDto {
 }
 
 export class SubmitKycDto {
-  @ApiProperty({ example: 'Nguyen Van A' })
-  @IsString()
-  fullName!: string;
-
-  @ApiProperty({ example: '1998-05-10' })
-  @IsDateString()
-  dateOfBirth!: string;
-
-  @ApiPropertyOptional({ example: '0987654321' })
-  @IsOptional()
-  @IsString()
-  phone?: string;
-
   @ApiProperty({ example: 'CCCD' })
   @IsString()
   idType!: string;
-
-  @ApiProperty({ example: '079123456789' })
-  @IsString()
-  idNumber!: string;
 
   @ApiProperty({
     type: SubmitKycDocumentDto,
@@ -553,6 +536,11 @@ export class SubmitKycDto {
   @ValidateNested({ each: true })
   @Type(() => SubmitKycDocumentDto)
   documents!: SubmitKycDocumentDto[];
+}
+
+export class KycMutationResponseDto {
+  @ApiProperty({ example: true })
+  success!: boolean;
 }
 
 export class UserKycDocumentResponseDto {

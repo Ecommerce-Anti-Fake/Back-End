@@ -13,6 +13,7 @@ import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from 
 import {
   AdminUserKycDetailResponseDto,
   GetKycUploadSignaturesDto,
+  KycMutationResponseDto,
   KycUploadSignatureResponseDto,
   PaginatedAdminUserKycResponseDto,
   PendingKycQueryDto,
@@ -111,7 +112,7 @@ export class KycController {
   @ApiBearerAuth('access-token')
   @ApiOkResponse({
     description: 'Gui KYC thanh cong, cho phe duyet.',
-    type: UserKycResponseDto,
+    type: KycMutationResponseDto,
   })
   @ApiBadRequestResponse({
     description: 'Thong tin KYC hoac CCCD 2 mat khong hop le.',
@@ -122,19 +123,15 @@ export class KycController {
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('kyc')
   async submitKyc(@CurrentUserId() userId: string, @Body() dto: SubmitKycDto) {
-    const result = await this.usersRpcService.submitKyc({
+    await this.usersRpcService.submitKyc({
       userId,
-      fullName: dto.fullName,
-      dateOfBirth: dto.dateOfBirth,
-      phone: dto.phone,
       idType: dto.idType,
-      idNumber: dto.idNumber,
       documents: dto.documents,
     });
     this.dashboardSseBrokerService.notifyAccount(userId);
     this.dashboardSseBrokerService.notifyAdminQueue('moderation');
 
-    return result;
+    return { success: true };
   }
 
   @ApiOperation({ summary: 'Admin duyet hoac tu choi KYC cua user' })
