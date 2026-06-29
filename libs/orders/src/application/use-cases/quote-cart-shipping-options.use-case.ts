@@ -11,13 +11,12 @@ export class QuoteCartShippingOptionsUseCase {
 
   async execute(input: {
     buyerUserId: string;
-    shippingAddress?: string | null;
-    shippingDistrictId?: number | null;
-    shippingWardCode?: string | null;
+    cartItemIds: string[];
   }): Promise<CartShippingOptionsResponse> {
     const cart = await this.ordersRepository.getOrCreateActiveCart(input.buyerUserId);
-    const destination = await this.resolveShippingDestination(input);
-    const shopGroups = this.groupItemsByShop(cart);
+    const selectedCart = this.selectCartItems(cart, input.cartItemIds);
+    const destination = await this.resolveShippingDestination(input.buyerUserId);
+    const shopGroups = this.groupItemsByShop(selectedCart);
     const shops: CartShopShippingOptions[] = [];
 
     for (const group of shopGroups) {
@@ -29,9 +28,26 @@ export class QuoteCartShippingOptionsUseCase {
       });
     }
 
+    const options = this.aggregateShopOptions(shops);
     return {
-      shops,
-      totalShippingFee: shops.reduce((total, shop) => total + this.resolveDefaultShippingFee(shop.options), 0),
+      options,
+    };
+  }
+
+  private selectCartItems(cart: CartWithItems, cartItemIds: string[]): CartWithItems {
+    const uniqueCartItemIds = [...new Set(cartItemIds.map((id) => id.trim()).filter(Boolean))];
+    if (uniqueCartItemIds.length === 0) {
+      throw new BadRequestException('At least one cart item is required for shipping quote');
+    }
+
+    const selectedItems = cart.items.filter((item) => uniqueCartItemIds.includes(item.id));
+    if (selectedItems.length !== uniqueCartItemIds.length) {
+      throw new BadRequestException('One or more cart items are invalid');
+    }
+
+    return {
+      ...cart,
+      items: selectedItems,
     };
   }
 
@@ -208,35 +224,67 @@ export class QuoteCartShippingOptionsUseCase {
     }, 0);
   }
 
-  private resolveDefaultShippingFee(options: CartShippingOption[]) {
-    if (options.length === 0) {
-      return 0;
-    }
-
-    return Math.min(...options.map((option) => option.shippingFee));
-  }
-
-  private async resolveShippingDestination(input: {
-    buyerUserId: string;
-    shippingAddress?: string | null;
-    shippingDistrictId?: number | null;
-    shippingWardCode?: string | null;
-  }): Promise<ShippingQuoteDestination> {
-    if (input.shippingDistrictId && input.shippingWardCode?.trim()) {
-      return {
-        shippingAddress: input.shippingAddress ?? null,
-        shippingDistrictId: input.shippingDistrictId,
-        shippingWardCode: input.shippingWardCode,
-      };
-    }
-
-    const defaultAddress = await this.ordersRepository.findDefaultAddressByUserId(input.buyerUserId);
+  private async resolveShippingDestination(buyerUserId: string): Promise<ShippingQuoteDestination> {
+    const defaultAddress = await this.ordersRepository.findDefaultAddressByUserId(buyerUserId);
     const carrierLocation = parseInternalAddressWardCode(defaultAddress?.wardCode);
     return {
       shippingAddress: defaultAddress?.addressLine ?? null,
       shippingDistrictId: carrierLocation?.districtId ?? null,
       shippingWardCode: carrierLocation?.carrierWardCode ?? null,
     };
+  }
+
+  private aggregateShopOptions(shops: CartShopShippingOptions[]) {
+    if (shops.length === 0) {
+      return [];
+    }
+
+    const optionGroups = new Map<string, CartShippingOption[]>();
+    for (const shop of shops) {
+      const seenShopOptionKeys = new Set<string>();
+      for (const option of shop.options) {
+        const key = this.resolveAggregateOptionKey(option);
+        if (seenShopOptionKeys.has(key)) {
+          continue;
+        }
+        seenShopOptionKeys.add(key);
+        optionGroups.set(key, [...(optionGroups.get(key) ?? []), option]);
+      }
+    }
+
+    return Array.from(optionGroups.values())
+      .filter((options) => options.length === shops.length)
+      .map((options, index) => {
+        const baseOption = options[0];
+        return {
+          optionCode: `${baseOption.providerCode}_${index + 1}`,
+          providerCode: baseOption.providerCode,
+          providerName: baseOption.providerName,
+          methodName: baseOption.methodName,
+          shippingFee: options.reduce((total, option) => total + option.shippingFee, 0),
+          estimatedDelivery: this.resolveLongestEstimatedDelivery(options),
+        };
+      });
+  }
+
+  private resolveAggregateOptionKey(option: CartShippingOption) {
+    return `${option.providerCode}:${option.methodName.trim().toLowerCase()}`;
+  }
+
+  private resolveLongestEstimatedDelivery(options: CartShippingOption[]) {
+    return options
+      .map((option) => option.estimatedDelivery)
+      .filter((value): value is string => !!value)
+      .sort((left, right) => this.resolveEstimatedDeliveryMaxDays(right) - this.resolveEstimatedDeliveryMaxDays(left))[0] ?? null;
+  }
+
+  private resolveEstimatedDeliveryMaxDays(value: string) {
+    const matches = value.match(/\d+/g);
+    if (!matches?.length) {
+      return 0;
+    }
+
+    return Math.max(...matches.map((match) => Number(match)));
   }
 
   private estimateGhnDelivery(shortName: string) {
@@ -300,6 +348,5 @@ type CartShopShippingOptions = {
 };
 
 type CartShippingOptionsResponse = {
-  shops: CartShopShippingOptions[];
-  totalShippingFee: number;
+  options: CartShippingOption[];
 };

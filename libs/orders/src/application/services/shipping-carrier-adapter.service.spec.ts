@@ -210,6 +210,30 @@ describe('ShippingCarrierAdapterService', () => {
     );
   });
 
+  it('normalizes GHN base URL when it already includes public-api path', async () => {
+    configServiceMock.get.mockImplementation((key: string) => {
+      const values: Record<string, string> = {
+        GHN_BASE_URL: 'https://online-gateway.ghn.vn/shiip/public-api',
+        GHN_TOKEN: 'token-1',
+        GHN_SHOP_ID: '12345',
+      };
+      return values[key];
+    });
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: [{ ProvinceID: 202, ProvinceName: 'Ho Chi Minh' }],
+      }),
+    } as Response);
+    const service = new ShippingCarrierAdapterService(configServiceMock as unknown as ConfigService);
+
+    await expect(service.listGhnProvinces()).resolves.toEqual([{ provinceId: 202, provinceName: 'Ho Chi Minh' }]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://online-gateway.ghn.vn/shiip/public-api/master-data/province',
+      expect.any(Object),
+    );
+  });
+
   it('loads GHN available services when origin district is configured', async () => {
     configServiceMock.get.mockImplementation((key: string) => {
       const values: Record<string, string> = {

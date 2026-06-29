@@ -308,7 +308,7 @@ export class ShippingCarrierAdapterService {
       return normalized;
     }
 
-    return `${normalized}/shiip/public-api/v2/shipping-order/create`;
+    return `${this.resolveGhnGatewayRoot(normalized)}/shiip/public-api/v2/shipping-order/create`;
   }
 
   private resolveGhnFeeUrl(baseUrl: string) {
@@ -317,7 +317,7 @@ export class ShippingCarrierAdapterService {
       return normalized;
     }
 
-    return `${normalized}/shiip/public-api/v2/shipping-order/fee`;
+    return `${this.resolveGhnGatewayRoot(normalized)}/shiip/public-api/v2/shipping-order/fee`;
   }
 
   private resolveGhnTrackingUrl(baseUrl: string) {
@@ -326,7 +326,7 @@ export class ShippingCarrierAdapterService {
       return normalized;
     }
 
-    return `${normalized}/shiip/public-api/v2/shipping-order/detail`;
+    return `${this.resolveGhnGatewayRoot(normalized)}/shiip/public-api/v2/shipping-order/detail`;
   }
 
   private resolveGhnAvailableServicesUrl(baseUrl: string) {
@@ -335,7 +335,7 @@ export class ShippingCarrierAdapterService {
       return normalized;
     }
 
-    return `${normalized}/shiip/public-api/v2/shipping-order/available-services`;
+    return `${this.resolveGhnGatewayRoot(normalized)}/shiip/public-api/v2/shipping-order/available-services`;
   }
 
   private resolveGhnMasterDataUrl(baseUrl: string, resource: 'province' | 'district' | 'ward') {
@@ -344,7 +344,16 @@ export class ShippingCarrierAdapterService {
       return normalized;
     }
 
-    return `${normalized}/shiip/public-api/master-data/${resource}`;
+    return `${this.resolveGhnGatewayRoot(normalized)}/shiip/public-api/master-data/${resource}`;
+  }
+
+  private resolveGhnGatewayRoot(normalizedBaseUrl: string) {
+    const publicApiIndex = normalizedBaseUrl.indexOf('/shiip/public-api');
+    if (publicApiIndex >= 0) {
+      return normalizedBaseUrl.slice(0, publicApiIndex);
+    }
+
+    return normalizedBaseUrl;
   }
 
   private async fetchGhn<T>(url: string, credentials: { token: string; shopId: string }): Promise<T> {

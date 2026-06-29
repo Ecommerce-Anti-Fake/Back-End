@@ -41,6 +41,7 @@ describe('QuoteCartShippingOptionsUseCase', () => {
         }),
       ],
     });
+    mockDefaultAddress(ordersRepositoryMock);
     shippingCarrierAdapterMock.listGhnServices.mockResolvedValueOnce([
       { serviceId: 53320, serviceTypeId: 2, shortName: 'Nhanh' },
     ]);
@@ -52,9 +53,7 @@ describe('QuoteCartShippingOptionsUseCase', () => {
 
     const result = await useCase.execute({
       buyerUserId: 'buyer-1',
-      shippingAddress: '12 Nguyen Trai',
-      shippingDistrictId: 1450,
-      shippingWardCode: '21211',
+      cartItemIds: ['item-1', 'item-2'],
     });
 
     expect(shippingCarrierAdapterMock.listGhnServices).toHaveBeenCalledTimes(1);
@@ -71,23 +70,16 @@ describe('QuoteCartShippingOptionsUseCase', () => {
       }),
     );
     expect(result).toEqual({
-      shops: [
+      options: [
         {
-          shopId: 'shop-1',
-          shopName: 'Shop 1',
-          options: [
-            {
-              optionCode: 'GHN_1',
-              providerCode: 'GHN',
-              providerName: 'Giao Hang Nhanh',
-              methodName: 'Nhanh',
-              shippingFee: 39000,
-              estimatedDelivery: '2-3 ngay',
-            },
-          ],
+          optionCode: 'GHN_1',
+          providerCode: 'GHN',
+          providerName: 'Giao Hang Nhanh',
+          methodName: 'Nhanh',
+          shippingFee: 39000,
+          estimatedDelivery: '2-3 ngay',
         },
       ],
-      totalShippingFee: 39000,
     });
     expect(JSON.stringify(result)).not.toContain('shippingServiceId');
     expect(JSON.stringify(result)).not.toContain('shippingServiceTypeId');
@@ -103,6 +95,7 @@ describe('QuoteCartShippingOptionsUseCase', () => {
         createCartItem({ id: 'item-2', shopId: 'shop-2', shopName: 'Shop 2' }),
       ],
     });
+    mockDefaultAddress(ordersRepositoryMock);
     shippingCarrierAdapterMock.listGhnServices
       .mockResolvedValueOnce([{ serviceId: 53320, serviceTypeId: 2, shortName: 'Nhanh' }])
       .mockResolvedValueOnce([{ serviceId: 53320, serviceTypeId: 2, shortName: 'Nhanh' }]);
@@ -112,13 +105,22 @@ describe('QuoteCartShippingOptionsUseCase', () => {
 
     const result = await useCase.execute({
       buyerUserId: 'buyer-1',
-      shippingDistrictId: 1450,
-      shippingWardCode: '21211',
+      cartItemIds: ['item-1', 'item-2'],
     });
 
     expect(shippingCarrierAdapterMock.quoteShipment).toHaveBeenCalledTimes(2);
-    expect(result.totalShippingFee).toBe(55000);
-    expect(result.shops.map((shop) => shop.shopId)).toEqual(['shop-1', 'shop-2']);
+    expect(result).toEqual({
+      options: [
+        {
+          optionCode: 'GHN_1',
+          providerCode: 'GHN',
+          providerName: 'Giao Hang Nhanh',
+          methodName: 'Nhanh',
+          shippingFee: 55000,
+          estimatedDelivery: '2-3 ngay',
+        },
+      ],
+    });
   });
 
   it('uses the buyer default address when quote input omits destination fields', async () => {
@@ -128,11 +130,7 @@ describe('QuoteCartShippingOptionsUseCase', () => {
       cartStatus: 'ACTIVE',
       items: [createCartItem({ id: 'item-1' })],
     });
-    ordersRepositoryMock.findDefaultAddressByUserId.mockResolvedValueOnce({
-      addressLine: '12 Nguyen Trai',
-      provinceCode: 'VN-P202',
-      wardCode: 'VN-P202-D1450-W21211',
-    });
+    mockDefaultAddress(ordersRepositoryMock);
     shippingCarrierAdapterMock.listGhnServices.mockResolvedValueOnce([
       { serviceId: 53320, serviceTypeId: 2, shortName: 'Nhanh' },
     ]);
@@ -142,7 +140,7 @@ describe('QuoteCartShippingOptionsUseCase', () => {
       serviceTypeId: 2,
     });
 
-    await useCase.execute({ buyerUserId: 'buyer-1' });
+    await useCase.execute({ buyerUserId: 'buyer-1', cartItemIds: ['item-1'] });
 
     expect(ordersRepositoryMock.findDefaultAddressByUserId).toHaveBeenCalledWith('buyer-1');
     expect(shippingCarrierAdapterMock.quoteShipment).toHaveBeenCalledWith(
@@ -161,16 +159,55 @@ describe('QuoteCartShippingOptionsUseCase', () => {
       cartStatus: 'ACTIVE',
       items: [createCartItem({ parcelWeightGrams: null })],
     });
+    mockDefaultAddress(ordersRepositoryMock);
 
     await expect(
       useCase.execute({
         buyerUserId: 'buyer-1',
-        shippingDistrictId: 1450,
-        shippingWardCode: '21211',
+        cartItemIds: ['item-1'],
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
+
+  it('quotes only selected cart items', async () => {
+    ordersRepositoryMock.getOrCreateActiveCart.mockResolvedValueOnce({
+      id: 'cart-1',
+      buyerUserId: 'buyer-1',
+      cartStatus: 'ACTIVE',
+      items: [
+        createCartItem({ id: 'item-1', offerId: 'offer-1', quantity: 1 }),
+        createCartItem({ id: 'item-2', offerId: 'offer-2', quantity: 3 }),
+      ],
+    });
+    mockDefaultAddress(ordersRepositoryMock);
+    shippingCarrierAdapterMock.listGhnServices.mockResolvedValueOnce([
+      { serviceId: 53320, serviceTypeId: 2, shortName: 'Nhanh' },
+    ]);
+    shippingCarrierAdapterMock.quoteShipment.mockResolvedValueOnce({
+      shippingFeeAmount: 30000,
+      serviceId: 53320,
+      serviceTypeId: 2,
+    });
+
+    await useCase.execute({ buyerUserId: 'buyer-1', cartItemIds: ['item-1'] });
+
+    expect(shippingCarrierAdapterMock.quoteShipment).toHaveBeenCalledTimes(1);
+    expect(shippingCarrierAdapterMock.quoteShipment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        declaredValue: 100000,
+        parcelWeightGrams: 500,
+      }),
+    );
+  });
 });
+
+function mockDefaultAddress(ordersRepositoryMock: { findDefaultAddressByUserId: jest.Mock }) {
+  ordersRepositoryMock.findDefaultAddressByUserId.mockResolvedValueOnce({
+    addressLine: '12 Nguyen Trai',
+    provinceCode: 'VN-P202',
+    wardCode: 'VN-P202-D1450-W21211',
+  });
+}
 
 function createCartItem(overrides: Record<string, unknown> = {}) {
   const shopId = String(overrides.shopId ?? 'shop-1');

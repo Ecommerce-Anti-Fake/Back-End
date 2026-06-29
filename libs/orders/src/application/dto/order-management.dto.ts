@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsIn, IsInt, IsOptional, IsString, IsUrl, Max, Min, ValidateNested } from 'class-validator';
+import { ArrayNotEmpty, IsArray, IsIn, IsInt, IsOptional, IsString, IsUrl, IsUUID, Max, Min, ValidateNested } from 'class-validator';
 
 const ADMIN_DISPUTE_STATUSES = ['OPEN', 'RESOLVED', 'REFUNDED'] as const;
 const ADMIN_DISPUTE_SORT_FIELDS = ['openedAt', 'orderId', 'disputeStatus'] as const;
@@ -1548,6 +1548,19 @@ export class QuoteCartItemShippingOptionsDto {
   shippingWardCode?: string;
 }
 
+export class QuoteCartShippingOptionsDto {
+  @ApiProperty({
+    description: 'Danh sach cart item duoc buyer chon de bao gia van chuyen.',
+    example: ['cart-item-id-1', 'cart-item-id-2'],
+    type: String,
+    isArray: true,
+  })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsUUID('4', { each: true })
+  cartItemIds!: string[];
+}
+
 export class CartItemShippingOptionResponseDto {
   @ApiProperty({ example: 'GHN' })
   providerCode!: string;
@@ -1603,11 +1616,8 @@ export class CartShopShippingOptionsResponseDto {
 }
 
 export class CartShippingOptionsResponseDto {
-  @ApiProperty({ type: [CartShopShippingOptionsResponseDto] })
-  shops!: CartShopShippingOptionsResponseDto[];
-
-  @ApiProperty({ example: 52000 })
-  totalShippingFee!: number;
+  @ApiProperty({ type: [CartShippingOptionResponseDto] })
+  options!: CartShippingOptionResponseDto[];
 }
 
 export class GhnProvinceResponseDto {

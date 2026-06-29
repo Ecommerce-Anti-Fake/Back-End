@@ -5,7 +5,7 @@ import {
   AddCartItemDto,
   CartShippingOptionsResponseDto,
   CheckoutCartItemDto,
-  QuoteCartItemShippingOptionsDto,
+  QuoteCartShippingOptionsDto,
   UpdateCartItemDto,
 } from '@orders';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
@@ -112,39 +112,18 @@ export class CartController {
   }
 
   @ApiTags('Shipping')
-  @ApiOperation({ summary: 'Bao gia cac phuong thuc van chuyen theo tung shop trong gio hang' })
+  @ApiOperation({ summary: 'Bao gia cac phuong thuc van chuyen cho cac cart item da chon' })
   @ApiBearerAuth('access-token')
   @ApiOkResponse({ type: CartShippingOptionsResponseDto })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('shipping-options')
   quoteCartShippingOptions(
     @CurrentUserId() buyerUserId: string,
-    @Body() dto: QuoteCartItemShippingOptionsDto = {},
+    @Body() dto: QuoteCartShippingOptionsDto,
   ) {
     return this.ordersRpcService.quoteCartShippingOptions({
       buyerUserId,
-      shippingAddress: dto.shippingAddress ?? null,
-      shippingDistrictId: dto.shippingDistrictId ?? null,
-      shippingWardCode: dto.shippingWardCode ?? null,
-    });
-  }
-
-  @ApiTags('Shipping')
-  @ApiOperation({ summary: 'Bao gia cac phuong thuc van chuyen cho mot cart item' })
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post('items/:cartItemId/shipping-options')
-  quoteCartItemShippingOptions(
-    @CurrentUserId() buyerUserId: string,
-    @Param('cartItemId') cartItemId: string,
-    @Body() dto: QuoteCartItemShippingOptionsDto,
-  ) {
-    return this.ordersRpcService.quoteCartItemShippingOptions({
-      buyerUserId,
-      cartItemId,
-      shippingAddress: dto.shippingAddress ?? null,
-      shippingDistrictId: dto.shippingDistrictId ?? null,
-      shippingWardCode: dto.shippingWardCode ?? null,
+      cartItemIds: dto.cartItemIds,
     });
   }
 }

@@ -997,9 +997,7 @@ export type QuoteCartItemShippingOptionsMessage = {
 
 export type QuoteCartShippingOptionsMessage = {
   buyerUserId: string;
-  shippingAddress?: string | null;
-  shippingDistrictId?: number | null;
-  shippingWardCode?: string | null;
+  cartItemIds: string[];
 };
 
 export type CreateWholesaleOrderMessage = {
