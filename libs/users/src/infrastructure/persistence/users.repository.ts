@@ -98,6 +98,13 @@ export class UsersRepository {
   findById(id: string) {
     return this.prisma.user.findUnique({
       where: { id },
+      include: {
+        avatarMedia: {
+          select: {
+            secureUrl: true,
+          },
+        },
+      },
     });
   }
 
@@ -399,6 +406,13 @@ export class UsersRepository {
           email ? { email } : undefined,
           phone ? { phone } : undefined,
         ].filter(Boolean) as Array<{ email?: string; phone?: string }>,
+      },
+      include: {
+        avatarMedia: {
+          select: {
+            secureUrl: true,
+          },
+        },
       },
     });
   }

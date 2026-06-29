@@ -3,6 +3,7 @@ export type SafeUser = {
   email: string | null;
   phone: string | null;
   displayName: string | null;
+  avatar: string | null;
   role: string;
   accountStatus: string;
   createdAt?: Date;

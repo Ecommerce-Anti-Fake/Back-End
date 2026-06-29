@@ -77,6 +77,9 @@ describe('LoginUseCase', () => {
       password: 'stored-password-hash',
       role: 'user',
       accountStatus: 'active',
+      avatarMedia: {
+        secureUrl: 'https://cdn.example.com/avatar.jpg',
+      },
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -106,6 +109,7 @@ describe('LoginUseCase', () => {
       user: {
         id: 'user-1',
         email: 'user@example.com',
+        avatar: 'https://cdn.example.com/avatar.jpg',
         role: 'user',
         accountStatus: 'active',
       },

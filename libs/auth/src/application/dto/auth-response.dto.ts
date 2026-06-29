@@ -28,6 +28,13 @@ export class AuthUserResponseDto {
   })
   displayName!: string | null;
 
+  @ApiPropertyOptional({
+    description: 'URL avatar cua nguoi dung.',
+    example: 'https://res.cloudinary.com/demo/image/upload/v1/users/user-1/avatar.jpg',
+    nullable: true,
+  })
+  avatar!: string | null;
+
   @ApiProperty({
     description: 'Vai tro cua nguoi dung.',
     example: 'user',

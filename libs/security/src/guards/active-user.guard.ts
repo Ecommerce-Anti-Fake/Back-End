@@ -37,7 +37,11 @@ export class ActiveUserGuard implements CanActivate {
       throw new ForbiddenException('Account is not active');
     }
 
-    const { password: _removed, ...safeUser } = user;
+    const { password: _removed, avatarMedia: _avatarMedia, ...userWithoutPassword } = user;
+    const safeUser: SafeUser = {
+      ...userWithoutPassword,
+      avatar: user.avatar ?? _avatarMedia?.secureUrl ?? null,
+    };
     request.user = safeUser;
     return true;
   }

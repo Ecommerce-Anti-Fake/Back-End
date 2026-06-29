@@ -18,7 +18,17 @@ export class AuthSessionRepository {
   findById(sessionId: string) {
     return this.prisma.authSession.findUnique({
       where: { id: sessionId },
-      include: { user: true },
+      include: {
+        user: {
+          include: {
+            avatarMedia: {
+              select: {
+                secureUrl: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 

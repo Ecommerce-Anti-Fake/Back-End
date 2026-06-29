@@ -3,6 +3,8 @@ export type UserIdentityRecord = {
   email: string | null;
   phone: string | null;
   displayName: string | null;
+  avatar?: string | null;
+  avatarMedia?: { secureUrl: string | null } | null;
   role: string;
   accountStatus: string;
   password?: string | null;
