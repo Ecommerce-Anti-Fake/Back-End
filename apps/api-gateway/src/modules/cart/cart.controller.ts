@@ -1,7 +1,13 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
-import { AddCartItemDto, CheckoutCartItemDto, QuoteCartItemShippingOptionsDto, UpdateCartItemDto } from '@orders';
+import {
+  AddCartItemDto,
+  CartShippingOptionsResponseDto,
+  CheckoutCartItemDto,
+  QuoteCartItemShippingOptionsDto,
+  UpdateCartItemDto,
+} from '@orders';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 import { OrdersRpcService } from '../order/orders-rpc.service';
 
@@ -103,6 +109,24 @@ export class CartController {
     this.dashboardSseBrokerService.notifyOrderChanged(result, buyerUserId);
 
     return result;
+  }
+
+  @ApiTags('Shipping')
+  @ApiOperation({ summary: 'Bao gia cac phuong thuc van chuyen theo tung shop trong gio hang' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: CartShippingOptionsResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('shipping-options')
+  quoteCartShippingOptions(
+    @CurrentUserId() buyerUserId: string,
+    @Body() dto: QuoteCartItemShippingOptionsDto = {},
+  ) {
+    return this.ordersRpcService.quoteCartShippingOptions({
+      buyerUserId,
+      shippingAddress: dto.shippingAddress ?? null,
+      shippingDistrictId: dto.shippingDistrictId ?? null,
+      shippingWardCode: dto.shippingWardCode ?? null,
+    });
   }
 
   @ApiTags('Shipping')

@@ -172,9 +172,10 @@ export class ShippingCarrierAdapterService {
       .filter((item) => item.wardCode && item.wardName);
   }
 
-  async listGhnServices(districtId: number): Promise<GhnService[]> {
+  async listGhnServices(districtId: number, fromDistrictIdOverride?: number | null): Promise<GhnService[]> {
     const credentials = this.getGhnCredentials();
-    const fromDistrictId = Number(this.configService.get<string>('GHN_FROM_DISTRICT_ID')?.trim() || 0);
+    const fromDistrictId =
+      fromDistrictIdOverride ?? Number(this.configService.get<string>('GHN_FROM_DISTRICT_ID')?.trim() || 0);
     if (!fromDistrictId) {
       return [
         {

@@ -80,6 +80,21 @@ export class ShopResponseDto {
   })
   taxCode!: string | null;
 
+  @ApiPropertyOptional({ description: 'Dia chi kho mac dinh cua shop.', example: '12 Nguyen Trai, Quan 1, TP.HCM', nullable: true })
+  warehouseAddress!: string | null;
+
+  @ApiPropertyOptional({ description: 'Ma tinh/thanh noi bo cua kho shop.', example: 'VN-P202', nullable: true })
+  warehouseProvinceCode!: string | null;
+
+  @ApiPropertyOptional({ description: 'Ten tinh/thanh cua kho shop.', example: 'TP Ho Chi Minh', nullable: true })
+  warehouseProvinceName!: string | null;
+
+  @ApiPropertyOptional({ description: 'Ma phuong/xa noi bo cua kho shop.', example: 'VN-P202-D1450-W21211', nullable: true })
+  warehouseWardCode!: string | null;
+
+  @ApiPropertyOptional({ description: 'Ten phuong/xa kho shop.', example: 'Phuong Ben Nghe', nullable: true })
+  warehouseWardName!: string | null;
+
   @ApiProperty({
     description: 'Trang thai cua shop.',
     example: 'verified',
@@ -808,6 +823,36 @@ export class CreateShopDto {
   @MaxLength(50)
   taxCode?: string;
 
+  @ApiPropertyOptional({ description: 'Dia chi kho mac dinh cua shop.', example: '12 Nguyen Trai, Quan 1, TP.HCM' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  warehouseAddress?: string;
+
+  @ApiPropertyOptional({ description: 'Ma tinh/thanh noi bo cua kho shop.', example: 'VN-P202' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  warehouseProvinceCode?: string;
+
+  @ApiPropertyOptional({ description: 'Ten tinh/thanh cua kho shop.', example: 'TP Ho Chi Minh' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  warehouseProvinceName?: string;
+
+  @ApiPropertyOptional({ description: 'Ma phuong/xa noi bo cua kho shop lay tu API dia chi.', example: 'VN-P202-D1450-W21211' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  warehouseWardCode?: string;
+
+  @ApiPropertyOptional({ description: 'Ten phuong/xa kho shop.', example: 'Phuong Ben Nghe' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  warehouseWardName?: string;
+
   @ApiProperty({
     description: 'Danh sach category ma shop muon dang ky kinh doanh.',
     type: String,
@@ -850,6 +895,41 @@ export class UpdateShopProfileDto {
   @IsString()
   @MaxLength(50)
   taxCode?: string | null;
+
+  @ApiPropertyOptional({ description: 'Dia chi kho mac dinh cua shop.', example: '12 Nguyen Trai, Quan 1, TP.HCM' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  warehouseAddress?: string | null;
+
+  @ApiPropertyOptional({ description: 'Ma tinh/thanh noi bo cua kho shop.', example: 'VN-P202' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  warehouseProvinceCode?: string | null;
+
+  @ApiPropertyOptional({ description: 'Ten tinh/thanh cua kho shop.', example: 'TP Ho Chi Minh' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  warehouseProvinceName?: string | null;
+
+  @ApiPropertyOptional({ description: 'Ma phuong/xa noi bo cua kho shop lay tu API dia chi.', example: 'VN-P202-D1450-W21211' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  warehouseWardCode?: string | null;
+
+  @ApiPropertyOptional({ description: 'Ten phuong/xa kho shop.', example: 'Phuong Ben Nghe' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  warehouseWardName?: string | null;
+}
+
+export class ShopMutationResponseDto {
+  @ApiProperty({ example: true })
+  success!: boolean;
 }
 
 export class UpdateShopRegistrationTypeDto {

@@ -18,7 +18,6 @@ import { GatewayModerationModule } from './modules/moderation/moderation.module'
 import { GatewayNotificationModule } from './modules/notification/notification.module';
 import { GatewayOfferModule } from './modules/offer/offer.module';
 import { GatewayOrderModule } from './modules/order/order.module';
-import { GatewayOrderShippingModule } from './modules/order-shipping/order-shipping.module';
 import { GatewayPaymentModule } from './modules/payment/payment.module';
 import { GatewayReviewModule } from './modules/review/review.module';
 import { GatewayReportModule } from './modules/report/report.module';
@@ -58,7 +57,6 @@ import {
     GatewayNotificationModule,
     GatewayOfferModule,
     GatewayOrderModule,
-    GatewayOrderShippingModule,
     GatewayPaymentModule,
     GatewayReviewModule,
     GatewayReportModule,

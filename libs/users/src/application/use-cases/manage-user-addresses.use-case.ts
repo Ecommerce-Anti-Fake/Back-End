@@ -11,8 +11,8 @@ function normalizeRequired(value: string | undefined, field: string) {
   return normalized;
 }
 
-function normalizeOptional(value: string | undefined) {
-  if (value === undefined) {
+function normalizeOptional(value: string | null | undefined) {
+  if (value === undefined || value === null) {
     return undefined;
   }
   return value.trim() || undefined;
@@ -58,6 +58,10 @@ export class CreateUserAddressUseCase {
     recipientName: string;
     phone: string;
     addressLine: string;
+    provinceCode?: string | null;
+    provinceName?: string | null;
+    wardCode?: string | null;
+    wardName?: string | null;
     isDefault?: boolean;
   }) {
     const address = await this.usersRepository.createUserAddress({
@@ -65,6 +69,10 @@ export class CreateUserAddressUseCase {
       recipientName: normalizeRequired(input.recipientName, 'recipientName'),
       phone: normalizeRequired(input.phone, 'phone'),
       addressLine: normalizeRequired(input.addressLine, 'addressLine'),
+      provinceCode: normalizeOptional(input.provinceCode) ?? null,
+      provinceName: normalizeOptional(input.provinceName) ?? null,
+      wardCode: normalizeOptional(input.wardCode) ?? null,
+      wardName: normalizeOptional(input.wardName) ?? null,
       isDefault: input.isDefault,
     });
 
@@ -82,6 +90,10 @@ export class UpdateUserAddressUseCase {
     recipientName?: string;
     phone?: string;
     addressLine?: string;
+    provinceCode?: string | null;
+    provinceName?: string | null;
+    wardCode?: string | null;
+    wardName?: string | null;
     isDefault?: boolean;
   }) {
     try {
@@ -91,6 +103,10 @@ export class UpdateUserAddressUseCase {
         recipientName: normalizeOptional(input.recipientName),
         phone: normalizeOptional(input.phone),
         addressLine: normalizeOptional(input.addressLine),
+        provinceCode: input.provinceCode === undefined ? undefined : normalizeOptional(input.provinceCode) ?? null,
+        provinceName: input.provinceName === undefined ? undefined : normalizeOptional(input.provinceName) ?? null,
+        wardCode: input.wardCode === undefined ? undefined : normalizeOptional(input.wardCode) ?? null,
+        wardName: input.wardName === undefined ? undefined : normalizeOptional(input.wardName) ?? null,
         isDefault: input.isDefault,
       });
 

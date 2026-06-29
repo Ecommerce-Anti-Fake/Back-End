@@ -12,6 +12,9 @@ const offerForOrderingArgs = Prisma.validator<Prisma.OfferDefaultArgs>()({
         shopName: true,
         ownerUserId: true,
         registrationType: true,
+        warehouseAddress: true,
+        warehouseWardCode: true,
+        warehouseWardName: true,
       },
     },
     shippingMethods: {
@@ -92,6 +95,9 @@ const orderWithRelationsArgs = Prisma.validator<Prisma.OrderDefaultArgs>()({
               select: {
                 id: true,
                 shopName: true,
+                warehouseAddress: true,
+                warehouseWardCode: true,
+                warehouseWardName: true,
               },
             },
             media: {
@@ -242,6 +248,9 @@ const cartWithItemsArgs = Prisma.validator<Prisma.CartDefaultArgs>()({
               select: {
                 id: true,
                 shopName: true,
+                warehouseAddress: true,
+                warehouseWardCode: true,
+                warehouseWardName: true,
               },
             },
             shippingMethods: {
@@ -522,6 +531,16 @@ export class OrdersRepository {
       include: {
         cart: true,
       },
+    });
+  }
+
+  findDefaultAddressByUserId(userId: string) {
+    return this.prisma.userAddress.findFirst({
+      where: {
+        userId,
+        isDefault: true,
+      },
+      orderBy: { createdAt: 'desc' },
     });
   }
 

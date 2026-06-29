@@ -9,6 +9,11 @@ model Shop {
   shopStatus                 String                 @map("shop_status")
   avatarMediaId              String?                @map("avatar_media_id") @unique
   bannerMediaId              String?                @map("banner_media_id") @unique
+  warehouseAddress           String?                @map("warehouse_address")
+  warehouseProvinceCode      String?                @map("warehouse_province_code")
+  warehouseProvinceName      String?                @map("warehouse_province_name")
+  warehouseWardCode          String?                @map("warehouse_ward_code")
+  warehouseWardName          String?                @map("warehouse_ward_name")
   createdAt                  DateTime               @default(now()) @map("created_at")
   avatarMedia                MediaAsset?            @relation("ShopAvatar", fields: [avatarMediaId], references: [id])
   bannerMedia                MediaAsset?            @relation("ShopBanner", fields: [bannerMediaId], references: [id])

@@ -252,6 +252,18 @@ export class UserAddressResponseDto {
   @ApiProperty({ example: '12 Nguyen Trai, Quan 1, TP.HCM' })
   addressLine!: string;
 
+  @ApiPropertyOptional({ example: 'VN-P202', nullable: true })
+  provinceCode!: string | null;
+
+  @ApiPropertyOptional({ example: 'TP Ho Chi Minh', nullable: true })
+  provinceName!: string | null;
+
+  @ApiPropertyOptional({ example: 'VN-P202-D1450-W21211', nullable: true })
+  wardCode!: string | null;
+
+  @ApiPropertyOptional({ example: 'Phuong Ben Nghe', nullable: true })
+  wardName!: string | null;
+
   @ApiProperty({ example: true })
   isDefault!: boolean;
 
@@ -275,6 +287,26 @@ export class CreateUserAddressDto {
   @IsString()
   addressLine!: string;
 
+  @ApiPropertyOptional({ example: 'VN-P202' })
+  @IsOptional()
+  @IsString()
+  provinceCode?: string;
+
+  @ApiPropertyOptional({ example: 'TP Ho Chi Minh' })
+  @IsOptional()
+  @IsString()
+  provinceName?: string;
+
+  @ApiPropertyOptional({ example: 'VN-P202-D1450-W21211' })
+  @IsOptional()
+  @IsString()
+  wardCode?: string;
+
+  @ApiPropertyOptional({ example: 'Phuong Ben Nghe' })
+  @IsOptional()
+  @IsString()
+  wardName?: string;
+
   @ApiPropertyOptional({ example: true })
   @IsOptional()
   @IsBoolean()
@@ -297,10 +329,35 @@ export class UpdateUserAddressDto {
   @IsString()
   addressLine?: string;
 
+  @ApiPropertyOptional({ example: 'VN-P202' })
+  @IsOptional()
+  @IsString()
+  provinceCode?: string;
+
+  @ApiPropertyOptional({ example: 'TP Ho Chi Minh' })
+  @IsOptional()
+  @IsString()
+  provinceName?: string;
+
+  @ApiPropertyOptional({ example: 'VN-P202-D1450-W21211' })
+  @IsOptional()
+  @IsString()
+  wardCode?: string;
+
+  @ApiPropertyOptional({ example: 'Phuong Ben Nghe' })
+  @IsOptional()
+  @IsString()
+  wardName?: string;
+
   @ApiPropertyOptional({ example: true })
   @IsOptional()
   @IsBoolean()
   isDefault?: boolean;
+}
+
+export class UserAddressMutationResponseDto {
+  @ApiProperty({ example: true })
+  success!: boolean;
 }
 
 export class UpdateUserDto {

@@ -16,6 +16,7 @@ import type {
   AssignAdminDisputeMessage,
   CalculateRiskScoreMessage,
   CheckoutCartItemMessage,
+  QuoteCartShippingOptionsMessage,
   QuoteCartItemShippingOptionsMessage,
   CreateRetailOrderMessage,
   CreateReportMessage,
@@ -59,6 +60,7 @@ import {
   SyncOrderShippingStatusUseCase,
   AssignAdminDisputeUseCase,
   CheckoutCartItemUseCase,
+  QuoteCartShippingOptionsUseCase,
   QuoteCartItemShippingOptionsUseCase,
   CalculateRiskScoreUseCase,
   CreateRetailOrderUseCase,
@@ -110,6 +112,7 @@ export class OrdersRpcController {
     private readonly removeCartItemUseCase: RemoveCartItemUseCase,
     private readonly checkoutCartItemUseCase: CheckoutCartItemUseCase,
     private readonly quoteCartItemShippingOptionsUseCase: QuoteCartItemShippingOptionsUseCase,
+    private readonly quoteCartShippingOptionsUseCase: QuoteCartShippingOptionsUseCase,
     private readonly createRetailOrderUseCase: CreateRetailOrderUseCase,
     private readonly createWholesaleOrderUseCase: CreateWholesaleOrderUseCase,
     private readonly listMyOrdersUseCase: ListMyOrdersUseCase,
@@ -208,6 +211,15 @@ export class OrdersRpcController {
   async quoteCartItemShippingOptions(@Payload() payload: QuoteCartItemShippingOptionsMessage) {
     try {
       return await this.quoteCartItemShippingOptionsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.quoteCartShippingOptions)
+  async quoteCartShippingOptions(@Payload() payload: QuoteCartShippingOptionsMessage) {
+    try {
+      return await this.quoteCartShippingOptionsUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

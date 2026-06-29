@@ -12,6 +12,11 @@ export class UpdateShopProfileUseCase {
     shopName?: string;
     businessType?: string;
     taxCode?: string | null;
+    warehouseAddress?: string | null;
+    warehouseProvinceCode?: string | null;
+    warehouseProvinceName?: string | null;
+    warehouseWardCode?: string | null;
+    warehouseWardName?: string | null;
   }) {
     const ownedShop = await this.shopsRepository.findOwnedShop(input.shopId, input.requesterUserId);
     if (!ownedShop) {
@@ -22,6 +27,11 @@ export class UpdateShopProfileUseCase {
       shopName?: string;
       businessType?: string;
       taxCode?: string | null;
+      warehouseAddress?: string | null;
+      warehouseProvinceCode?: string | null;
+      warehouseProvinceName?: string | null;
+      warehouseWardCode?: string | null;
+      warehouseWardName?: string | null;
     } = {};
 
     if (input.shopName !== undefined) {
@@ -42,6 +52,26 @@ export class UpdateShopProfileUseCase {
 
     if (input.taxCode !== undefined) {
       data.taxCode = input.taxCode?.trim() || null;
+    }
+
+    if (input.warehouseAddress !== undefined) {
+      data.warehouseAddress = input.warehouseAddress?.trim() || null;
+    }
+
+    if (input.warehouseProvinceCode !== undefined) {
+      data.warehouseProvinceCode = input.warehouseProvinceCode?.trim() || null;
+    }
+
+    if (input.warehouseProvinceName !== undefined) {
+      data.warehouseProvinceName = input.warehouseProvinceName?.trim() || null;
+    }
+
+    if (input.warehouseWardCode !== undefined) {
+      data.warehouseWardCode = input.warehouseWardCode?.trim() || null;
+    }
+
+    if (input.warehouseWardName !== undefined) {
+      data.warehouseWardName = input.warehouseWardName?.trim() || null;
     }
 
     if (!Object.keys(data).length) {

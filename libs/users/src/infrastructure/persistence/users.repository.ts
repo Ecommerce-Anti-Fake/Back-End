@@ -262,6 +262,10 @@ export class UsersRepository {
     recipientName: string;
     phone: string;
     addressLine: string;
+    provinceCode?: string | null;
+    provinceName?: string | null;
+    wardCode?: string | null;
+    wardName?: string | null;
     isDefault?: boolean;
   }) {
     return this.prisma.$transaction(async (tx) => {
@@ -281,6 +285,10 @@ export class UsersRepository {
           recipientName: input.recipientName,
           phone: input.phone,
           addressLine: input.addressLine,
+          provinceCode: input.provinceCode ?? null,
+          provinceName: input.provinceName ?? null,
+          wardCode: input.wardCode ?? null,
+          wardName: input.wardName ?? null,
           isDefault: shouldBeDefault,
         },
       });
@@ -293,6 +301,10 @@ export class UsersRepository {
     recipientName?: string;
     phone?: string;
     addressLine?: string;
+    provinceCode?: string | null;
+    provinceName?: string | null;
+    wardCode?: string | null;
+    wardName?: string | null;
     isDefault?: boolean;
   }) {
     return this.prisma.$transaction(async (tx) => {
@@ -315,6 +327,10 @@ export class UsersRepository {
           recipientName: input.recipientName,
           phone: input.phone,
           addressLine: input.addressLine,
+          provinceCode: input.provinceCode,
+          provinceName: input.provinceName,
+          wardCode: input.wardCode,
+          wardName: input.wardName,
           isDefault: input.isDefault,
         },
       });

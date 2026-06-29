@@ -190,6 +190,11 @@ export class ShopsRepository {
     registrationType: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
     businessType: string;
     taxCode: string | null;
+    warehouseAddress?: string | null;
+    warehouseProvinceCode?: string | null;
+    warehouseProvinceName?: string | null;
+    warehouseWardCode?: string | null;
+    warehouseWardName?: string | null;
     shopStatus: string;
     categoryRegistrations: Array<{
       categoryId: string;
@@ -205,6 +210,11 @@ export class ShopsRepository {
         registrationType: data.registrationType,
         businessType: data.businessType,
         taxCode: data.taxCode,
+        warehouseAddress: data.warehouseAddress ?? null,
+        warehouseProvinceCode: data.warehouseProvinceCode ?? null,
+        warehouseProvinceName: data.warehouseProvinceName ?? null,
+        warehouseWardCode: data.warehouseWardCode ?? null,
+        warehouseWardName: data.warehouseWardName ?? null,
         shopStatus: data.shopStatus,
         registeredCategories: {
           create: data.categoryRegistrations,
@@ -564,6 +574,11 @@ export class ShopsRepository {
       shopName?: string;
       businessType?: string;
       taxCode?: string | null;
+      warehouseAddress?: string | null;
+      warehouseProvinceCode?: string | null;
+      warehouseProvinceName?: string | null;
+      warehouseWardCode?: string | null;
+      warehouseWardName?: string | null;
     },
   ) {
     return this.prisma.shop.update({

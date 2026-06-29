@@ -12,11 +12,21 @@ export class CreateShopUseCase {
     registrationType: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
     businessType: string;
     taxCode?: string | null;
+    warehouseAddress?: string | null;
+    warehouseProvinceCode?: string | null;
+    warehouseProvinceName?: string | null;
+    warehouseWardCode?: string | null;
+    warehouseWardName?: string | null;
     categoryIds: string[];
   }) {
     const shopName = input.shopName.trim();
     const businessType = input.businessType.trim();
     const taxCode = input.taxCode?.trim() || null;
+    const warehouseAddress = input.warehouseAddress?.trim() || null;
+    const warehouseProvinceCode = input.warehouseProvinceCode?.trim() || null;
+    const warehouseProvinceName = input.warehouseProvinceName?.trim() || null;
+    const warehouseWardCode = input.warehouseWardCode?.trim() || null;
+    const warehouseWardName = input.warehouseWardName?.trim() || null;
     const categoryIds = [...new Set(input.categoryIds.map((id) => id.trim()).filter(Boolean))];
 
     if (!shopName) {
@@ -57,6 +67,11 @@ export class CreateShopUseCase {
       registrationType: input.registrationType,
       businessType,
       taxCode,
+      warehouseAddress,
+      warehouseProvinceCode,
+      warehouseProvinceName,
+      warehouseWardCode,
+      warehouseWardName,
       shopStatus,
       categoryRegistrations: categories.map((category) => ({
         categoryId: category.id,

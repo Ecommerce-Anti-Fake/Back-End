@@ -140,6 +140,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   removeCartItem: 'orders.remove-cart-item',
   checkoutCartItem: 'orders.checkout-cart-item',
   quoteCartItemShippingOptions: 'orders.quote-cart-item-shipping-options',
+  quoteCartShippingOptions: 'orders.quote-cart-shipping-options',
   createRetail: 'orders.create-retail',
   createWholesale: 'orders.create-wholesale',
   findMine: 'orders.find-mine',
@@ -305,6 +306,10 @@ export type CreateUserAddressMessage = {
   recipientName: string;
   phone: string;
   addressLine: string;
+  provinceCode?: string | null;
+  provinceName?: string | null;
+  wardCode?: string | null;
+  wardName?: string | null;
   isDefault?: boolean;
 };
 
@@ -314,6 +319,10 @@ export type UpdateUserAddressMessage = {
   recipientName?: string;
   phone?: string;
   addressLine?: string;
+  provinceCode?: string | null;
+  provinceName?: string | null;
+  wardCode?: string | null;
+  wardName?: string | null;
   isDefault?: boolean;
 };
 
@@ -406,6 +415,11 @@ export type CreateShopMessage = {
   registrationType: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
   businessType: string;
   taxCode?: string | null;
+  warehouseAddress?: string | null;
+  warehouseProvinceCode?: string | null;
+  warehouseProvinceName?: string | null;
+  warehouseWardCode?: string | null;
+  warehouseWardName?: string | null;
   categoryIds: string[];
 };
 
@@ -415,6 +429,11 @@ export type UpdateShopProfileMessage = {
   shopName?: string;
   businessType?: string;
   taxCode?: string | null;
+  warehouseAddress?: string | null;
+  warehouseProvinceCode?: string | null;
+  warehouseProvinceName?: string | null;
+  warehouseWardCode?: string | null;
+  warehouseWardName?: string | null;
 };
 
 export type UpdateShopRegistrationTypeMessage = {
@@ -971,6 +990,13 @@ export type CheckoutCartItemMessage = {
 export type QuoteCartItemShippingOptionsMessage = {
   buyerUserId: string;
   cartItemId: string;
+  shippingAddress?: string | null;
+  shippingDistrictId?: number | null;
+  shippingWardCode?: string | null;
+};
+
+export type QuoteCartShippingOptionsMessage = {
+  buyerUserId: string;
   shippingAddress?: string | null;
   shippingDistrictId?: number | null;
   shippingWardCode?: string | null;

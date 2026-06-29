@@ -1571,28 +1571,43 @@ export class CartItemShippingOptionResponseDto {
   shippingServiceTypeId!: number | null;
 }
 
-export class GhnDistrictsQueryDto {
-  @ApiProperty({ example: 202 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  provinceId!: number;
+export class CartShippingOptionResponseDto {
+  @ApiProperty({ example: 'GHN_1' })
+  optionCode!: string;
+
+  @ApiProperty({ example: 'GHN' })
+  providerCode!: string;
+
+  @ApiProperty({ example: 'Giao Hang Nhanh' })
+  providerName!: string;
+
+  @ApiProperty({ example: 'Nhanh' })
+  methodName!: string;
+
+  @ApiProperty({ example: 30000 })
+  shippingFee!: number;
+
+  @ApiPropertyOptional({ example: '2-3 ngay', nullable: true })
+  estimatedDelivery!: string | null;
 }
 
-export class GhnWardsQueryDto {
-  @ApiProperty({ example: 1450 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  districtId!: number;
+export class CartShopShippingOptionsResponseDto {
+  @ApiProperty({ example: 'shop-id' })
+  shopId!: string;
+
+  @ApiProperty({ example: 'Shop A' })
+  shopName!: string;
+
+  @ApiProperty({ type: [CartShippingOptionResponseDto] })
+  options!: CartShippingOptionResponseDto[];
 }
 
-export class GhnServicesQueryDto {
-  @ApiProperty({ example: 1450 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  districtId!: number;
+export class CartShippingOptionsResponseDto {
+  @ApiProperty({ type: [CartShopShippingOptionsResponseDto] })
+  shops!: CartShopShippingOptionsResponseDto[];
+
+  @ApiProperty({ example: 52000 })
+  totalShippingFee!: number;
 }
 
 export class GhnProvinceResponseDto {

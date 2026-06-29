@@ -18,6 +18,10 @@ export type UserAddressSummary = {
   recipientName: string;
   phone: string;
   addressLine: string;
+  provinceCode: string | null;
+  provinceName: string | null;
+  wardCode: string | null;
+  wardName: string | null;
   isDefault: boolean;
   createdAt: Date;
   updatedAt: Date;

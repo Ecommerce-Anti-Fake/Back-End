@@ -5,6 +5,11 @@ type ShopWithCategories = {
   registrationType: string;
   businessType: string;
   taxCode: string | null;
+  warehouseAddress?: string | null;
+  warehouseProvinceCode?: string | null;
+  warehouseProvinceName?: string | null;
+  warehouseWardCode?: string | null;
+  warehouseWardName?: string | null;
   shopStatus: string;
   createdAt: Date;
   registeredCategories?: Array<{
@@ -24,6 +29,11 @@ export function toShopResponse(shop: ShopWithCategories) {
     registrationType: shop.registrationType,
     businessType: shop.businessType,
     taxCode: shop.taxCode,
+    warehouseAddress: shop.warehouseAddress ?? null,
+    warehouseProvinceCode: shop.warehouseProvinceCode ?? null,
+    warehouseProvinceName: shop.warehouseProvinceName ?? null,
+    warehouseWardCode: shop.warehouseWardCode ?? null,
+    warehouseWardName: shop.warehouseWardName ?? null,
     shopStatus: shop.shopStatus,
     createdAt: shop.createdAt,
     registeredCategories: (shop.registeredCategories ?? []).map((item) => ({

@@ -8,6 +8,7 @@ import {
   PublicShopDetailResponseDto,
   PublicShopSummaryResponseDto,
   PublicShopsQueryDto,
+  ShopMutationResponseDto,
   UpdateShopProfileDto,
 } from '@shops';
 import { ShopsRpcService } from './shops-rpc.service';
@@ -19,35 +20,51 @@ export class ShopController {
 
   @ApiOperation({ summary: 'Tao shop moi cho user hien tai' })
   @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: ShopMutationResponseDto })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post()
-  create(@CurrentUserId() ownerUserId: string, @Body() dto: CreateShopDto) {
-    return this.shopsRpcService.create({
+  async create(@CurrentUserId() ownerUserId: string, @Body() dto: CreateShopDto) {
+    await this.shopsRpcService.create({
       ownerUserId,
       shopName: dto.shopName,
       registrationType: dto.registrationType,
       businessType: dto.businessType,
       taxCode: dto.taxCode ?? null,
+      warehouseAddress: dto.warehouseAddress ?? null,
+      warehouseProvinceCode: dto.warehouseProvinceCode ?? null,
+      warehouseProvinceName: dto.warehouseProvinceName ?? null,
+      warehouseWardCode: dto.warehouseWardCode ?? null,
+      warehouseWardName: dto.warehouseWardName ?? null,
       categoryIds: dto.categoryIds,
     });
+
+    return { success: true };
   }
 
   @ApiOperation({ summary: 'Cap nhat ho so co ban cua shop hien tai' })
   @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: ShopMutationResponseDto })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Patch(':shopId/profile')
-  updateProfile(
+  async updateProfile(
     @Param('shopId') shopId: string,
     @CurrentUserId() requesterUserId: string,
     @Body() dto: UpdateShopProfileDto,
   ) {
-    return this.shopsRpcService.updateProfile({
+    await this.shopsRpcService.updateProfile({
       shopId,
       requesterUserId,
       shopName: dto.shopName,
       businessType: dto.businessType,
       taxCode: dto.taxCode ?? null,
+      warehouseAddress: dto.warehouseAddress,
+      warehouseProvinceCode: dto.warehouseProvinceCode,
+      warehouseProvinceName: dto.warehouseProvinceName,
+      warehouseWardCode: dto.warehouseWardCode,
+      warehouseWardName: dto.warehouseWardName,
     });
+
+    return { success: true };
   }
 
   @ApiOperation({ summary: 'Lay danh sach shop cua user hien tai' })
