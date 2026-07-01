@@ -95,7 +95,6 @@ describe('RetryPayOSPaymentUseCase', () => {
 function createOrderRecord(overrides?: { orderStatus?: string; paymentStatus?: string; providerRef?: string }) {
   return {
     id: 'order-1',
-    orderMode: 'RETAIL',
     orderStatus: overrides?.orderStatus ?? 'pending',
     fulfillmentStatus: 'PENDING',
     shopId: 'seller-shop-1',

@@ -3,8 +3,7 @@ import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swa
 import type { AuthenticatedUser } from '@contracts';
 import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import {
-  CreateRetailOrderDto,
-  CreateWholesaleOrderDto,
+  CreateOrderDto,
   PaginatedSellerShopOrderResponseDto,
   SellerShopOrdersQueryDto,
   UpdateOrderFulfillmentDto,
@@ -20,13 +19,15 @@ export class OrderController {
     private readonly dashboardSseBrokerService: DashboardSseBrokerService,
   ) {}
 
-  @ApiOperation({ summary: 'Tao don le tu offer' })
+  @ApiOperation({ summary: 'Tao don hang tu offer' })
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post('retail')
-  async createRetail(@CurrentUserId() buyerUserId: string, @Body() dto: CreateRetailOrderDto) {
-    const result = await this.ordersRpcService.createRetail({
+  @Post()
+  async create(@CurrentUserId() buyerUserId: string, @Body() dto: CreateOrderDto) {
+    const result = await this.ordersRpcService.create({
       buyerUserId,
+      buyerShopId: dto.buyerShopId ?? null,
+      buyerDistributionNodeId: dto.buyerDistributionNodeId ?? null,
       offerId: dto.offerId,
       quantity: dto.quantity,
       affiliateCode: dto.affiliateCode ?? null,
@@ -41,27 +42,6 @@ export class OrderController {
       shippingProviderCode: dto.shippingProviderCode ?? null,
       shippingServiceId: dto.shippingServiceId ?? null,
       shippingServiceTypeId: dto.shippingServiceTypeId ?? null,
-    });
-    this.dashboardSseBrokerService.notifyOrderChanged(result, buyerUserId);
-
-    return result;
-  }
-
-  @ApiOperation({ summary: 'Tao don si giua cac shop' })
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post('wholesale')
-  async createWholesale(@CurrentUserId() buyerUserId: string, @Body() dto: CreateWholesaleOrderDto) {
-    const result = await this.ordersRpcService.createWholesale({
-      buyerUserId,
-      buyerShopId: dto.buyerShopId ?? null,
-      buyerDistributionNodeId: dto.buyerDistributionNodeId ?? null,
-      offerId: dto.offerId,
-      quantity: dto.quantity,
-      affiliateCode: dto.affiliateCode ?? null,
-      shippingName: dto.shippingName ?? null,
-      shippingPhone: dto.shippingPhone ?? null,
-      shippingAddress: dto.shippingAddress ?? null,
     });
     this.dashboardSseBrokerService.notifyOrderChanged(result, buyerUserId);
 

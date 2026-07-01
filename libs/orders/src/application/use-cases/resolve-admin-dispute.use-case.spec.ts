@@ -46,7 +46,6 @@ describe('ResolveAdminDisputeUseCase', () => {
       openedAt: new Date('2026-04-16T09:00:00.000Z'),
       order: {
         id: 'order-1',
-        orderMode: 'RETAIL',
         orderStatus: 'paid',
         buyerUserId: 'buyer-1',
         buyerShopId: null,

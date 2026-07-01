@@ -117,7 +117,6 @@ describe('GetSellerShopDashboardAnalyticsUseCase', () => {
 function createOrder(overrides: Record<string, unknown>) {
   return {
     id: 'order-id',
-    orderMode: 'RETAIL',
     orderStatus: 'pending',
     fulfillmentStatus: 'PENDING',
     shopId: 'shop-1',

@@ -360,8 +360,6 @@ export type CreateOrderRecordInput = {
   buyerShopId: string | null;
   buyerDistributionNodeId: string | null;
   shopId: string;
-  orderMode: 'RETAIL' | 'WHOLESALE';
-  orderType: string;
   orderStatus: string;
   fulfillmentStatus?: string;
   baseAmount: number;
@@ -774,8 +772,6 @@ export class OrdersRepository {
         buyerShopId: data.buyerShopId,
         buyerDistributionNodeId: data.buyerDistributionNodeId,
         shopId: data.shopId,
-        orderMode: data.orderMode,
-        orderType: data.orderType,
         orderStatus: data.orderStatus,
         fulfillmentStatus: data.fulfillmentStatus ?? 'PENDING',
         baseAmount: data.baseAmount,

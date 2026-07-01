@@ -1,14 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
-import { CreateRetailOrderUseCase } from './create-retail-order.use-case';
-import { CreateWholesaleOrderUseCase } from './create-wholesale-order.use-case';
+import { CreateOrderUseCase } from './create-order.use-case';
 
 @Injectable()
 export class CheckoutCartItemUseCase {
   constructor(
     private readonly ordersRepository: OrdersRepository,
-    private readonly createRetailOrderUseCase: CreateRetailOrderUseCase,
-    private readonly createWholesaleOrderUseCase: CreateWholesaleOrderUseCase,
+    private readonly createOrderUseCase: CreateOrderUseCase,
   ) {}
 
   async execute(input: {
@@ -37,34 +35,23 @@ export class CheckoutCartItemUseCase {
       throw new NotFoundException('Offer not found');
     }
 
-    const order =
-      offer.salesMode === 'WHOLESALE'
-        ? await this.createWholesaleOrderUseCase.execute({
-            buyerUserId: input.buyerUserId,
-            offerId: cartItem.offerId,
-            quantity: cartItem.quantity,
-            affiliateCode: input.affiliateCode ?? null,
-            shippingName: input.shippingName ?? null,
-            shippingPhone: input.shippingPhone ?? null,
-            shippingAddress: input.shippingAddress ?? null,
-          })
-        : await this.createRetailOrderUseCase.execute({
-            buyerUserId: input.buyerUserId,
-            offerId: cartItem.offerId,
-            quantity: cartItem.quantity,
-            paymentMethod: input.paymentMethod ?? 'COD',
-            affiliateCode: input.affiliateCode ?? null,
-            shippingName: input.shippingName ?? null,
-            shippingPhone: input.shippingPhone ?? null,
-            shippingAddress: input.shippingAddress ?? null,
-            shippingDistrictId: input.shippingDistrictId ?? null,
-            shippingDistrictName: input.shippingDistrictName ?? null,
-            shippingWardCode: input.shippingWardCode ?? null,
-            shippingWardName: input.shippingWardName ?? null,
-            shippingProviderCode: input.shippingProviderCode ?? null,
-            shippingServiceId: input.shippingServiceId ?? null,
-            shippingServiceTypeId: input.shippingServiceTypeId ?? null,
-          });
+    const order = await this.createOrderUseCase.execute({
+      buyerUserId: input.buyerUserId,
+      offerId: cartItem.offerId,
+      quantity: cartItem.quantity,
+      paymentMethod: input.paymentMethod ?? 'COD',
+      affiliateCode: input.affiliateCode ?? null,
+      shippingName: input.shippingName ?? null,
+      shippingPhone: input.shippingPhone ?? null,
+      shippingAddress: input.shippingAddress ?? null,
+      shippingDistrictId: input.shippingDistrictId ?? null,
+      shippingDistrictName: input.shippingDistrictName ?? null,
+      shippingWardCode: input.shippingWardCode ?? null,
+      shippingWardName: input.shippingWardName ?? null,
+      shippingProviderCode: input.shippingProviderCode ?? null,
+      shippingServiceId: input.shippingServiceId ?? null,
+      shippingServiceTypeId: input.shippingServiceTypeId ?? null,
+    });
 
     await this.ordersRepository.removeCartItem({
       buyerUserId: input.buyerUserId,

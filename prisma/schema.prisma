@@ -88,12 +88,6 @@ enum ShopRegistrationType {
   DISTRIBUTOR
 }
 
-enum OfferSalesMode {
-  RETAIL
-  WHOLESALE
-  BOTH
-}
-
 enum DistributionDiscountType {
   PERCENT
   FIXED_AMOUNT
@@ -104,11 +98,6 @@ enum DistributionPricingScope {
   NETWORK_DEFAULT
   NODE_LEVEL
   NODE_SPECIFIC
-}
-
-enum OrderMode {
-  RETAIL
-  WHOLESALE
 }
 
 enum MediaProvider {
@@ -391,10 +380,10 @@ model BrandAuthorization {
 }
 
 model Brand {
-  id                   String                     @id @default(uuid())
+  id                   String                @id @default(uuid())
   name                 String
-  registryStatus       String                     @map("registry_status")
-  createdAt            DateTime                   @default(now()) @map("created_at")
+  registryStatus       String                @map("registry_status")
+  createdAt            DateTime              @default(now()) @map("created_at")
   offers               Offer[]
   supplyBatches        SupplyBatch[]
   shipmentItems        DistributionShipmentItem[]
@@ -656,26 +645,26 @@ model Escrow {
 }
 
 model LiveCommerceSession {
-  id                      String                @id @default(uuid())
-  shopId                  String                @map("shop_id")
-  title                   String
-  description             String?
-  coverUrl                String?               @map("cover_url")
-  startAt                 DateTime              @map("start_at")
-  status                  LiveSessionStatus     @default(SCHEDULED)
-  playbackUrl             String?               @map("playback_url")
-  streamProvider          String?               @map("stream_provider")
-  streamProviderSessionId String?               @map("stream_provider_session_id")
-  streamIngestUrl         String?               @map("stream_ingest_url")
-  streamLatencyTargetMs   Int?                  @map("stream_latency_target_ms")
-  recordingUrl            String?               @map("recording_url")
-  recordingRetentionDays  Int?                  @map("recording_retention_days")
-  createdAt               DateTime              @default(now()) @map("created_at")
-  updatedAt               DateTime              @updatedAt @map("updated_at")
-  shop                    Shop                  @relation(fields: [shopId], references: [id])
-  offers                  LiveSessionOffer[]
-  reminders               LiveSessionReminder[]
-  comments                LiveSessionComment[]
+  id          String            @id @default(uuid())
+  shopId      String            @map("shop_id")
+  title       String
+  description String?
+  coverUrl    String?           @map("cover_url")
+  startAt     DateTime          @map("start_at")
+  status      LiveSessionStatus @default(SCHEDULED)
+  playbackUrl String?           @map("playback_url")
+  streamProvider          String? @map("stream_provider")
+  streamProviderSessionId String? @map("stream_provider_session_id")
+  streamIngestUrl         String? @map("stream_ingest_url")
+  streamLatencyTargetMs   Int?    @map("stream_latency_target_ms")
+  recordingUrl            String? @map("recording_url")
+  recordingRetentionDays  Int?    @map("recording_retention_days")
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+  shop        Shop              @relation(fields: [shopId], references: [id])
+  offers      LiveSessionOffer[]
+  reminders   LiveSessionReminder[]
+  comments    LiveSessionComment[]
 
   @@index([shopId, startAt])
   @@index([status, startAt])
@@ -778,16 +767,16 @@ model ModerationCase {
 }
 
 model NotificationDeliveryAttempt {
-  id             String        @id @default(uuid())
-  userId         String        @map("user_id")
-  notificationId String?       @map("notification_id")
-  eventName      String        @map("event_name")
+  id             String       @id @default(uuid())
+  userId         String       @map("user_id")
+  notificationId String?      @map("notification_id")
+  eventName      String       @map("event_name")
   provider       String
   status         String
-  errorCode      String?       @map("error_code")
-  errorMessage   String?       @map("error_message")
-  createdAt      DateTime      @default(now()) @map("created_at")
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  errorCode      String?      @map("error_code")
+  errorMessage   String?      @map("error_message")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   notification   Notification? @relation(fields: [notificationId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
@@ -797,33 +786,33 @@ model NotificationDeliveryAttempt {
 }
 
 model NotificationFcmToken {
-  id        String    @id @default(uuid())
-  userId    String    @map("user_id")
-  tokenHash String    @unique @map("token_hash")
-  token     String
-  deviceId  String?   @map("device_id")
-  userAgent String?   @map("user_agent")
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  tokenHash  String    @unique @map("token_hash")
+  token      String
+  deviceId   String?   @map("device_id")
+  userAgent  String?   @map("user_agent")
   revokedAt DateTime? @map("revoked_at")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, revokedAt])
   @@map("notification_fcm_token")
 }
 
 model Notification {
-  id               String                        @id @default(uuid())
-  userId           String                        @map("user_id")
-  notificationType String                        @map("notification_type")
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  notificationType String    @map("notification_type")
   title            String
   body             String
-  targetType       String?                       @map("target_type")
-  targetId         String?                       @map("target_id")
-  dedupeKey        String                        @unique @map("dedupe_key")
-  readAt           DateTime?                     @map("read_at")
-  createdAt        DateTime                      @default(now()) @map("created_at")
-  user             User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetType       String?   @map("target_type")
+  targetId         String?   @map("target_id")
+  dedupeKey        String    @unique @map("dedupe_key")
+  readAt           DateTime? @map("read_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   deliveryAttempts NotificationDeliveryAttempt[]
 
   @@index([userId, readAt, createdAt])
@@ -908,8 +897,6 @@ model Offer {
   description          String
   price                Decimal               @db.Decimal(18, 2)
   currency             String
-  salesMode            OfferSalesMode        @default(RETAIL) @map("sales_mode")
-  minWholesaleQty      Int?                  @map("min_wholesale_qty")
   itemCondition        String                @map("item_condition")
   availableQuantity    Int                   @map("available_quantity")
   verificationLevel    String                @map("verification_level")
@@ -966,7 +953,7 @@ model OrderItem {
   offer                     Offer                      @relation(fields: [offerId], references: [id])
   batchAllocations          OrderItemBatchAllocation[]
   reviews                   Review[]
-  sourceSupplyBatches       SupplyBatch[]              @relation("SupplyBatchSourceOrderItem")
+  sourceSupplyBatches       SupplyBatch[]                @relation("SupplyBatchSourceOrderItem")
 
   @@index([orderId])
   @@index([offerId])
@@ -979,8 +966,6 @@ model Order {
   buyerShopId             String?              @map("buyer_shop_id")
   buyerDistributionNodeId String?              @map("buyer_distribution_node_id")
   shopId                  String               @map("shop_id")
-  orderMode               OrderMode            @default(RETAIL) @map("order_mode")
-  orderType               String               @map("order_type")
   orderStatus             String               @map("order_status")
   fulfillmentStatus       String               @default("PENDING") @map("fulfillment_status")
   baseAmount              Decimal              @map("base_amount") @db.Decimal(18, 2)
@@ -1259,8 +1244,8 @@ model Shop {
   businessType               String                 @map("business_type")
   taxCode                    String?                @map("tax_code")
   shopStatus                 String                 @map("shop_status")
-  avatarMediaId              String?                @unique @map("avatar_media_id")
-  bannerMediaId              String?                @unique @map("banner_media_id")
+  avatarMediaId              String?                @map("avatar_media_id") @unique
+  bannerMediaId              String?                @map("banner_media_id") @unique
   warehouseAddress           String?                @map("warehouse_address")
   warehouseProvinceCode      String?                @map("warehouse_province_code")
   warehouseProvinceName      String?                @map("warehouse_province_name")
@@ -1380,10 +1365,10 @@ model SocialReaction {
 }
 
 model SocialShare {
-  id        String     @id @default(uuid())
-  postId    String     @map("post_id")
-  userId    String     @map("user_id")
-  createdAt DateTime   @default(now()) @map("created_at")
+  id        String   @id @default(uuid())
+  postId    String   @map("post_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
   post      SocialPost @relation(fields: [postId], references: [id])
   user      User       @relation(fields: [userId], references: [id])
 
@@ -1526,51 +1511,51 @@ model UserKyc {
 }
 
 model User {
-  id                           String                        @id @default(uuid())
-  phone                        String?                       @unique
-  email                        String?                       @unique
-  displayName                  String?                       @map("display_name")
-  password                     String?
-  role                         String                        @default("user")
-  accountStatus                String                        @default("active") @map("account_status")
-  avatarMediaId                String?                       @unique @map("avatar_media_id")
-  avatarMedia                  MediaAsset?                   @relation("UserAvatarMedia", fields: [avatarMediaId], references: [id])
-  createdAt                    DateTime                      @default(now()) @map("created_at")
-  updatedAt                    DateTime                      @updatedAt @map("updated_at")
-  authSessions                 AuthSession[]
-  passwordResetTokens          PasswordResetToken[]
-  kyc                          UserKyc?
-  ownedShops                   Shop[]                        @relation("ShopOwner")
-  offers                       Offer[]                       @relation("OfferSeller")
-  carts                        Cart[]
-  orders                       Order[]                       @relation("OrderBuyer")
-  disputesOpened               Dispute[]                     @relation("DisputeOpenedBy")
-  disputeEvidence              DisputeEvidence[]             @relation("DisputeEvidenceUploadedBy")
-  mediaAssets                  MediaAsset[]                  @relation("MediaAssetOwner")
-  auditLogs                    AuditLog[]                    @relation("AuditLogActor")
-  reviewsGiven                 Review[]                      @relation("ReviewFromUser")
-  reviewsReceived              Review[]                      @relation("ReviewToUser")
-  chatThreadsAsBuyer           ChatThread[]                  @relation("ChatThreadBuyer")
-  chatThreadsAsSeller          ChatThread[]                  @relation("ChatThreadSeller")
-  chatMessages                 ChatMessage[]                 @relation("ChatMessageSender")
-  reports                      Report[]                      @relation("ReportReporter")
-  moderationCases              ModerationCase[]              @relation("ModerationCaseAssignee")
-  provenanceEvents             ProvenanceEvent[]             @relation("ProvenanceEventActor")
-  affiliateAccounts            AffiliateAccount[]
-  affiliateConversions         AffiliateConversion[]         @relation("AffiliateConversionCustomer")
-  addresses                    UserAddress[]
-  notifications                Notification[]
-  notificationFcmTokens        NotificationFcmToken[]
+  id                   String                @id @default(uuid())
+  phone                String?               @unique
+  email                String?               @unique
+  displayName          String?               @map("display_name")
+  password             String?
+  role                 String                @default("user")
+  accountStatus        String                @default("active") @map("account_status")
+  avatarMediaId        String?               @map("avatar_media_id") @unique
+  avatarMedia          MediaAsset?           @relation("UserAvatarMedia", fields: [avatarMediaId], references: [id])
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
+  authSessions         AuthSession[]
+  passwordResetTokens  PasswordResetToken[]
+  kyc                  UserKyc?
+  ownedShops           Shop[]                @relation("ShopOwner")
+  offers               Offer[]               @relation("OfferSeller")
+  carts                Cart[]
+  orders               Order[]               @relation("OrderBuyer")
+  disputesOpened       Dispute[]             @relation("DisputeOpenedBy")
+  disputeEvidence      DisputeEvidence[]     @relation("DisputeEvidenceUploadedBy")
+  mediaAssets          MediaAsset[]          @relation("MediaAssetOwner")
+  auditLogs            AuditLog[]            @relation("AuditLogActor")
+  reviewsGiven         Review[]              @relation("ReviewFromUser")
+  reviewsReceived      Review[]              @relation("ReviewToUser")
+  chatThreadsAsBuyer   ChatThread[]          @relation("ChatThreadBuyer")
+  chatThreadsAsSeller  ChatThread[]          @relation("ChatThreadSeller")
+  chatMessages         ChatMessage[]         @relation("ChatMessageSender")
+  reports              Report[]              @relation("ReportReporter")
+  moderationCases      ModerationCase[]      @relation("ModerationCaseAssignee")
+  provenanceEvents     ProvenanceEvent[]     @relation("ProvenanceEventActor")
+  affiliateAccounts    AffiliateAccount[]
+  affiliateConversions AffiliateConversion[] @relation("AffiliateConversionCustomer")
+  addresses            UserAddress[]
+  notifications        Notification[]
+  notificationFcmTokens NotificationFcmToken[]
   notificationDeliveryAttempts NotificationDeliveryAttempt[]
-  favoriteOffers               UserFavoriteOffer[]
-  socialPosts                  SocialPost[]
-  socialComments               SocialComment[]
-  socialCommentLikes           SocialCommentLike[]
-  socialReactions              SocialReaction[]
-  socialShares                 SocialShare[]
-  liveSessionReminders         LiveSessionReminder[]
-  liveSessionComments          LiveSessionComment[]          @relation("LiveCommentAuthor")
-  hiddenLiveSessionComments    LiveSessionComment[]          @relation("LiveCommentHiddenBy")
+  favoriteOffers       UserFavoriteOffer[]
+  socialPosts          SocialPost[]
+  socialComments       SocialComment[]
+  socialCommentLikes   SocialCommentLike[]
+  socialReactions      SocialReaction[]
+  socialShares         SocialShare[]
+  liveSessionReminders LiveSessionReminder[]
+  liveSessionComments  LiveSessionComment[] @relation("LiveCommentAuthor")
+  hiddenLiveSessionComments LiveSessionComment[] @relation("LiveCommentHiddenBy")
 
   @@map("user")
 }
@@ -1602,7 +1587,6 @@ model VerificationRequirement {
   updatedAt            DateTime              @updatedAt @map("updated_at")
   shopTypes            ShopTypeRequirement[]
   shopDocuments        ShopDocument[]
-
   @@index([isActive])
   @@map("verification_requirement")
 }

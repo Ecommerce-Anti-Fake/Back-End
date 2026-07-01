@@ -12,8 +12,6 @@ model Offer {
   description          String
   price                Decimal               @db.Decimal(18, 2)
   currency             String
-  salesMode            OfferSalesMode        @default(RETAIL) @map("sales_mode")
-  minWholesaleQty      Int?                  @map("min_wholesale_qty")
   itemCondition        String                @map("item_condition")
   availableQuantity    Int                   @map("available_quantity")
   verificationLevel    String                @map("verification_level")

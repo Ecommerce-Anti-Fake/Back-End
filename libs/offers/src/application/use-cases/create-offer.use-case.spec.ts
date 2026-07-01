@@ -138,40 +138,6 @@ describe('CreateOfferUseCase', () => {
     );
   });
 
-  it('should reject wholesale offer creation for normal shops', async () => {
-    productRepositoryMock.findOwnedShop.mockResolvedValueOnce({
-      id: 'shop-1',
-      shopStatus: 'verified',
-      registrationType: 'NORMAL',
-    });
-    productRepositoryMock.findCategoryById.mockResolvedValueOnce({
-      id: 'category-1',
-    });
-    productRepositoryMock.findApprovedShopCategoryRegistration.mockResolvedValueOnce(
-      { id: 'registration-1' },
-    );
-    productRepositoryMock.findBrandById.mockResolvedValueOnce({
-      id: 'brand-1',
-    });
-
-    await expect(
-      useCase.execute({
-        sellerUserId: 'user-1',
-        shopId: 'shop-1',
-        categoryId: 'category-1',
-        brandId: 'brand-1',
-        title: 'Wholesale Offer',
-        description: 'Desc',
-        price: 100000,
-        availableQuantity: 10,
-        salesMode: 'WHOLESALE',
-        minWholesaleQty: 10,
-      }),
-    ).rejects.toThrow(
-      'Only manufacturer or distributor shops can create wholesale offers',
-    );
-  });
-
   it('should create a draft distributor resale offer for an active distribution node', async () => {
     productRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'shop-1',
@@ -197,8 +163,6 @@ describe('CreateOfferUseCase', () => {
       description: 'Draft from received inventory',
       price: 100000,
       currency: 'VND',
-      salesMode: 'WHOLESALE',
-      minWholesaleQty: 5,
       itemCondition: 'new',
       availableQuantity: 20,
       verificationLevel: 'standard',
@@ -229,8 +193,6 @@ describe('CreateOfferUseCase', () => {
       description: 'Draft from received inventory',
       price: 100000,
       availableQuantity: 20,
-      salesMode: 'WHOLESALE',
-      minWholesaleQty: 5,
       offerStatus: 'draft',
     });
 
@@ -242,7 +204,6 @@ describe('CreateOfferUseCase', () => {
         gtin: null,
         verificationPolicy: 'manual_review',
         offerStatus: 'draft',
-        salesMode: 'WHOLESALE',
         shippingProviderCodes: ['SELF_DELIVERY'],
       }),
     );
@@ -269,8 +230,6 @@ describe('CreateOfferUseCase', () => {
       description: 'Desc',
       price: 100000,
       currency: 'VND',
-      salesMode: 'RETAIL',
-      minWholesaleQty: null,
       itemCondition: 'new',
       availableQuantity: 10,
       verificationLevel: 'standard',

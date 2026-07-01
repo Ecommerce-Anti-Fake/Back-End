@@ -90,7 +90,6 @@ function createOrderRecord(overrides?: {
 }) {
   return {
     id: 'order-1',
-    orderMode: 'RETAIL',
     orderStatus: overrides?.orderStatus ?? 'paid',
     fulfillmentStatus: overrides?.fulfillmentStatus ?? 'DELIVERED',
     shopId: 'seller-shop-1',

@@ -80,12 +80,6 @@ enum ShopRegistrationType {
   DISTRIBUTOR
 }
 
-enum OfferSalesMode {
-  RETAIL
-  WHOLESALE
-  BOTH
-}
-
 enum DistributionDiscountType {
   PERCENT
   FIXED_AMOUNT
@@ -96,11 +90,6 @@ enum DistributionPricingScope {
   NETWORK_DEFAULT
   NODE_LEVEL
   NODE_SPECIFIC
-}
-
-enum OrderMode {
-  RETAIL
-  WHOLESALE
 }
 
 enum MediaProvider {
@@ -121,9 +110,9 @@ enum MediaResourceType {
   REVIEW_IMAGE
   OFFER_DOCUMENT
   BATCH_DOCUMENT
-  USER_AVATAR     
-  SHOP_AVATAR     
-  SHOP_BANNER     
+  USER_AVATAR
+  SHOP_AVATAR
+  SHOP_BANNER
   SOCIAL_POST
 }
 

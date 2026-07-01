@@ -119,7 +119,6 @@ function createDisputeRecord(overrides?: { orderStatus?: string; paymentStatus?:
     resolvedAt: null,
     order: {
       id: 'order-1',
-      orderMode: 'RETAIL',
       orderStatus: overrides?.orderStatus ?? 'completed',
       shopId: 'seller-shop-1',
       buyerUserId: 'buyer-user-1',

@@ -91,10 +91,9 @@ describe('ReceiveWholesaleOrderInventoryUseCase', () => {
   });
 });
 
-function createWholesaleOrder(overrides?: { fulfillmentStatus?: string; orderMode?: string }) {
+function createWholesaleOrder(overrides?: { fulfillmentStatus?: string }) {
   return {
     id: 'order-1',
-    orderMode: overrides?.orderMode ?? 'WHOLESALE',
     orderStatus: 'paid',
     fulfillmentStatus: overrides?.fulfillmentStatus ?? 'DELIVERED',
     shopId: 'seller-shop-1',

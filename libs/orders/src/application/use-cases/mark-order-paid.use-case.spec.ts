@@ -53,7 +53,6 @@ describe('MarkOrderPaidUseCase', () => {
 function createOrderRecord(overrides?: { orderStatus?: string; paymentStatus?: string; escrowStatus?: string }) {
   return {
     id: 'order-1',
-    orderMode: 'RETAIL',
     orderStatus: overrides?.orderStatus ?? 'pending',
     shopId: 'seller-shop-1',
     buyerUserId: 'buyer-user-1',

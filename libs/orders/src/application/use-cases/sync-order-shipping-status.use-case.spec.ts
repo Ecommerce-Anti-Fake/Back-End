@@ -147,7 +147,6 @@ describe('SyncOrderShippingStatusUseCase', () => {
 function createOrderRecord(overrides?: { fulfillmentStatus?: string; shippingTrackingCode?: string | null }) {
   return {
     id: 'order-1',
-    orderMode: 'RETAIL',
     orderStatus: 'paid',
     fulfillmentStatus: overrides?.fulfillmentStatus ?? 'SHIPPING',
     buyerUserId: 'buyer-user-1',

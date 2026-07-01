@@ -193,7 +193,6 @@ function createAuditLog(overrides: Record<string, unknown> = {}) {
 function createOrderRecord() {
   return {
     id: 'order-1',
-    orderMode: 'RETAIL',
     orderStatus: 'paid',
     fulfillmentStatus: 'PENDING',
     shopId: 'seller-shop-1',

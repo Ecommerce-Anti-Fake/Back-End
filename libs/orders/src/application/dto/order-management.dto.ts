@@ -242,9 +242,6 @@ export class OrderResponseDto {
   @ApiProperty({ example: 'order-id' })
   id!: string;
 
-  @ApiProperty({ example: 'RETAIL' })
-  orderMode!: 'RETAIL' | 'WHOLESALE';
-
   @ApiProperty({ example: 'pending' })
   orderStatus!: string;
 
@@ -1484,7 +1481,17 @@ export class ResolveAdminDisputeDto {
   internalNote?: string;
 }
 
-export class CreateRetailOrderDto {
+export class CreateOrderDto {
+  @ApiPropertyOptional({ example: 'buyer-shop-id', nullable: true })
+  @IsOptional()
+  @IsString()
+  buyerShopId?: string;
+
+  @ApiPropertyOptional({ example: 'buyer-node-id', nullable: true })
+  @IsOptional()
+  @IsString()
+  buyerDistributionNodeId?: string;
+
   @ApiProperty({ example: 'offer-id' })
   @IsString()
   offerId!: string;
@@ -1774,46 +1781,4 @@ export class GhnServiceResponseDto {
 
   @ApiProperty({ example: 'Hang nhe' })
   shortName!: string;
-}
-
-export class CreateWholesaleOrderDto {
-  @ApiPropertyOptional({ example: 'buyer-shop-id', nullable: true })
-  @IsOptional()
-  @IsString()
-  buyerShopId?: string;
-
-  @ApiPropertyOptional({ example: 'buyer-node-id', nullable: true })
-  @IsOptional()
-  @IsString()
-  buyerDistributionNodeId?: string;
-
-  @ApiProperty({ example: 'offer-id' })
-  @IsString()
-  offerId!: string;
-
-  @ApiProperty({ example: 100 })
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  quantity!: number;
-
-  @ApiPropertyOptional({ example: 'spring-aff-001' })
-  @IsOptional()
-  @IsString()
-  affiliateCode?: string;
-
-  @ApiPropertyOptional({ example: 'Nguyen Van A' })
-  @IsOptional()
-  @IsString()
-  shippingName?: string;
-
-  @ApiPropertyOptional({ example: '0987654321' })
-  @IsOptional()
-  @IsString()
-  shippingPhone?: string;
-
-  @ApiPropertyOptional({ example: '12 Nguyen Trai, Quan 1, TP.HCM' })
-  @IsOptional()
-  @IsString()
-  shippingAddress?: string;
 }

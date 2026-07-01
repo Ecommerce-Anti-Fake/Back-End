@@ -115,7 +115,6 @@ describe('BookOrderShippingUseCase', () => {
 function createOrderRecord(overrides?: { fulfillmentStatus?: string; shippingTrackingCode?: string | null }) {
   return {
     id: 'order-1',
-    orderMode: 'RETAIL',
     orderStatus: 'paid',
     fulfillmentStatus: overrides?.fulfillmentStatus ?? 'PROCESSING',
     buyerUserId: 'buyer-user-1',

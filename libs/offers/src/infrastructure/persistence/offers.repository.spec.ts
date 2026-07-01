@@ -19,7 +19,6 @@ describe('OffersRepository', () => {
       location: 'VN',
       verificationStatus: 'standard',
       shopType: 'MANUFACTURER',
-      salesChannel: 'retail',
       sort: 'price-asc',
     });
 
@@ -29,7 +28,6 @@ describe('OffersRepository', () => {
           offerStatus: 'active',
           categoryId: 'category-1',
           verificationLevel: 'standard',
-          salesMode: { in: ['RETAIL', 'BOTH'] },
           price: {
             gte: 100000,
             lte: 500000,

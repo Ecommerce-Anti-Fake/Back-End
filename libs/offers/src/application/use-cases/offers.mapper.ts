@@ -72,8 +72,6 @@ export function toOfferResponse(offer: OfferWithRelations) {
     description: offer.description,
     price: decimalToNumber(offer.price),
     currency: offer.currency,
-    salesMode: offer.salesMode,
-    minWholesaleQty: offer.minWholesaleQty,
     itemCondition: offer.itemCondition,
     availableQuantity: offer.availableQuantity,
     soldQuantity,

@@ -131,7 +131,6 @@ describe('UpdateOrderFulfillmentUseCase', () => {
 function createOrderRecord(overrides?: { orderStatus?: string; fulfillmentStatus?: string; paymentStatus?: string }) {
   return {
     id: 'order-1',
-    orderMode: 'RETAIL',
     orderStatus: overrides?.orderStatus ?? 'paid',
     fulfillmentStatus: overrides?.fulfillmentStatus ?? 'PENDING',
     shopId: 'seller-shop-1',

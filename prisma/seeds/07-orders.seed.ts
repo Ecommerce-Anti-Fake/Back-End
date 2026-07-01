@@ -1,4 +1,4 @@
-import { OrderMode, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { COUNTS, id, money, pick, recentDate, SeedContext } from './00-utils';
 
 const orderStatuses = [
@@ -65,15 +65,15 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
   for (let i = 0; i < COUNTS.orders; i += 1) {
     const offer = pick(ctx.offers, i);
     const sellerShop = ctx.shops.find((shop) => shop.id === offer.shopId) ?? pick(ctx.shops, i);
-    const mode = i % 5 === 0 ? OrderMode.WHOLESALE : OrderMode.RETAIL;
-    const qty = mode === OrderMode.WHOLESALE ? offer.minWholesaleQty ?? 3 : 1 + (i % 3);
+    const hasDistributionContext = i % 5 === 0;
+    const qty = 1 + (i % 3);
     const baseAmount = Number(offer.price) * qty;
-    const shippingFee = mode === OrderMode.RETAIL ? 18000 + (i % 4) * 5000 : 60000 + (i % 5) * 10000;
+    const shippingFee = 18000 + (i % 4) * 5000;
     const platformFee = Math.round(baseAmount * 0.03);
     const [orderStatus, fulfillmentStatus] = orderStatuses[i];
     const buyer = pick(ctx.buyers, i);
-    const buyerShop = mode === OrderMode.WHOLESALE ? pick(ctx.distributorShops, i) : null;
-    const buyerNode = mode === OrderMode.WHOLESALE ? ctx.nodes.find((node) => node.shopId === buyerShop?.id) : null;
+    const buyerShop = hasDistributionContext ? pick(ctx.distributorShops, i) : null;
+    const buyerNode = hasDistributionContext ? ctx.nodes.find((node) => node.shopId === buyerShop?.id) : null;
 
     const order = await prisma.order.create({
       data: {
@@ -82,8 +82,6 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
         buyerShopId: buyerShop?.id ?? null,
         buyerDistributionNodeId: buyerNode?.id ?? null,
         shopId: sellerShop.id,
-        orderMode: mode,
-        orderType: mode === OrderMode.RETAIL ? 'DIRECT_RETAIL' : 'DIRECT_WHOLESALE',
         orderStatus,
         fulfillmentStatus,
         baseAmount: money(baseAmount),
@@ -136,7 +134,7 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
       data: {
         id: id(),
         orderId: order.id,
-        paymentMethod: mode === OrderMode.RETAIL ? 'COD' : 'BANK_TRANSFER',
+        paymentMethod: hasDistributionContext ? 'BANK_TRANSFER' : 'COD',
         paymentStatus: ['paid', 'shipping', 'completed'].includes(orderStatus) ? 'PAID' : orderStatus === 'cancelled' ? 'CANCELLED' : 'PENDING',
         amount: order.totalAmount,
         providerRef: orderStatus === 'pending' ? null : `PAY-${String(i + 1).padStart(6, '0')}`,

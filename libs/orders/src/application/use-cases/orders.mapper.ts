@@ -7,7 +7,6 @@ export function toOrderResponse(order: OrderWithRelations) {
 
   return {
     id: order.id,
-    orderMode: order.orderMode,
     orderStatus: order.orderStatus,
     fulfillmentStatus: order.fulfillmentStatus,
     paymentStatus: order.paymentIntent?.paymentStatus ?? null,

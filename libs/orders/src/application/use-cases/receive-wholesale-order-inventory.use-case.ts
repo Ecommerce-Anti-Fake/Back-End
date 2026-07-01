@@ -21,7 +21,7 @@ export class ReceiveWholesaleOrderInventoryUseCase {
       throw new ForbiddenException('Only the wholesale buyer shop owner can receive this order into inventory');
     }
 
-    if (order.orderMode !== 'WHOLESALE' || !order.buyerShopId || !order.buyerDistributionNodeId) {
+    if (!order.buyerShopId || !order.buyerDistributionNodeId) {
       throw new BadRequestException('Only distributor wholesale orders can be received into inventory');
     }
 

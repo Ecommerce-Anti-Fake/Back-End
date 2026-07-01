@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
-import { OfferSalesMode, ShopRegistrationType } from '@prisma/client';
+import { ShopRegistrationType } from '@prisma/client';
 import { PrismaService } from '@database/prisma/prisma.service';
 import { DistributionPricingRepository } from '@distribution/infrastructure/persistence/distribution-pricing.repository';
 import {
@@ -9,7 +9,7 @@ import {
   InviteDistributionNodeUseCase,
 } from '@distribution/application/use-cases';
 import {
-  CreateWholesaleOrderUseCase,
+  CreateOrderUseCase,
   ReceiveWholesaleOrderInventoryUseCase,
 } from '@orders/application/use-cases';
 import {
@@ -26,7 +26,7 @@ describe('Distributor onboarding (e2e)', () => {
   let prisma: PrismaService;
   let inviteNode: InviteDistributionNodeUseCase;
   let acceptInvitation: AcceptDistributionNodeInvitationUseCase;
-  let createWholesaleOrder: CreateWholesaleOrderUseCase;
+  let createOrder: CreateOrderUseCase;
   let receiveWholesaleInventory: ReceiveWholesaleOrderInventoryUseCase;
   let ordersRepository: OrdersRepository;
   const createdInviteeUserIds: string[] = [];
@@ -49,10 +49,18 @@ describe('Distributor onboarding (e2e)', () => {
     acceptInvitation = new AcceptDistributionNodeInvitationUseCase(
       distributionRepository,
     );
-    createWholesaleOrder = new CreateWholesaleOrderUseCase(
+    createOrder = new CreateOrderUseCase(
       ordersRepository,
       orderPlacementService,
       wholesalePricing,
+      { createPaymentLink: jest.fn() } as never,
+      {
+        quoteShipment: jest.fn().mockResolvedValue({
+          shippingFeeAmount: 0,
+          serviceId: null,
+          serviceTypeId: null,
+        }),
+      } as never,
     );
     receiveWholesaleInventory = new ReceiveWholesaleOrderInventoryUseCase(
       ordersRepository,
@@ -113,7 +121,7 @@ describe('Distributor onboarding (e2e)', () => {
 
     expect(acceptedNode.relationshipStatus).toBe('ACTIVE');
 
-    const order = await createWholesaleOrder.execute({
+    const order = await createOrder.execute({
       buyerUserId: inviteeUserId,
       buyerShopId: inviteeShopId,
       buyerDistributionNodeId: acceptedNode.id,
@@ -158,7 +166,7 @@ describe('Distributor onboarding (e2e)', () => {
       parentNodeId: l2Node.id,
     });
 
-    const l1Purchase = await createWholesaleOrder.execute({
+    const l1Purchase = await createOrder.execute({
       buyerUserId: l1.userId,
       buyerShopId: l1.shopId,
       buyerDistributionNodeId: l1Node.id,
@@ -187,7 +195,7 @@ describe('Distributor onboarding (e2e)', () => {
       quantity: 2,
     });
 
-    const l2Purchase = await createWholesaleOrder.execute({
+    const l2Purchase = await createOrder.execute({
       buyerUserId: l2.userId,
       buyerShopId: l2.shopId,
       buyerDistributionNodeId: l2Node.id,
@@ -229,7 +237,7 @@ describe('Distributor onboarding (e2e)', () => {
       quantity: 1,
     });
 
-    const l3Purchase = await createWholesaleOrder.execute({
+    const l3Purchase = await createOrder.execute({
       buyerUserId: l3.userId,
       buyerShopId: l3.shopId,
       buyerDistributionNodeId: l3Node.id,
@@ -332,8 +340,6 @@ describe('Distributor onboarding (e2e)', () => {
           'E2E resale offer created from received distributor inventory.',
         price: input.price.toString(),
         currency: 'VND',
-        salesMode: OfferSalesMode.WHOLESALE,
-        minWholesaleQty: 1,
         itemCondition: 'new',
         availableQuantity: input.quantity,
         verificationLevel: 'verified',
@@ -491,8 +497,6 @@ describe('Distributor onboarding (e2e)', () => {
       update: {
         distributionNodeId: 'node-e2e-manufacturer',
         price: '1000000',
-        salesMode: OfferSalesMode.WHOLESALE,
-        minWholesaleQty: 2,
         availableQuantity: 500,
         offerStatus: 'active',
       },
@@ -508,8 +512,6 @@ describe('Distributor onboarding (e2e)', () => {
           'E2E wholesale offer attached to the manufacturer root node.',
         price: '1000000',
         currency: 'VND',
-        salesMode: OfferSalesMode.WHOLESALE,
-        minWholesaleQty: 2,
         itemCondition: 'new',
         availableQuantity: 500,
         verificationLevel: 'verified',

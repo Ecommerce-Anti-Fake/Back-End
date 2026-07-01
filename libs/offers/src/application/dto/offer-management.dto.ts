@@ -14,7 +14,6 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-const OFFER_SALES_MODES = ['RETAIL', 'WHOLESALE', 'BOTH'] as const;
 const OFFER_STATUSES = ['active', 'inactive', 'draft'] as const;
 const SHOP_TYPES = [
   'NORMAL',
@@ -22,7 +21,6 @@ const SHOP_TYPES = [
   'MANUFACTURER',
   'DISTRIBUTOR',
 ] as const;
-const OFFER_SALES_CHANNELS = ['retail', 'wholesale', 'all'] as const;
 const OFFER_SORTS = ['featured', 'newest', 'price-asc', 'price-desc'] as const;
 
 export class OfferShippingMethodResponseDto {
@@ -57,12 +55,6 @@ export class OfferResponseDto {
 
   @ApiProperty({ example: 'VND' })
   currency!: string;
-
-  @ApiProperty({ enum: OFFER_SALES_MODES, example: 'WHOLESALE' })
-  salesMode!: 'RETAIL' | 'WHOLESALE' | 'BOTH';
-
-  @ApiPropertyOptional({ example: 50, nullable: true })
-  minWholesaleQty!: number | null;
 
   @ApiProperty({ example: 'new' })
   itemCondition!: string;
@@ -172,12 +164,6 @@ export class PublicOfferDetailResponseDto {
   @ApiProperty({ example: 'VND' })
   currency!: string;
 
-  @ApiProperty({ enum: OFFER_SALES_MODES, example: 'WHOLESALE' })
-  salesMode!: 'RETAIL' | 'WHOLESALE' | 'BOTH';
-
-  @ApiPropertyOptional({ example: 50, nullable: true })
-  minWholesaleQty!: number | null;
-
   @ApiProperty({ example: 'new' })
   itemCondition!: string;
 
@@ -260,12 +246,6 @@ export class OfferListItemResponseDto {
 
   @ApiProperty({ example: 'VND' })
   currency!: string;
-
-  @ApiProperty({ enum: OFFER_SALES_MODES, example: 'RETAIL' })
-  salesMode!: 'RETAIL' | 'WHOLESALE' | 'BOTH';
-
-  @ApiPropertyOptional({ example: 50, nullable: true })
-  minWholesaleQty!: number | null;
 
   @ApiProperty({ example: 500 })
   availableQuantity!: number;
@@ -435,19 +415,6 @@ export class CreateOfferDto {
   @IsString()
   @MaxLength(10)
   currency?: string;
-
-  @ApiPropertyOptional({ enum: OFFER_SALES_MODES, example: 'WHOLESALE' })
-  @IsOptional()
-  @IsString()
-  @IsIn(OFFER_SALES_MODES)
-  salesMode?: 'RETAIL' | 'WHOLESALE' | 'BOTH';
-
-  @ApiPropertyOptional({ example: 50 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  minWholesaleQty?: number;
 
   @ApiPropertyOptional({ example: 'new' })
   @IsOptional()
@@ -655,16 +622,6 @@ export class ListOffersQueryDto {
   @IsOptional()
   @IsIn(SHOP_TYPES)
   shopType?: (typeof SHOP_TYPES)[number];
-
-  @ApiPropertyOptional({
-    description:
-      'Optional sales channel filter. Leave empty or use all to include every sales mode.',
-    enum: OFFER_SALES_CHANNELS,
-    example: 'all',
-  })
-  @IsOptional()
-  @IsIn(OFFER_SALES_CHANNELS)
-  salesChannel?: (typeof OFFER_SALES_CHANNELS)[number];
 
   @ApiPropertyOptional({
     description:

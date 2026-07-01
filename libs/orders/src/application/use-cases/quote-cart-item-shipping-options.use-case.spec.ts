@@ -99,7 +99,6 @@ function createOffer(overrides: Record<string, unknown> = {}) {
     shopId: 'shop-1',
     availableQuantity: 10,
     verificationLevel: 'standard',
-    salesMode: 'RETAIL',
     productModelId: 'model-1',
     productModel: { brandId: 'brand-1' },
     parcelWeightGrams: 500,

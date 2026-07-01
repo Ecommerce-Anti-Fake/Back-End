@@ -127,8 +127,6 @@ function createOwnedOffer(overrides: Record<string, unknown> = {}) {
     description: 'Draft from received inventory',
     price: { toString: () => '120000' },
     currency: 'VND',
-    salesMode: 'WHOLESALE',
-    minWholesaleQty: 1,
     itemCondition: 'new',
     availableQuantity: 5,
     verificationLevel: 'standard',

@@ -198,8 +198,6 @@ export class UpdateOfferUseCase {
 
   private assertCanPublishDraft(
     offer: {
-      salesMode: string;
-      minWholesaleQty: number | null;
       availableQuantity: number;
       distributionNodeId: string | null;
       distributionNode: {
@@ -226,18 +224,6 @@ export class UpdateOfferUseCase {
       !offer.distributionNodeId
     ) {
       return;
-    }
-
-    if (!['WHOLESALE', 'BOTH'].includes(offer.salesMode)) {
-      throw new BadRequestException(
-        'Resale draft must be a wholesale offer before publishing',
-      );
-    }
-
-    if (!offer.minWholesaleQty || offer.minWholesaleQty < 1) {
-      throw new BadRequestException(
-        'Resale draft must define minimum wholesale quantity before publishing',
-      );
     }
 
     const availableQuantity = nextAvailableQuantity ?? offer.availableQuantity;

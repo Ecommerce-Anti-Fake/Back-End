@@ -4,8 +4,6 @@ model Order {
   buyerShopId             String?              @map("buyer_shop_id")
   buyerDistributionNodeId String?              @map("buyer_distribution_node_id")
   shopId                  String               @map("shop_id")
-  orderMode               OrderMode            @default(RETAIL) @map("order_mode")
-  orderType               String               @map("order_type")
   orderStatus             String               @map("order_status")
   fulfillmentStatus       String               @default("PENDING") @map("fulfillment_status")
   baseAmount              Decimal              @map("base_amount") @db.Decimal(18, 2)

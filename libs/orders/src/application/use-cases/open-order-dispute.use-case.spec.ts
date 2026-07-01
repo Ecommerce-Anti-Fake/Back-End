@@ -84,7 +84,6 @@ describe('OpenOrderDisputeUseCase', () => {
 function createOrderRecord() {
   return {
     id: 'order-1',
-    orderMode: 'RETAIL',
     orderStatus: 'paid',
     shopId: 'seller-shop-1',
     buyerUserId: 'buyer-user-1',

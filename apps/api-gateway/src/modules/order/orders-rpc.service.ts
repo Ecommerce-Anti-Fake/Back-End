@@ -16,9 +16,8 @@ import {
   AdminRiskScoresLookupMessage,
   AdminReportsLookupMessage,
   CalculateRiskScoreMessage,
-  CreateRetailOrderMessage,
+  CreateOrderMessage,
   CreateReportMessage,
-  CreateWholesaleOrderMessage,
   CheckoutCartItemMessage,
   QuoteCartShippingOptionsMessage,
   QuoteCartItemShippingOptionsMessage,
@@ -93,12 +92,8 @@ export class OrdersRpcService {
     return this.send(ORDERS_MESSAGE_PATTERNS.quoteCartShippingOptions, payload);
   }
 
-  createRetail(payload: CreateRetailOrderMessage) {
-    return this.send(ORDERS_MESSAGE_PATTERNS.createRetail, payload);
-  }
-
-  createWholesale(payload: CreateWholesaleOrderMessage) {
-    return this.send(ORDERS_MESSAGE_PATTERNS.createWholesale, payload);
+  create(payload: CreateOrderMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.create, payload);
   }
 
   findMine(payload: MyOrdersLookupMessage) {

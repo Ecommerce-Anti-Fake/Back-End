@@ -52,7 +52,6 @@ describe('RefundOrderUseCase', () => {
 function createOrderRecord(overrides?: { orderStatus?: string; paymentStatus?: string; escrowStatus?: string }) {
   return {
     id: 'order-1',
-    orderMode: 'WHOLESALE',
     orderStatus: overrides?.orderStatus ?? 'paid',
     shopId: 'seller-shop-1',
     buyerUserId: 'buyer-user-1',

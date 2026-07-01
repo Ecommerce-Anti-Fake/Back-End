@@ -73,8 +73,6 @@ export class OfferController {
       description: dto.description,
       price: dto.price,
       currency: dto.currency,
-      salesMode: dto.salesMode,
-      minWholesaleQty: dto.minWholesaleQty,
       itemCondition: dto.itemCondition,
       availableQuantity: dto.availableQuantity,
       verificationLevel: dto.verificationLevel,
@@ -181,7 +179,6 @@ export class OfferController {
       location: query.location,
       verificationStatus: query.verificationStatus,
       shopType: query.shopType,
-      salesChannel: query.salesChannel,
       sort: query.sort,
       page: query.page ?? 1,
       pageSize: query.pageSize ?? 20,
@@ -261,8 +258,6 @@ function toOfferListItem(offer: unknown): OfferListItemResponseDto {
     title: stringValue(record.title),
     price: numberValue(record.price),
     currency: stringValue(record.currency),
-    salesMode: salesModeValue(record.salesMode),
-    minWholesaleQty: nullableNumberValue(record.minWholesaleQty),
     availableQuantity: numberValue(record.availableQuantity),
     soldQuantity: numberValue(record.soldQuantity),
     verificationLevel: stringValue(record.verificationLevel),
@@ -289,8 +284,6 @@ function toPublicOfferDetail(offer: unknown): PublicOfferDetailResponseDto {
     description: stringValue(record.description),
     price: numberValue(record.price),
     currency: stringValue(record.currency),
-    salesMode: salesModeValue(record.salesMode),
-    minWholesaleQty: nullableNumberValue(record.minWholesaleQty),
     itemCondition: stringValue(record.itemCondition),
     availableQuantity: numberValue(record.availableQuantity),
     parcelWeightGrams: nullableNumberValue(record.parcelWeightGrams),
@@ -379,8 +372,4 @@ function numberValue(value: unknown) {
 
 function nullableNumberValue(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
-}
-
-function salesModeValue(value: unknown): 'RETAIL' | 'WHOLESALE' | 'BOTH' {
-  return value === 'WHOLESALE' || value === 'BOTH' ? value : 'RETAIL';
 }

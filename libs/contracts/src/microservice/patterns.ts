@@ -141,8 +141,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   checkoutCartItem: 'orders.checkout-cart-item',
   quoteCartItemShippingOptions: 'orders.quote-cart-item-shipping-options',
   quoteCartShippingOptions: 'orders.quote-cart-shipping-options',
-  createRetail: 'orders.create-retail',
-  createWholesale: 'orders.create-wholesale',
+  create: 'orders.create',
   findMine: 'orders.find-mine',
   findSellerShopOrders: 'orders.find-seller-shop-orders',
   getSellerShopDashboardAnalytics: 'orders.get-seller-shop-dashboard-analytics',
@@ -781,8 +780,6 @@ export type CreateOfferMessage = {
   description: string;
   price: number;
   currency?: string;
-  salesMode?: 'RETAIL' | 'WHOLESALE' | 'BOTH';
-  minWholesaleQty?: number | null;
   itemCondition?: string;
   availableQuantity: number;
   verificationLevel?: string;
@@ -929,8 +926,10 @@ export type OfferBatchLinksLookupMessage = {
   offerId: string;
 };
 
-export type CreateRetailOrderMessage = {
+export type CreateOrderMessage = {
   buyerUserId: string;
+  buyerShopId?: string | null;
+  buyerDistributionNodeId?: string | null;
   offerId: string;
   quantity: number;
   paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | null;
@@ -996,18 +995,6 @@ export type QuoteCartItemShippingOptionsMessage = {
 export type QuoteCartShippingOptionsMessage = {
   buyerUserId: string;
   cartItemIds: string[];
-};
-
-export type CreateWholesaleOrderMessage = {
-  buyerUserId: string;
-  buyerShopId?: string | null;
-  buyerDistributionNodeId?: string | null;
-  offerId: string;
-  quantity: number;
-  affiliateCode?: string | null;
-  shippingName?: string | null;
-  shippingPhone?: string | null;
-  shippingAddress?: string | null;
 };
 
 export type MyOrdersLookupMessage = {

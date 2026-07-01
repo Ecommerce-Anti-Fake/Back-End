@@ -92,8 +92,6 @@ export class OffersRepository {
     description: string;
     price: number;
     currency: string;
-    salesMode: 'RETAIL' | 'WHOLESALE' | 'BOTH';
-    minWholesaleQty: number | null;
     itemCondition: string;
     availableQuantity: number;
     verificationLevel: string;
@@ -233,7 +231,6 @@ export class OffersRepository {
       location?: string;
       verificationStatus?: string;
       shopType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
-      salesChannel?: 'retail' | 'wholesale' | 'all';
       sort?: 'featured' | 'newest' | 'price-asc' | 'price-desc';
       page?: number;
       pageSize?: number;
@@ -241,7 +238,6 @@ export class OffersRepository {
   ) {
     const q = input.q?.trim();
     const location = input.location?.trim();
-    const salesMode = this.resolveSalesModeFilter(input.salesChannel);
     const shopWhere: Prisma.ShopWhereInput = {
       ...(input.sellerUserId ? { ownerUserId: input.sellerUserId } : {}),
       ...(input.shopType ? { registrationType: input.shopType } : {}),
@@ -255,7 +251,6 @@ export class OffersRepository {
       ...(input.verificationStatus
         ? { verificationLevel: input.verificationStatus }
         : {}),
-      ...(salesMode ? { salesMode } : {}),
       ...(input.minPrice !== undefined || input.maxPrice !== undefined
         ? {
             price: {
@@ -359,19 +354,6 @@ export class OffersRepository {
       include,
       orderBy,
     });
-  }
-
-  private resolveSalesModeFilter(
-    salesChannel?: 'retail' | 'wholesale' | 'all',
-  ): Prisma.EnumOfferSalesModeFilter | undefined {
-    if (salesChannel === 'retail') {
-      return { in: ['RETAIL', 'BOTH'] };
-    }
-    if (salesChannel === 'wholesale') {
-      return { in: ['WHOLESALE', 'BOTH'] };
-    }
-
-    return undefined;
   }
 
   private resolveOfferSort(

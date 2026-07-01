@@ -37,7 +37,6 @@ describe('orders mapper shop grouping', () => {
   it('groups order items by shop with shop id and name', () => {
     const order = {
       id: 'order-1',
-      orderMode: 'RETAIL',
       orderStatus: 'paid',
       fulfillmentStatus: 'PROCESSING',
       paymentIntent: null,

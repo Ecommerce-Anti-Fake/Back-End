@@ -1,4 +1,4 @@
-import { PrismaClient, OfferSalesMode } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import { COUNTS, createMediaAsset, documentUrl, gtin, id, imageUrl, money, pick, recentDate, SeedContext } from './00-utils';
 
 const productTemplates = [
@@ -44,8 +44,6 @@ export async function seedOffers(prisma: PrismaClient, ctx: SeedContext) {
         description: `Sản phẩm ${title.toLowerCase()} từ ${brand.name}, có hồ sơ nguồn gốc và thông tin lô để phục vụ xác thực AntiFake.`,
         price: money(price),
         currency: 'VND',
-        salesMode: isWholesale ? OfferSalesMode.WHOLESALE : i % 6 === 0 ? OfferSalesMode.BOTH : OfferSalesMode.RETAIL,
-        minWholesaleQty: isWholesale ? 3 + (i % 5) : null,
         itemCondition: 'new',
         availableQuantity: 50 + (i * 7) % 450,
         verificationLevel: i % 8 === 0 ? 'standard' : 'verified',

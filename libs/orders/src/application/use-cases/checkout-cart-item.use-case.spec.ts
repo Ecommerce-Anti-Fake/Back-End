@@ -6,10 +6,7 @@ describe('CheckoutCartItemUseCase', () => {
     findOfferForOrdering: jest.fn(),
     removeCartItem: jest.fn(),
   };
-  const createRetailOrderUseCase = {
-    execute: jest.fn(),
-  };
-  const createWholesaleOrderUseCase = {
+  const createOrderUseCase = {
     execute: jest.fn(),
   };
 
@@ -19,12 +16,11 @@ describe('CheckoutCartItemUseCase', () => {
     jest.resetAllMocks();
     useCase = new CheckoutCartItemUseCase(
       ordersRepository as never,
-      createRetailOrderUseCase as never,
-      createWholesaleOrderUseCase as never,
+      createOrderUseCase as never,
     );
   });
 
-  it('should checkout a wholesale-only cart item as a wholesale order for a normal buyer', async () => {
+  it('should checkout a cart item through the unified order flow', async () => {
     ordersRepository.findCartItemById.mockResolvedValueOnce({
       id: 'cart-item-1',
       offerId: 'offer-1',
@@ -34,13 +30,9 @@ describe('CheckoutCartItemUseCase', () => {
         cartStatus: 'ACTIVE',
       },
     });
-    ordersRepository.findOfferForOrdering.mockResolvedValueOnce({
-      id: 'offer-1',
-      salesMode: 'WHOLESALE',
-    });
-    createWholesaleOrderUseCase.execute.mockResolvedValueOnce({
+    ordersRepository.findOfferForOrdering.mockResolvedValueOnce({ id: 'offer-1' });
+    createOrderUseCase.execute.mockResolvedValueOnce({
       id: 'order-1',
-      orderMode: 'WHOLESALE',
       buyerUserId: 'buyer-user-1',
       buyerShopId: null,
       buyerDistributionNodeId: null,
@@ -53,23 +45,27 @@ describe('CheckoutCartItemUseCase', () => {
       shippingAddress: '12 Nguyen Trai, Quan 1, TP.HCM',
     });
 
-    expect(createWholesaleOrderUseCase.execute).toHaveBeenCalledWith({
+    expect(createOrderUseCase.execute).toHaveBeenCalledWith({
       buyerUserId: 'buyer-user-1',
       offerId: 'offer-1',
       quantity: 10,
+      paymentMethod: 'COD',
       affiliateCode: null,
       shippingName: null,
       shippingPhone: '0987654321',
       shippingAddress: '12 Nguyen Trai, Quan 1, TP.HCM',
+      shippingDistrictId: null,
+      shippingDistrictName: null,
+      shippingWardCode: null,
+      shippingWardName: null,
+      shippingProviderCode: null,
+      shippingServiceId: null,
+      shippingServiceTypeId: null,
     });
-    expect(createRetailOrderUseCase.execute).not.toHaveBeenCalled();
     expect(ordersRepository.removeCartItem).toHaveBeenCalledWith({
       buyerUserId: 'buyer-user-1',
       cartItemId: 'cart-item-1',
     });
-    expect(result).toMatchObject({
-      id: 'order-1',
-      orderMode: 'WHOLESALE',
-    });
+    expect(result).toMatchObject({ id: 'order-1' });
   });
 });

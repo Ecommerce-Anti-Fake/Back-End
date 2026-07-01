@@ -18,9 +18,8 @@ import type {
   CheckoutCartItemMessage,
   QuoteCartShippingOptionsMessage,
   QuoteCartItemShippingOptionsMessage,
-  CreateRetailOrderMessage,
+  CreateOrderMessage,
   CreateReportMessage,
-  CreateWholesaleOrderMessage,
   MarkOrderPaidMessage,
   MyOrdersLookupMessage,
   MyReportsLookupMessage,
@@ -65,9 +64,8 @@ import {
   QuoteCartShippingOptionsUseCase,
   QuoteCartItemShippingOptionsUseCase,
   CalculateRiskScoreUseCase,
-  CreateRetailOrderUseCase,
+  CreateOrderUseCase,
   CreateReportUseCase,
-  CreateWholesaleOrderUseCase,
   GetAdminDisputeDetailUseCase,
   GetAdminDisputeSummaryUseCase,
   ListGhnShippingLocationsUseCase,
@@ -117,8 +115,7 @@ export class OrdersRpcController {
     private readonly checkoutCartItemUseCase: CheckoutCartItemUseCase,
     private readonly quoteCartItemShippingOptionsUseCase: QuoteCartItemShippingOptionsUseCase,
     private readonly quoteCartShippingOptionsUseCase: QuoteCartShippingOptionsUseCase,
-    private readonly createRetailOrderUseCase: CreateRetailOrderUseCase,
-    private readonly createWholesaleOrderUseCase: CreateWholesaleOrderUseCase,
+    private readonly createOrderUseCase: CreateOrderUseCase,
     private readonly listMyOrdersUseCase: ListMyOrdersUseCase,
     private readonly listAdminOrdersUseCase: ListAdminOrdersUseCase,
     private readonly getAdminFinanceReconciliationUseCase: GetAdminFinanceReconciliationUseCase,
@@ -231,19 +228,10 @@ export class OrdersRpcController {
     }
   }
 
-  @MessagePattern(ORDERS_MESSAGE_PATTERNS.createRetail)
-  async createRetail(@Payload() payload: CreateRetailOrderMessage) {
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.create)
+  async create(@Payload() payload: CreateOrderMessage) {
     try {
-      return await this.createRetailOrderUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(ORDERS_MESSAGE_PATTERNS.createWholesale)
-  async createWholesale(@Payload() payload: CreateWholesaleOrderMessage) {
-    try {
-      return await this.createWholesaleOrderUseCase.execute(payload);
+      return await this.createOrderUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

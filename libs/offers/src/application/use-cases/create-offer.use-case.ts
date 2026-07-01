@@ -20,8 +20,6 @@ export class CreateOfferUseCase {
     description: string;
     price: number;
     currency?: string;
-    salesMode?: 'RETAIL' | 'WHOLESALE' | 'BOTH';
-    minWholesaleQty?: number | null;
     itemCondition?: string;
     availableQuantity: number;
     verificationLevel?: string;
@@ -96,8 +94,6 @@ export class CreateOfferUseCase {
     }
 
     const currency = input.currency?.trim().toUpperCase() || 'VND';
-    const salesMode = input.salesMode ?? 'RETAIL';
-    const minWholesaleQty = input.minWholesaleQty ?? null;
     const itemCondition = input.itemCondition?.trim() || 'new';
     const verificationLevel = input.verificationLevel?.trim() || 'standard';
     const offerStatus = input.offerStatus ?? 'active';
@@ -113,31 +109,9 @@ export class CreateOfferUseCase {
       throw new BadRequestException('Available quantity must be at least 1');
     }
 
-    if (!['RETAIL', 'WHOLESALE', 'BOTH'].includes(salesMode)) {
-      throw new BadRequestException('Sales mode is invalid');
-    }
-
-    if (
-      (salesMode === 'WHOLESALE' || salesMode === 'BOTH') &&
-      (!minWholesaleQty || minWholesaleQty < 1)
-    ) {
-      throw new BadRequestException(
-        'Wholesale offers must define minWholesaleQty',
-      );
-    }
-
     if (!['active', 'inactive', 'draft'].includes(offerStatus)) {
       throw new BadRequestException(
         'Offer status must be active, inactive, or draft',
-      );
-    }
-
-    if (
-      (salesMode === 'WHOLESALE' || salesMode === 'BOTH') &&
-      !['MANUFACTURER', 'DISTRIBUTOR'].includes(ownedShop.registrationType)
-    ) {
-      throw new BadRequestException(
-        'Only manufacturer or distributor shops can create wholesale offers',
       );
     }
 
@@ -160,8 +134,6 @@ export class CreateOfferUseCase {
       description,
       price: input.price,
       currency,
-      salesMode,
-      minWholesaleQty: salesMode === 'RETAIL' ? null : minWholesaleQty,
       itemCondition,
       availableQuantity: input.availableQuantity,
       verificationLevel,
