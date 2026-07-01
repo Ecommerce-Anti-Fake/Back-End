@@ -10,12 +10,13 @@ export class ListSellerShopOrdersUseCase {
 
     return {
       ...result,
-      items: result.items.map(toSellerShopOrderListItem),
+      items: result.items.map((order) => toSellerShopOrderListItem(order, input.shopId)),
     };
   }
 }
 
-function toSellerShopOrderListItem(order: SellerShopOrderRecord) {
+function toSellerShopOrderListItem(order: SellerShopOrderRecord, shopId: string) {
+  const shopGroup = order.shopGroups?.find((group) => group.shopId === shopId);
   return {
     orderId: order.id,
     customer: {
@@ -23,7 +24,9 @@ function toSellerShopOrderListItem(order: SellerShopOrderRecord) {
       name: order.buyer?.displayName ?? order.shippingName ?? null,
       email: order.buyer?.email ?? null,
     },
-    orderAmount: decimalToNumber(order.buyerPayableAmount),
+    orderAmount: shopGroup
+      ? decimalToNumber(shopGroup.baseAmount) + decimalToNumber(shopGroup.shippingFeeAmount)
+      : decimalToNumber(order.buyerPayableAmount),
     orderStatus: order.orderStatus,
     createdAt: order.createdAt,
   };

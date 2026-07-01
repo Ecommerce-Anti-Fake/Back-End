@@ -13,17 +13,15 @@ export class UpdateOrderFulfillmentUseCase {
     private readonly orderReversalService: OrderReversalService,
   ) {}
 
-  async execute(input: {
-    id: string;
-    requesterUserId: string;
-    fulfillmentStatus: (typeof FULFILLMENT_STATUSES)[number];
-  }) {
+  async execute(input: { id: string; requesterUserId: string; fulfillmentStatus: (typeof FULFILLMENT_STATUSES)[number] }) {
     const order = await this.ordersRepository.findOrderById(input.id);
     if (!order) {
       throw new NotFoundException('Order not found');
     }
 
-    if (order.shop.ownerUserId !== input.requesterUserId) {
+    const shopGroup = order.shopGroups?.find((group) => group.shop.ownerUserId === input.requesterUserId);
+    const isLegacySeller = order.shop.ownerUserId === input.requesterUserId;
+    if (!shopGroup && !isLegacySeller) {
       throw new ForbiddenException('Only the seller can update fulfillment');
     }
 
@@ -31,7 +29,7 @@ export class UpdateOrderFulfillmentUseCase {
       throw new BadRequestException('Cannot update fulfillment for closed orders');
     }
 
-    const currentFulfillmentStatus = order.fulfillmentStatus || 'PENDING';
+    const currentFulfillmentStatus = shopGroup?.fulfillmentStatus || order.fulfillmentStatus || 'PENDING';
     const isPaymentReady =
       order.orderStatus === 'paid' || order.paymentIntent?.paymentStatus === 'PAID' || order.paymentIntent?.paymentMethod === 'COD';
 
@@ -42,7 +40,9 @@ export class UpdateOrderFulfillmentUseCase {
       if (!isPaymentReady) {
         throw new BadRequestException('Only paid orders or COD orders can be processed');
       }
-      const updatedOrder = await this.ordersRepository.allocateOrderBatchesAndUpdateFulfillment(order.id, 'PROCESSING');
+      const updatedOrder = shopGroup
+        ? await this.ordersRepository.allocateOrderBatchesAndUpdateFulfillment(order.id, 'PROCESSING', shopGroup.id)
+        : await this.ordersRepository.allocateOrderBatchesAndUpdateFulfillment(order.id, 'PROCESSING');
       await this.createFulfillmentAudit(order.id, input.requesterUserId, currentFulfillmentStatus, 'PROCESSING');
       await this.createFulfillmentNotification(updatedOrder, 'PROCESSING');
       return toOrderResponse(updatedOrder);
@@ -52,7 +52,13 @@ export class UpdateOrderFulfillmentUseCase {
       if (currentFulfillmentStatus !== 'PROCESSING') {
         throw new BadRequestException('Order must be processing before shipping');
       }
-      const updatedOrder = await this.ordersRepository.updateFulfillmentStatus(order.id, 'SHIPPING');
+      const updatedOrder = shopGroup
+        ? await this.ordersRepository.updateShopGroupFulfillmentStatus({
+            orderId: order.id,
+            groupId: shopGroup.id,
+            fulfillmentStatus: 'SHIPPING',
+          })
+        : await this.ordersRepository.updateFulfillmentStatus(order.id, 'SHIPPING');
       await this.createFulfillmentAudit(order.id, input.requesterUserId, currentFulfillmentStatus, 'SHIPPING');
       await this.createFulfillmentNotification(updatedOrder, 'SHIPPING');
       return toOrderResponse(updatedOrder);
@@ -78,13 +84,22 @@ export class UpdateOrderFulfillmentUseCase {
         throw new BadRequestException('Only paid orders can be delivered');
       }
 
-      const updatedOrder = await this.ordersRepository.updateFulfillmentStatus(order.id, 'DELIVERED');
+      const updatedOrder = shopGroup
+        ? await this.ordersRepository.updateShopGroupFulfillmentStatus({
+            orderId: order.id,
+            groupId: shopGroup.id,
+            fulfillmentStatus: 'DELIVERED',
+          })
+        : await this.ordersRepository.updateFulfillmentStatus(order.id, 'DELIVERED');
       await this.createFulfillmentAudit(order.id, input.requesterUserId, currentFulfillmentStatus, 'DELIVERED');
       await this.createFulfillmentNotification(updatedOrder, 'DELIVERED');
       return toOrderResponse(updatedOrder);
     }
 
     if (input.fulfillmentStatus === 'CANCELLED') {
+      if (order.shopGroups && order.shopGroups.length > 1) {
+        throw new BadRequestException('Multi-shop cancellation must be handled per shop group');
+      }
       if (order.orderStatus !== 'pending') {
         throw new BadRequestException('Only pending orders can be cancelled by fulfillment');
       }

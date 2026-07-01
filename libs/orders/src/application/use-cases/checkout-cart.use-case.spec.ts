@@ -6,198 +6,140 @@ describe('CheckoutCartUseCase', () => {
     getOrCreateActiveCart: jest.fn(),
     findDefaultAddressByUserId: jest.fn(),
     removeCartItems: jest.fn(),
-    createCheckoutSession: jest.fn(),
-    updateCheckoutSessionPaymentProviderRef: jest.fn(),
-    findOrderById: jest.fn(),
-    markOrderPaid: jest.fn(),
+    updatePaymentProviderRef: jest.fn(),
     markOrderPaymentFailed: jest.fn(),
-    markCheckoutSessionPaid: jest.fn(),
   };
-  const createOrderUseCase = {
-    execute: jest.fn(),
-  };
-  const quoteCartShippingOptionsUseCase = {
-    execute: jest.fn(),
-  };
-  const payOSPaymentService = {
-    createPaymentLink: jest.fn(),
-  };
-
+  const orderPlacementService = { createAggregateOrder: jest.fn() };
+  const quoteCartShippingOptionsUseCase = { execute: jest.fn() };
+  const payOSPaymentService = { createPaymentLink: jest.fn() };
   let useCase: CheckoutCartUseCase;
 
   beforeEach(() => {
     jest.resetAllMocks();
     useCase = new CheckoutCartUseCase(
       ordersRepository as never,
-      createOrderUseCase as never,
+      orderPlacementService as never,
       quoteCartShippingOptionsUseCase as never,
       payOSPaymentService as never,
     );
     ordersRepository.getOrCreateActiveCart.mockResolvedValue(createCart());
-    ordersRepository.findDefaultAddressByUserId.mockResolvedValue(createDefaultAddress());
-    quoteCartShippingOptionsUseCase.execute.mockResolvedValue({
-      options: [
-        {
-          optionCode: 'GHN_1',
-          providerCode: 'GHN',
-          providerName: 'Giao Hang Nhanh',
-          methodName: 'Nhanh',
-          shippingFee: 30000,
-          estimatedDelivery: '2-3 ngay',
-        },
-      ],
-    });
-  });
-
-  it('creates orders for selected cart items and returns success for COD checkout', async () => {
-    createOrderUseCase.execute
-      .mockResolvedValueOnce({ id: 'order-1' })
-      .mockResolvedValueOnce({ id: 'order-2' });
-
-    const result = await useCase.execute({
-      buyerUserId: 'buyer-user-1',
-      cartItemIds: ['cart-item-1', 'cart-item-2'],
-      paymentMethod: 'COD',
-      shippingOptionCode: 'GHN_1',
-    });
-
-    expect(result).toEqual({ success: true });
-    expect(createOrderUseCase.execute).toHaveBeenCalledTimes(2);
-    expect(createOrderUseCase.execute).toHaveBeenCalledWith(expect.objectContaining({
-      buyerUserId: 'buyer-user-1',
-      offerId: 'offer-1',
-      paymentMethod: 'COD',
-      shippingProviderCode: 'GHN',
-      shippingAddress: '12 Nguyen Trai',
-      shippingDistrictId: 1450,
-      shippingWardCode: '21211',
-    }));
-    expect(ordersRepository.removeCartItems).toHaveBeenCalledWith({
-      buyerUserId: 'buyer-user-1',
-      cartItemIds: ['cart-item-1', 'cart-item-2'],
-    });
-  });
-
-  it('creates pending orders before creating the payOS checkout session and keeps cart items', async () => {
-    createOrderUseCase.execute.mockResolvedValueOnce(createOrder({ id: 'order-1', buyerPayableAmount: 130000 }));
-    ordersRepository.createCheckoutSession.mockResolvedValueOnce({
-      id: 'checkout-session-1',
-      amount: new Prisma.Decimal(130000),
-    });
-    payOSPaymentService.createPaymentLink.mockResolvedValueOnce({
-      orderCode: 123,
-      paymentLinkId: 'link-1',
-      checkoutUrl: 'https://pay.payos.vn/web/link-1',
-    });
-
-    const result = await useCase.execute({
-      buyerUserId: 'buyer-user-1',
-      cartItemIds: ['cart-item-1'],
-      paymentMethod: 'PAYOS',
-      shippingOptionCode: 'GHN_1',
-    });
-
-    expect(ordersRepository.createCheckoutSession).toHaveBeenCalledWith({
-      buyerUserId: 'buyer-user-1',
-      cartItemIds: ['cart-item-1'],
-      shippingOptionCode: 'GHN_1',
-      paymentMethod: 'PAYOS',
-      amount: 130000,
-      orderIds: ['order-1'],
-    });
-    expect(ordersRepository.updateCheckoutSessionPaymentProviderRef).toHaveBeenCalledWith({
-      checkoutSessionId: 'checkout-session-1',
-      paymentProviderRef: 'PAYOS:link-1',
-      payOSOrderCode: 123,
-      checkoutUrl: 'https://pay.payos.vn/web/link-1',
-    });
-    expect(result).toEqual({
-      checkoutSessionId: 'checkout-session-1',
-      checkoutUrl: 'https://pay.payos.vn/web/link-1',
-    });
-    expect(createOrderUseCase.execute).toHaveBeenCalledWith(expect.objectContaining({
-      buyerUserId: 'buyer-user-1',
-      offerId: 'offer-1',
-      paymentMethod: 'PAYOS',
-      skipPayOSPaymentLink: true,
-    }));
-    expect(ordersRepository.removeCartItems).not.toHaveBeenCalled();
-  });
-
-  it('marks existing checkout orders paid and removes cart items after payOS success', async () => {
-    ordersRepository.findOrderById.mockResolvedValueOnce(createOrder({ id: 'order-1', buyerPayableAmount: 130000 }));
-    ordersRepository.markOrderPaid.mockResolvedValueOnce(createOrder({ id: 'order-1', buyerPayableAmount: 130000 }));
-
-    const result = await useCase.completePayOSSession({
-      session: {
-        id: 'checkout-session-1',
-        buyerUserId: 'buyer-user-1',
-        cartItemIds: ['cart-item-1'],
-        orderIds: ['order-1'],
-        shippingOptionCode: 'GHN_1',
-        paymentMethod: 'PAYOS',
-        paymentStatus: 'PENDING',
-        amount: new Prisma.Decimal(130000),
-      } as never,
-      paymentProviderRef: 'PAYOS:link-1',
-      reference: 'ref-1',
-    });
-
-    expect(createOrderUseCase.execute).not.toHaveBeenCalled();
-    expect(ordersRepository.markOrderPaid).toHaveBeenCalledWith({
-      id: 'order-1',
-      actorUserId: 'buyer-user-1',
-      providerRef: 'PAYOS:link-1:ref-1',
-    });
-    expect(ordersRepository.removeCartItems).toHaveBeenCalledWith({
-      buyerUserId: 'buyer-user-1',
-      cartItemIds: ['cart-item-1'],
-    });
-    expect(result).toHaveLength(1);
-  });
-
-  function createCart() {
-    return {
-      id: 'cart-1',
-      buyerUserId: 'buyer-user-1',
-      cartStatus: 'ACTIVE',
-      items: [
-        createCartItem({ id: 'cart-item-1', offerId: 'offer-1', price: 100000, quantity: 1 }),
-        createCartItem({ id: 'cart-item-2', offerId: 'offer-2', price: 200000, quantity: 2 }),
-      ],
-    };
-  }
-
-  function createCartItem(input: { id: string; offerId: string; price: number; quantity: number }) {
-    return {
-      id: input.id,
-      offerId: input.offerId,
-      quantity: input.quantity,
-      offer: {
-        id: input.offerId,
-        title: `Offer ${input.offerId}`,
-        price: new Prisma.Decimal(input.price),
-      },
-    };
-  }
-
-  function createDefaultAddress() {
-    return {
+    ordersRepository.findDefaultAddressByUserId.mockResolvedValue({
       recipientName: 'Nguyen Van A',
       phone: '0987654321',
       addressLine: '12 Nguyen Trai',
       wardCode: 'VN-P202-D1450-W21211',
       wardName: 'Phuong Ben Nghe',
+    });
+    quoteCartShippingOptionsUseCase.execute.mockResolvedValue({
+      options: [
+        {
+          optionCode: 'GHN_1',
+          providerCode: 'GHN',
+          providerName: 'GHN',
+          methodName: 'Nhanh',
+          shippingFee: 30000,
+          estimatedDelivery: null,
+        },
+      ],
+    });
+    orderPlacementService.createAggregateOrder.mockResolvedValue({
+      id: 'order-1',
+    });
+  });
+
+  it('creates one COD order with shop groups and removes source cart items', async () => {
+    const result = await useCase.execute({
+      buyerUserId: 'buyer-1',
+      cartItemIds: ['cart-item-1', 'cart-item-2'],
+      paymentMethod: 'COD',
+      shippingOptionCode: 'GHN_1',
+    });
+
+    expect(result).toEqual({ success: true, orderId: 'order-1' });
+    expect(orderPlacementService.createAggregateOrder).toHaveBeenCalledTimes(1);
+    expect(orderPlacementService.createAggregateOrder).toHaveBeenCalledWith(
+      expect.objectContaining({
+        buyerUserId: 'buyer-1',
+        paymentMethod: 'COD',
+        buyerPayableAmount: 530000,
+        groups: expect.arrayContaining([
+          expect.objectContaining({
+            shopId: 'shop-1',
+            items: [expect.objectContaining({ sourceCartItemId: 'cart-item-1' })],
+          }),
+          expect.objectContaining({
+            shopId: 'shop-2',
+            items: [expect.objectContaining({ sourceCartItemId: 'cart-item-2' })],
+          }),
+        ]),
+      }),
+    );
+    expect(ordersRepository.removeCartItems).toHaveBeenCalledWith({
+      buyerUserId: 'buyer-1',
+      cartItemIds: ['cart-item-1', 'cart-item-2'],
+    });
+  });
+
+  it('creates one pending PayOS order and keeps cart items until webhook success', async () => {
+    payOSPaymentService.createPaymentLink.mockResolvedValue({
+      paymentLinkId: 'link-1',
+      checkoutUrl: 'https://pay.payos.vn/web/link-1',
+    });
+    const result = await useCase.execute({
+      buyerUserId: 'buyer-1',
+      cartItemIds: ['cart-item-1', 'cart-item-2'],
+      paymentMethod: 'PAYOS',
+      shippingOptionCode: 'GHN_1',
+    });
+
+    expect(result).toEqual({
+      orderId: 'order-1',
+      checkoutUrl: 'https://pay.payos.vn/web/link-1',
+    });
+    expect(orderPlacementService.createAggregateOrder).toHaveBeenCalledTimes(1);
+    expect(ordersRepository.updatePaymentProviderRef).toHaveBeenCalledWith('order-1', 'PAYOS:link-1');
+    expect(ordersRepository.removeCartItems).not.toHaveBeenCalled();
+  });
+
+  it('marks the order payment failed when payOS link creation fails', async () => {
+    payOSPaymentService.createPaymentLink.mockRejectedValue(new Error('provider unavailable'));
+
+    await expect(
+      useCase.execute({
+        buyerUserId: 'buyer-1', cartItemIds: ['cart-item-1'], paymentMethod: 'PAYOS', shippingOptionCode: 'GHN_1',
+      }),
+    ).rejects.toThrow('provider unavailable');
+
+    expect(ordersRepository.markOrderPaymentFailed).toHaveBeenCalledWith({
+      id: 'order-1', actorUserId: 'buyer-1', providerRef: null, reason: 'Unable to create payOS payment link',
+    });
+    expect(ordersRepository.removeCartItems).not.toHaveBeenCalled();
+  });
+
+  function createCartItem(id: string, offerId: string, shopId: string, price: number, quantity: number) {
+    return {
+      id,
+      offerId,
+      quantity,
+      offerTitleSnapshot: offerId,
+      unitPriceSnapshot: new Prisma.Decimal(price),
+      offer: {
+        id: offerId,
+        shopId,
+        title: offerId,
+        verificationLevel: 'basic',
+        price: new Prisma.Decimal(price),
+        shop: { id: shopId },
+      },
     };
   }
 
-  function createOrder(input: { id: string; buyerPayableAmount: number }) {
+  function createCart() {
     return {
-      id: input.id,
-      buyerPayableAmount: new Prisma.Decimal(input.buyerPayableAmount),
-      paymentIntent: {
-        paymentStatus: 'PENDING',
-      },
+      id: 'cart-1',
+      buyerUserId: 'buyer-1',
+      cartStatus: 'ACTIVE',
+      items: [createCartItem('cart-item-1', 'offer-1', 'shop-1', 100000, 1), createCartItem('cart-item-2', 'offer-2', 'shop-2', 200000, 2)],
     };
   }
 });

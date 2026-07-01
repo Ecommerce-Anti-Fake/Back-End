@@ -25,6 +25,7 @@ model Shop {
   offers                     Offer[]
   supplyBatches              SupplyBatch[]
   orders                     Order[]
+  orderGroups                OrderShopGroup[]
   wholesaleOrders            Order[]                @relation("OrderBuyerShop")
   distributionNetworksAsRoot DistributionNetwork[]  @relation("DistributionManufacturerShop")
   distributionNodes          DistributionNode[]

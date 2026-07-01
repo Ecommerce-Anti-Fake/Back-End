@@ -26,7 +26,6 @@ import {
   GetAdminOpenDisputeCountUseCase,
   GetAdminDisputeSummaryUseCase,
   GetActiveCartUseCase,
-  GetCheckoutSessionStatusUseCase,
   GetOrderByIdUseCase,
   GetOrderFulfillmentAuditUseCase,
   GetDisputeEvidenceUploadSignaturesUseCase,
@@ -64,11 +63,7 @@ import {
   UpdateAdminDisputeCaseUseCase,
   UpdateOrderFulfillmentUseCase,
 } from './application/use-cases';
-import {
-  CatalogWholesalePricingAdapter,
-  LocalOrderInventoryAdapter,
-  LocalWholesalePricingAdapter,
-} from './infrastructure/adapters';
+import { CatalogWholesalePricingAdapter, LocalOrderInventoryAdapter, LocalWholesalePricingAdapter } from './infrastructure/adapters';
 import { OrdersRepository } from './infrastructure/persistence/orders.repository';
 import { OrdersRpcController } from './presentation/rpc/orders.rpc-controller';
 import { CATALOG_SERVICE_CLIENT } from '@contracts';
@@ -90,10 +85,7 @@ import { CATALOG_SERVICE_CLIENT } from '@contracts';
               configService.get<string>('CATALOG_SERVICE_HOST')?.trim() ||
               configService.get<string>('USERS_SERVICE_HOST')?.trim() ||
               '127.0.0.1',
-            port:
-              configService.get<number>('CATALOG_SERVICE_PORT') ??
-              configService.get<number>('USERS_SERVICE_PORT') ??
-              4002,
+            port: configService.get<number>('CATALOG_SERVICE_PORT') ?? configService.get<number>('USERS_SERVICE_PORT') ?? 4002,
           },
         }),
       },
@@ -126,7 +118,6 @@ import { CATALOG_SERVICE_CLIENT } from '@contracts';
     LocalWholesalePricingAdapter,
     CatalogWholesalePricingAdapter,
     GetActiveCartUseCase,
-    GetCheckoutSessionStatusUseCase,
     AddCartItemUseCase,
     UpdateCartItemUseCase,
     RemoveCartItemUseCase,
@@ -187,7 +178,6 @@ import { CATALOG_SERVICE_CLIENT } from '@contracts';
     PayOSPaymentService,
     ShippingCarrierAdapterService,
     GetActiveCartUseCase,
-    GetCheckoutSessionStatusUseCase,
     AddCartItemUseCase,
     UpdateCartItemUseCase,
     RemoveCartItemUseCase,

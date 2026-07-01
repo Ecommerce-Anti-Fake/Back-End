@@ -16,7 +16,9 @@ export class BookOrderShippingUseCase {
       throw new NotFoundException('Order not found');
     }
 
-    if (order.shop.ownerUserId !== input.requesterUserId) {
+    const shopGroup = order.shopGroups?.find((group) => group.shop.ownerUserId === input.requesterUserId);
+    const isLegacySeller = order.shop.ownerUserId === input.requesterUserId;
+    if (!shopGroup && !isLegacySeller) {
       throw new ForbiddenException('Only the seller can book shipping');
     }
 
@@ -24,37 +26,45 @@ export class BookOrderShippingUseCase {
       throw new BadRequestException('Cannot book shipping for closed orders');
     }
 
-    if ((order.fulfillmentStatus || 'PENDING') !== 'PROCESSING') {
+    if ((shopGroup?.fulfillmentStatus || order.fulfillmentStatus || 'PENDING') !== 'PROCESSING') {
       throw new BadRequestException('Order must be processing before booking shipping');
     }
 
-    if (order.shippingTrackingCode) {
+    if (shopGroup?.shippingTrackingCode || (!shopGroup && order.shippingTrackingCode)) {
       return toOrderResponse(order);
     }
 
     const booking = await this.shippingCarrierAdapterService.bookShipment({
       orderId: order.id,
-      providerCode: order.shippingProviderCode ?? 'SELF_DELIVERY',
-      providerName: order.shippingProviderName ?? 'Seller tu giao',
-      shippingName: order.shippingName,
-      shippingPhone: order.shippingPhone,
-      shippingAddress: order.shippingAddress,
-      shippingDistrictId: order.shippingDistrictId,
-      shippingWardCode: order.shippingWardCode,
-      shippingServiceId: order.shippingServiceId,
-      shippingServiceTypeId: order.shippingServiceTypeId,
-      parcelWeightGrams: order.parcelWeightGrams,
-      parcelLengthCm: order.parcelLengthCm,
-      parcelWidthCm: order.parcelWidthCm,
-      parcelHeightCm: order.parcelHeightCm,
+      providerCode: shopGroup?.shippingProviderCode ?? order.shippingProviderCode ?? 'SELF_DELIVERY',
+      providerName: shopGroup?.shippingProviderName ?? order.shippingProviderName ?? 'Seller tu giao',
+      shippingName: shopGroup?.shippingName ?? order.shippingName,
+      shippingPhone: shopGroup?.shippingPhone ?? order.shippingPhone,
+      shippingAddress: shopGroup?.shippingAddress ?? order.shippingAddress,
+      shippingDistrictId: shopGroup?.shippingDistrictId ?? order.shippingDistrictId,
+      shippingWardCode: shopGroup?.shippingWardCode ?? order.shippingWardCode,
+      shippingServiceId: shopGroup?.shippingServiceId ?? order.shippingServiceId,
+      shippingServiceTypeId: shopGroup?.shippingServiceTypeId ?? order.shippingServiceTypeId,
+      parcelWeightGrams: shopGroup?.parcelWeightGrams ?? order.parcelWeightGrams,
+      parcelLengthCm: shopGroup?.parcelLengthCm ?? order.parcelLengthCm,
+      parcelWidthCm: shopGroup?.parcelWidthCm ?? order.parcelWidthCm,
+      parcelHeightCm: shopGroup?.parcelHeightCm ?? order.parcelHeightCm,
     });
 
-    const updatedOrder = await this.ordersRepository.bookOrderShipping({
-      id: order.id,
-      actorUserId: input.requesterUserId,
-      trackingCode: booking.trackingCode,
-      providerStatus: booking.providerStatus,
-    });
+    const updatedOrder = shopGroup
+      ? await this.ordersRepository.bookOrderShopGroupShipping({
+          orderId: order.id,
+          groupId: shopGroup.id,
+          actorUserId: input.requesterUserId,
+          trackingCode: booking.trackingCode,
+          providerStatus: booking.providerStatus,
+        })
+      : await this.ordersRepository.bookOrderShipping({
+          id: order.id,
+          actorUserId: input.requesterUserId,
+          trackingCode: booking.trackingCode,
+          providerStatus: booking.providerStatus,
+        });
 
     await this.createShippingNotification(updatedOrder);
     return toOrderResponse(updatedOrder);

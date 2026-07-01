@@ -17,7 +17,6 @@ import type {
   CalculateRiskScoreMessage,
   CheckoutCartMessage,
   CheckoutCartItemMessage,
-  CheckoutSessionStatusMessage,
   QuoteCartShippingOptionsMessage,
   QuoteCartItemShippingOptionsMessage,
   CreateOrderMessage,
@@ -75,7 +74,6 @@ import {
   GetAdminFinanceReconciliationUseCase,
   GetAdminOpenDisputeCountUseCase,
   GetActiveCartUseCase,
-  GetCheckoutSessionStatusUseCase,
   GetOrderByIdUseCase,
   GetOrderFulfillmentAuditUseCase,
   GetDisputeEvidenceUploadSignaturesUseCase,
@@ -113,7 +111,6 @@ import {
 export class OrdersRpcController {
   constructor(
     private readonly getActiveCartUseCase: GetActiveCartUseCase,
-    private readonly getCheckoutSessionStatusUseCase: GetCheckoutSessionStatusUseCase,
     private readonly addCartItemUseCase: AddCartItemUseCase,
     private readonly updateCartItemUseCase: UpdateCartItemUseCase,
     private readonly removeCartItemUseCase: RemoveCartItemUseCase,
@@ -168,15 +165,6 @@ export class OrdersRpcController {
   async getActiveCart(@Payload() payload: ActiveCartMessage) {
     try {
       return await this.getActiveCartUseCase.execute(payload.buyerUserId);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(ORDERS_MESSAGE_PATTERNS.getCheckoutSessionStatus)
-  async getCheckoutSessionStatus(@Payload() payload: CheckoutSessionStatusMessage) {
-    try {
-      return await this.getCheckoutSessionStatusUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

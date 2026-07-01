@@ -56,6 +56,12 @@ const orderWithRelationsArgs = Prisma.validator<Prisma.OrderDefaultArgs>()({
     },
     paymentIntent: true,
     escrow: true,
+    shopGroups: {
+      include: {
+        shop: { select: { id: true, shopName: true, ownerUserId: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    },
     disputes: {
       where: {
         disputeStatus: 'OPEN',
@@ -128,6 +134,7 @@ const sellerShopOrderListArgs = Prisma.validator<Prisma.OrderDefaultArgs>()({
         email: true,
       },
     },
+    shopGroups: true,
   },
 });
 
@@ -148,6 +155,12 @@ const disputeWithOrderArgs = Prisma.validator<Prisma.DisputeDefaultArgs>()({
         },
         paymentIntent: true,
         escrow: true,
+        shopGroups: {
+          include: {
+            shop: { select: { id: true, shopName: true, ownerUserId: true } },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
         disputes: {
           where: {
             disputeStatus: 'OPEN',
@@ -351,7 +364,6 @@ function decimalToNumber(value: Prisma.Decimal | number | string | null | undefi
   return Number(value.toString());
 }
 export type CartWithItems = Prisma.CartGetPayload<typeof cartWithItemsArgs>;
-export type CheckoutSessionRecord = Prisma.CheckoutSessionGetPayload<Record<string, never>>;
 export type OrderBatchAllocation = {
   batchId: string;
   quantity: number;
@@ -393,6 +405,47 @@ export type CreateOrderRecordInput = {
     quantity: number;
     verificationLevelSnapshot: string;
   };
+};
+export type CreateAggregateOrderRecordInput = {
+  buyerUserId: string;
+  legacyShopId: string;
+  paymentMethod: 'COD' | 'PAYOS';
+  baseAmount: number;
+  platformFeeAmount: number;
+  buyerPayableAmount: number;
+  sellerReceivableAmount: number;
+  shippingFeeAmount: number;
+  shipping: {
+    name: string | null;
+    phone: string;
+    address: string;
+    districtId: number | null;
+    districtName: string | null;
+    wardCode: string | null;
+    wardName: string | null;
+    providerCode: string;
+    providerName: string;
+  };
+  groups: Array<{
+    shopId: string;
+    baseAmount: number;
+    platformFeeAmount: number;
+    sellerReceivableAmount: number;
+    shippingFeeAmount: number;
+    parcelWeightGrams: number | null;
+    parcelLengthCm: number | null;
+    parcelWidthCm: number | null;
+    parcelHeightCm: number | null;
+    items: Array<{
+      sourceCartItemId: string;
+      offerId: string;
+      offerTitleSnapshot: string;
+      unitPrice: number;
+      quantity: number;
+      verificationLevelSnapshot: string;
+      batchAllocations: OrderBatchAllocation[];
+    }>;
+  }>;
 };
 export type AffiliateAttributionInput = {
   affiliateCode: string;
@@ -597,11 +650,7 @@ export class OrdersRepository {
     return this.getOrCreateActiveCart(input.buyerUserId);
   }
 
-  async updateCartItemQuantity(input: {
-    buyerUserId: string;
-    cartItemId: string;
-    quantity: number;
-  }): Promise<CartWithItems> {
+  async updateCartItemQuantity(input: { buyerUserId: string; cartItemId: string; quantity: number }): Promise<CartWithItems> {
     const cartItem = await this.findCartItemById(input.cartItemId);
     if (!cartItem || cartItem.cart.buyerUserId !== input.buyerUserId || cartItem.cart.cartStatus !== 'ACTIVE') {
       throw new BadRequestException('Cart item not found');
@@ -648,79 +697,6 @@ export class OrdersRepository {
     });
 
     return this.getOrCreateActiveCart(input.buyerUserId);
-  }
-
-  createCheckoutSession(input: {
-    buyerUserId: string;
-    cartItemIds: string[];
-    shippingOptionCode: string;
-    paymentMethod: 'PAYOS';
-    amount: number;
-  }): Promise<CheckoutSessionRecord> {
-    return this.prisma.checkoutSession.create({
-      data: {
-        buyerUserId: input.buyerUserId,
-        cartItemIds: input.cartItemIds,
-        shippingOptionCode: input.shippingOptionCode,
-        paymentMethod: input.paymentMethod,
-        amount: input.amount,
-      },
-    });
-  }
-
-  updateCheckoutSessionPaymentProviderRef(input: {
-    checkoutSessionId: string;
-    paymentProviderRef: string;
-    payOSOrderCode: number;
-    checkoutUrl: string;
-  }): Promise<CheckoutSessionRecord> {
-    return this.prisma.checkoutSession.update({
-      where: { id: input.checkoutSessionId },
-      data: {
-        paymentProviderRef: input.paymentProviderRef,
-        payOSOrderCode: input.payOSOrderCode,
-        checkoutUrl: input.checkoutUrl,
-      },
-    });
-  }
-
-  findCheckoutSessionByIdForBuyer(input: {
-    checkoutSessionId: string;
-    buyerUserId: string;
-  }): Promise<CheckoutSessionRecord | null> {
-    return this.prisma.checkoutSession.findFirst({
-      where: {
-        id: input.checkoutSessionId,
-        buyerUserId: input.buyerUserId,
-      },
-    });
-  }
-
-  findCheckoutSessionByPaymentProviderRef(paymentProviderRef: string): Promise<CheckoutSessionRecord | null> {
-    return this.prisma.checkoutSession.findUnique({
-      where: { paymentProviderRef },
-    });
-  }
-
-  markCheckoutSessionPaid(input: { id: string; orderIds: string[] }): Promise<CheckoutSessionRecord> {
-    return this.prisma.checkoutSession.update({
-      where: { id: input.id },
-      data: {
-        paymentStatus: 'PAID',
-        completedAt: new Date(),
-        orderIds: input.orderIds,
-      },
-    });
-  }
-
-  markCheckoutSessionFailed(id: string): Promise<CheckoutSessionRecord> {
-    return this.prisma.checkoutSession.update({
-      where: { id },
-      data: {
-        paymentStatus: 'FAILED',
-        failedAt: new Date(),
-      },
-    });
   }
 
   findUserById(id: string) {
@@ -860,6 +836,7 @@ export class OrdersRepository {
     data: CreateOrderRecordInput,
     batchAllocations: OrderBatchAllocation[],
   ): Promise<OrderWithRelations> {
+    const orderShopGroupId = randomUUID();
     return tx.order.create({
       data: {
         buyerUserId: data.buyerUserId,
@@ -890,9 +867,37 @@ export class OrdersRepository {
         parcelLengthCm: data.parcelLengthCm ?? null,
         parcelWidthCm: data.parcelWidthCm ?? null,
         parcelHeightCm: data.parcelHeightCm ?? null,
+        shopGroups: {
+          create: {
+            id: orderShopGroupId,
+            shopId: data.shopId,
+            fulfillmentStatus: data.fulfillmentStatus ?? 'PENDING',
+            baseAmount: data.baseAmount,
+            discountAmount: data.discountAmount,
+            platformFeeAmount: data.platformFeeAmount,
+            sellerReceivableAmount: data.sellerReceivableAmount,
+            shippingName: data.shippingName ?? null,
+            shippingPhone: data.shippingPhone ?? null,
+            shippingAddress: data.shippingAddress ?? null,
+            shippingDistrictId: data.shippingDistrictId ?? null,
+            shippingDistrictName: data.shippingDistrictName ?? null,
+            shippingWardCode: data.shippingWardCode ?? null,
+            shippingWardName: data.shippingWardName ?? null,
+            shippingProviderCode: data.shippingProviderCode ?? null,
+            shippingProviderName: data.shippingProviderName ?? null,
+            shippingServiceId: data.shippingServiceId ?? null,
+            shippingServiceTypeId: data.shippingServiceTypeId ?? null,
+            shippingFeeAmount: data.shippingFeeAmount ?? 0,
+            parcelWeightGrams: data.parcelWeightGrams ?? null,
+            parcelLengthCm: data.parcelLengthCm ?? null,
+            parcelWidthCm: data.parcelWidthCm ?? null,
+            parcelHeightCm: data.parcelHeightCm ?? null,
+          },
+        },
         items: {
           create: {
             ...data.item,
+            orderShopGroupId,
             batchAllocations: batchAllocations.length ? { create: batchAllocations } : undefined,
           },
         },
@@ -914,19 +919,95 @@ export class OrdersRepository {
     });
   }
 
-  async createAffiliateAttribution(
-    tx: Prisma.TransactionClient,
-    orderId: string,
-    input: AffiliateAttributionInput,
-  ) {
+  async createAggregateOrderRecord(tx: Prisma.TransactionClient, data: CreateAggregateOrderRecordInput): Promise<OrderWithRelations> {
+    const groups = data.groups.map((group) => ({ ...group, id: randomUUID() }));
+    return tx.order.create({
+      data: {
+        buyerUserId: data.buyerUserId,
+        buyerShopId: null,
+        buyerDistributionNodeId: null,
+        // Kept during the compatibility migration; seller ownership is derived from shopGroups.
+        shopId: data.legacyShopId,
+        orderStatus: 'pending',
+        fulfillmentStatus: 'PENDING',
+        baseAmount: data.baseAmount,
+        discountAmount: 0,
+        platformFeeAmount: data.platformFeeAmount,
+        buyerPayableAmount: data.buyerPayableAmount,
+        sellerReceivableAmount: data.sellerReceivableAmount,
+        totalAmount: data.buyerPayableAmount,
+        shippingName: data.shipping.name,
+        shippingPhone: data.shipping.phone,
+        shippingAddress: data.shipping.address,
+        shippingDistrictId: data.shipping.districtId,
+        shippingDistrictName: data.shipping.districtName,
+        shippingWardCode: data.shipping.wardCode,
+        shippingWardName: data.shipping.wardName,
+        shippingProviderCode: data.shipping.providerCode,
+        shippingProviderName: data.shipping.providerName,
+        shippingFeeAmount: data.shippingFeeAmount,
+        shopGroups: {
+          create: groups.map((group) => ({
+            id: group.id,
+            shopId: group.shopId,
+            fulfillmentStatus: 'PENDING',
+            baseAmount: group.baseAmount,
+            discountAmount: 0,
+            platformFeeAmount: group.platformFeeAmount,
+            sellerReceivableAmount: group.sellerReceivableAmount,
+            shippingName: data.shipping.name,
+            shippingPhone: data.shipping.phone,
+            shippingAddress: data.shipping.address,
+            shippingDistrictId: data.shipping.districtId,
+            shippingDistrictName: data.shipping.districtName,
+            shippingWardCode: data.shipping.wardCode,
+            shippingWardName: data.shipping.wardName,
+            shippingProviderCode: data.shipping.providerCode,
+            shippingProviderName: data.shipping.providerName,
+            shippingFeeAmount: group.shippingFeeAmount,
+            parcelWeightGrams: group.parcelWeightGrams,
+            parcelLengthCm: group.parcelLengthCm,
+            parcelWidthCm: group.parcelWidthCm,
+            parcelHeightCm: group.parcelHeightCm,
+          })),
+        },
+        items: {
+          create: groups.flatMap((group) =>
+            group.items.map((item) => ({
+              orderShopGroupId: group.id,
+              sourceCartItemId: item.sourceCartItemId,
+              offerId: item.offerId,
+              offerTitleSnapshot: item.offerTitleSnapshot,
+              unitPrice: item.unitPrice,
+              quantity: item.quantity,
+              verificationLevelSnapshot: item.verificationLevelSnapshot,
+              batchAllocations: item.batchAllocations.length ? { create: item.batchAllocations } : undefined,
+            })),
+          ),
+        },
+        paymentIntent: {
+          create: {
+            paymentMethod: data.paymentMethod,
+            paymentStatus: 'PENDING',
+            amount: data.buyerPayableAmount,
+          },
+        },
+        escrow: {
+          create: {
+            escrowStatus: 'PENDING',
+            heldAmount: 0,
+          },
+        },
+      },
+      ...orderWithRelationsArgs,
+    });
+  }
+
+  async createAffiliateAttribution(tx: Prisma.TransactionClient, orderId: string, input: AffiliateAttributionInput) {
     await this.tryCreateAffiliateAttribution(tx, orderId, input);
   }
 
-  updatePaymentStatus(
-    tx: Prisma.TransactionClient,
-    orderId: string,
-    paymentStatus: 'CANCELLED' | 'REFUNDED',
-  ) {
+  updatePaymentStatus(tx: Prisma.TransactionClient, orderId: string, paymentStatus: 'CANCELLED' | 'REFUNDED') {
     return tx.paymentIntent.update({
       where: { orderId },
       data: {
@@ -1122,11 +1203,21 @@ export class OrdersRepository {
     });
   }
 
-  updateDisputeStatus(
-    tx: Prisma.TransactionClient,
-    disputeId: string,
-    disputeStatus: 'RESOLVED' | 'REFUNDED',
-  ): Promise<DisputeWithOrder> {
+  updateShopGroupFulfillmentStatus(input: { orderId: string; groupId: string; fulfillmentStatus: string }): Promise<OrderWithRelations> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.orderShopGroup.update({
+        where: { id: input.groupId },
+        data: { fulfillmentStatus: input.fulfillmentStatus },
+      });
+      await this.syncAggregateFulfillmentStatus(tx, input.orderId);
+      return tx.order.findUniqueOrThrow({
+        where: { id: input.orderId },
+        ...orderWithRelationsArgs,
+      });
+    });
+  }
+
+  updateDisputeStatus(tx: Prisma.TransactionClient, disputeId: string, disputeStatus: 'RESOLVED' | 'REFUNDED'): Promise<DisputeWithOrder> {
     return tx.dispute.update({
       where: { id: disputeId },
       data: {
@@ -1144,12 +1235,7 @@ export class OrdersRepository {
     });
   }
 
-  bookOrderShipping(input: {
-    id: string;
-    actorUserId: string;
-    trackingCode: string;
-    providerStatus: string;
-  }): Promise<OrderWithRelations> {
+  bookOrderShipping(input: { id: string; actorUserId: string; trackingCode: string; providerStatus: string }): Promise<OrderWithRelations> {
     return this.prisma.$transaction(async (tx) => {
       const currentOrder = await tx.order.findUnique({
         where: { id: input.id },
@@ -1185,6 +1271,49 @@ export class OrdersRepository {
           fulfillmentStatus: 'SHIPPING',
           shippingTrackingCode: input.trackingCode,
         },
+        ...orderWithRelationsArgs,
+      });
+    });
+  }
+
+  bookOrderShopGroupShipping(input: {
+    orderId: string;
+    groupId: string;
+    actorUserId: string;
+    trackingCode: string;
+    providerStatus: string;
+  }): Promise<OrderWithRelations> {
+    return this.prisma.$transaction(async (tx) => {
+      const group = await tx.orderShopGroup.findUniqueOrThrow({
+        where: { id: input.groupId },
+      });
+      await tx.auditLog.create({
+        data: {
+          targetType: 'ORDER',
+          targetId: input.orderId,
+          actorUserId: input.actorUserId,
+          action: 'SHIPPING_BOOKED',
+          fromStatus: group.fulfillmentStatus,
+          toStatus: 'SHIPPING',
+          note: `Shop shipment booked with tracking ${input.trackingCode}`,
+          metadata: {
+            domain: 'FULFILLMENT',
+            orderShopGroupId: input.groupId,
+            shopId: group.shopId,
+            providerStatus: input.providerStatus,
+          },
+        },
+      });
+      await tx.orderShopGroup.update({
+        where: { id: input.groupId },
+        data: {
+          fulfillmentStatus: 'SHIPPING',
+          shippingTrackingCode: input.trackingCode,
+        },
+      });
+      await this.syncAggregateFulfillmentStatus(tx, input.orderId);
+      return tx.order.findUniqueOrThrow({
+        where: { id: input.orderId },
         ...orderWithRelationsArgs,
       });
     });
@@ -1262,6 +1391,13 @@ export class OrdersRepository {
               },
             },
           },
+          {
+            shopGroups: {
+              some: {
+                shop: { ownerUserId: requesterUserId },
+              },
+            },
+          },
         ],
       },
       orderBy: {
@@ -1279,7 +1415,7 @@ export class OrdersRepository {
 
     return this.prisma.order.findMany({
       where: {
-        shopId: input.shopId,
+        shopGroups: { some: { shopId: input.shopId } },
       },
       orderBy: {
         createdAt: 'desc',
@@ -1294,15 +1430,39 @@ export class OrdersRepository {
       throw new BadRequestException('Shop does not belong to current user');
     }
 
-    const shopWhere: Prisma.OrderWhereInput = { shopId: input.shopId };
+    const shopWhere: Prisma.OrderWhereInput = {
+      shopGroups: { some: { shopId: input.shopId } },
+    };
     const [totalOrders, pendingOrders, shippingOrders, completedOrders] = await this.prisma.$transaction([
       this.prisma.order.count({ where: shopWhere }),
-      this.prisma.order.count({ where: { ...shopWhere, fulfillmentStatus: 'PENDING' } }),
-      this.prisma.order.count({ where: { ...shopWhere, fulfillmentStatus: 'SHIPPING' } }),
+      this.prisma.order.count({
+        where: {
+          shopGroups: {
+            some: { shopId: input.shopId, fulfillmentStatus: 'PENDING' },
+          },
+        },
+      }),
+      this.prisma.order.count({
+        where: {
+          shopGroups: {
+            some: { shopId: input.shopId, fulfillmentStatus: 'SHIPPING' },
+          },
+        },
+      }),
       this.prisma.order.count({
         where: {
           ...shopWhere,
-          OR: [{ orderStatus: 'completed' }, { fulfillmentStatus: 'DELIVERED' }],
+          OR: [
+            { orderStatus: 'completed' },
+            {
+              shopGroups: {
+                some: {
+                  shopId: input.shopId,
+                  fulfillmentStatus: 'DELIVERED',
+                },
+              },
+            },
+          ],
         },
       }),
     ]);
@@ -1316,7 +1476,12 @@ export class OrdersRepository {
     orderStatus?: string;
     page?: number;
     pageSize?: number;
-  }): Promise<{ total: number; page: number; pageSize: number; items: SellerShopOrderRecord[] }> {
+  }): Promise<{
+    total: number;
+    page: number;
+    pageSize: number;
+    items: SellerShopOrderRecord[];
+  }> {
     const shop = await this.findOwnedShop(input.shopId, input.requesterUserId);
     if (!shop) {
       throw new BadRequestException('Shop does not belong to current user');
@@ -1326,7 +1491,7 @@ export class OrdersRepository {
     const pageSize = Math.min(50, Math.max(1, Number(input.pageSize ?? 20)));
     const normalizedStatus = input.orderStatus?.trim();
     const where: Prisma.OrderWhereInput = {
-      shopId: input.shopId,
+      shopGroups: { some: { shopId: input.shopId } },
       ...(normalizedStatus && normalizedStatus !== 'all' ? { orderStatus: normalizedStatus } : {}),
     };
 
@@ -1346,9 +1511,21 @@ export class OrdersRepository {
     return { total, page, pageSize, items };
   }
 
-  allocateOrderBatchesAndUpdateFulfillment(id: string, fulfillmentStatus: string): Promise<OrderWithRelations> {
+  allocateOrderBatchesAndUpdateFulfillment(id: string, fulfillmentStatus: string, groupId?: string): Promise<OrderWithRelations> {
     return this.prisma.$transaction(async (tx) => {
-      await this.allocateOrderBatchesForFulfillment(tx, id);
+      await this.allocateOrderBatchesForFulfillment(tx, id, groupId);
+
+      if (groupId) {
+        await tx.orderShopGroup.update({
+          where: { id: groupId },
+          data: { fulfillmentStatus },
+        });
+        await this.syncAggregateFulfillmentStatus(tx, id);
+        return tx.order.findUniqueOrThrow({
+          where: { id },
+          ...orderWithRelationsArgs,
+        });
+      }
 
       return tx.order.update({
         where: { id },
@@ -1367,7 +1544,12 @@ export class OrdersRepository {
     page?: number;
     pageSize?: number;
     sortOrder?: 'asc' | 'desc';
-  }): Promise<{ total: number; page: number; pageSize: number; items: OrderWithRelations[] }> {
+  }): Promise<{
+    total: number;
+    page: number;
+    pageSize: number;
+    items: OrderWithRelations[];
+  }> {
     const page = Math.max(1, Number(input?.page ?? 1));
     const pageSize = Math.min(50, Math.max(1, Number(input?.pageSize ?? 20)));
     const where: Prisma.OrderWhereInput = {
@@ -1385,9 +1567,17 @@ export class OrdersRepository {
         ? {
             OR: [
               { id: { contains: input.search, mode: 'insensitive' } },
-              { shop: { is: { shopName: { contains: input.search, mode: 'insensitive' } } } },
+              {
+                shop: {
+                  is: {
+                    shopName: { contains: input.search, mode: 'insensitive' },
+                  },
+                },
+              },
               { shippingName: { contains: input.search, mode: 'insensitive' } },
-              { shippingPhone: { contains: input.search, mode: 'insensitive' } },
+              {
+                shippingPhone: { contains: input.search, mode: 'insensitive' },
+              },
             ],
           }
         : {}),
@@ -1589,24 +1779,25 @@ export class OrdersRepository {
   }
 
   async countDisputesByStatusAndCaseStatus() {
-    const [
-      open,
-      resolved,
-      refunded,
-      assigned,
-      inReview,
-      escalated,
-      caseResolved,
-      closed,
-    ] = await this.prisma.$transaction([
+    const [open, resolved, refunded, assigned, inReview, escalated, caseResolved, closed] = await this.prisma.$transaction([
       this.prisma.dispute.count({ where: { disputeStatus: 'OPEN' } }),
       this.prisma.dispute.count({ where: { disputeStatus: 'RESOLVED' } }),
       this.prisma.dispute.count({ where: { disputeStatus: 'REFUNDED' } }),
-      this.prisma.moderationCase.count({ where: { targetType: 'DISPUTE', caseStatus: 'ASSIGNED' } }),
-      this.prisma.moderationCase.count({ where: { targetType: 'DISPUTE', caseStatus: 'IN_REVIEW' } }),
-      this.prisma.moderationCase.count({ where: { targetType: 'DISPUTE', caseStatus: 'ESCALATED' } }),
-      this.prisma.moderationCase.count({ where: { targetType: 'DISPUTE', caseStatus: 'RESOLVED' } }),
-      this.prisma.moderationCase.count({ where: { targetType: 'DISPUTE', caseStatus: 'CLOSED' } }),
+      this.prisma.moderationCase.count({
+        where: { targetType: 'DISPUTE', caseStatus: 'ASSIGNED' },
+      }),
+      this.prisma.moderationCase.count({
+        where: { targetType: 'DISPUTE', caseStatus: 'IN_REVIEW' },
+      }),
+      this.prisma.moderationCase.count({
+        where: { targetType: 'DISPUTE', caseStatus: 'ESCALATED' },
+      }),
+      this.prisma.moderationCase.count({
+        where: { targetType: 'DISPUTE', caseStatus: 'RESOLVED' },
+      }),
+      this.prisma.moderationCase.count({
+        where: { targetType: 'DISPUTE', caseStatus: 'CLOSED' },
+      }),
     ]);
 
     return {
@@ -1753,12 +1944,7 @@ export class OrdersRepository {
     });
   }
 
-  createReport(input: {
-    reporterUserId: string;
-    targetType: string;
-    targetId: string;
-    reason: string;
-  }): Promise<ReportWithReporter> {
+  createReport(input: { reporterUserId: string; targetType: string; targetId: string; reason: string }): Promise<ReportWithReporter> {
     return this.prisma.report.create({
       data: {
         reporterUserId: input.reporterUserId,
@@ -1788,7 +1974,12 @@ export class OrdersRepository {
     page?: number;
     pageSize?: number;
     sortOrder?: 'asc' | 'desc';
-  }): Promise<{ total: number; page: number; pageSize: number; items: ReportWithReporter[] }> {
+  }): Promise<{
+    total: number;
+    page: number;
+    pageSize: number;
+    items: ReportWithReporter[];
+  }> {
     const page = Math.max(1, Number(filters?.page ?? 1));
     const pageSize = Math.min(50, Math.max(1, Number(filters?.pageSize ?? 20)));
     const where: Prisma.ReportWhereInput = {
@@ -1799,8 +1990,23 @@ export class OrdersRepository {
             OR: [
               { reason: { contains: filters.search, mode: 'insensitive' } },
               { targetId: { contains: filters.search, mode: 'insensitive' } },
-              { reporter: { is: { email: { contains: filters.search, mode: 'insensitive' } } } },
-              { reporter: { is: { displayName: { contains: filters.search, mode: 'insensitive' } } } },
+              {
+                reporter: {
+                  is: {
+                    email: { contains: filters.search, mode: 'insensitive' },
+                  },
+                },
+              },
+              {
+                reporter: {
+                  is: {
+                    displayName: {
+                      contains: filters.search,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              },
             ],
           }
         : {}),
@@ -1829,10 +2035,7 @@ export class OrdersRepository {
     });
   }
 
-  updateReportStatus(input: {
-    id: string;
-    reportStatus: 'IN_REVIEW' | 'RESOLVED' | 'REJECTED';
-  }): Promise<ReportWithReporter> {
+  updateReportStatus(input: { id: string; reportStatus: 'IN_REVIEW' | 'RESOLVED' | 'REJECTED' }): Promise<ReportWithReporter> {
     return this.prisma.report.update({
       where: { id: input.id },
       data: {
@@ -1924,7 +2127,12 @@ export class OrdersRepository {
     page?: number;
     pageSize?: number;
     sortOrder?: 'asc' | 'desc';
-  }): Promise<{ total: number; page: number; pageSize: number; items: RiskScoreRecord[] }> {
+  }): Promise<{
+    total: number;
+    page: number;
+    pageSize: number;
+    items: RiskScoreRecord[];
+  }> {
     const page = Math.max(1, Number(filters?.page ?? 1));
     const pageSize = Math.min(50, Math.max(1, Number(filters?.pageSize ?? 20)));
     const where: Prisma.RiskScoreWhereInput = {
@@ -1934,7 +2142,12 @@ export class OrdersRepository {
         ? {
             OR: [
               { targetId: { contains: filters.search, mode: 'insensitive' } },
-              { factorSummary: { contains: filters.search, mode: 'insensitive' } },
+              {
+                factorSummary: {
+                  contains: filters.search,
+                  mode: 'insensitive',
+                },
+              },
             ],
           }
         : {}),
@@ -1965,7 +2178,10 @@ export class OrdersRepository {
     return this.getBatchRiskSignals(targetId);
   }
 
-  async resolveRiskTargetsForReport(input: { targetType: string; targetId: string }): Promise<Array<{ targetType: RiskTargetType; targetId: string }>> {
+  async resolveRiskTargetsForReport(input: {
+    targetType: string;
+    targetId: string;
+  }): Promise<Array<{ targetType: RiskTargetType; targetId: string }>> {
     if (input.targetType === 'SHOP') {
       return [{ targetType: 'SHOP', targetId: input.targetId }];
     }
@@ -1983,7 +2199,10 @@ export class OrdersRepository {
       return this.dedupeRiskTargets([
         { targetType: 'OFFER', targetId: offer.id },
         { targetType: 'SHOP', targetId: offer.shopId },
-        ...offer.batchLinks.map((link) => ({ targetType: 'BATCH' as const, targetId: link.batchId })),
+        ...offer.batchLinks.map((link) => ({
+          targetType: 'BATCH' as const,
+          targetId: link.batchId,
+        })),
       ]);
     }
 
@@ -2003,9 +2222,15 @@ export class OrdersRepository {
       if (!order) return [];
       return this.dedupeRiskTargets([
         { targetType: 'SHOP', targetId: order.shopId },
-        ...order.items.map((item) => ({ targetType: 'OFFER' as const, targetId: item.offerId })),
+        ...order.items.map((item) => ({
+          targetType: 'OFFER' as const,
+          targetId: item.offerId,
+        })),
         ...order.items.flatMap((item) =>
-          item.batchAllocations.map((allocation) => ({ targetType: 'BATCH' as const, targetId: allocation.batchId })),
+          item.batchAllocations.map((allocation) => ({
+            targetType: 'BATCH' as const,
+            targetId: allocation.batchId,
+          })),
         ),
       ]);
     }
@@ -2062,7 +2287,12 @@ export class OrdersRepository {
     page?: number;
     pageSize?: number;
     sortOrder?: 'asc' | 'desc';
-  }): Promise<{ total: number; page: number; pageSize: number; items: ModerationCaseRecord[] }> {
+  }): Promise<{
+    total: number;
+    page: number;
+    pageSize: number;
+    items: ModerationCaseRecord[];
+  }> {
     const page = Math.max(1, Number(filters?.page ?? 1));
     const pageSize = Math.min(50, Math.max(1, Number(filters?.pageSize ?? 20)));
     const where: Prisma.ModerationCaseWhereInput = {
@@ -2074,7 +2304,9 @@ export class OrdersRepository {
             OR: [
               { targetId: { contains: filters.search, mode: 'insensitive' } },
               { reason: { contains: filters.search, mode: 'insensitive' } },
-              { internalNote: { contains: filters.search, mode: 'insensitive' } },
+              {
+                internalNote: { contains: filters.search, mode: 'insensitive' },
+              },
             ],
           }
         : {}),
@@ -2177,9 +2409,7 @@ export class OrdersRepository {
     note?: string | null;
     metadata?: Record<string, unknown> | null;
   }) {
-    const metadataSql = input.metadata
-      ? Prisma.sql`CAST(${JSON.stringify(input.metadata)} AS JSONB)`
-      : Prisma.sql`NULL`;
+    const metadataSql = input.metadata ? Prisma.sql`CAST(${JSON.stringify(input.metadata)} AS JSONB)` : Prisma.sql`NULL`;
 
     return this.prisma.$executeRaw(Prisma.sql`
       INSERT INTO "audit_log" (
@@ -2223,7 +2453,8 @@ export class OrdersRepository {
           actorDisplayName: string | null;
           actorEmail: string | null;
         }>
-      >(Prisma.sql`
+      >(
+        Prisma.sql`
         SELECT
           al.id,
           al.action,
@@ -2241,7 +2472,8 @@ export class OrdersRepository {
         WHERE al.target_type = ${targetType}
           AND al.target_id = ${targetId}
         ORDER BY al.created_at DESC
-      `)
+      `,
+      )
       .then((rows) =>
         rows.map((row) => ({
           id: row.id,
@@ -2374,13 +2606,16 @@ export class OrdersRepository {
       });
       const fromStatus = paymentIntent?.paymentStatus ?? 'PENDING';
 
-      await tx.paymentIntent.update({
-        where: { orderId: input.id },
+      const paymentUpdate = await tx.paymentIntent.updateMany({
+        where: { orderId: input.id, paymentStatus: { not: 'PAID' } },
         data: {
           paymentStatus: 'PAID',
           providerRef: input.providerRef,
         },
       });
+      if (paymentUpdate.count === 0) {
+        return tx.order.findUniqueOrThrow({ where: { id: input.id }, ...orderWithRelationsArgs });
+      }
 
       await this.updateEscrowStatusWithAudit(tx, {
         orderId: input.id,
@@ -2405,6 +2640,20 @@ export class OrdersRepository {
           },
         },
       });
+
+      const sourceItems = await tx.orderItem.findMany({
+        where: { orderId: input.id, sourceCartItemId: { not: null } },
+        select: { sourceCartItemId: true },
+      });
+      const sourceCartItemIds = sourceItems.map((item) => item.sourceCartItemId).filter((id): id is string => !!id);
+      if (sourceCartItemIds.length > 0) {
+        await tx.cartItem.deleteMany({
+          where: {
+            id: { in: sourceCartItemIds },
+            cart: { buyerUserId: input.actorUserId },
+          },
+        });
+      }
 
       return tx.order.update({
         where: { id: input.id },
@@ -2433,13 +2682,16 @@ export class OrdersRepository {
       });
       const fromStatus = paymentIntent?.paymentStatus ?? 'PENDING';
 
-      await tx.paymentIntent.update({
-        where: { orderId: input.id },
+      const paymentUpdate = await tx.paymentIntent.updateMany({
+        where: { orderId: input.id, paymentStatus: { notIn: ['PAID', 'FAILED'] } },
         data: {
           paymentStatus: 'FAILED',
           providerRef: input.providerRef,
         },
       });
+      if (paymentUpdate.count === 0) {
+        return tx.order.findUniqueOrThrow({ where: { id: input.id }, ...orderWithRelationsArgs });
+      }
 
       await tx.auditLog.create({
         data: {
@@ -2478,52 +2730,54 @@ export class OrdersRepository {
     paymentStatus: 'PENDING';
     note: string;
   }): Promise<OrderWithRelations> {
-    return this.prisma.$transaction(async (tx) => {
-      const paymentIntent = await tx.paymentIntent.findUnique({
-        where: { orderId: input.orderId },
-        select: {
-          paymentMethod: true,
-          paymentStatus: true,
-        },
-      });
-      const fromStatus = paymentIntent?.paymentStatus ?? 'FAILED';
-
-      await tx.paymentIntent.update({
-        where: { orderId: input.orderId },
-        data: {
-          providerRef: input.providerRef,
-          paymentStatus: input.paymentStatus,
-        },
-      });
-
-      await tx.auditLog.create({
-        data: {
-          targetType: 'ORDER',
-          targetId: input.orderId,
-          actorUserId: input.actorUserId,
-          action: 'PAYMENT_STATUS_CHANGED',
-          fromStatus,
-          toStatus: input.paymentStatus,
-          note: input.note,
-          metadata: {
-            domain: 'PAYMENT',
-            event: 'PAYOS_PAYMENT_RETRY',
-            paymentMethod: paymentIntent?.paymentMethod ?? 'PAYOS',
-            providerConfirmation: false,
+    return this.prisma
+      .$transaction(async (tx) => {
+        const paymentIntent = await tx.paymentIntent.findUnique({
+          where: { orderId: input.orderId },
+          select: {
+            paymentMethod: true,
+            paymentStatus: true,
           },
-        },
-      });
+        });
+        const fromStatus = paymentIntent?.paymentStatus ?? 'FAILED';
 
-      return tx.order.findUnique({
-        where: { id: input.orderId },
-        ...orderWithRelationsArgs,
+        await tx.paymentIntent.update({
+          where: { orderId: input.orderId },
+          data: {
+            providerRef: input.providerRef,
+            paymentStatus: input.paymentStatus,
+          },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            targetType: 'ORDER',
+            targetId: input.orderId,
+            actorUserId: input.actorUserId,
+            action: 'PAYMENT_STATUS_CHANGED',
+            fromStatus,
+            toStatus: input.paymentStatus,
+            note: input.note,
+            metadata: {
+              domain: 'PAYMENT',
+              event: 'PAYOS_PAYMENT_RETRY',
+              paymentMethod: paymentIntent?.paymentMethod ?? 'PAYOS',
+              providerConfirmation: false,
+            },
+          },
+        });
+
+        return tx.order.findUnique({
+          where: { id: input.orderId },
+          ...orderWithRelationsArgs,
+        });
+      })
+      .then((order) => {
+        if (!order) {
+          throw new BadRequestException('Order not found');
+        }
+        return order;
       });
-    }).then((order) => {
-      if (!order) {
-        throw new BadRequestException('Order not found');
-      }
-      return order;
-    });
   }
 
   findOrderByPaymentProviderRef(providerRef: string): Promise<OrderWithRelations | null> {
@@ -2573,7 +2827,9 @@ export class OrdersRepository {
     if (!shop) return null;
 
     const reportCounts = await this.countReportsForTarget('SHOP', shopId);
-    const disputeCounts = await this.countDisputesForWhere({ order: { is: { shopId } } });
+    const disputeCounts = await this.countDisputesForWhere({
+      order: { is: { shopId } },
+    });
     const rating = await this.prisma.review.aggregate({
       where: { toUserId: shop.ownerUserId },
       _avg: { rating: true },
@@ -2610,7 +2866,9 @@ export class OrdersRepository {
     if (!offer) return null;
 
     const reportCounts = await this.countReportsForTarget('OFFER', offerId);
-    const disputeCounts = await this.countDisputesForWhere({ order: { is: { items: { some: { offerId } } } } });
+    const disputeCounts = await this.countDisputesForWhere({
+      order: { is: { items: { some: { offerId } } } },
+    });
     const rating = await this.prisma.review.aggregate({
       where: {
         orderItem: {
@@ -2724,7 +2982,8 @@ export class OrdersRepository {
     const normalized = statuses.map((status) => String(status || '').toUpperCase());
     return {
       rejectedDocumentCount: normalized.filter((status) => ['REJECTED', 'DENIED', 'SUSPENDED'].includes(status)).length,
-      pendingDocumentCount: normalized.filter((status) => ['PENDING', 'PENDING_VERIFICATION', 'IN_REVIEW', 'SUBMITTED'].includes(status)).length,
+      pendingDocumentCount: normalized.filter((status) => ['PENDING', 'PENDING_VERIFICATION', 'IN_REVIEW', 'SUBMITTED'].includes(status))
+        .length,
     };
   }
 
@@ -2738,11 +2997,7 @@ export class OrdersRepository {
     });
   }
 
-  createDispute(input: {
-    orderId: string;
-    openedByUserId: string;
-    reason: string;
-  }) {
+  createDispute(input: { orderId: string; openedByUserId: string; reason: string }) {
     return this.prisma.dispute.create({
       data: {
         orderId: input.orderId,
@@ -2829,8 +3084,7 @@ export class OrdersRepository {
       return;
     }
 
-    const tier2Eligible =
-      referral.account.parentAccount && referral.account.parentAccount.accountStatus === 'ACTIVE';
+    const tier2Eligible = referral.account.parentAccount && referral.account.parentAccount.accountStatus === 'ACTIVE';
     const commissionBase = this.roundMoney(input.commissionBase);
     const { tier1Amount, tier2Amount } = calculateAffiliateCommissionAmounts({
       commissionBase,
@@ -2994,11 +3248,7 @@ export class OrdersRepository {
     });
   }
 
-  consumeOfferBatchAllocations(
-    tx: Prisma.TransactionClient,
-    offerId: string,
-    quantity: number,
-  ): Promise<OrderBatchAllocation[]> {
+  consumeOfferBatchAllocations(tx: Prisma.TransactionClient, offerId: string, quantity: number): Promise<OrderBatchAllocation[]> {
     return this.consumeOfferBatchAllocationsInternal(tx, offerId, quantity);
   }
 
@@ -3006,11 +3256,7 @@ export class OrdersRepository {
     return `WHOLESALE-${orderId.slice(0, 8).toUpperCase()}-${orderItemId.slice(0, 8).toUpperCase()}`;
   }
 
-  restoreOrderItemBatchAllocations(
-    tx: Prisma.TransactionClient,
-    offerId: string,
-    allocations: OrderBatchAllocation[],
-  ) {
+  restoreOrderItemBatchAllocations(tx: Prisma.TransactionClient, offerId: string, allocations: OrderBatchAllocation[]) {
     return this.restoreOrderItemBatchAllocationsInternal(tx, offerId, allocations);
   }
 
@@ -3099,13 +3345,14 @@ export class OrdersRepository {
     return allocations;
   }
 
-  private async allocateOrderBatchesForFulfillment(tx: Prisma.TransactionClient, orderId: string) {
+  private async allocateOrderBatchesForFulfillment(tx: Prisma.TransactionClient, orderId: string, groupId?: string) {
     const order = await tx.order.findUnique({
       where: { id: orderId },
       select: {
         id: true,
         shopId: true,
         items: {
+          where: groupId ? { orderShopGroupId: groupId } : undefined,
           select: {
             id: true,
             offerId: true,
@@ -3148,6 +3395,28 @@ export class OrdersRepository {
         })),
       });
     }
+  }
+
+  private async syncAggregateFulfillmentStatus(tx: Prisma.TransactionClient, orderId: string) {
+    const groups = await tx.orderShopGroup.findMany({
+      where: { orderId },
+      select: { fulfillmentStatus: true },
+    });
+    const statuses = groups.map((group) => group.fulfillmentStatus);
+    const fulfillmentStatus =
+      statuses.length > 0 && statuses.every((status) => status === 'DELIVERED')
+        ? 'DELIVERED'
+        : statuses.some((status) => status === 'SHIPPING')
+          ? 'SHIPPING'
+          : statuses.some((status) => status === 'PROCESSING')
+            ? 'PROCESSING'
+            : statuses.length > 0 && statuses.every((status) => status === 'CANCELLED')
+              ? 'CANCELLED'
+              : 'PENDING';
+    await tx.order.update({
+      where: { id: orderId },
+      data: { fulfillmentStatus },
+    });
   }
 
   private async lockOfferInventoryRowsInternal(tx: Prisma.TransactionClient, offerId: string) {

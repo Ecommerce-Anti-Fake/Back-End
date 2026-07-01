@@ -12,7 +12,10 @@ export class CompleteOrderUseCase {
       throw new NotFoundException('Order not found');
     }
 
-    if (order.shop.ownerUserId !== input.requesterUserId) {
+    const isSellerOwner =
+      order.shopGroups?.some((group) => group.shop.ownerUserId === input.requesterUserId) ||
+      order.shop.ownerUserId === input.requesterUserId;
+    if (!isSellerOwner) {
       throw new ForbiddenException('Only the seller can complete the order');
     }
 

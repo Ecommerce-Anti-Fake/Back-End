@@ -35,6 +35,7 @@ model Order {
   buyerDistributionNode   DistributionNode?    @relation("OrderBuyerDistributionNode", fields: [buyerDistributionNodeId], references: [id])
   shop                    Shop                 @relation(fields: [shopId], references: [id])
   items                   OrderItem[]
+  shopGroups              OrderShopGroup[]
   paymentIntent           PaymentIntent?
   escrow                  Escrow?
   disputes                Dispute[]

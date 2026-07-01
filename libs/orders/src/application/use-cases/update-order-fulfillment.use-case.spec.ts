@@ -12,6 +12,7 @@ describe('UpdateOrderFulfillmentUseCase', () => {
     allocateOrderBatchesAndUpdateFulfillment: jest.fn(),
     markOrderPaid: jest.fn(),
     updateFulfillmentStatus: jest.fn(),
+    updateShopGroupFulfillmentStatus: jest.fn(),
     createAuditLog: jest.fn(),
     createNotification: jest.fn(),
   };
@@ -84,6 +85,34 @@ describe('UpdateOrderFulfillmentUseCase', () => {
     expect(ordersRepositoryMock.updateFulfillmentStatus).not.toHaveBeenCalled();
   });
 
+  it('updates only the seller shop group in a multi-shop order', async () => {
+    const order = {
+      ...createOrderRecord(),
+      shopGroups: [
+        {
+          id: 'group-1',
+          fulfillmentStatus: 'PENDING',
+          shop: { ownerUserId: 'seller-user-1' },
+        },
+        {
+          id: 'group-2',
+          fulfillmentStatus: 'PENDING',
+          shop: { ownerUserId: 'seller-user-2' },
+        },
+      ],
+    };
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(order);
+    ordersRepositoryMock.allocateOrderBatchesAndUpdateFulfillment.mockResolvedValueOnce(order);
+
+    await useCase.execute({
+      id: 'order-1',
+      requesterUserId: 'seller-user-2',
+      fulfillmentStatus: 'PROCESSING',
+    });
+
+    expect(ordersRepositoryMock.allocateOrderBatchesAndUpdateFulfillment).toHaveBeenCalledWith('order-1', 'PROCESSING', 'group-2');
+  });
+
   it('marks delivered without completing the order', async () => {
     ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord({ fulfillmentStatus: 'SHIPPING' }));
     ordersRepositoryMock.updateFulfillmentStatus.mockResolvedValueOnce(createOrderRecord({ fulfillmentStatus: 'DELIVERED' }));
@@ -111,11 +140,13 @@ describe('UpdateOrderFulfillmentUseCase', () => {
   });
 
   it('passes seller actor when cancelling through fulfillment', async () => {
-    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(
-      createOrderRecord({ orderStatus: 'pending', paymentStatus: 'PENDING' }),
-    );
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord({ orderStatus: 'pending', paymentStatus: 'PENDING' }));
     orderReversalServiceMock.cancelOrder.mockResolvedValueOnce(
-      createOrderRecord({ orderStatus: 'cancelled', fulfillmentStatus: 'CANCELLED', paymentStatus: 'CANCELLED' }),
+      createOrderRecord({
+        orderStatus: 'cancelled',
+        fulfillmentStatus: 'CANCELLED',
+        paymentStatus: 'CANCELLED',
+      }),
     );
 
     await useCase.execute({

@@ -16,21 +16,25 @@ export class SyncOrderShippingStatusUseCase {
       throw new NotFoundException('Order not found');
     }
 
-    if (order.shop.ownerUserId !== input.requesterUserId) {
+    const shopGroup = order.shopGroups?.find((group) => group.shop.ownerUserId === input.requesterUserId);
+    const isLegacySeller = order.shop.ownerUserId === input.requesterUserId;
+    if (!shopGroup && !isLegacySeller) {
       throw new ForbiddenException('Only the seller can sync shipping status');
     }
 
-    if (!order.shippingTrackingCode) {
+    const shippingTrackingCode = shopGroup?.shippingTrackingCode ?? order.shippingTrackingCode;
+    const shippingProviderCode = shopGroup?.shippingProviderCode ?? order.shippingProviderCode;
+    if (!shippingTrackingCode) {
       throw new BadRequestException('Order does not have a tracking code');
     }
 
-    const currentFulfillmentStatus = order.fulfillmentStatus || 'PENDING';
+    const currentFulfillmentStatus = shopGroup?.fulfillmentStatus || order.fulfillmentStatus || 'PENDING';
     if (currentFulfillmentStatus !== 'SHIPPING') {
       throw new BadRequestException('Order must be shipping before syncing carrier status');
     }
 
     const tracking = await this.trackShipmentWithFailureAudit({
-      order,
+      order: { id: order.id, shippingProviderCode, shippingTrackingCode },
       requesterUserId: input.requesterUserId,
       currentFulfillmentStatus,
     });
@@ -46,8 +50,9 @@ export class SyncOrderShippingStatusUseCase {
       note: `Shipping carrier status synced as ${tracking.providerStatus}`,
       metadata: {
         domain: 'FULFILLMENT',
-        shippingProviderCode: order.shippingProviderCode ?? null,
-        shippingTrackingCode: order.shippingTrackingCode,
+        shippingProviderCode: shippingProviderCode ?? null,
+        shippingTrackingCode,
+        orderShopGroupId: shopGroup?.id ?? null,
         providerStatus: tracking.providerStatus,
       },
     });
@@ -56,7 +61,13 @@ export class SyncOrderShippingStatusUseCase {
       return toOrderResponse(order);
     }
 
-    const updatedOrder = await this.ordersRepository.updateFulfillmentStatus(order.id, nextFulfillmentStatus);
+    const updatedOrder = shopGroup
+      ? await this.ordersRepository.updateShopGroupFulfillmentStatus({
+          orderId: order.id,
+          groupId: shopGroup.id,
+          fulfillmentStatus: nextFulfillmentStatus,
+        })
+      : await this.ordersRepository.updateFulfillmentStatus(order.id, nextFulfillmentStatus);
     await this.createFulfillmentNotification(updatedOrder, nextFulfillmentStatus);
     return toOrderResponse(updatedOrder);
   }

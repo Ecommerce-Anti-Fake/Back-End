@@ -4,6 +4,23 @@ import { CartWithItems, OrderWithRelations } from '../../infrastructure/persiste
 export function toOrderResponse(order: OrderWithRelations) {
   const openDispute = order.disputes?.[0] ?? null;
   const items = order.items.map((item) => toOrderItemResponse(order, item));
+  const shops = groupItemsByShop(
+    items.map((item, index) => ({
+      shopId: order.items[index].offer?.shopId ?? order.shopId,
+      shopName: order.items[index].offer?.shop?.shopName ?? order.shop.shopName,
+      item,
+    })),
+  ).map((shop) => {
+    const group = order.shopGroups?.find((candidate) => candidate.shopId === shop.shopId);
+    return {
+      ...shop,
+      orderShopGroupId: group?.id ?? null,
+      fulfillmentStatus: group?.fulfillmentStatus ?? order.fulfillmentStatus,
+      shippingFeeAmount: group ? decimalToNumber(group.shippingFeeAmount) : null,
+      shippingProviderCode: group?.shippingProviderCode ?? order.shippingProviderCode,
+      shippingTrackingCode: group?.shippingTrackingCode ?? order.shippingTrackingCode,
+    };
+  });
 
   return {
     id: order.id,
@@ -55,13 +72,7 @@ export function toOrderResponse(order: OrderWithRelations) {
     parcelWidthCm: order.parcelWidthCm,
     parcelHeightCm: order.parcelHeightCm,
     items,
-    shops: groupItemsByShop(
-      items.map((item, index) => ({
-        shopId: order.items[index].offer?.shopId ?? order.shopId,
-        shopName: order.items[index].offer?.shop?.shopName ?? order.shop.shopName,
-        item,
-      })),
-    ),
+    shops,
     createdAt: order.createdAt,
   };
 }

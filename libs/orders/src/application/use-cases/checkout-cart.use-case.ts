@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { CartWithItems, CheckoutSessionRecord, OrderWithRelations, OrdersRepository } from '../../infrastructure/persistence/orders.repository';
-import { PayOSPaymentService } from '../services';
-import { CreateOrderUseCase } from './create-order.use-case';
+import { CartWithItems, OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { OrderPlacementService, PayOSPaymentService } from '../services';
 import { QuoteCartShippingOptionsUseCase } from './quote-cart-shipping-options.use-case';
 
 type CheckoutCartInput = {
@@ -25,7 +24,7 @@ type CheckoutCartShippingOption = {
 export class CheckoutCartUseCase {
   constructor(
     private readonly ordersRepository: OrdersRepository,
-    private readonly createOrderUseCase: CreateOrderUseCase,
+    private readonly orderPlacementService: OrderPlacementService,
     private readonly quoteCartShippingOptionsUseCase: QuoteCartShippingOptionsUseCase,
     private readonly payOSPaymentService: PayOSPaymentService,
   ) {}
@@ -35,121 +34,135 @@ export class CheckoutCartUseCase {
     const selectedItems = this.selectCartItems(cart, input.cartItemIds);
     const shippingOption = await this.resolveShippingOption(input);
     const shipping = await this.resolveDefaultShipping(input.buyerUserId, shippingOption);
+    const groups = this.createShopGroups(selectedItems, shippingOption.shippingFee);
+    if (input.affiliateCode && selectedItems.length !== 1) {
+      throw new BadRequestException('Affiliate checkout currently requires exactly one cart item');
+    }
+    const baseAmount = groups.reduce((total, group) => total + group.baseAmount, 0);
+    const platformFeeAmount = groups.reduce((total, group) => total + group.platformFeeAmount, 0);
+    const sellerReceivableAmount = groups.reduce((total, group) => total + group.sellerReceivableAmount, 0);
+    const buyerPayableAmount = this.roundMoney(baseAmount + shippingOption.shippingFee);
+
+    const order = await this.orderPlacementService.createAggregateOrder({
+      buyerUserId: input.buyerUserId,
+      legacyShopId: groups[0].shopId,
+      paymentMethod: input.paymentMethod,
+      baseAmount,
+      platformFeeAmount,
+      buyerPayableAmount,
+      sellerReceivableAmount,
+      shippingFeeAmount: shippingOption.shippingFee,
+      shipping: {
+        ...shipping,
+        providerCode: shippingOption.providerCode,
+        providerName: shippingOption.providerName,
+      },
+      groups,
+      affiliateAttribution: input.affiliateCode
+        ? {
+            affiliateCode: input.affiliateCode,
+            customerUserId: input.buyerUserId,
+            offerId: selectedItems[0].offerId,
+            sellerShopId: selectedItems[0].offer.shopId,
+            brandId: selectedItems[0].offer.brandId,
+            orderAmount: buyerPayableAmount,
+            commissionBase: platformFeeAmount,
+          }
+        : undefined,
+    });
 
     if (input.paymentMethod === 'COD') {
-      for (const item of selectedItems) {
-        await this.createOrderFromCartItem({
-          buyerUserId: input.buyerUserId,
-          item,
-          paymentMethod: 'COD',
-          shippingProviderCode: shippingOption.providerCode,
-          shipping,
-          affiliateCode: input.affiliateCode ?? null,
-        });
-      }
-
       await this.ordersRepository.removeCartItems({
         buyerUserId: input.buyerUserId,
         cartItemIds: selectedItems.map((item) => item.id),
       });
-
-      return { success: true };
+      return { success: true, orderId: order.id };
     }
 
-    const amount = this.resolvePayOSAmount(selectedItems, shippingOption);
-    const session = await this.ordersRepository.createCheckoutSession({
-      buyerUserId: input.buyerUserId,
-      cartItemIds: selectedItems.map((item) => item.id),
-      shippingOptionCode: input.shippingOptionCode,
-      paymentMethod: 'PAYOS',
-      amount,
-    });
-
-    const paymentLink = await this.payOSPaymentService.createPaymentLink({
-      orderId: session.id,
-      amount,
-      description: `CK${session.id.replace(/-/g, '').slice(0, 7)}`,
-      buyerName: shipping.shippingName,
-      buyerPhone: shipping.shippingPhone,
-      itemName: selectedItems.length === 1 ? selectedItems[0].offer.title : `${selectedItems.length} cart items`,
-      quantity: selectedItems.reduce((total, item) => total + item.quantity, 0),
-    });
-
-    await this.ordersRepository.updateCheckoutSessionPaymentProviderRef({
-      checkoutSessionId: session.id,
-      paymentProviderRef: `PAYOS:${paymentLink.paymentLinkId}`,
-      payOSOrderCode: paymentLink.orderCode,
-      checkoutUrl: paymentLink.checkoutUrl,
-    });
+    let paymentLink: Awaited<ReturnType<PayOSPaymentService['createPaymentLink']>>;
+    try {
+      paymentLink = await this.payOSPaymentService.createPaymentLink({
+        orderId: order.id,
+        amount: buyerPayableAmount,
+        description: `DH${order.id.replace(/-/g, '').slice(0, 7)}`,
+        buyerName: shipping.name,
+        buyerPhone: shipping.phone,
+        itemName: selectedItems.length === 1 ? selectedItems[0].offer.title : `${selectedItems.length} cart items`,
+        quantity: selectedItems.reduce((total, item) => total + item.quantity, 0),
+      });
+    } catch (error) {
+      await this.ordersRepository.markOrderPaymentFailed({
+        id: order.id,
+        actorUserId: input.buyerUserId,
+        providerRef: null,
+        reason: 'Unable to create payOS payment link',
+      });
+      throw error;
+    }
+    await this.ordersRepository.updatePaymentProviderRef(order.id, `PAYOS:${paymentLink.paymentLinkId}`);
 
     return {
-      checkoutSessionId: session.id,
+      orderId: order.id,
       checkoutUrl: paymentLink.checkoutUrl,
     };
   }
 
-  async completePayOSSession(input: {
-    session: CheckoutSessionRecord;
-    paymentProviderRef: string;
-    reference: string;
-  }) {
-    if (input.session.paymentStatus === 'PAID') {
-      return [];
+  private createShopGroups(items: CartWithItems['items'], shippingFee: number) {
+    const grouped = new Map<string, CartWithItems['items']>();
+    for (const item of items) {
+      const shopItems = grouped.get(item.offer.shopId) ?? [];
+      shopItems.push(item);
+      grouped.set(item.offer.shopId, shopItems);
     }
 
-    const cartItemIds = this.readSessionCartItemIds(input.session);
-    const cart = await this.ordersRepository.getOrCreateActiveCart(input.session.buyerUserId);
-    const selectedItems = this.selectCartItems(cart, cartItemIds);
-    const shippingOption = await this.resolveShippingOption({
-      buyerUserId: input.session.buyerUserId,
-      cartItemIds,
-      paymentMethod: 'PAYOS',
-      shippingOptionCode: input.session.shippingOptionCode,
+    const subtotal = items.reduce((total, item) => total + Number(item.unitPriceSnapshot.toString()) * item.quantity, 0);
+    let allocatedShipping = 0;
+    return Array.from(grouped.entries()).map(([shopId, shopItems], index, allGroups) => {
+      const baseAmount = this.roundMoney(
+        shopItems.reduce((total, item) => total + Number(item.unitPriceSnapshot.toString()) * item.quantity, 0),
+      );
+      const shippingRatio = subtotal > 0 ? baseAmount / subtotal : 1 / allGroups.length;
+      const groupShippingFee =
+        index === allGroups.length - 1
+          ? this.roundMoney(shippingFee - allocatedShipping)
+          : this.roundMoney(shippingFee * shippingRatio);
+      allocatedShipping = this.roundMoney(allocatedShipping + groupShippingFee);
+      const platformFeeAmount = this.roundMoney(baseAmount * 0.2);
+      const parcels = shopItems.map((item) => ({
+        weight: item.offer.parcelWeightGrams,
+        length: item.offer.parcelLengthCm,
+        width: item.offer.parcelWidthCm,
+        height: item.offer.parcelHeightCm,
+        quantity: item.quantity,
+      }));
+      const hasCompleteParcel = parcels.every((parcel) => parcel.weight && parcel.length && parcel.width && parcel.height);
+      return {
+        shopId,
+        baseAmount,
+        platformFeeAmount,
+        sellerReceivableAmount: this.roundMoney(baseAmount - platformFeeAmount),
+        shippingFeeAmount: groupShippingFee,
+        parcelWeightGrams: hasCompleteParcel ? parcels.reduce((total, parcel) => total + Number(parcel.weight) * parcel.quantity, 0) : null,
+        parcelLengthCm: hasCompleteParcel ? Math.max(...parcels.map((parcel) => Number(parcel.length))) : null,
+        parcelWidthCm: hasCompleteParcel ? Math.max(...parcels.map((parcel) => Number(parcel.width))) : null,
+        parcelHeightCm: hasCompleteParcel ? parcels.reduce((total, parcel) => total + Number(parcel.height) * parcel.quantity, 0) : null,
+        items: shopItems.map((item) => ({
+          sourceCartItemId: item.id,
+          offerId: item.offerId,
+          offerTitleSnapshot: item.offerTitleSnapshot,
+          unitPrice: Number(item.unitPriceSnapshot.toString()),
+          quantity: item.quantity,
+          verificationLevelSnapshot: item.offer.verificationLevel,
+        })),
+      };
     });
-    const shipping = await this.resolveDefaultShipping(input.session.buyerUserId, shippingOption);
-    const orders: OrderWithRelations[] = [];
-
-    for (const item of selectedItems) {
-      const order = await this.createOrderFromCartItem({
-        buyerUserId: input.session.buyerUserId,
-        item,
-        paymentMethod: 'PAYOS',
-        shippingProviderCode: shippingOption.providerCode,
-        shipping,
-        affiliateCode: null,
-        skipPayOSPaymentLink: true,
-      });
-      const paidOrder = await this.ordersRepository.markOrderPaid({
-        id: order.id,
-        actorUserId: input.session.buyerUserId,
-        providerRef: `${input.paymentProviderRef}:${input.reference}`,
-      });
-      orders.push(paidOrder);
-    }
-
-    await this.ordersRepository.removeCartItems({
-      buyerUserId: input.session.buyerUserId,
-      cartItemIds,
-    });
-    await this.ordersRepository.markCheckoutSessionPaid({
-      id: input.session.id,
-      orderIds: orders.map((order) => order.id),
-    });
-
-    return orders;
   }
 
   private selectCartItems(cart: CartWithItems, cartItemIds: string[]) {
     const uniqueCartItemIds = [...new Set(cartItemIds.map((id) => id.trim()).filter(Boolean))];
-    if (uniqueCartItemIds.length === 0) {
-      throw new BadRequestException('At least one cart item is required for checkout');
-    }
-
+    if (uniqueCartItemIds.length === 0) throw new BadRequestException('At least one cart item is required for checkout');
     const selectedItems = cart.items.filter((item) => uniqueCartItemIds.includes(item.id));
-    if (selectedItems.length !== uniqueCartItemIds.length) {
-      throw new BadRequestException('One or more cart items are invalid');
-    }
-
+    if (selectedItems.length !== uniqueCartItemIds.length) throw new BadRequestException('One or more cart items are invalid');
     return selectedItems;
   }
 
@@ -159,85 +172,34 @@ export class CheckoutCartUseCase {
       cartItemIds: input.cartItemIds,
     });
     const selected = shippingOptions.options.find((option) => option.optionCode === input.shippingOptionCode);
-    if (!selected) {
-      throw new BadRequestException('Shipping option is not available for selected cart items');
-    }
+    if (!selected) throw new BadRequestException('Shipping option is not available for selected cart items');
     return selected;
   }
 
   private async resolveDefaultShipping(buyerUserId: string, shippingOption: CheckoutCartShippingOption) {
     const address = await this.ordersRepository.findDefaultAddressByUserId(buyerUserId);
-    if (!address) {
-      throw new BadRequestException('Default shipping address is required before checkout');
-    }
-
+    if (!address) throw new BadRequestException('Default shipping address is required before checkout');
     const carrierLocation = parseInternalAddressWardCode(address.wardCode);
     if (shippingOption.providerCode !== 'SELF_DELIVERY' && (!carrierLocation?.districtId || !carrierLocation.carrierWardCode)) {
       throw new BadRequestException('Default shipping address district and ward are required for selected shipping option');
     }
-
     return {
-      shippingName: address.recipientName,
-      shippingPhone: address.phone,
-      shippingAddress: address.addressLine,
-      shippingDistrictId: carrierLocation?.districtId ?? null,
-      shippingDistrictName: null,
-      shippingWardCode: carrierLocation?.carrierWardCode ?? null,
-      shippingWardName: address.wardName ?? null,
+      name: address.recipientName,
+      phone: address.phone,
+      address: address.addressLine,
+      districtId: carrierLocation?.districtId ?? null,
+      districtName: null,
+      wardCode: carrierLocation?.carrierWardCode ?? null,
+      wardName: address.wardName ?? null,
     };
   }
 
-  private createOrderFromCartItem(input: {
-    buyerUserId: string;
-    item: CartWithItems['items'][number];
-    paymentMethod: 'COD' | 'PAYOS';
-    shippingProviderCode: string;
-    shipping: Awaited<ReturnType<CheckoutCartUseCase['resolveDefaultShipping']>>;
-    affiliateCode?: string | null;
-    skipPayOSPaymentLink?: boolean | null;
-  }) {
-    return this.createOrderUseCase.execute({
-      buyerUserId: input.buyerUserId,
-      offerId: input.item.offerId,
-      quantity: input.item.quantity,
-      paymentMethod: input.paymentMethod,
-      affiliateCode: input.affiliateCode ?? null,
-      shippingName: input.shipping.shippingName,
-      shippingPhone: input.shipping.shippingPhone,
-      shippingAddress: input.shipping.shippingAddress,
-      shippingDistrictId: input.shipping.shippingDistrictId,
-      shippingDistrictName: input.shipping.shippingDistrictName,
-      shippingWardCode: input.shipping.shippingWardCode,
-      shippingWardName: input.shipping.shippingWardName,
-      shippingProviderCode: input.shippingProviderCode,
-      shippingServiceId: null,
-      shippingServiceTypeId: null,
-      skipPayOSPaymentLink: input.skipPayOSPaymentLink ?? null,
-    });
-  }
-
-  private resolvePayOSAmount(items: CartWithItems['items'], shippingOption: CheckoutCartShippingOption) {
-    const subtotal = items.reduce((total, item) => total + Number(item.offer.price.toString()) * item.quantity, 0);
-    return Math.round(subtotal + shippingOption.shippingFee);
-  }
-
-  private readSessionCartItemIds(session: CheckoutSessionRecord) {
-    if (!Array.isArray(session.cartItemIds) || !session.cartItemIds.every((id) => typeof id === 'string')) {
-      throw new BadRequestException('Checkout session cart items are invalid');
-    }
-
-    return session.cartItemIds;
+  private roundMoney(value: number) {
+    return Math.round(value * 100) / 100;
   }
 }
 
 function parseInternalAddressWardCode(wardCode?: string | null) {
   const match = wardCode?.trim().match(/^VN-P(\d+)-D(\d+)-W(.+)$/);
-  if (!match) {
-    return null;
-  }
-
-  return {
-    districtId: Number(match[2]),
-    carrierWardCode: match[3],
-  };
+  return match ? { districtId: Number(match[2]), carrierWardCode: match[3] } : null;
 }

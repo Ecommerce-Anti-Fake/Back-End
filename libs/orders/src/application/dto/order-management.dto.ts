@@ -45,7 +45,10 @@ export class CartItemResponseDto {
   @ApiProperty({ example: 'Kem chong nang SPF50 - lo 2026' })
   offerTitleSnapshot!: string;
 
-  @ApiPropertyOptional({ example: 'https://cdn.example.com/offer.jpg', nullable: true })
+  @ApiPropertyOptional({
+    example: 'https://cdn.example.com/offer.jpg',
+    nullable: true,
+  })
   thumbnailUrl!: string | null;
 
   @ApiProperty({ example: 150000 })
@@ -263,7 +266,10 @@ export class OrderResponseDto {
   @ApiPropertyOptional({ example: 'PAYOS:payment-link-id', nullable: true })
   paymentProviderRef!: string | null;
 
-  @ApiPropertyOptional({ example: 'https://pay.payos.vn/web/payment-link-id', nullable: true })
+  @ApiPropertyOptional({
+    example: 'https://pay.payos.vn/web/payment-link-id',
+    nullable: true,
+  })
   payOSCheckoutUrl?: string | null;
 
   @ApiPropertyOptional({ example: 'payment-link-id', nullable: true })
@@ -342,7 +348,10 @@ export class OrderResponseDto {
   @ApiPropertyOptional({ example: '0987654321', nullable: true })
   shippingPhone!: string | null;
 
-  @ApiPropertyOptional({ example: '12 Nguyen Trai, Quan 1, TP.HCM', nullable: true })
+  @ApiPropertyOptional({
+    example: '12 Nguyen Trai, Quan 1, TP.HCM',
+    nullable: true,
+  })
   shippingAddress!: string | null;
 
   @ApiPropertyOptional({ example: 1450, nullable: true })
@@ -460,7 +469,10 @@ export class SellerDashboardTopProductDto {
   @ApiProperty({ example: 'Nước hoa AntiFake Premium' })
   title!: string;
 
-  @ApiPropertyOptional({ example: 'https://cdn.example.com/offer.jpg', nullable: true })
+  @ApiPropertyOptional({
+    example: 'https://cdn.example.com/offer.jpg',
+    nullable: true,
+  })
   thumbnailUrl!: string | null;
 
   @ApiProperty({ example: 1256 })
@@ -793,7 +805,10 @@ export class MarkOrderPaidDto {
 }
 
 export class UpdateOrderFulfillmentDto {
-  @ApiProperty({ example: 'SHIPPING', enum: ['PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED'] })
+  @ApiProperty({
+    example: 'SHIPPING',
+    enum: ['PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED'],
+  })
   @IsString()
   @IsIn(['PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED'])
   fulfillmentStatus!: 'PROCESSING' | 'SHIPPING' | 'DELIVERED' | 'CANCELLED';
@@ -821,10 +836,16 @@ export class OrderFulfillmentAuditEntryDto {
   @ApiPropertyOptional({ example: 'seller@example.com', nullable: true })
   actorEmail!: string | null;
 
-  @ApiPropertyOptional({ example: 'Seller moved order to processing.', nullable: true })
+  @ApiPropertyOptional({
+    example: 'Seller moved order to processing.',
+    nullable: true,
+  })
   note!: string | null;
 
-  @ApiPropertyOptional({ example: { shippingProviderCode: 'GHN', providerStatus: 'delivered' }, nullable: true })
+  @ApiPropertyOptional({
+    example: { shippingProviderCode: 'GHN', providerStatus: 'delivered' },
+    nullable: true,
+  })
   metadata!: Record<string, unknown> | null;
 
   @ApiProperty({ example: '2026-05-15T10:00:00.000Z' })
@@ -851,7 +872,9 @@ export class CreateReportDto {
   @IsString()
   reason!: string;
 
-  @ApiPropertyOptional({ example: 'Tem niem phong bi rach va ma lo khong khop voi thong tin truy xuat.' })
+  @ApiPropertyOptional({
+    example: 'Tem niem phong bi rach va ma lo khong khop voi thong tin truy xuat.',
+  })
   @IsOptional()
   @IsString()
   description?: string | null;
@@ -949,7 +972,10 @@ export class PaginatedAdminReportResponseDto {
 }
 
 export class UpdateAdminReportDto {
-  @ApiProperty({ example: 'IN_REVIEW', enum: ['IN_REVIEW', 'RESOLVED', 'REJECTED'] })
+  @ApiProperty({
+    example: 'IN_REVIEW',
+    enum: ['IN_REVIEW', 'RESOLVED', 'REJECTED'],
+  })
   @IsString()
   @IsIn(['IN_REVIEW', 'RESOLVED', 'REJECTED'])
   reportStatus!: 'IN_REVIEW' | 'RESOLVED' | 'REJECTED';
@@ -1081,7 +1107,10 @@ export class AdminModerationCaseResponseDto {
   @ApiProperty({ example: 'ESCALATED', enum: MODERATION_CASE_STATUSES })
   caseStatus!: string;
 
-  @ApiPropertyOptional({ example: 'Can xu ly truoc khi cho hien thi lai.', nullable: true })
+  @ApiPropertyOptional({
+    example: 'Can xu ly truoc khi cho hien thi lai.',
+    nullable: true,
+  })
   internalNote!: string | null;
 
   @ApiPropertyOptional({ example: 'admin-user-id', nullable: true })
@@ -1170,7 +1199,9 @@ export class UpdateAdminModerationCaseDto {
   @IsString()
   assignedAdminUserId?: string | null;
 
-  @ApiPropertyOptional({ example: 'Da kiem tra bang chung va can doi chieu nha cung cap.' })
+  @ApiPropertyOptional({
+    example: 'Da kiem tra bang chung va can doi chieu nha cung cap.',
+  })
   @IsOptional()
   @IsString()
   internalNote?: string | null;
@@ -1235,7 +1266,9 @@ export class AddDisputeEvidenceDto {
   @IsString()
   mimeType!: string;
 
-  @ApiProperty({ example: 'https://res.cloudinary.com/example/image/upload/v1/disputes/dispute-1/proof.jpg' })
+  @ApiProperty({
+    example: 'https://res.cloudinary.com/example/image/upload/v1/disputes/dispute-1/proof.jpg',
+  })
   @IsString()
   @IsUrl({
     protocols: ['https'],
@@ -1275,13 +1308,22 @@ export class DisputeEvidenceResponseDto {
   @ApiPropertyOptional({ example: 'image/jpeg', nullable: true })
   mimeType!: string | null;
 
-  @ApiPropertyOptional({ example: 'IMAGE', enum: ['IMAGE', 'VIDEO', 'RAW'], nullable: true })
+  @ApiPropertyOptional({
+    example: 'IMAGE',
+    enum: ['IMAGE', 'VIDEO', 'RAW'],
+    nullable: true,
+  })
   assetType!: 'IMAGE' | 'VIDEO' | 'RAW' | null;
 
-  @ApiPropertyOptional({ example: 'disputes/dispute-1/user-1-1776240000', nullable: true })
+  @ApiPropertyOptional({
+    example: 'disputes/dispute-1/user-1-1776240000',
+    nullable: true,
+  })
   publicId!: string | null;
 
-  @ApiProperty({ example: 'https://res.cloudinary.com/example/image/upload/v1/disputes/dispute-1/proof.jpg' })
+  @ApiProperty({
+    example: 'https://res.cloudinary.com/example/image/upload/v1/disputes/dispute-1/proof.jpg',
+  })
   fileUrl!: string;
 
   @ApiProperty({ example: '2026-04-15T10:00:00.000Z' })
@@ -1464,12 +1506,17 @@ export class AssignAdminDisputeDto {
 }
 
 export class UpdateAdminDisputeCaseDto {
-  @ApiProperty({ example: 'IN_REVIEW', enum: ['ASSIGNED', 'IN_REVIEW', 'ESCALATED', 'RESOLVED', 'CLOSED'] })
+  @ApiProperty({
+    example: 'IN_REVIEW',
+    enum: ['ASSIGNED', 'IN_REVIEW', 'ESCALATED', 'RESOLVED', 'CLOSED'],
+  })
   @IsString()
   @IsIn(['ASSIGNED', 'IN_REVIEW', 'ESCALATED', 'RESOLVED', 'CLOSED'])
   caseStatus!: 'ASSIGNED' | 'IN_REVIEW' | 'ESCALATED' | 'RESOLVED' | 'CLOSED';
 
-  @ApiPropertyOptional({ example: 'Dang doi doi chieu them bang chung tu seller' })
+  @ApiPropertyOptional({
+    example: 'Dang doi doi chieu them bang chung tu seller',
+  })
   @IsOptional()
   @IsString()
   internalNote?: string;
@@ -1513,7 +1560,10 @@ export class CreateOrderDto {
   @IsString()
   affiliateCode?: string;
 
-  @ApiPropertyOptional({ example: 'PAYOS', enum: ['COD', 'BANK_TRANSFER', 'PAYOS'] })
+  @ApiPropertyOptional({
+    example: 'PAYOS',
+    enum: ['COD', 'BANK_TRANSFER', 'PAYOS'],
+  })
   @IsOptional()
   @IsIn(['COD', 'BANK_TRANSFER', 'PAYOS'])
   paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS';
@@ -1601,7 +1651,10 @@ export class CheckoutCartItemDto {
   @IsString()
   affiliateCode?: string;
 
-  @ApiPropertyOptional({ example: 'PAYOS', enum: ['COD', 'BANK_TRANSFER', 'PAYOS'] })
+  @ApiPropertyOptional({
+    example: 'PAYOS',
+    enum: ['COD', 'BANK_TRANSFER', 'PAYOS'],
+  })
   @IsOptional()
   @IsIn(['COD', 'BANK_TRANSFER', 'PAYOS'])
   paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS';
@@ -1692,23 +1745,23 @@ export class CheckoutCartDto {
 export class CheckoutCartCodResponseDto {
   @ApiProperty({ example: true })
   success!: boolean;
+
+  @ApiProperty({ example: 'order-id' })
+  orderId!: string;
 }
 
 export class CheckoutCartPayOSResponseDto {
-  @ApiProperty({ example: 'checkout-session-id' })
-  checkoutSessionId!: string;
+  @ApiProperty({ example: 'order-id' })
+  orderId!: string;
 
   @ApiProperty({ example: 'https://pay.payos.vn/web/payment-link-id' })
   checkoutUrl!: string;
 }
 
-export class CheckoutSessionStatusResponseDto {
-  @ApiProperty({ example: 'PENDING', enum: ['PENDING', 'PAID', 'FAILED'] })
-  status!: string;
-}
-
 export class QuoteCartItemShippingOptionsDto {
-  @ApiPropertyOptional({ example: '12 Nguyen Trai, Phuong Ben Nghe, Quan 1, TP.HCM' })
+  @ApiPropertyOptional({
+    example: '12 Nguyen Trai, Phuong Ben Nghe, Quan 1, TP.HCM',
+  })
   @IsOptional()
   @IsString()
   shippingAddress?: string;

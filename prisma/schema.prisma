@@ -476,27 +476,6 @@ model ChatThread {
   @@map("chat_thread")
 }
 
-model CheckoutSession {
-  id                 String    @id @default(uuid())
-  buyerUserId        String    @map("buyer_user_id")
-  cartItemIds        Json      @map("cart_item_ids")
-  shippingOptionCode String    @map("shipping_option_code")
-  paymentMethod      String    @map("payment_method")
-  paymentStatus      String    @default("PENDING") @map("payment_status")
-  amount             Decimal   @db.Decimal(18, 2)
-  paymentProviderRef String?   @unique @map("payment_provider_ref")
-  payOSOrderCode     Int?      @map("payos_order_code")
-  checkoutUrl        String?   @map("checkout_url")
-  orderIds           Json?     @map("order_ids")
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
-  completedAt        DateTime? @map("completed_at")
-  failedAt           DateTime? @map("failed_at")
-
-  @@index([buyerUserId, paymentStatus])
-  @@map("checkout_session")
-}
-
 model DisputeEvidence {
   id               String      @id @default(uuid())
   disputeId        String      @map("dispute_id")
@@ -965,20 +944,62 @@ model OrderItemBatchAllocation {
 model OrderItem {
   id                        String                     @id @default(uuid())
   orderId                   String                     @map("order_id")
+  orderShopGroupId          String?                    @map("order_shop_group_id")
+  sourceCartItemId          String?                    @map("source_cart_item_id")
   offerId                   String                     @map("offer_id")
   offerTitleSnapshot        String                     @map("offer_title_snapshot")
   unitPrice                 Decimal                    @map("unit_price") @db.Decimal(18, 2)
   quantity                  Int
   verificationLevelSnapshot String                     @map("verification_level_snapshot")
   order                     Order                      @relation(fields: [orderId], references: [id])
+  orderShopGroup            OrderShopGroup?            @relation(fields: [orderShopGroupId], references: [id])
   offer                     Offer                      @relation(fields: [offerId], references: [id])
   batchAllocations          OrderItemBatchAllocation[]
   reviews                   Review[]
   sourceSupplyBatches       SupplyBatch[]                @relation("SupplyBatchSourceOrderItem")
 
   @@index([orderId])
+  @@index([orderShopGroupId])
+  @@index([sourceCartItemId])
   @@index([offerId])
   @@map("order_item")
+}
+
+model OrderShopGroup {
+  id                     String      @id @default(uuid())
+  orderId                String      @map("order_id")
+  shopId                 String      @map("shop_id")
+  fulfillmentStatus      String      @default("PENDING") @map("fulfillment_status")
+  baseAmount             Decimal     @map("base_amount") @db.Decimal(18, 2)
+  discountAmount         Decimal     @default(0) @map("discount_amount") @db.Decimal(18, 2)
+  platformFeeAmount      Decimal     @default(0) @map("platform_fee_amount") @db.Decimal(18, 2)
+  sellerReceivableAmount Decimal     @map("seller_receivable_amount") @db.Decimal(18, 2)
+  shippingName           String?     @map("shipping_name")
+  shippingPhone          String?     @map("shipping_phone")
+  shippingAddress        String?     @map("shipping_address")
+  shippingDistrictId     Int?        @map("shipping_district_id")
+  shippingDistrictName   String?     @map("shipping_district_name")
+  shippingWardCode       String?     @map("shipping_ward_code")
+  shippingWardName       String?     @map("shipping_ward_name")
+  shippingProviderCode   String?     @map("shipping_provider_code")
+  shippingProviderName   String?     @map("shipping_provider_name")
+  shippingServiceId      Int?        @map("shipping_service_id")
+  shippingServiceTypeId  Int?        @map("shipping_service_type_id")
+  shippingFeeAmount      Decimal     @default(0) @map("shipping_fee_amount") @db.Decimal(18, 2)
+  shippingTrackingCode   String?     @map("shipping_tracking_code")
+  parcelWeightGrams      Int?        @map("parcel_weight_grams")
+  parcelLengthCm         Int?        @map("parcel_length_cm")
+  parcelWidthCm          Int?        @map("parcel_width_cm")
+  parcelHeightCm         Int?        @map("parcel_height_cm")
+  createdAt              DateTime    @default(now()) @map("created_at")
+  updatedAt              DateTime    @updatedAt @map("updated_at")
+  order                  Order       @relation(fields: [orderId], references: [id])
+  shop                   Shop        @relation(fields: [shopId], references: [id])
+  items                  OrderItem[]
+
+  @@unique([orderId, shopId])
+  @@index([shopId, fulfillmentStatus])
+  @@map("order_shop_group")
 }
 
 model Order {
@@ -1018,6 +1039,7 @@ model Order {
   buyerDistributionNode   DistributionNode?    @relation("OrderBuyerDistributionNode", fields: [buyerDistributionNodeId], references: [id])
   shop                    Shop                 @relation(fields: [shopId], references: [id])
   items                   OrderItem[]
+  shopGroups              OrderShopGroup[]
   paymentIntent           PaymentIntent?
   escrow                  Escrow?
   disputes                Dispute[]
@@ -1283,6 +1305,7 @@ model Shop {
   offers                     Offer[]
   supplyBatches              SupplyBatch[]
   orders                     Order[]
+  orderGroups                OrderShopGroup[]
   wholesaleOrders            Order[]                @relation("OrderBuyerShop")
   distributionNetworksAsRoot DistributionNetwork[]  @relation("DistributionManufacturerShop")
   distributionNodes          DistributionNode[]

@@ -21,7 +21,8 @@ export class GetOrderFulfillmentAuditUseCase {
 
     const isAdmin = requesterRole === 'admin';
     const isRetailBuyer = order.buyerUserId === requesterUserId;
-    const isSellerOwner = order.shop.ownerUserId === requesterUserId;
+    const sellerGroup = order.shopGroups?.find((group) => group.shop.ownerUserId === requesterUserId);
+    const isSellerOwner = Boolean(sellerGroup) || order.shop.ownerUserId === requesterUserId;
     const isWholesaleBuyerOwner = order.buyerShop?.ownerUserId === requesterUserId;
     const shouldSanitize = !isAdmin && !isSellerOwner && (isRetailBuyer || isWholesaleBuyerOwner);
 
@@ -33,6 +34,17 @@ export class GetOrderFulfillmentAuditUseCase {
 
     return timeline
       .filter((log) => ORDER_TIMELINE_ACTIONS.includes(log.action as (typeof ORDER_TIMELINE_ACTIONS)[number]))
+      .filter((log) => {
+        if (!sellerGroup || log.action === 'PAYMENT_STATUS_CHANGED') return true;
+        const metadata = log.metadata;
+        return (
+          !metadata ||
+          typeof metadata !== 'object' ||
+          Array.isArray(metadata) ||
+          !('orderShopGroupId' in metadata) ||
+          metadata.orderShopGroupId === sellerGroup.id
+        );
+      })
       .map((log) => ({
         id: log.id,
         action: log.action,

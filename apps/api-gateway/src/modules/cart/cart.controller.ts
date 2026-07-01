@@ -5,7 +5,6 @@ import {
   AddCartItemDto,
   CartShippingOptionsResponseDto,
   CheckoutCartDto,
-  CheckoutSessionStatusResponseDto,
   CheckoutCartItemDto,
   QuoteCartShippingOptionsDto,
   UpdateCartItemDto,
@@ -60,11 +59,7 @@ export class CartController {
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Patch('items/:cartItemId')
-  updateCartItem(
-    @CurrentUserId() buyerUserId: string,
-    @Param('cartItemId') cartItemId: string,
-    @Body() dto: UpdateCartItemDto,
-  ) {
+  updateCartItem(@CurrentUserId() buyerUserId: string, @Param('cartItemId') cartItemId: string, @Body() dto: UpdateCartItemDto) {
     return this.ordersRpcService.updateCartItem({
       buyerUserId,
       cartItemId,
@@ -87,11 +82,7 @@ export class CartController {
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('items/:cartItemId/checkout')
-  async checkoutCartItem(
-    @CurrentUserId() buyerUserId: string,
-    @Param('cartItemId') cartItemId: string,
-    @Body() dto: CheckoutCartItemDto,
-  ) {
+  async checkoutCartItem(@CurrentUserId() buyerUserId: string, @Param('cartItemId') cartItemId: string, @Body() dto: CheckoutCartItemDto) {
     const result = await this.ordersRpcService.checkoutCartItem({
       buyerUserId,
       cartItemId,
@@ -117,10 +108,7 @@ export class CartController {
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('checkout')
-  async checkoutCart(
-    @CurrentUserId() buyerUserId: string,
-    @Body() dto: CheckoutCartDto,
-  ) {
+  async checkoutCart(@CurrentUserId() buyerUserId: string, @Body() dto: CheckoutCartDto) {
     const result = await this.ordersRpcService.checkoutCart({
       buyerUserId,
       cartItemIds: dto.cartItemIds,
@@ -133,31 +121,15 @@ export class CartController {
     return result;
   }
 
-  @ApiOperation({ summary: 'Kiem tra trang thai thanh toan cua checkout session' })
-  @ApiBearerAuth('access-token')
-  @ApiOkResponse({ type: CheckoutSessionStatusResponseDto })
-  @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Get('checkout-sessions/:checkoutSessionId/status')
-  getCheckoutSessionStatus(
-    @CurrentUserId() buyerUserId: string,
-    @Param('checkoutSessionId') checkoutSessionId: string,
-  ) {
-    return this.ordersRpcService.getCheckoutSessionStatus({
-      buyerUserId,
-      checkoutSessionId,
-    });
-  }
-
   @ApiTags('Shipping')
-  @ApiOperation({ summary: 'Bao gia cac phuong thuc van chuyen cho cac cart item da chon' })
+  @ApiOperation({
+    summary: 'Bao gia cac phuong thuc van chuyen cho cac cart item da chon',
+  })
   @ApiBearerAuth('access-token')
   @ApiOkResponse({ type: CartShippingOptionsResponseDto })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('shipping-options')
-  quoteCartShippingOptions(
-    @CurrentUserId() buyerUserId: string,
-    @Body() dto: QuoteCartShippingOptionsDto,
-  ) {
+  quoteCartShippingOptions(@CurrentUserId() buyerUserId: string, @Body() dto: QuoteCartShippingOptionsDto) {
     return this.ordersRpcService.quoteCartShippingOptions({
       buyerUserId,
       cartItemIds: dto.cartItemIds,

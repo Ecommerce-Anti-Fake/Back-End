@@ -13,7 +13,10 @@ describe('OrdersRepository', () => {
     const repository = new OrdersRepository(prisma as never);
 
     await expect(
-      repository.getSellerShopOrderStatusSummary({ requesterUserId: 'seller-1', shopId: 'shop-1' }),
+      repository.getSellerShopOrderStatusSummary({
+        requesterUserId: 'seller-1',
+        shopId: 'shop-1',
+      }),
     ).resolves.toEqual({
       totalOrders: 1284,
       pendingOrders: 42,
@@ -21,19 +24,38 @@ describe('OrdersRepository', () => {
       completedOrders: 1086,
     });
     expect(prisma.shop.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'shop-1', ownerUserId: 'seller-1' } }),
+      expect.objectContaining({
+        where: { id: 'shop-1', ownerUserId: 'seller-1' },
+      }),
     );
-    expect(count).toHaveBeenNthCalledWith(1, { where: { shopId: 'shop-1' } });
+    expect(count).toHaveBeenNthCalledWith(1, {
+      where: { shopGroups: { some: { shopId: 'shop-1' } } },
+    });
     expect(count).toHaveBeenNthCalledWith(2, {
-      where: { shopId: 'shop-1', fulfillmentStatus: 'PENDING' },
+      where: {
+        shopGroups: {
+          some: { shopId: 'shop-1', fulfillmentStatus: 'PENDING' },
+        },
+      },
     });
     expect(count).toHaveBeenNthCalledWith(3, {
-      where: { shopId: 'shop-1', fulfillmentStatus: 'SHIPPING' },
+      where: {
+        shopGroups: {
+          some: { shopId: 'shop-1', fulfillmentStatus: 'SHIPPING' },
+        },
+      },
     });
     expect(count).toHaveBeenNthCalledWith(4, {
       where: {
-        shopId: 'shop-1',
-        OR: [{ orderStatus: 'completed' }, { fulfillmentStatus: 'DELIVERED' }],
+        shopGroups: { some: { shopId: 'shop-1' } },
+        OR: [
+          { orderStatus: 'completed' },
+          {
+            shopGroups: {
+              some: { shopId: 'shop-1', fulfillmentStatus: 'DELIVERED' },
+            },
+          },
+        ],
       },
     });
   });
@@ -47,7 +69,10 @@ describe('OrdersRepository', () => {
     const repository = new OrdersRepository(prisma as never);
 
     await expect(
-      repository.getSellerShopOrderStatusSummary({ requesterUserId: 'seller-2', shopId: 'shop-1' }),
+      repository.getSellerShopOrderStatusSummary({
+        requesterUserId: 'seller-2',
+        shopId: 'shop-1',
+      }),
     ).rejects.toThrow('Shop does not belong to current user');
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
@@ -151,9 +176,7 @@ describe('OrdersRepository', () => {
 
     const repository = new OrdersRepository(prisma as never);
 
-    await expect(repository.allocateOrderBatchesAndUpdateFulfillment('order-1', 'PROCESSING')).resolves.toBe(
-      updatedOrder,
-    );
+    await expect(repository.allocateOrderBatchesAndUpdateFulfillment('order-1', 'PROCESSING')).resolves.toBe(updatedOrder);
     expect(tx.$queryRaw).not.toHaveBeenCalled();
     expect(tx.offerBatchLink.findMany).not.toHaveBeenCalled();
     expect(tx.offerBatchLink.update).not.toHaveBeenCalled();
@@ -329,9 +352,7 @@ describe('OrdersRepository', () => {
     };
     const repository = new OrdersRepository(prisma as never);
 
-    await expect(repository.allocateOrderBatchesAndUpdateFulfillment('order-1', 'PROCESSING')).resolves.toBe(
-      updatedOrder,
-    );
+    await expect(repository.allocateOrderBatchesAndUpdateFulfillment('order-1', 'PROCESSING')).resolves.toBe(updatedOrder);
 
     expect(tx.offerBatchLink.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
