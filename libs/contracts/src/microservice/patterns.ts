@@ -139,6 +139,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   updateCartItem: 'orders.update-cart-item',
   removeCartItem: 'orders.remove-cart-item',
   checkoutCart: 'orders.checkout-cart',
+  getCheckoutSessionStatus: 'orders.get-checkout-session-status',
   checkoutCartItem: 'orders.checkout-cart-item',
   quoteCartItemShippingOptions: 'orders.quote-cart-item-shipping-options',
   quoteCartShippingOptions: 'orders.quote-cart-shipping-options',
@@ -991,6 +992,11 @@ export type CheckoutCartMessage = {
   paymentMethod: 'COD' | 'PAYOS';
   shippingOptionCode: string;
   affiliateCode?: string | null;
+};
+
+export type CheckoutSessionStatusMessage = {
+  buyerUserId: string;
+  checkoutSessionId: string;
 };
 
 export type QuoteCartItemShippingOptionsMessage = {

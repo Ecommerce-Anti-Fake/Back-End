@@ -5,6 +5,7 @@ import {
   AddCartItemDto,
   CartShippingOptionsResponseDto,
   CheckoutCartDto,
+  CheckoutSessionStatusResponseDto,
   CheckoutCartItemDto,
   QuoteCartShippingOptionsDto,
   UpdateCartItemDto,
@@ -130,6 +131,21 @@ export class CartController {
     this.dashboardSseBrokerService.notifyOrderChanged(result, buyerUserId);
 
     return result;
+  }
+
+  @ApiOperation({ summary: 'Kiem tra trang thai thanh toan cua checkout session' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: CheckoutSessionStatusResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('checkout-sessions/:checkoutSessionId/status')
+  getCheckoutSessionStatus(
+    @CurrentUserId() buyerUserId: string,
+    @Param('checkoutSessionId') checkoutSessionId: string,
+  ) {
+    return this.ordersRpcService.getCheckoutSessionStatus({
+      buyerUserId,
+      checkoutSessionId,
+    });
   }
 
   @ApiTags('Shipping')

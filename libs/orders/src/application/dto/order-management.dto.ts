@@ -1693,7 +1693,12 @@ export class CheckoutCartPayOSResponseDto {
   checkoutSessionId!: string;
 
   @ApiProperty({ example: 'https://pay.payos.vn/web/payment-link-id' })
-  payOSCheckoutUrl!: string;
+  checkoutUrl!: string;
+}
+
+export class CheckoutSessionStatusResponseDto {
+  @ApiProperty({ example: 'PENDING', enum: ['PENDING', 'PAID', 'FAILED'] })
+  status!: string;
 }
 
 export class QuoteCartItemShippingOptionsDto {

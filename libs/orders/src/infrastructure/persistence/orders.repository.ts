@@ -671,11 +671,27 @@ export class OrdersRepository {
   updateCheckoutSessionPaymentProviderRef(input: {
     checkoutSessionId: string;
     paymentProviderRef: string;
+    payOSOrderCode: number;
+    checkoutUrl: string;
   }): Promise<CheckoutSessionRecord> {
     return this.prisma.checkoutSession.update({
       where: { id: input.checkoutSessionId },
       data: {
         paymentProviderRef: input.paymentProviderRef,
+        payOSOrderCode: input.payOSOrderCode,
+        checkoutUrl: input.checkoutUrl,
+      },
+    });
+  }
+
+  findCheckoutSessionByIdForBuyer(input: {
+    checkoutSessionId: string;
+    buyerUserId: string;
+  }): Promise<CheckoutSessionRecord | null> {
+    return this.prisma.checkoutSession.findFirst({
+      where: {
+        id: input.checkoutSessionId,
+        buyerUserId: input.buyerUserId,
       },
     });
   }
@@ -686,12 +702,13 @@ export class OrdersRepository {
     });
   }
 
-  markCheckoutSessionPaid(id: string): Promise<CheckoutSessionRecord> {
+  markCheckoutSessionPaid(input: { id: string; orderIds: string[] }): Promise<CheckoutSessionRecord> {
     return this.prisma.checkoutSession.update({
-      where: { id },
+      where: { id: input.id },
       data: {
         paymentStatus: 'PAID',
         completedAt: new Date(),
+        orderIds: input.orderIds,
       },
     });
   }

@@ -104,10 +104,12 @@ describe('CheckoutCartUseCase', () => {
     expect(ordersRepository.updateCheckoutSessionPaymentProviderRef).toHaveBeenCalledWith({
       checkoutSessionId: 'checkout-session-1',
       paymentProviderRef: 'PAYOS:link-1',
+      payOSOrderCode: 123,
+      checkoutUrl: 'https://pay.payos.vn/web/link-1',
     });
     expect(result).toEqual({
       checkoutSessionId: 'checkout-session-1',
-      payOSCheckoutUrl: 'https://pay.payos.vn/web/link-1',
+      checkoutUrl: 'https://pay.payos.vn/web/link-1',
     });
     expect(createOrderUseCase.execute).not.toHaveBeenCalled();
     expect(ordersRepository.removeCartItems).not.toHaveBeenCalled();

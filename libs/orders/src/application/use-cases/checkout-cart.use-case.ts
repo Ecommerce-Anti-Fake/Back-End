@@ -78,11 +78,13 @@ export class CheckoutCartUseCase {
     await this.ordersRepository.updateCheckoutSessionPaymentProviderRef({
       checkoutSessionId: session.id,
       paymentProviderRef: `PAYOS:${paymentLink.paymentLinkId}`,
+      payOSOrderCode: paymentLink.orderCode,
+      checkoutUrl: paymentLink.checkoutUrl,
     });
 
     return {
       checkoutSessionId: session.id,
-      payOSCheckoutUrl: paymentLink.checkoutUrl,
+      checkoutUrl: paymentLink.checkoutUrl,
     };
   }
 
@@ -129,7 +131,10 @@ export class CheckoutCartUseCase {
       buyerUserId: input.session.buyerUserId,
       cartItemIds,
     });
-    await this.ordersRepository.markCheckoutSessionPaid(input.session.id);
+    await this.ordersRepository.markCheckoutSessionPaid({
+      id: input.session.id,
+      orderIds: orders.map((order) => order.id),
+    });
 
     return orders;
   }
