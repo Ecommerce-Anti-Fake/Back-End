@@ -6,6 +6,7 @@ import {
   SellerDashboardAnalyticsResponseDto,
   SellerShopSummaryMetricsQueryDto,
   SellerShopSummaryMetricsResponseDto,
+  SellerShopOrderStatusSummaryResponseDto,
 } from '@orders';
 import {
   CreateShopDto,
@@ -103,6 +104,18 @@ export class ShopController {
       from: query.from,
       to: query.to,
     });
+  }
+
+  @ApiOperation({ summary: 'Lay tong don hang theo trang thai cua shop' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: SellerShopOrderStatusSummaryResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get(':shopId/order-status-summary')
+  getOrderStatusSummary(
+    @Param('shopId') shopId: string,
+    @CurrentUserId() requesterUserId: string,
+  ) {
+    return this.ordersRpcService.getSellerShopOrderStatusSummary({ shopId, requesterUserId });
   }
 
   @ApiOperation({ summary: 'Lay analytics dashboard cua shop' })

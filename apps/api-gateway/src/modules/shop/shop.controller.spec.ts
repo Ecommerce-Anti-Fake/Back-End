@@ -172,6 +172,29 @@ describe('ShopController', () => {
     });
   });
 
+  it('gets seller shop order status summary from the shop route', async () => {
+    const ordersRpcService = {
+      getSellerShopOrderStatusSummary: jest.fn().mockResolvedValue({
+        totalOrders: 1284,
+        pendingOrders: 42,
+        shippingOrders: 156,
+        completedOrders: 1086,
+      }),
+    };
+    const controller = createController({}, ordersRpcService);
+
+    await expect(controller.getOrderStatusSummary('shop-1', 'seller-1')).resolves.toEqual({
+      totalOrders: 1284,
+      pendingOrders: 42,
+      shippingOrders: 156,
+      completedOrders: 1086,
+    });
+    expect(ordersRpcService.getSellerShopOrderStatusSummary).toHaveBeenCalledWith({
+      shopId: 'shop-1',
+      requesterUserId: 'seller-1',
+    });
+  });
+
   it('gets seller shop dashboard analytics from the shop route', async () => {
     const shopsRpcService = {};
     const ordersRpcService = {

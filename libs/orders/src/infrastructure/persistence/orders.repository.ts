@@ -1198,6 +1198,28 @@ export class OrdersRepository {
     });
   }
 
+  async getSellerShopOrderStatusSummary(input: { requesterUserId: string; shopId: string }) {
+    const shop = await this.findOwnedShop(input.shopId, input.requesterUserId);
+    if (!shop) {
+      throw new BadRequestException('Shop does not belong to current user');
+    }
+
+    const shopWhere: Prisma.OrderWhereInput = { shopId: input.shopId };
+    const [totalOrders, pendingOrders, shippingOrders, completedOrders] = await this.prisma.$transaction([
+      this.prisma.order.count({ where: shopWhere }),
+      this.prisma.order.count({ where: { ...shopWhere, fulfillmentStatus: 'PENDING' } }),
+      this.prisma.order.count({ where: { ...shopWhere, fulfillmentStatus: 'SHIPPING' } }),
+      this.prisma.order.count({
+        where: {
+          ...shopWhere,
+          OR: [{ orderStatus: 'completed' }, { fulfillmentStatus: 'DELIVERED' }],
+        },
+      }),
+    ]);
+
+    return { totalOrders, pendingOrders, shippingOrders, completedOrders };
+  }
+
   async findSellerShopOrders(input: {
     requesterUserId: string;
     shopId: string;

@@ -1,6 +1,57 @@
 import { OrdersRepository } from './orders.repository';
 
 describe('OrdersRepository', () => {
+  it('counts seller shop orders by the requested dashboard statuses', async () => {
+    const count = jest.fn();
+    const prisma = {
+      shop: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'shop-1' }),
+      },
+      order: { count },
+      $transaction: jest.fn().mockResolvedValue([1284, 42, 156, 1086]),
+    };
+    const repository = new OrdersRepository(prisma as never);
+
+    await expect(
+      repository.getSellerShopOrderStatusSummary({ requesterUserId: 'seller-1', shopId: 'shop-1' }),
+    ).resolves.toEqual({
+      totalOrders: 1284,
+      pendingOrders: 42,
+      shippingOrders: 156,
+      completedOrders: 1086,
+    });
+    expect(prisma.shop.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'shop-1', ownerUserId: 'seller-1' } }),
+    );
+    expect(count).toHaveBeenNthCalledWith(1, { where: { shopId: 'shop-1' } });
+    expect(count).toHaveBeenNthCalledWith(2, {
+      where: { shopId: 'shop-1', fulfillmentStatus: 'PENDING' },
+    });
+    expect(count).toHaveBeenNthCalledWith(3, {
+      where: { shopId: 'shop-1', fulfillmentStatus: 'SHIPPING' },
+    });
+    expect(count).toHaveBeenNthCalledWith(4, {
+      where: {
+        shopId: 'shop-1',
+        OR: [{ orderStatus: 'completed' }, { fulfillmentStatus: 'DELIVERED' }],
+      },
+    });
+  });
+
+  it('rejects order status summary access for a shop not owned by the requester', async () => {
+    const prisma = {
+      shop: { findFirst: jest.fn().mockResolvedValue(null) },
+      order: { count: jest.fn() },
+      $transaction: jest.fn(),
+    };
+    const repository = new OrdersRepository(prisma as never);
+
+    await expect(
+      repository.getSellerShopOrderStatusSummary({ requesterUserId: 'seller-2', shopId: 'shop-1' }),
+    ).rejects.toThrow('Shop does not belong to current user');
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it('should lock offer inventory rows before decrementing stock', async () => {
     const tx = {
       $queryRaw: jest.fn().mockResolvedValue([]),

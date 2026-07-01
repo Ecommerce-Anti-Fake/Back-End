@@ -11,6 +11,7 @@ export * from './list-my-orders.use-case';
 export * from './list-seller-shop-orders.use-case';
 export * from './get-seller-shop-dashboard-analytics.use-case';
 export * from './get-seller-shop-summary-metrics.use-case';
+export * from './get-seller-shop-order-status-summary.use-case';
 export * from './list-admin-orders.use-case';
 export * from './get-admin-finance-reconciliation.use-case';
 export * from './assign-admin-dispute.use-case';

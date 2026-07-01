@@ -562,6 +562,20 @@ export class SellerShopSummaryMetricsResponseDto {
   offers!: SellerShopSummaryMetricDto;
 }
 
+export class SellerShopOrderStatusSummaryResponseDto {
+  @ApiProperty({ example: 1284 })
+  totalOrders!: number;
+
+  @ApiProperty({ example: 42 })
+  pendingOrders!: number;
+
+  @ApiProperty({ example: 156 })
+  shippingOrders!: number;
+
+  @ApiProperty({ example: 1086 })
+  completedOrders!: number;
+}
+
 export class AdminFinanceReconciliationQueryDto {
   @ApiPropertyOptional({ example: '2026-05-01T00:00:00.000Z' })
   @IsOptional()

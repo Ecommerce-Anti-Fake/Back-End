@@ -31,6 +31,7 @@ import {
   RetryPayOSPaymentMessage,
   SellerShopDashboardAnalyticsMessage,
   SellerShopSummaryMetricsMessage,
+  SellerShopOrderStatusSummaryMessage,
   SellerShopOrdersLookupMessage,
   DisputeEvidenceUploadSignaturesMessage,
   AddDisputeEvidenceBatchMessage,
@@ -114,6 +115,10 @@ export class OrdersRpcService {
 
   getSellerShopSummaryMetrics(payload: SellerShopSummaryMetricsMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.getSellerShopSummaryMetrics, payload);
+  }
+
+  getSellerShopOrderStatusSummary(payload: SellerShopOrderStatusSummaryMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.getSellerShopOrderStatusSummary, payload);
   }
 
   findAdminOrders(payload: AdminOrdersLookupMessage = {}) {
