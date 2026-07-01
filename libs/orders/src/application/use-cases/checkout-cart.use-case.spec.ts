@@ -8,7 +8,9 @@ describe('CheckoutCartUseCase', () => {
     removeCartItems: jest.fn(),
     createCheckoutSession: jest.fn(),
     updateCheckoutSessionPaymentProviderRef: jest.fn(),
+    findOrderById: jest.fn(),
     markOrderPaid: jest.fn(),
+    markOrderPaymentFailed: jest.fn(),
     markCheckoutSessionPaid: jest.fn(),
   };
   const createOrderUseCase = {
@@ -76,7 +78,8 @@ describe('CheckoutCartUseCase', () => {
     });
   });
 
-  it('creates payOS checkout session and returns only session id and checkout url', async () => {
+  it('creates pending orders before creating the payOS checkout session and keeps cart items', async () => {
+    createOrderUseCase.execute.mockResolvedValueOnce(createOrder({ id: 'order-1', buyerPayableAmount: 130000 }));
     ordersRepository.createCheckoutSession.mockResolvedValueOnce({
       id: 'checkout-session-1',
       amount: new Prisma.Decimal(130000),
@@ -100,6 +103,7 @@ describe('CheckoutCartUseCase', () => {
       shippingOptionCode: 'GHN_1',
       paymentMethod: 'PAYOS',
       amount: 130000,
+      orderIds: ['order-1'],
     });
     expect(ordersRepository.updateCheckoutSessionPaymentProviderRef).toHaveBeenCalledWith({
       checkoutSessionId: 'checkout-session-1',
@@ -111,8 +115,45 @@ describe('CheckoutCartUseCase', () => {
       checkoutSessionId: 'checkout-session-1',
       checkoutUrl: 'https://pay.payos.vn/web/link-1',
     });
-    expect(createOrderUseCase.execute).not.toHaveBeenCalled();
+    expect(createOrderUseCase.execute).toHaveBeenCalledWith(expect.objectContaining({
+      buyerUserId: 'buyer-user-1',
+      offerId: 'offer-1',
+      paymentMethod: 'PAYOS',
+      skipPayOSPaymentLink: true,
+    }));
     expect(ordersRepository.removeCartItems).not.toHaveBeenCalled();
+  });
+
+  it('marks existing checkout orders paid and removes cart items after payOS success', async () => {
+    ordersRepository.findOrderById.mockResolvedValueOnce(createOrder({ id: 'order-1', buyerPayableAmount: 130000 }));
+    ordersRepository.markOrderPaid.mockResolvedValueOnce(createOrder({ id: 'order-1', buyerPayableAmount: 130000 }));
+
+    const result = await useCase.completePayOSSession({
+      session: {
+        id: 'checkout-session-1',
+        buyerUserId: 'buyer-user-1',
+        cartItemIds: ['cart-item-1'],
+        orderIds: ['order-1'],
+        shippingOptionCode: 'GHN_1',
+        paymentMethod: 'PAYOS',
+        paymentStatus: 'PENDING',
+        amount: new Prisma.Decimal(130000),
+      } as never,
+      paymentProviderRef: 'PAYOS:link-1',
+      reference: 'ref-1',
+    });
+
+    expect(createOrderUseCase.execute).not.toHaveBeenCalled();
+    expect(ordersRepository.markOrderPaid).toHaveBeenCalledWith({
+      id: 'order-1',
+      actorUserId: 'buyer-user-1',
+      providerRef: 'PAYOS:link-1:ref-1',
+    });
+    expect(ordersRepository.removeCartItems).toHaveBeenCalledWith({
+      buyerUserId: 'buyer-user-1',
+      cartItemIds: ['cart-item-1'],
+    });
+    expect(result).toHaveLength(1);
   });
 
   function createCart() {
@@ -147,6 +188,16 @@ describe('CheckoutCartUseCase', () => {
       addressLine: '12 Nguyen Trai',
       wardCode: 'VN-P202-D1450-W21211',
       wardName: 'Phuong Ben Nghe',
+    };
+  }
+
+  function createOrder(input: { id: string; buyerPayableAmount: number }) {
+    return {
+      id: input.id,
+      buyerPayableAmount: new Prisma.Decimal(input.buyerPayableAmount),
+      paymentIntent: {
+        paymentStatus: 'PENDING',
+      },
     };
   }
 });
