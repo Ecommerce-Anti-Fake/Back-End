@@ -103,6 +103,7 @@ export class CheckoutCartUseCase {
 
     return {
       orderId: order.id,
+      orderCode: paymentLink.orderCode,
       checkoutUrl: paymentLink.checkoutUrl,
     };
   }

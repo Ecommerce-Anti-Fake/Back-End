@@ -1754,6 +1754,9 @@ export class CheckoutCartPayOSResponseDto {
   @ApiProperty({ example: 'order-id' })
   orderId!: string;
 
+  @ApiProperty({ example: 1776240000123 })
+  orderCode!: number;
+
   @ApiProperty({ example: 'https://pay.payos.vn/web/payment-link-id' })
   checkoutUrl!: string;
 }

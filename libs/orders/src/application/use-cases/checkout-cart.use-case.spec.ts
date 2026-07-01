@@ -83,6 +83,7 @@ describe('CheckoutCartUseCase', () => {
   it('creates one pending PayOS order and keeps cart items until webhook success', async () => {
     payOSPaymentService.createPaymentLink.mockResolvedValue({
       paymentLinkId: 'link-1',
+      orderCode: 1776240000123,
       checkoutUrl: 'https://pay.payos.vn/web/link-1',
     });
     const result = await useCase.execute({
@@ -94,6 +95,7 @@ describe('CheckoutCartUseCase', () => {
 
     expect(result).toEqual({
       orderId: 'order-1',
+      orderCode: 1776240000123,
       checkoutUrl: 'https://pay.payos.vn/web/link-1',
     });
     expect(orderPlacementService.createAggregateOrder).toHaveBeenCalledTimes(1);
