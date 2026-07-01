@@ -25,6 +25,7 @@ function toSellerShopOrderListItem(order: SellerShopOrderRecord) {
     },
     orderAmount: decimalToNumber(order.buyerPayableAmount),
     orderStatus: order.orderStatus,
+    createdAt: order.createdAt,
   };
 }
 

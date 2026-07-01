@@ -219,6 +219,9 @@ export class SellerShopOrderListItemResponseDto {
 
   @ApiProperty({ example: 'pending' })
   orderStatus!: string;
+
+  @ApiProperty({ example: '2026-07-01T09:30:00.000Z' })
+  createdAt!: Date;
 }
 
 export class PaginatedSellerShopOrderResponseDto {

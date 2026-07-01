@@ -39,6 +39,7 @@ describe('ListSellerShopOrdersUseCase', () => {
           shippingName: 'Shipping Name',
           buyerPayableAmount: 250000,
           orderStatus: 'pending',
+          createdAt: new Date('2026-07-01T09:30:00.000Z'),
         },
       ],
     });
@@ -72,6 +73,7 @@ describe('ListSellerShopOrdersUseCase', () => {
           },
           orderAmount: 250000,
           orderStatus: 'pending',
+          createdAt: new Date('2026-07-01T09:30:00.000Z'),
         },
       ],
     });
