@@ -15,6 +15,7 @@ import type {
   AdminRiskScoresLookupMessage,
   AssignAdminDisputeMessage,
   CalculateRiskScoreMessage,
+  CheckoutCartMessage,
   CheckoutCartItemMessage,
   QuoteCartShippingOptionsMessage,
   QuoteCartItemShippingOptionsMessage,
@@ -60,6 +61,7 @@ import {
   BookOrderShippingUseCase,
   SyncOrderShippingStatusUseCase,
   AssignAdminDisputeUseCase,
+  CheckoutCartUseCase,
   CheckoutCartItemUseCase,
   QuoteCartShippingOptionsUseCase,
   QuoteCartItemShippingOptionsUseCase,
@@ -112,6 +114,7 @@ export class OrdersRpcController {
     private readonly addCartItemUseCase: AddCartItemUseCase,
     private readonly updateCartItemUseCase: UpdateCartItemUseCase,
     private readonly removeCartItemUseCase: RemoveCartItemUseCase,
+    private readonly checkoutCartUseCase: CheckoutCartUseCase,
     private readonly checkoutCartItemUseCase: CheckoutCartItemUseCase,
     private readonly quoteCartItemShippingOptionsUseCase: QuoteCartItemShippingOptionsUseCase,
     private readonly quoteCartShippingOptionsUseCase: QuoteCartShippingOptionsUseCase,
@@ -196,6 +199,15 @@ export class OrdersRpcController {
         buyerUserId: payload.buyerUserId,
         cartItemId: payload.cartItemId,
       });
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.checkoutCart)
+  async checkoutCart(@Payload() payload: CheckoutCartMessage) {
+    try {
+      return await this.checkoutCartUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

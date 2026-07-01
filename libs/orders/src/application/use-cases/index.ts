@@ -2,6 +2,7 @@ export * from './get-active-cart.use-case';
 export * from './add-cart-item.use-case';
 export * from './update-cart-item.use-case';
 export * from './remove-cart-item.use-case';
+export * from './checkout-cart.use-case';
 export * from './checkout-cart-item.use-case';
 export * from './quote-cart-item-shipping-options.use-case';
 export * from './quote-cart-shipping-options.use-case';

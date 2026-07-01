@@ -9,11 +9,16 @@ describe('HandlePayOSWebhookUseCase', () => {
 
   const ordersRepositoryMock = {
     findOrderByPaymentProviderRef: jest.fn(),
+    findCheckoutSessionByPaymentProviderRef: jest.fn(),
     markOrderPaid: jest.fn(),
     markOrderPaymentFailed: jest.fn(),
+    markCheckoutSessionFailed: jest.fn(),
   };
   const payOSPaymentServiceMock = {
     verifyWebhook: jest.fn(),
+  };
+  const checkoutCartUseCaseMock = {
+    completePayOSSession: jest.fn(),
   };
 
   beforeEach(() => {
@@ -21,6 +26,7 @@ describe('HandlePayOSWebhookUseCase', () => {
     useCase = new HandlePayOSWebhookUseCase(
       ordersRepositoryMock as unknown as OrdersRepository,
       payOSPaymentServiceMock as unknown as PayOSPaymentService,
+      checkoutCartUseCaseMock as never,
     );
   });
 
@@ -156,6 +162,7 @@ describe('HandlePayOSWebhookUseCase', () => {
   it('ignores stale webhook for an old payOS link after retry changes provider ref', async () => {
     payOSPaymentServiceMock.verifyWebhook.mockReturnValueOnce(true);
     ordersRepositoryMock.findOrderByPaymentProviderRef.mockResolvedValueOnce(null);
+    ordersRepositoryMock.findCheckoutSessionByPaymentProviderRef.mockResolvedValueOnce(null);
 
     const result = await useCase.execute({
       code: '00',
@@ -183,6 +190,7 @@ describe('HandlePayOSWebhookUseCase', () => {
   it('ignores stale failed webhook for an old payOS link after retry changes provider ref', async () => {
     payOSPaymentServiceMock.verifyWebhook.mockReturnValueOnce(true);
     ordersRepositoryMock.findOrderByPaymentProviderRef.mockResolvedValueOnce(null);
+    ordersRepositoryMock.findCheckoutSessionByPaymentProviderRef.mockResolvedValueOnce(null);
 
     const result = await useCase.execute({
       code: '01',
@@ -204,6 +212,50 @@ describe('HandlePayOSWebhookUseCase', () => {
       received: true,
       ignored: true,
       reason: 'order_not_found',
+    });
+  });
+
+  it('completes checkout session when payOS webhook belongs to cart checkout', async () => {
+    payOSPaymentServiceMock.verifyWebhook.mockReturnValueOnce(true);
+    ordersRepositoryMock.findOrderByPaymentProviderRef.mockResolvedValueOnce(null);
+    ordersRepositoryMock.findCheckoutSessionByPaymentProviderRef.mockResolvedValueOnce({
+      id: 'checkout-session-1',
+      buyerUserId: 'buyer-user-1',
+      cartItemIds: ['cart-item-1'],
+      shippingOptionCode: 'GHN_1',
+      paymentMethod: 'PAYOS',
+      paymentStatus: 'PENDING',
+      amount: new Prisma.Decimal(100),
+      paymentProviderRef: 'PAYOS:link-1',
+      createdAt: new Date('2026-04-15T10:00:00.000Z'),
+      updatedAt: new Date('2026-04-15T10:00:00.000Z'),
+      completedAt: null,
+      failedAt: null,
+    });
+    checkoutCartUseCaseMock.completePayOSSession.mockResolvedValueOnce([createOrderRecord({ orderStatus: 'paid', paymentStatus: 'PAID' })]);
+
+    const result = await useCase.execute({
+      code: '00',
+      desc: 'OK',
+      success: true,
+      signature: 'sig',
+      data: {
+        paymentLinkId: 'link-1',
+        amount: 100,
+        code: '00',
+        reference: 'ref-1',
+      },
+    });
+
+    expect(checkoutCartUseCaseMock.completePayOSSession).toHaveBeenCalledWith({
+      session: expect.objectContaining({ id: 'checkout-session-1' }),
+      paymentProviderRef: 'PAYOS:link-1',
+      reference: 'ref-1',
+    });
+    expect(result).toMatchObject({
+      received: true,
+      checkoutSessionId: 'checkout-session-1',
+      orders: [{ id: 'order-1', paymentStatus: 'PAID' }],
     });
   });
 });

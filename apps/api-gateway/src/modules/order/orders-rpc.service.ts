@@ -19,6 +19,7 @@ import {
   CreateOrderMessage,
   CreateReportMessage,
   CheckoutCartItemMessage,
+  CheckoutCartMessage,
   QuoteCartShippingOptionsMessage,
   QuoteCartItemShippingOptionsMessage,
   MarkOrderPaidMessage,
@@ -82,6 +83,10 @@ export class OrdersRpcService {
 
   checkoutCartItem(payload: CheckoutCartItemMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.checkoutCartItem, payload);
+  }
+
+  checkoutCart(payload: CheckoutCartMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.checkoutCart, payload);
   }
 
   quoteCartItemShippingOptions(payload: QuoteCartItemShippingOptionsMessage) {

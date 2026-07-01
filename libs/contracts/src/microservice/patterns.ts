@@ -138,6 +138,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   addCartItem: 'orders.add-cart-item',
   updateCartItem: 'orders.update-cart-item',
   removeCartItem: 'orders.remove-cart-item',
+  checkoutCart: 'orders.checkout-cart',
   checkoutCartItem: 'orders.checkout-cart-item',
   quoteCartItemShippingOptions: 'orders.quote-cart-item-shipping-options',
   quoteCartShippingOptions: 'orders.quote-cart-shipping-options',
@@ -982,6 +983,14 @@ export type CheckoutCartItemMessage = {
   shippingProviderCode?: string | null;
   shippingServiceId?: number | null;
   shippingServiceTypeId?: number | null;
+};
+
+export type CheckoutCartMessage = {
+  buyerUserId: string;
+  cartItemIds: string[];
+  paymentMethod: 'COD' | 'PAYOS';
+  shippingOptionCode: string;
+  affiliateCode?: string | null;
 };
 
 export type QuoteCartItemShippingOptionsMessage = {

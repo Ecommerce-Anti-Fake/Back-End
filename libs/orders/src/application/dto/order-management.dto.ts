@@ -1657,6 +1657,45 @@ export class CheckoutCartItemDto {
   shippingServiceTypeId?: number;
 }
 
+export class CheckoutCartDto {
+  @ApiProperty({
+    description: 'Danh sach cart item duoc buyer chon de checkout.',
+    example: ['cart-item-id-1', 'cart-item-id-2'],
+    type: String,
+    isArray: true,
+  })
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsUUID('4', { each: true })
+  cartItemIds!: string[];
+
+  @ApiProperty({ example: 'PAYOS', enum: ['COD', 'PAYOS'] })
+  @IsIn(['COD', 'PAYOS'])
+  paymentMethod!: 'COD' | 'PAYOS';
+
+  @ApiProperty({ example: 'GHN_1' })
+  @IsString()
+  shippingOptionCode!: string;
+
+  @ApiPropertyOptional({ example: 'spring-aff-001' })
+  @IsOptional()
+  @IsString()
+  affiliateCode?: string;
+}
+
+export class CheckoutCartCodResponseDto {
+  @ApiProperty({ example: true })
+  success!: boolean;
+}
+
+export class CheckoutCartPayOSResponseDto {
+  @ApiProperty({ example: 'checkout-session-id' })
+  checkoutSessionId!: string;
+
+  @ApiProperty({ example: 'https://pay.payos.vn/web/payment-link-id' })
+  payOSCheckoutUrl!: string;
+}
+
 export class QuoteCartItemShippingOptionsDto {
   @ApiPropertyOptional({ example: '12 Nguyen Trai, Phuong Ben Nghe, Quan 1, TP.HCM' })
   @IsOptional()

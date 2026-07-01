@@ -32,6 +32,7 @@ export class CreateOrderUseCase {
     shippingProviderCode?: string | null;
     shippingServiceId?: number | null;
     shippingServiceTypeId?: number | null;
+    skipPayOSPaymentLink?: boolean | null;
   }) {
     const buyer = await this.ordersRepository.findUserById(input.buyerUserId);
     if (!buyer) throw new NotFoundException('Buyer not found');
@@ -125,7 +126,7 @@ export class CreateOrderUseCase {
     });
 
     const response = toOrderResponse(order);
-    if (paymentMethod !== 'PAYOS') return response;
+    if (paymentMethod !== 'PAYOS' || input.skipPayOSPaymentLink) return response;
 
     const paymentLink = await this.payOSPaymentService.createPaymentLink({
       orderId: order.id,

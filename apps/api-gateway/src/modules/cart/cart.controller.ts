@@ -4,6 +4,7 @@ import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
   AddCartItemDto,
   CartShippingOptionsResponseDto,
+  CheckoutCartDto,
   CheckoutCartItemDto,
   QuoteCartShippingOptionsDto,
   UpdateCartItemDto,
@@ -81,7 +82,7 @@ export class CartController {
     });
   }
 
-  @ApiOperation({ summary: 'Checkout mot cart item thanh retail order' })
+  @ApiOperation({ summary: 'Checkout mot cart item thanh order' })
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('items/:cartItemId/checkout')
@@ -105,6 +106,26 @@ export class CartController {
       shippingProviderCode: dto.shippingProviderCode ?? null,
       shippingServiceId: dto.shippingServiceId ?? null,
       shippingServiceTypeId: dto.shippingServiceTypeId ?? null,
+    });
+    this.dashboardSseBrokerService.notifyOrderChanged(result, buyerUserId);
+
+    return result;
+  }
+
+  @ApiOperation({ summary: 'Checkout cac cart item da chon' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('checkout')
+  async checkoutCart(
+    @CurrentUserId() buyerUserId: string,
+    @Body() dto: CheckoutCartDto,
+  ) {
+    const result = await this.ordersRpcService.checkoutCart({
+      buyerUserId,
+      cartItemIds: dto.cartItemIds,
+      paymentMethod: dto.paymentMethod,
+      shippingOptionCode: dto.shippingOptionCode,
+      affiliateCode: dto.affiliateCode ?? null,
     });
     this.dashboardSseBrokerService.notifyOrderChanged(result, buyerUserId);
 

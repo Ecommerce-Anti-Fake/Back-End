@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { PayOSPaymentService } from '../services';
+import { CheckoutCartUseCase } from './checkout-cart.use-case';
 import { toOrderResponse } from './orders.mapper';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class HandlePayOSWebhookUseCase {
   constructor(
     private readonly ordersRepository: OrdersRepository,
     private readonly payOSPaymentService: PayOSPaymentService,
+    private readonly checkoutCartUseCase: CheckoutCartUseCase,
   ) {}
 
   async execute(input: {
@@ -28,11 +30,7 @@ export class HandlePayOSWebhookUseCase {
 
     const order = await this.ordersRepository.findOrderByPaymentProviderRef(`PAYOS:${paymentLinkId}`);
     if (!order) {
-      return {
-        received: true,
-        ignored: true,
-        reason: 'order_not_found',
-      };
+      return this.handleCheckoutSessionWebhook(input, paymentLinkId);
     }
 
     const amount = Number(input.data.amount);
@@ -87,5 +85,56 @@ export class HandlePayOSWebhookUseCase {
 
   private readString(value: unknown) {
     return typeof value === 'string' ? value.trim() : '';
+  }
+
+  private async handleCheckoutSessionWebhook(
+    input: {
+      code: string;
+      desc: string;
+      success: boolean;
+      data: Record<string, unknown>;
+    },
+    paymentLinkId: string,
+  ) {
+    const paymentProviderRef = `PAYOS:${paymentLinkId}`;
+    const session = await this.ordersRepository.findCheckoutSessionByPaymentProviderRef(paymentProviderRef);
+    if (!session) {
+      return {
+        received: true,
+        ignored: true,
+        reason: 'order_not_found',
+      };
+    }
+
+    const amount = Number(input.data.amount);
+    const payableAmount = Number(session.amount.toString());
+    if (!Number.isFinite(amount) || amount !== Math.round(payableAmount)) {
+      throw new BadRequestException('payOS webhook amount does not match checkout session amount');
+    }
+
+    const dataCode = this.readString(input.data.code);
+    if (!input.success || input.code !== '00' || dataCode !== '00') {
+      if (session.paymentStatus !== 'PAID' && session.paymentStatus !== 'FAILED') {
+        await this.ordersRepository.markCheckoutSessionFailed(session.id);
+      }
+
+      return {
+        received: true,
+        checkoutSessionId: session.id,
+      };
+    }
+
+    const reference = this.readString(input.data.reference) || paymentLinkId;
+    const orders = await this.checkoutCartUseCase.completePayOSSession({
+      session,
+      paymentProviderRef,
+      reference,
+    });
+
+    return {
+      received: true,
+      checkoutSessionId: session.id,
+      orders: orders.map((item) => toOrderResponse(item)),
+    };
   }
 }

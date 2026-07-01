@@ -351,6 +351,7 @@ function decimalToNumber(value: Prisma.Decimal | number | string | null | undefi
   return Number(value.toString());
 }
 export type CartWithItems = Prisma.CartGetPayload<typeof cartWithItemsArgs>;
+export type CheckoutSessionRecord = Prisma.CheckoutSessionGetPayload<Record<string, never>>;
 export type OrderBatchAllocation = {
   batchId: string;
   quantity: number;
@@ -627,6 +628,82 @@ export class OrdersRepository {
     });
 
     return this.getOrCreateActiveCart(input.buyerUserId);
+  }
+
+  async removeCartItems(input: { buyerUserId: string; cartItemIds: string[] }): Promise<CartWithItems> {
+    const cart = await this.getOrCreateActiveCart(input.buyerUserId);
+    const selectedIds = new Set(input.cartItemIds);
+    const selectedItems = cart.items.filter((item) => selectedIds.has(item.id));
+    if (selectedItems.length !== selectedIds.size) {
+      throw new BadRequestException('One or more cart items are invalid');
+    }
+
+    await this.prisma.cartItem.deleteMany({
+      where: {
+        cartId: cart.id,
+        id: {
+          in: [...selectedIds],
+        },
+      },
+    });
+
+    return this.getOrCreateActiveCart(input.buyerUserId);
+  }
+
+  createCheckoutSession(input: {
+    buyerUserId: string;
+    cartItemIds: string[];
+    shippingOptionCode: string;
+    paymentMethod: 'PAYOS';
+    amount: number;
+  }): Promise<CheckoutSessionRecord> {
+    return this.prisma.checkoutSession.create({
+      data: {
+        buyerUserId: input.buyerUserId,
+        cartItemIds: input.cartItemIds,
+        shippingOptionCode: input.shippingOptionCode,
+        paymentMethod: input.paymentMethod,
+        amount: input.amount,
+      },
+    });
+  }
+
+  updateCheckoutSessionPaymentProviderRef(input: {
+    checkoutSessionId: string;
+    paymentProviderRef: string;
+  }): Promise<CheckoutSessionRecord> {
+    return this.prisma.checkoutSession.update({
+      where: { id: input.checkoutSessionId },
+      data: {
+        paymentProviderRef: input.paymentProviderRef,
+      },
+    });
+  }
+
+  findCheckoutSessionByPaymentProviderRef(paymentProviderRef: string): Promise<CheckoutSessionRecord | null> {
+    return this.prisma.checkoutSession.findUnique({
+      where: { paymentProviderRef },
+    });
+  }
+
+  markCheckoutSessionPaid(id: string): Promise<CheckoutSessionRecord> {
+    return this.prisma.checkoutSession.update({
+      where: { id },
+      data: {
+        paymentStatus: 'PAID',
+        completedAt: new Date(),
+      },
+    });
+  }
+
+  markCheckoutSessionFailed(id: string): Promise<CheckoutSessionRecord> {
+    return this.prisma.checkoutSession.update({
+      where: { id },
+      data: {
+        paymentStatus: 'FAILED',
+        failedAt: new Date(),
+      },
+    });
   }
 
   findUserById(id: string) {
