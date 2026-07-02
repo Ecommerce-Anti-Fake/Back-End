@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { CartWithItems, OrderWithRelations } from '../../infrastructure/persistence/orders.repository';
+import { CartWithItems, OrderWithRelations, OrderAuditLogRecord } from '../../infrastructure/persistence/orders.repository';
 
 export interface MyOrdersSimplifiedResponse {
   id: string;
@@ -17,6 +17,45 @@ export interface MyOrdersSimplifiedResponse {
     image: string;
   };
   otherProducts: number;
+}
+
+export interface OrderDetailResponse {
+  id: string;
+  orderCode: string;
+  status: string;
+  createdAt: string;
+  receiverName: string;
+  receiverPhone: string;
+  shippingAddress: string;
+  paymentMethod: string;
+  paymentStatus: string;
+  carrier?: string;
+  trackingCode?: string;
+  shippingMethod?: string;
+  estimatedDelivery?: string;
+  subtotal: number;
+  discount: number;
+  shippingFee: number;
+  totalAmount: number;
+  shops: {
+    shopId: string;
+    shopName: string;
+    fulfillmentStatus: string;
+    items: {
+      id: string;
+      productName: string;
+      thumbnailUrl: string;
+      variantName?: string;
+      quantity: number;
+      unitPrice: number;
+      totalPrice: number;
+    }[];
+  }[];
+  histories: {
+    status: string;
+    description: string;
+    createdAt: string;
+  }[];
 }
 
 export function toOrderResponse(order: OrderWithRelations) {
@@ -130,6 +169,132 @@ export function toMyOrdersSimplifiedResponse(order: OrderWithRelations): MyOrder
         },
     otherProducts: order.items.length - 1,
   };
+}
+
+export function toOrderDetailResponse(order: OrderWithRelations, auditLogs: OrderAuditLogRecord[]): OrderDetailResponse {
+  const orderCode = `#ORD-${order.id.substring(0, 8).toUpperCase()}`;
+
+  // Build histories from audit logs with Vietnamese descriptions
+  const histories = buildOrderHistories(auditLogs);
+
+  // Build shops and items
+  const shops = buildOrderDetailShops(order);
+
+  // Calculate amounts
+  const subtotal = decimalToNumber(order.baseAmount);
+  const discount = decimalToNumber(order.discountAmount);
+  const shippingFee = decimalToNumber(order.shippingFeeAmount);
+
+  return {
+    id: order.id,
+    orderCode,
+    status: order.orderStatus,
+    createdAt: order.createdAt.toISOString(),
+    receiverName: order.shippingName ?? '',
+    receiverPhone: order.shippingPhone ?? '',
+    shippingAddress: order.shippingAddress ?? '',
+    paymentMethod: order.paymentIntent?.paymentMethod ?? '',
+    paymentStatus: order.paymentIntent?.paymentStatus ?? '',
+    carrier: order.shippingProviderName ?? undefined,
+    trackingCode: order.shippingTrackingCode ?? undefined,
+    shippingMethod: order.shippingServiceId ? `${order.shippingProviderName} - Service ${order.shippingServiceId}` : undefined,
+    estimatedDelivery: undefined, // Would need additional data to calculate
+    subtotal,
+    discount,
+    shippingFee,
+    totalAmount: decimalToNumber(order.totalAmount),
+    shops,
+    histories,
+  };
+}
+
+function buildOrderHistories(auditLogs: OrderAuditLogRecord[]): OrderDetailResponse['histories'] {
+  const statusDescriptions: Record<string, string> = {
+    'PENDING': 'Chờ thanh toán',
+    'PAID': 'Đã thanh toán',
+    'CONFIRMED': 'Người bán xác nhận',
+    'PROCESSING': 'Đang đóng gói',
+    'SHIPPED': 'Đang giao hàng',
+    'DELIVERED': 'Giao hàng thành công',
+    'CANCELLED': 'Đơn hàng bị hủy',
+    'REFUNDING': 'Đang hoàn tiền',
+    'REFUNDED': 'Hoàn tiền thành công',
+  };
+
+  const actionDescriptions: Record<string, string> = {
+    'FULFILLMENT_STATUS_CHANGED': 'Cập nhật trạng thái đơn hàng',
+    'PAYMENT_STATUS_CHANGED': 'Cập nhật trạng thái thanh toán',
+    'SHIPPING_BOOKED': 'Đặt hàng vận chuyển',
+    'SHIPPING_STATUS_SYNCED': 'Cập nhật trạng thái vận chuyển',
+  };
+
+  return auditLogs.map((log) => {
+    let description = actionDescriptions[log.action] || log.action;
+    
+    if (log.toStatus && statusDescriptions[log.toStatus]) {
+      description = statusDescriptions[log.toStatus];
+    }
+
+    return {
+      status: log.toStatus || log.action,
+      description,
+      createdAt: log.createdAt.toISOString(),
+    };
+  });
+}
+
+function buildOrderDetailShops(order: OrderWithRelations): OrderDetailResponse['shops'] {
+  interface ShopDetail {
+    shopId: string;
+    shopName: string;
+    fulfillmentStatus: string;
+    items: Array<{
+      id: string;
+      productName: string;
+      thumbnailUrl: string;
+      variantName?: string;
+      quantity: number;
+      unitPrice: number;
+      totalPrice: number;
+    }>;
+  }
+
+  const shopMap = new Map<string, ShopDetail>();
+
+  for (const item of order.items) {
+    const shopId = item.offer?.shopId ?? order.shopId;
+    const shopName = item.offer?.shop?.shopName ?? order.shop.shopName;
+    const shopGroup = order.shopGroups?.find((group) => group.shopId === shopId);
+    const fulfillmentStatus = shopGroup?.fulfillmentStatus ?? order.fulfillmentStatus;
+
+    if (!shopMap.has(shopId)) {
+      const shopDetail: ShopDetail = {
+        shopId,
+        shopName,
+        fulfillmentStatus,
+        items: [] as Array<ShopDetail['items'][number]>,
+      };
+      shopMap.set(shopId, shopDetail);
+    }
+
+    const shop = shopMap.get(shopId)!;
+    const offerMedia = item.offer?.media ?? [];
+    const thumbnailMedia =
+      offerMedia.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
+      offerMedia.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
+
+    shop.items.push({
+      id: item.id,
+      productName: item.offerTitleSnapshot,
+      thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? '',
+      variantName: item.offer?.modelName ?? undefined,
+      quantity: item.quantity,
+      unitPrice: decimalToNumber(item.unitPrice),
+      totalPrice: decimalToNumber(item.unitPrice) * item.quantity,
+    });
+  }
+
+  return Array.from(shopMap.values());
 }
 
 export function toCartResponse(cart: CartWithItems) {

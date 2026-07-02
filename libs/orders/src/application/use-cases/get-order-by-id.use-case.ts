@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
-import { toOrderResponse } from './orders.mapper';
+import { toOrderResponse, toOrderDetailResponse } from './orders.mapper';
 
 @Injectable()
 export class GetOrderByIdUseCase {
@@ -21,40 +21,44 @@ export class GetOrderByIdUseCase {
       throw new ForbiddenException('You do not have access to this order');
     }
 
-    if (!sellerGroup || isRetailBuyer || isWholesaleBuyerOwner) {
-      return toOrderResponse(order);
-    }
+    // Fetch audit logs for order history
+    const auditLogs = await this.ordersRepository.findAuditLogsByTarget('ORDER', id);
 
-    return toOrderResponse({
-      ...order,
-      shopId: sellerGroup.shopId,
-      shop: { shopName: sellerGroup.shop.shopName, ownerUserId: sellerGroup.shop.ownerUserId },
-      fulfillmentStatus: sellerGroup.fulfillmentStatus,
-      baseAmount: sellerGroup.baseAmount,
-      discountAmount: sellerGroup.discountAmount,
-      platformFeeAmount: sellerGroup.platformFeeAmount,
-      buyerPayableAmount: sellerGroup.baseAmount.add(sellerGroup.shippingFeeAmount),
-      sellerReceivableAmount: sellerGroup.sellerReceivableAmount,
-      totalAmount: sellerGroup.baseAmount.add(sellerGroup.shippingFeeAmount),
-      shippingName: sellerGroup.shippingName,
-      shippingPhone: sellerGroup.shippingPhone,
-      shippingAddress: sellerGroup.shippingAddress,
-      shippingDistrictId: sellerGroup.shippingDistrictId,
-      shippingDistrictName: sellerGroup.shippingDistrictName,
-      shippingWardCode: sellerGroup.shippingWardCode,
-      shippingWardName: sellerGroup.shippingWardName,
-      shippingProviderCode: sellerGroup.shippingProviderCode,
-      shippingProviderName: sellerGroup.shippingProviderName,
-      shippingServiceId: sellerGroup.shippingServiceId,
-      shippingServiceTypeId: sellerGroup.shippingServiceTypeId,
-      shippingFeeAmount: sellerGroup.shippingFeeAmount,
-      shippingTrackingCode: sellerGroup.shippingTrackingCode,
-      parcelWeightGrams: sellerGroup.parcelWeightGrams,
-      parcelLengthCm: sellerGroup.parcelLengthCm,
-      parcelWidthCm: sellerGroup.parcelWidthCm,
-      parcelHeightCm: sellerGroup.parcelHeightCm,
-      shopGroups: [sellerGroup],
-      items: order.items.filter((item) => item.orderShopGroupId === sellerGroup.id),
-    });
+    const orderToReturn =
+      !sellerGroup || isRetailBuyer || isWholesaleBuyerOwner
+        ? order
+        : {
+            ...order,
+            shopId: sellerGroup.shopId,
+            shop: { shopName: sellerGroup.shop.shopName, ownerUserId: sellerGroup.shop.ownerUserId },
+            fulfillmentStatus: sellerGroup.fulfillmentStatus,
+            baseAmount: sellerGroup.baseAmount,
+            discountAmount: sellerGroup.discountAmount,
+            platformFeeAmount: sellerGroup.platformFeeAmount,
+            buyerPayableAmount: sellerGroup.baseAmount.add(sellerGroup.shippingFeeAmount),
+            sellerReceivableAmount: sellerGroup.sellerReceivableAmount,
+            totalAmount: sellerGroup.baseAmount.add(sellerGroup.shippingFeeAmount),
+            shippingName: sellerGroup.shippingName,
+            shippingPhone: sellerGroup.shippingPhone,
+            shippingAddress: sellerGroup.shippingAddress,
+            shippingDistrictId: sellerGroup.shippingDistrictId,
+            shippingDistrictName: sellerGroup.shippingDistrictName,
+            shippingWardCode: sellerGroup.shippingWardCode,
+            shippingWardName: sellerGroup.shippingWardName,
+            shippingProviderCode: sellerGroup.shippingProviderCode,
+            shippingProviderName: sellerGroup.shippingProviderName,
+            shippingServiceId: sellerGroup.shippingServiceId,
+            shippingServiceTypeId: sellerGroup.shippingServiceTypeId,
+            shippingFeeAmount: sellerGroup.shippingFeeAmount,
+            shippingTrackingCode: sellerGroup.shippingTrackingCode,
+            parcelWeightGrams: sellerGroup.parcelWeightGrams,
+            parcelLengthCm: sellerGroup.parcelLengthCm,
+            parcelWidthCm: sellerGroup.parcelWidthCm,
+            parcelHeightCm: sellerGroup.parcelHeightCm,
+            shopGroups: [sellerGroup],
+            items: order.items.filter((item) => item.orderShopGroupId === sellerGroup.id),
+          };
+
+    return toOrderDetailResponse(orderToReturn, auditLogs);
   }
 }
