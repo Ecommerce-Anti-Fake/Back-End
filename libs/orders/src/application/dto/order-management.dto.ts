@@ -12,11 +12,11 @@ const MODERATION_TARGET_TYPES = ['KYC', 'SHOP', 'OFFER', 'BATCH', 'REPORT', 'DIS
 const MODERATION_CASE_STATUSES = ['ASSIGNED', 'IN_REVIEW', 'ESCALATED', 'RESOLVED', 'CLOSED'] as const;
 const SORT_ORDERS = ['asc', 'desc'] as const;
 const FINANCE_ESCROW_STATUSES = ['PENDING', 'HELD', 'FROZEN', 'RELEASED', 'CANCELLED', 'REFUNDED'] as const;
-export const SELLER_ORDER_STATUSES = ['pending', 'paid', 'completed', 'cancelled', 'refunded'] as const;
-export const SELLER_ORDER_STATUS_FILTERS = ['all', ...SELLER_ORDER_STATUSES] as const;
+export const SELLER_FULFILLMENT_STATUSES = ['PENDING', 'PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED'] as const;
+export const SELLER_FULFILLMENT_STATUS_FILTERS = ['all', ...SELLER_FULFILLMENT_STATUSES] as const;
 
-export type SellerOrderStatus = (typeof SELLER_ORDER_STATUSES)[number];
-export type SellerOrderStatusFilter = (typeof SELLER_ORDER_STATUS_FILTERS)[number];
+export type SellerFulfillmentStatus = (typeof SELLER_FULFILLMENT_STATUSES)[number];
+export type SellerFulfillmentStatusFilter = (typeof SELLER_FULFILLMENT_STATUS_FILTERS)[number];
 
 export class ShippingMethodResponseDto {
   @ApiProperty({ example: 'GHN' })
@@ -181,13 +181,13 @@ export class OrderShopGroupResponseDto {
 
 export class SellerShopOrdersQueryDto {
   @ApiPropertyOptional({
-    description: 'Loc theo trang thai don hang. Dung all hoac bo trong de lay tat ca.',
-    enum: SELLER_ORDER_STATUS_FILTERS,
+    description: 'Loc theo trang thai xu ly cua shop. Dung all hoac bo trong de lay tat ca.',
+    enum: SELLER_FULFILLMENT_STATUS_FILTERS,
     example: 'all',
   })
   @IsOptional()
-  @IsIn(SELLER_ORDER_STATUS_FILTERS)
-  orderStatus?: SellerOrderStatusFilter;
+  @IsIn(SELLER_FULFILLMENT_STATUS_FILTERS)
+  status?: SellerFulfillmentStatusFilter;
 
   @ApiPropertyOptional({ example: 1, minimum: 1 })
   @IsOptional()
@@ -226,8 +226,8 @@ export class SellerShopOrderListItemResponseDto {
   @ApiProperty({ example: 250000 })
   orderAmount!: number;
 
-  @ApiProperty({ enum: SELLER_ORDER_STATUSES, example: 'pending' })
-  orderStatus!: SellerOrderStatus;
+  @ApiProperty({ enum: SELLER_FULFILLMENT_STATUSES, example: 'PROCESSING' })
+  status!: SellerFulfillmentStatus;
 
   @ApiProperty({ example: '2026-07-01T09:30:00.000Z' })
   createdAt!: Date;

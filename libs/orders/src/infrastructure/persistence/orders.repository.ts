@@ -1473,7 +1473,7 @@ export class OrdersRepository {
   async findSellerShopOrders(input: {
     requesterUserId: string;
     shopId: string;
-    orderStatus?: string;
+    status?: string;
     page?: number;
     pageSize?: number;
   }): Promise<{
@@ -1489,10 +1489,18 @@ export class OrdersRepository {
 
     const page = Math.max(1, Number(input.page ?? 1));
     const pageSize = Math.min(50, Math.max(1, Number(input.pageSize ?? 20)));
-    const normalizedStatus = input.orderStatus?.trim();
+    const normalizedStatus = input.status?.trim();
     const where: Prisma.OrderWhereInput = {
-      shopGroups: { some: { shopId: input.shopId } },
-      ...(normalizedStatus && normalizedStatus !== 'all' ? { orderStatus: normalizedStatus } : {}),
+      shopGroups: {
+        some: {
+          shopId: input.shopId,
+          ...(normalizedStatus && normalizedStatus !== 'all' ? { fulfillmentStatus: normalizedStatus } : {}),
+        },
+      },
+      OR: [
+        { paymentIntent: { is: { paymentMethod: 'COD' } } },
+        { paymentIntent: { is: { paymentMethod: 'PAYOS', paymentStatus: 'PAID' } } },
+      ],
     };
 
     const [total, items] = await this.prisma.$transaction([

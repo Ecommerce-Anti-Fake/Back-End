@@ -39,6 +39,15 @@ describe('ListSellerShopOrdersUseCase', () => {
           shippingName: 'Shipping Name',
           buyerPayableAmount: 250000,
           orderStatus: 'pending',
+          fulfillmentStatus: 'PENDING',
+          shopGroups: [
+            {
+              shopId: 'shop-1',
+              fulfillmentStatus: 'PROCESSING',
+              baseAmount: 225000,
+              shippingFeeAmount: 25000,
+            },
+          ],
           createdAt: new Date('2026-07-01T09:30:00.000Z'),
         },
       ],
@@ -47,7 +56,7 @@ describe('ListSellerShopOrdersUseCase', () => {
     const result = await useCase.execute({
       requesterUserId: 'seller-1',
       shopId: 'shop-1',
-      orderStatus: 'pending',
+      status: 'PROCESSING',
       page: 2,
       pageSize: 1,
     });
@@ -55,7 +64,7 @@ describe('ListSellerShopOrdersUseCase', () => {
     expect(ordersRepositoryMock.findSellerShopOrders).toHaveBeenCalledWith({
       requesterUserId: 'seller-1',
       shopId: 'shop-1',
-      orderStatus: 'pending',
+      status: 'PROCESSING',
       page: 2,
       pageSize: 1,
     });
@@ -72,7 +81,7 @@ describe('ListSellerShopOrdersUseCase', () => {
             email: 'buyer@example.com',
           },
           orderAmount: 250000,
-          orderStatus: 'pending',
+          status: 'PROCESSING',
           createdAt: new Date('2026-07-01T09:30:00.000Z'),
         },
       ],

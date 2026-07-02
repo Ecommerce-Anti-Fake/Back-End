@@ -45,7 +45,7 @@ describe('OrderController', () => {
 
   it('passes seller shop order pagination and status filter to RPC', async () => {
     await controller.findSellerShopOrders('shop-1', 'seller-1', {
-      orderStatus: 'pending',
+      status: 'PROCESSING',
       page: 2,
       pageSize: 10,
     });
@@ -53,7 +53,7 @@ describe('OrderController', () => {
     expect(ordersRpcService.findSellerShopOrders).toHaveBeenCalledWith({
       shopId: 'shop-1',
       requesterUserId: 'seller-1',
-      orderStatus: 'pending',
+      status: 'PROCESSING',
       page: 2,
       pageSize: 10,
     });

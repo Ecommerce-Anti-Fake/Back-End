@@ -1,6 +1,40 @@
 import { OrdersRepository } from './orders.repository';
 
 describe('OrdersRepository', () => {
+  it('lists only COD or paid shop orders and filters by the shop fulfillment status', async () => {
+    const count = jest.fn();
+    const findMany = jest.fn();
+    const prisma = {
+      shop: { findFirst: jest.fn().mockResolvedValue({ id: 'shop-1' }) },
+      order: { count, findMany },
+      $transaction: jest.fn().mockResolvedValue([1, []]),
+    };
+    const repository = new OrdersRepository(prisma as never);
+
+    await repository.findSellerShopOrders({
+      requesterUserId: 'seller-1',
+      shopId: 'shop-1',
+      status: 'PROCESSING',
+      page: 1,
+      pageSize: 20,
+    });
+
+    const expectedWhere = {
+      shopGroups: {
+        some: {
+          shopId: 'shop-1',
+          fulfillmentStatus: 'PROCESSING',
+        },
+      },
+      OR: [
+        { paymentIntent: { is: { paymentMethod: 'COD' } } },
+        { paymentIntent: { is: { paymentMethod: 'PAYOS', paymentStatus: 'PAID' } } },
+      ],
+    };
+    expect(count).toHaveBeenCalledWith({ where: expectedWhere });
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expectedWhere }));
+  });
+
   it('counts seller shop orders by the requested dashboard statuses', async () => {
     const count = jest.fn();
     const prisma = {

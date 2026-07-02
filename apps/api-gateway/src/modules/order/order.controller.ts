@@ -69,7 +69,7 @@ export class OrderController {
     return this.ordersRpcService.findSellerShopOrders({
       shopId,
       requesterUserId,
-      orderStatus: query.orderStatus,
+      status: query.status,
       page: query.page,
       pageSize: query.pageSize,
     });

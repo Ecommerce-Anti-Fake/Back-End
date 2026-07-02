@@ -5,7 +5,7 @@ import { OrdersRepository, SellerShopOrderRecord } from '../../infrastructure/pe
 export class ListSellerShopOrdersUseCase {
   constructor(private readonly ordersRepository: OrdersRepository) {}
 
-  async execute(input: { requesterUserId: string; shopId: string; orderStatus?: string; page?: number; pageSize?: number }) {
+  async execute(input: { requesterUserId: string; shopId: string; status?: string; page?: number; pageSize?: number }) {
     const result = await this.ordersRepository.findSellerShopOrders(input);
 
     return {
@@ -27,7 +27,7 @@ function toSellerShopOrderListItem(order: SellerShopOrderRecord, shopId: string)
     orderAmount: shopGroup
       ? decimalToNumber(shopGroup.baseAmount) + decimalToNumber(shopGroup.shippingFeeAmount)
       : decimalToNumber(order.buyerPayableAmount),
-    orderStatus: order.orderStatus,
+    status: shopGroup?.fulfillmentStatus ?? order.fulfillmentStatus,
     createdAt: order.createdAt,
   };
 }

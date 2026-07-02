@@ -1013,7 +1013,7 @@ export type MyOrdersLookupMessage = {
 export type SellerShopOrdersLookupMessage = {
   requesterUserId: string;
   shopId: string;
-  orderStatus?: string;
+  status?: string;
   page?: number;
   pageSize?: number;
 };
