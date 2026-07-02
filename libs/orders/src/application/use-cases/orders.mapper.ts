@@ -1,6 +1,24 @@
 import { Prisma } from '@prisma/client';
 import { CartWithItems, OrderWithRelations } from '../../infrastructure/persistence/orders.repository';
 
+export interface MyOrdersSimplifiedResponse {
+  id: string;
+  orderCode: string;
+  status: string;
+  shopId: string;
+  shopName: string;
+  totalAmount: number;
+  paymentMethod: string;
+  firstProduct: {
+    name: string;
+    variant: string;
+    quantity: number;
+    price: number;
+    image: string;
+  };
+  otherProducts: number;
+}
+
 export function toOrderResponse(order: OrderWithRelations) {
   const openDispute = order.disputes?.[0] ?? null;
   const items = order.items.map((item) => toOrderItemResponse(order, item));
@@ -74,6 +92,43 @@ export function toOrderResponse(order: OrderWithRelations) {
     items,
     shops,
     createdAt: order.createdAt,
+  };
+}
+
+export function toMyOrdersSimplifiedResponse(order: OrderWithRelations): MyOrdersSimplifiedResponse {
+  const firstItem = order.items[0];
+  const offerMedia = firstItem?.offer?.media ?? [];
+  const thumbnailMedia =
+    offerMedia.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
+    offerMedia.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
+
+  // Generate order code from ID (e.g., "#ORD-ABC123DE")
+  const orderCode = `#ORD-${order.id.substring(0, 8).toUpperCase()}`;
+
+  return {
+    id: order.id,
+    orderCode,
+    status: order.orderStatus,
+    shopId: order.shopId,
+    shopName: order.shop.shopName,
+    totalAmount: decimalToNumber(order.totalAmount),
+    paymentMethod: order.paymentIntent?.paymentMethod ?? '',
+    firstProduct: firstItem
+      ? {
+          name: firstItem.offerTitleSnapshot,
+          variant: firstItem.offer?.modelName ?? '',
+          quantity: firstItem.quantity,
+          price: decimalToNumber(firstItem.unitPrice),
+          image: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? '',
+        }
+      : {
+          name: '',
+          variant: '',
+          quantity: 0,
+          price: 0,
+          image: '',
+        },
+    otherProducts: order.items.length - 1,
   };
 }
 

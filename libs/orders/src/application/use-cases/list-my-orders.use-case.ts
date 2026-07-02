@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
-import { toOrderResponse } from './orders.mapper';
+import { toMyOrdersSimplifiedResponse } from './orders.mapper';
 
 @Injectable()
 export class ListMyOrdersUseCase {
@@ -8,6 +8,6 @@ export class ListMyOrdersUseCase {
 
   async execute(requesterUserId: string) {
     const orders = await this.ordersRepository.findOrdersForUser(requesterUserId);
-    return orders.map(toOrderResponse);
+    return orders.map(toMyOrdersSimplifiedResponse);
   }
 }
