@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { COUNTS, id, SeedContext } from './00-utils';
+import { COUNTS, id, imageUrl, SeedContext } from './00-utils';
 
 const categoryNames = [
   ['Thực phẩm', 'medium'],
@@ -110,7 +110,16 @@ export async function seedMasterData(prisma: PrismaClient, ctx: SeedContext) {
 
   for (let i = 0; i < COUNTS.categories; i += 1) {
     const [name, riskTier] = categoryNames[i];
-    ctx.categories.push(await prisma.category.create({ data: { id: id(), name, riskTier } }));
+    ctx.categories.push(
+      await prisma.category.create({
+        data: {
+          id: id(),
+          name,
+          riskTier,
+          imageUrl: imageUrl(`category-${i}`, 640, 640),
+        },
+      }),
+    );
   }
 
   for (let i = 0; i < COUNTS.brands; i += 1) {

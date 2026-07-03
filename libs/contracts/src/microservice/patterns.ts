@@ -571,8 +571,15 @@ export type CreateBrandMessage = {
 };
 
 export type CreateCategoryMessage = {
+  requesterUserId: string;
   name: string;
   parentId?: string | null;
+  image?: {
+    buffer: Buffer | { data?: number[] };
+    mimetype: string;
+    originalname?: string;
+    size: number;
+  };
   riskTier?: string;
 };
 

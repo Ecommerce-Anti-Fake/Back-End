@@ -189,6 +189,7 @@ describe('ShopsRepository', () => {
               category: {
                 id: 'category-1',
                 name: 'My pham',
+                imageUrl: 'https://cdn.test/categories/my-pham.jpg',
               },
             },
           ],
@@ -201,6 +202,7 @@ describe('ShopsRepository', () => {
       {
         categoryId: 'category-1',
         categoryName: 'My pham',
+        imageUrl: 'https://cdn.test/categories/my-pham.jpg',
       },
     ]);
 

@@ -33,6 +33,7 @@ export class CatalogMetadataRepository {
   createCategory(data: {
     name: string;
     parentId: string | null;
+    imageUrl: string | null;
     riskTier: string;
   }) {
     return this.prisma.category.create({

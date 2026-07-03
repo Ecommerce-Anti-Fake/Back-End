@@ -58,8 +58,22 @@ export class CategoryResponseDto {
   @ApiProperty({ example: 'My pham' })
   name!: string;
 
+  @ApiPropertyOptional({
+    example: 'https://res.cloudinary.com/demo/image/upload/categories/my-pham.jpg',
+    nullable: true,
+  })
+  imageUrl!: string | null;
+
   @ApiProperty({ example: 'medium' })
   riskTier!: string;
+}
+
+export class CategoryCommandResponseDto {
+  @ApiProperty({ example: true })
+  success!: boolean;
+
+  @ApiProperty({ example: 'Category created successfully.' })
+  message!: string;
 }
 
 export class ShippingCarrierResponseDto {

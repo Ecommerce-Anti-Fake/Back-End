@@ -473,6 +473,7 @@ export class ShopsRepository {
               select: {
                 id: true,
                 name: true,
+                imageUrl: true,
               },
             },
           },
@@ -490,6 +491,7 @@ export class ShopsRepository {
     return shop.registeredCategories.map((item) => ({
       categoryId: item.category.id,
       categoryName: item.category.name,
+      imageUrl: item.category.imageUrl,
     }));
   }
 

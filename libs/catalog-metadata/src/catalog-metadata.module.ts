@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '@database/prisma/prisma.module';
+import { MediaModule } from '@media';
 import {
   CreateBrandUseCase,
   CreateCategoryUseCase,
@@ -11,7 +12,7 @@ import { CatalogMetadataRepository } from './infrastructure/persistence/catalog-
 import { CatalogMetadataRpcController } from './presentation/rpc/catalog-metadata.rpc-controller';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, MediaModule],
   controllers: [CatalogMetadataRpcController],
   providers: [
     CatalogMetadataRepository,

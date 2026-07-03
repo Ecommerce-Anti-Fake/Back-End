@@ -9,6 +9,7 @@ type CategoryRecord = {
   id: string;
   parentId: string | null;
   name: string;
+  imageUrl: string | null;
   riskTier: string;
 };
 
@@ -26,6 +27,7 @@ export function toCategoryResponse(category: CategoryRecord) {
     id: category.id,
     parentId: category.parentId,
     name: category.name,
+    imageUrl: category.imageUrl,
     riskTier: category.riskTier,
   };
 }

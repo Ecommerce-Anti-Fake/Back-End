@@ -51,6 +51,7 @@ describe('CatalogMetadataRepository', () => {
     await repository.createCategory({
       name: 'My pham',
       parentId: 'parent-1',
+      imageUrl: 'https://cdn.test/categories/my-pham.jpg',
       riskTier: 'medium',
     });
 
@@ -62,7 +63,12 @@ describe('CatalogMetadataRepository', () => {
       select: { id: true },
     });
     expect(prisma.category.create).toHaveBeenCalledWith({
-      data: { name: 'My pham', parentId: 'parent-1', riskTier: 'medium' },
+      data: {
+        name: 'My pham',
+        parentId: 'parent-1',
+        imageUrl: 'https://cdn.test/categories/my-pham.jpg',
+        riskTier: 'medium',
+      },
     });
   });
 });

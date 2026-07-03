@@ -251,6 +251,12 @@ export class PublicShopCategoryResponseDto {
 
   @ApiProperty({ example: 'My pham' })
   categoryName!: string;
+
+  @ApiPropertyOptional({
+    example: 'https://res.cloudinary.com/demo/image/upload/categories/my-pham.jpg',
+    nullable: true,
+  })
+  imageUrl!: string | null;
 }
 
 export class PaginatedPublicShopSummaryResponseDto {

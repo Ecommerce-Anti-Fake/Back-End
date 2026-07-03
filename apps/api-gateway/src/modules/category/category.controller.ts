@@ -1,7 +1,18 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBody,
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiConsumes,
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiOkResponse,
@@ -9,8 +20,12 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { ActiveUserGuard, JwtAuthGuard, Roles, RolesGuard } from '@security';
-import { CategoryResponseDto, CreateCategoryDto } from '@catalog-metadata';
+import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
+import {
+  CategoryCommandResponseDto,
+  CategoryResponseDto,
+  CreateCategoryDto,
+} from '@catalog-metadata';
 import { RateLimit } from '../../observability';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
@@ -33,9 +48,26 @@ export class CategoryController {
 
   @ApiOperation({ summary: 'Admin tao category moi' })
   @ApiBearerAuth('access-token')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['name', 'image'],
+      properties: {
+        name: { type: 'string', example: 'My pham' },
+        parentId: { type: 'string', nullable: true, example: 'parent-category-id' },
+        riskTier: { type: 'string', example: 'medium' },
+        image: {
+          type: 'string',
+          format: 'binary',
+          description: 'Anh dai dien category, JPG/PNG/WEBP, toi da 5MB.',
+        },
+      },
+    },
+  })
   @ApiCreatedResponse({
     description: 'Tao category thanh cong.',
-    type: CategoryResponseDto,
+    type: CategoryCommandResponseDto,
   })
   @ApiBadRequestResponse({
     description:
@@ -49,12 +81,30 @@ export class CategoryController {
   })
   @Roles('admin')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @UseInterceptors(FileInterceptor('image', { limits: { fileSize: 5 * 1024 * 1024 } }))
   @Post('categories')
-  createCategory(@Body() dto: CreateCategoryDto) {
-    return this.catalogRpcService.createCategory({
+  async createCategory(
+    @CurrentUserId() adminUserId: string,
+    @Body() dto: CreateCategoryDto,
+    @UploadedFile()
+    image?: {
+      buffer: Buffer;
+      mimetype: string;
+      originalname?: string;
+      size: number;
+    },
+  ) {
+    await this.catalogRpcService.createCategory({
+      requesterUserId: adminUserId,
       name: dto.name,
       parentId: dto.parentId ?? null,
+      image,
       riskTier: dto.riskTier,
     });
+
+    return {
+      success: true,
+      message: 'Category created successfully.',
+    };
   }
 }
