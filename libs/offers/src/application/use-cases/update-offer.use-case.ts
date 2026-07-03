@@ -18,7 +18,6 @@ export class UpdateOfferUseCase {
     price?: number;
     availableQuantity?: number;
     offerStatus?: 'active' | 'inactive' | 'draft';
-    shippingProviderCodes?: string[];
     parcelWeightGrams?: number | null;
     parcelLengthCm?: number | null;
     parcelWidthCm?: number | null;
@@ -103,30 +102,6 @@ export class UpdateOfferUseCase {
       }
     }
 
-    if (input.shippingProviderCodes !== undefined) {
-      const shippingProviderCodes = this.normalizeShippingProviderCodes(
-        input.shippingProviderCodes,
-      );
-      this.assertParcelReadyForProviders(
-        { ...offer, ...data },
-        shippingProviderCodes,
-      );
-      await this.assertShippingProvidersExist(shippingProviderCodes);
-      const updatedOffer = Object.keys(data).length
-        ? await this.productRepository.updateOwnedOffer(
-            input.offerId,
-            input.sellerUserId,
-            data,
-          )
-        : offer;
-      return toOfferResponse(
-        await this.productRepository.replaceOfferShippingMethods(
-          updatedOffer.id,
-          shippingProviderCodes,
-        ),
-      );
-    }
-
     if (Object.keys(data).length === 0) {
       return toOfferResponse(
         await this.productRepository.updateOwnedOffer(
@@ -137,63 +112,12 @@ export class UpdateOfferUseCase {
       );
     }
 
-    this.assertParcelReadyForProviders(
-      { ...offer, ...data },
-      offer.shippingMethods?.map((method) => method.providerCode) ?? [],
-    );
-
     const updatedOffer = await this.productRepository.updateOwnedOffer(
       input.offerId,
       input.sellerUserId,
       data,
     );
     return toOfferResponse(updatedOffer);
-  }
-
-  private normalizeShippingProviderCodes(providerCodes: string[]) {
-    const codes = Array.from(
-      new Set(
-        providerCodes.map((code) => code.trim().toUpperCase()).filter(Boolean),
-      ),
-    );
-    return codes.length ? codes : ['SELF_DELIVERY'];
-  }
-
-  private async assertShippingProvidersExist(providerCodes: string[]) {
-    const carriers =
-      await this.productRepository.findActiveShippingCarriersByCodes(
-        providerCodes,
-      );
-    if (carriers.length !== providerCodes.length) {
-      throw new BadRequestException(
-        'One or more shipping providers are invalid',
-      );
-    }
-  }
-
-  private assertParcelReadyForProviders(
-    offer: {
-      parcelWeightGrams?: number | null;
-      parcelLengthCm?: number | null;
-      parcelWidthCm?: number | null;
-      parcelHeightCm?: number | null;
-    },
-    providerCodes: string[],
-  ) {
-    if (!providerCodes.some((code) => code !== 'SELF_DELIVERY')) {
-      return;
-    }
-
-    if (
-      !offer.parcelWeightGrams ||
-      !offer.parcelLengthCm ||
-      !offer.parcelWidthCm ||
-      !offer.parcelHeightCm
-    ) {
-      throw new BadRequestException(
-        'Parcel weight and dimensions are required for integrated shipping providers',
-      );
-    }
   }
 
   private assertCanPublishDraft(

@@ -101,7 +101,7 @@ export async function seedMasterData(prisma: PrismaClient, ctx: SeedContext) {
   for (const [code, name, description, sortOrder] of carriers) {
     ctx.carriers.push(
       await prisma.shippingCarrier.create({
-        data: { id: id(), code, name, description, isActive: true, sortOrder },
+        data: { id: id(), code, name, description, isActive: code === 'GHN', sortOrder },
       }),
     );
   }

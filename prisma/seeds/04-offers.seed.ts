@@ -2,21 +2,21 @@ import { PrismaClient } from '@prisma/client';
 import { COUNTS, createMediaAsset, documentUrl, gtin, id, imageUrl, money, pick, recentDate, SeedContext } from './00-utils';
 
 const productTemplates = [
-  ['Sữa tươi tiệt trùng ít đường 1L', 'Thùng 12 hộp sữa tươi tiệt trùng 1L'],
-  ['Nước khoáng thiên nhiên 500ml', 'Lốc nước khoáng 24 chai 500ml'],
-  ['Cà phê rang xay nguyên chất 500g', 'Thùng cà phê rang xay 20 gói'],
-  ['Mì gói vị bò 75g', 'Thùng mì gói 30 gói'],
-  ['Nước rửa chén hương chanh 750ml', 'Combo nước rửa chén 24 chai'],
-  ['Kem chống nắng SPF50 50ml', 'Lô kem chống nắng SPF50 48 tuýp'],
-  ['Sữa tắm gạo non 500ml', 'Lô sữa tắm gạo non 36 chai'],
-  ['Nồi inox 3 đáy 24cm', 'Lô nồi inox 3 đáy 12 cái'],
-  ['Bình giữ nhiệt inox 500ml', 'Lô bình giữ nhiệt inox 50 cái'],
-  ['Giày thể thao nam basic', 'Lô giày thể thao nam 30 đôi'],
-  ['Áo thun cotton nữ', 'Lô áo thun cotton nữ 100 cái'],
-  ['Hạt điều rang muối 500g', 'Thùng hạt điều rang muối 24 hộp'],
-  ['Trà atiso Đà Lạt 20 túi', 'Lô trà atiso Đà Lạt 50 hộp'],
-  ['Sữa bột trẻ em 900g', 'Lô sữa bột trẻ em 24 lon'],
-  ['Sổ tay văn phòng A5', 'Lô sổ tay văn phòng A5 200 cuốn'],
+  ['Sá»¯a tÆ°Æ¡i tiá»‡t trÃ¹ng Ã­t Ä‘Æ°á»ng 1L', 'ThÃ¹ng 12 há»™p sá»¯a tÆ°Æ¡i tiá»‡t trÃ¹ng 1L'],
+  ['NÆ°á»›c khoÃ¡ng thiÃªn nhiÃªn 500ml', 'Lá»‘c nÆ°á»›c khoÃ¡ng 24 chai 500ml'],
+  ['CÃ  phÃª rang xay nguyÃªn cháº¥t 500g', 'ThÃ¹ng cÃ  phÃª rang xay 20 gÃ³i'],
+  ['MÃ¬ gÃ³i vá»‹ bÃ² 75g', 'ThÃ¹ng mÃ¬ gÃ³i 30 gÃ³i'],
+  ['NÆ°á»›c rá»­a chÃ©n hÆ°Æ¡ng chanh 750ml', 'Combo nÆ°á»›c rá»­a chÃ©n 24 chai'],
+  ['Kem chá»‘ng náº¯ng SPF50 50ml', 'LÃ´ kem chá»‘ng náº¯ng SPF50 48 tuÃ½p'],
+  ['Sá»¯a táº¯m gáº¡o non 500ml', 'LÃ´ sá»¯a táº¯m gáº¡o non 36 chai'],
+  ['Ná»“i inox 3 Ä‘Ã¡y 24cm', 'LÃ´ ná»“i inox 3 Ä‘Ã¡y 12 cÃ¡i'],
+  ['BÃ¬nh giá»¯ nhiá»‡t inox 500ml', 'LÃ´ bÃ¬nh giá»¯ nhiá»‡t inox 50 cÃ¡i'],
+  ['GiÃ y thá»ƒ thao nam basic', 'LÃ´ giÃ y thá»ƒ thao nam 30 Ä‘Ã´i'],
+  ['Ão thun cotton ná»¯', 'LÃ´ Ã¡o thun cotton ná»¯ 100 cÃ¡i'],
+  ['Háº¡t Ä‘iá»u rang muá»‘i 500g', 'ThÃ¹ng háº¡t Ä‘iá»u rang muá»‘i 24 há»™p'],
+  ['TrÃ  atiso ÄÃ  Láº¡t 20 tÃºi', 'LÃ´ trÃ  atiso ÄÃ  Láº¡t 50 há»™p'],
+  ['Sá»¯a bá»™t tráº» em 900g', 'LÃ´ sá»¯a bá»™t tráº» em 24 lon'],
+  ['Sá»• tay vÄƒn phÃ²ng A5', 'LÃ´ sá»• tay vÄƒn phÃ²ng A5 200 cuá»‘n'],
 ] as const;
 
 export async function seedOffers(prisma: PrismaClient, ctx: SeedContext) {
@@ -41,7 +41,7 @@ export async function seedOffers(prisma: PrismaClient, ctx: SeedContext) {
         gtin: gtin(i + 100),
         verificationPolicy: i % 5 === 0 ? 'MANUAL_REVIEW' : 'BATCH_REQUIRED',
         title: `${title} - ${brand.name}`,
-        description: `Sản phẩm ${title.toLowerCase()} từ ${brand.name}, có hồ sơ nguồn gốc và thông tin lô để phục vụ xác thực AntiFake.`,
+        description: `Sáº£n pháº©m ${title.toLowerCase()} tá»« ${brand.name}, cÃ³ há»“ sÆ¡ nguá»“n gá»‘c vÃ  thÃ´ng tin lÃ´ Ä‘á»ƒ phá»¥c vá»¥ xÃ¡c thá»±c AntiFake.`,
         price: money(price),
         currency: 'VND',
         itemCondition: 'new',
@@ -93,31 +93,12 @@ export async function seedOffers(prisma: PrismaClient, ctx: SeedContext) {
           mediaAssetId: media.id,
           docType: i % 2 === 0 ? 'CO_CQ' : 'PRODUCT_DECLARATION',
           fileUrl: media.secureUrl,
-          issuerName: i % 2 === 0 ? 'Trung tâm kiểm định chất lượng' : 'Nhà sản xuất',
+          issuerName: i % 2 === 0 ? 'Trung tÃ¢m kiá»ƒm Ä‘á»‹nh cháº¥t lÆ°á»£ng' : 'NhÃ  sáº£n xuáº¥t',
           documentNumberHash: `doc-hash-${i}`,
           reviewStatus: i % 7 === 0 ? 'pending' : 'approved',
           uploadedAt: recentDate(45 - (i % 30)),
         },
       });
     }
-  }
-
-  for (let i = 0; i < COUNTS.offerShippingMethods; i += 1) {
-    const offer = pick(ctx.offers, i);
-    const carrier = pick(ctx.carriers, i);
-    await prisma.offerShippingMethod.upsert({
-      where: { offerId_providerCode: { offerId: offer.id, providerCode: carrier.code } },
-      update: {},
-      create: {
-        id: id(),
-        offerId: offer.id,
-        carrierId: carrier.id,
-        providerCode: carrier.code,
-        providerName: carrier.name,
-        shippingFee: money(carrier.code === 'SELF_DELIVERY' ? 0 : 18000 + (i % 5) * 5000),
-        estimatedDays: carrier.code === 'SELF_DELIVERY' ? '1-2 ngày' : `${2 + (i % 3)}-${4 + (i % 3)} ngày`,
-        isEnabled: true,
-      },
-    });
   }
 }

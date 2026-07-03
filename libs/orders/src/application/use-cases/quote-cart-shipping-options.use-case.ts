@@ -79,64 +79,26 @@ export class QuoteCartShippingOptionsUseCase {
     destination: ShippingQuoteDestination,
     group: ShopCartItemGroup,
   ): Promise<CartShippingOption[]> {
-    const providerMethods = this.resolveCommonProviderMethods(group);
+    const carriers = await this.ordersRepository.findActiveShippingCarriers();
     const options: CartShippingOption[] = [];
 
-    for (const method of providerMethods) {
-      if (method.providerCode === 'GHN') {
+    for (const carrier of carriers) {
+      if (carrier.code === 'GHN') {
         options.push(...(await this.quoteGhnShopOptions(destination, group)));
         continue;
       }
 
       options.push({
-        optionCode: method.providerCode,
-        providerCode: method.providerCode,
-        providerName: method.providerName,
-        methodName: method.providerName,
-        shippingFee: this.sumStaticProviderFees(group, method.providerCode),
-        estimatedDelivery: method.estimatedDays || null,
+        optionCode: carrier.code,
+        providerCode: carrier.code,
+        providerName: carrier.name,
+        methodName: carrier.name,
+        shippingFee: 0,
+        estimatedDelivery: null,
       });
     }
 
     return options;
-  }
-
-  private resolveCommonProviderMethods(group: ShopCartItemGroup) {
-    if (group.items.length === 0) {
-      return [];
-    }
-
-    const providerCounts = new Map<string, number>();
-    const providerMethods = new Map<
-      string,
-      {
-        providerCode: string;
-        providerName: string;
-        estimatedDays: string | null;
-      }
-    >();
-
-    for (const item of group.items) {
-      const itemProviders = new Set<string>();
-      for (const method of item.offer.shippingMethods ?? []) {
-        itemProviders.add(method.providerCode);
-        if (!providerMethods.has(method.providerCode)) {
-          providerMethods.set(method.providerCode, {
-            providerCode: method.providerCode,
-            providerName: method.providerName,
-            estimatedDays: method.estimatedDays ?? null,
-          });
-        }
-      }
-
-      for (const providerCode of itemProviders) {
-        providerCounts.set(providerCode, (providerCounts.get(providerCode) ?? 0) + 1);
-      }
-    }
-
-    return Array.from(providerMethods.values()).filter(
-      (method) => providerCounts.get(method.providerCode) === group.items.length,
-    );
   }
 
   private async quoteGhnShopOptions(
@@ -215,13 +177,6 @@ export class QuoteCartShippingOptionsUseCase {
       parcelWidthCm,
       parcelHeightCm,
     };
-  }
-
-  private sumStaticProviderFees(group: ShopCartItemGroup, providerCode: string) {
-    return group.items.reduce((total, item) => {
-      const method = item.offer.shippingMethods.find((shippingMethod) => shippingMethod.providerCode === providerCode);
-      return total + Number(method?.shippingFee?.toString() ?? 0);
-    }, 0);
   }
 
   private async resolveShippingDestination(buyerUserId: string): Promise<ShippingQuoteDestination> {

@@ -23,23 +23,6 @@ const SHOP_TYPES = [
 ] as const;
 const OFFER_SORTS = ['featured', 'newest', 'price-asc', 'price-desc'] as const;
 
-export class OfferShippingMethodResponseDto {
-  @ApiProperty({ example: 'GHN' })
-  providerCode!: string;
-
-  @ApiProperty({ example: 'Giao Hang Nhanh' })
-  providerName!: string;
-
-  @ApiProperty({ example: 25000 })
-  shippingFee!: number;
-
-  @ApiPropertyOptional({ example: '2-3 ngay', nullable: true })
-  estimatedDays!: string | null;
-
-  @ApiProperty({ example: true })
-  isEnabled!: boolean;
-}
-
 export class OfferResponseDto {
   @ApiProperty({ example: '06b5f15b-4c48-4f57-a2d6-0f2eb45fd001' })
   id!: string;
@@ -130,9 +113,6 @@ export class OfferResponseDto {
     isArray: true,
   })
   imageUrls!: string[];
-
-  @ApiProperty({ type: OfferShippingMethodResponseDto, isArray: true })
-  shippingMethods!: OfferShippingMethodResponseDto[];
 
   @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
   createdAt!: Date;
@@ -438,12 +418,6 @@ export class CreateOfferDto {
   @IsString()
   verificationLevel?: string;
 
-  @ApiPropertyOptional({ example: ['SELF_DELIVERY', 'GHN'], isArray: true })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  shippingProviderCodes?: string[];
-
   @ApiPropertyOptional({ example: 500 })
   @IsOptional()
   @Type(() => Number)
@@ -535,11 +509,6 @@ export class UpdateOfferDto {
   @IsIn(OFFER_STATUSES)
   offerStatus?: 'active' | 'inactive' | 'draft';
 
-  @ApiPropertyOptional({ example: ['SELF_DELIVERY', 'GHN'], isArray: true })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  shippingProviderCodes?: string[];
 }
 
 export class ListOffersQueryDto {

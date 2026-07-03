@@ -6,16 +6,6 @@ import { PrismaService } from '@database/prisma/prisma.service';
 export class OffersRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  findActiveShippingCarriersByCodes(codes: string[]) {
-    return this.prisma.shippingCarrier.findMany({
-      where: {
-        code: { in: codes },
-        isActive: true,
-      },
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-    });
-  }
-
   findBrandById(id: string) {
     return this.prisma.brand.findUnique({
       where: { id },
@@ -100,26 +90,10 @@ export class OffersRepository {
     parcelLengthCm?: number | null;
     parcelWidthCm?: number | null;
     parcelHeightCm?: number | null;
-    shippingProviderCodes?: string[];
   }) {
-    const { shippingProviderCodes, ...offerData } = data;
-    return this.prisma.$transaction(async (tx) => {
-      const offer = await tx.offer.create({
-        data: offerData,
-      });
-
-      await this.replaceOfferShippingMethodsTx(
-        tx,
-        offer.id,
-        shippingProviderCodes?.length
-          ? shippingProviderCodes
-          : ['SELF_DELIVERY'],
-      );
-
-      return tx.offer.findUniqueOrThrow({
-        where: { id: offer.id },
-        include: this.offerResponseInclude(),
-      });
+    return this.prisma.offer.create({
+      data,
+      include: this.offerResponseInclude(),
     });
   }
 
@@ -147,54 +121,7 @@ export class OffersRepository {
           },
         },
       },
-      shippingMethods: {
-        where: { isEnabled: true },
-        orderBy: { createdAt: 'asc' as const },
-      },
     };
-  }
-
-  private async replaceOfferShippingMethodsTx(
-    tx: Prisma.TransactionClient,
-    offerId: string,
-    providerCodes: string[],
-  ) {
-    const normalizedCodes = Array.from(
-      new Set(
-        providerCodes.map((code) => code.trim().toUpperCase()).filter(Boolean),
-      ),
-    );
-    const effectiveCodes = normalizedCodes.length
-      ? normalizedCodes
-      : ['SELF_DELIVERY'];
-    const carriers = await tx.shippingCarrier.findMany({
-      where: {
-        code: { in: effectiveCodes },
-        isActive: true,
-      },
-    });
-
-    await tx.offerShippingMethod.deleteMany({ where: { offerId } });
-    await tx.offerShippingMethod.createMany({
-      data: carriers.map((carrier) => ({
-        offerId,
-        carrierId: carrier.id,
-        providerCode: carrier.code,
-        providerName: carrier.name,
-        shippingFee: 0,
-      })),
-    });
-  }
-
-  replaceOfferShippingMethods(offerId: string, providerCodes: string[]) {
-    return this.prisma.$transaction(async (tx) => {
-      await this.replaceOfferShippingMethodsTx(tx, offerId, providerCodes);
-
-      return tx.offer.findUniqueOrThrow({
-        where: { id: offerId },
-        include: this.offerResponseInclude(),
-      });
-    });
   }
 
   getOfferWithRelations(offerId: string) {
@@ -209,10 +136,6 @@ export class OffersRepository {
         },
         distributionNode: {
           select: { networkId: true },
-        },
-        shippingMethods: {
-          where: { isEnabled: true },
-          orderBy: { createdAt: 'asc' },
         },
       },
     });
@@ -319,10 +242,6 @@ export class OffersRepository {
           },
         },
       },
-      shippingMethods: {
-        where: { isEnabled: true },
-        orderBy: { createdAt: 'asc' as const },
-      },
     };
     const orderBy = this.resolveOfferSort(input.sort);
 
@@ -392,10 +311,6 @@ export class OffersRepository {
             },
           },
         },
-        shippingMethods: {
-          where: { isEnabled: true },
-          orderBy: { createdAt: 'asc' },
-        },
       },
     });
   }
@@ -436,10 +351,6 @@ export class OffersRepository {
             },
           },
         },
-        shippingMethods: {
-          where: { isEnabled: true },
-          orderBy: { createdAt: 'asc' },
-        },
       },
     });
   }
@@ -477,10 +388,6 @@ export class OffersRepository {
               select: { secureUrl: true },
             },
           },
-        },
-        shippingMethods: {
-          where: { isEnabled: true },
-          orderBy: { createdAt: 'asc' },
         },
       },
     });

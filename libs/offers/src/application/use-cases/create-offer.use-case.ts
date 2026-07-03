@@ -24,7 +24,6 @@ export class CreateOfferUseCase {
     availableQuantity: number;
     verificationLevel?: string;
     offerStatus?: 'active' | 'inactive' | 'draft';
-    shippingProviderCodes?: string[];
     parcelWeightGrams?: number | null;
     parcelLengthCm?: number | null;
     parcelWidthCm?: number | null;
@@ -115,12 +114,6 @@ export class CreateOfferUseCase {
       );
     }
 
-    const shippingProviderCodes = this.normalizeShippingProviderCodes(
-      input.shippingProviderCodes,
-    );
-    await this.assertShippingProvidersExist(shippingProviderCodes);
-    const parcel = this.resolveParcelSnapshot(input, shippingProviderCodes);
-
     const offer = await this.productRepository.createOffer({
       sellerUserId: input.sellerUserId,
       shopId: input.shopId,
@@ -138,8 +131,7 @@ export class CreateOfferUseCase {
       availableQuantity: input.availableQuantity,
       verificationLevel,
       offerStatus,
-      shippingProviderCodes,
-      ...parcel,
+      ...this.resolveParcelSnapshot(input),
     });
 
     return toOfferResponse(offer);
@@ -170,29 +162,6 @@ export class CreateOfferUseCase {
     };
   }
 
-  private normalizeShippingProviderCodes(providerCodes?: string[]) {
-    const codes = Array.from(
-      new Set(
-        (providerCodes ?? [])
-          .map((code) => code.trim().toUpperCase())
-          .filter(Boolean),
-      ),
-    );
-    return codes.length ? codes : ['SELF_DELIVERY'];
-  }
-
-  private async assertShippingProvidersExist(providerCodes: string[]) {
-    const carriers =
-      await this.productRepository.findActiveShippingCarriersByCodes(
-        providerCodes,
-      );
-    if (carriers.length !== providerCodes.length) {
-      throw new BadRequestException(
-        'One or more shipping providers are invalid',
-      );
-    }
-  }
-
   private resolveParcelSnapshot(
     input: {
       parcelWeightGrams?: number | null;
@@ -200,24 +169,12 @@ export class CreateOfferUseCase {
       parcelWidthCm?: number | null;
       parcelHeightCm?: number | null;
     },
-    providerCodes: string[],
   ) {
-    const parcel = {
+    return {
       parcelWeightGrams: input.parcelWeightGrams ?? null,
       parcelLengthCm: input.parcelLengthCm ?? null,
       parcelWidthCm: input.parcelWidthCm ?? null,
       parcelHeightCm: input.parcelHeightCm ?? null,
     };
-
-    if (
-      providerCodes.some((code) => code !== 'SELF_DELIVERY') &&
-      Object.values(parcel).some((value) => !value || value < 1)
-    ) {
-      throw new BadRequestException(
-        'Parcel weight and dimensions are required for integrated shipping providers',
-      );
-    }
-
-    return parcel;
   }
 }

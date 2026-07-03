@@ -56,7 +56,7 @@ export class CreateOrderUseCase {
     }
 
     const shipping = this.resolveShippingSnapshot(input, buyer);
-    const shippingMethod = this.resolveShippingMethod(input.shippingProviderCode, offer);
+    const shippingMethod = await this.resolveShippingMethod(input.shippingProviderCode);
     const parcel = this.resolveShippingParcel(offer, shippingMethod.providerCode);
     const pricing = await this.resolvePricing(input, offer);
     const quote = await this.shippingCarrierAdapterService.quoteShipment({
@@ -202,15 +202,19 @@ export class CreateOrderUseCase {
     };
   }
 
-  private resolveShippingMethod(providerCode: string | null | undefined, offer: OfferForOrdering) {
-    const methods = offer.shippingMethods ?? [];
-    if (!methods.length) throw new BadRequestException('Offer does not have any enabled shipping method');
-    const requested = providerCode?.trim() || null;
-    const selected = (requested ? methods.find((method) => method.providerCode === requested) : null) ?? methods.find((method) => method.providerCode === 'SELF_DELIVERY') ?? methods[0];
-    if (requested && selected.providerCode !== requested) {
-      throw new BadRequestException('Shipping provider is not enabled for this offer');
+  private async resolveShippingMethod(providerCode: string | null | undefined) {
+    const carriers = await this.ordersRepository.findActiveShippingCarriers();
+    if (!carriers.length) throw new BadRequestException('No active shipping provider is available');
+    const requested = providerCode?.trim().toUpperCase() || null;
+    const selected = (requested ? carriers.find((carrier) => carrier.code === requested) : null) ?? carriers.find((carrier) => carrier.code === 'GHN') ?? carriers[0];
+    if (requested && selected.code !== requested) {
+      throw new BadRequestException('Shipping provider is not available');
     }
-    return selected;
+    return {
+      providerCode: selected.code,
+      providerName: selected.name,
+      shippingFee: 0,
+    };
   }
 
   private resolveShippingParcel(offer: OfferForOrdering, providerCode: string) {

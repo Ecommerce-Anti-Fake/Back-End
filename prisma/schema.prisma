@@ -865,24 +865,6 @@ model OfferMedia {
   @@map("offer_media")
 }
 
-model OfferShippingMethod {
-  id            String          @id @default(uuid())
-  offerId       String          @map("offer_id")
-  carrierId     String          @map("carrier_id")
-  providerCode  String          @map("provider_code")
-  providerName  String          @map("provider_name")
-  shippingFee   Decimal         @default(0) @map("shipping_fee") @db.Decimal(18, 2)
-  estimatedDays String?         @map("estimated_days")
-  isEnabled     Boolean         @default(true) @map("is_enabled")
-  createdAt     DateTime        @default(now()) @map("created_at")
-  offer         Offer           @relation(fields: [offerId], references: [id], onDelete: Cascade)
-  carrier       ShippingCarrier @relation(fields: [carrierId], references: [id])
-
-  @@unique([offerId, providerCode])
-  @@index([carrierId])
-  @@map("offer_shipping_method")
-}
-
 model Offer {
   id                   String                @id @default(uuid())
   sellerUserId         String                @map("seller_user_id")
@@ -918,7 +900,6 @@ model Offer {
   cartItems            CartItem[]
   affiliatePrograms    AffiliateProgram[]
   affiliateConversions AffiliateConversion[]
-  shippingMethods      OfferShippingMethod[]
   favoritedBy          UserFavoriteOffer[]
   socialPosts          SocialPost[]
   liveSessionOffers    LiveSessionOffer[]
@@ -1168,8 +1149,6 @@ model ShippingCarrier {
   sortOrder            Int                   @default(0) @map("sort_order")
   createdAt            DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
-  offerShippingMethods OfferShippingMethod[]
-
   @@index([isActive, sortOrder])
   @@map("shipping_carrier")
 }

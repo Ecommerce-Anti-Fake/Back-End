@@ -17,14 +17,6 @@ const offerForOrderingArgs = Prisma.validator<Prisma.OfferDefaultArgs>()({
         warehouseWardName: true,
       },
     },
-    shippingMethods: {
-      where: {
-        isEnabled: true,
-      },
-      orderBy: {
-        createdAt: 'asc',
-      },
-    },
     distributionNode: {
       select: {
         id: true,
@@ -202,14 +194,6 @@ const disputeWithOrderArgs = Prisma.validator<Prisma.DisputeDefaultArgs>()({
                     shopName: true,
                   },
                 },
-                shippingMethods: {
-                  where: {
-                    isEnabled: true,
-                  },
-                  orderBy: {
-                    createdAt: 'asc',
-                  },
-                },
                 media: {
                   orderBy: {
                     createdAt: 'asc',
@@ -276,14 +260,6 @@ const cartWithItemsArgs = Prisma.validator<Prisma.CartDefaultArgs>()({
                 warehouseAddress: true,
                 warehouseWardCode: true,
                 warehouseWardName: true,
-              },
-            },
-            shippingMethods: {
-              where: {
-                isEnabled: true,
-              },
-              orderBy: {
-                createdAt: 'asc',
               },
             },
             media: {
@@ -547,6 +523,13 @@ export class OrdersRepository {
     return this.prisma.offer.findUnique({
       where: { id: offerId },
       ...offerForOrderingArgs,
+    });
+  }
+
+  findActiveShippingCarriers() {
+    return this.prisma.shippingCarrier.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
   }
 

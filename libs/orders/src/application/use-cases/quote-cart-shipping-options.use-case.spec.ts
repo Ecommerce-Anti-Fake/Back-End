@@ -8,6 +8,7 @@ describe('QuoteCartShippingOptionsUseCase', () => {
   const ordersRepositoryMock = {
     getOrCreateActiveCart: jest.fn(),
     findDefaultAddressByUserId: jest.fn(),
+    findActiveShippingCarriers: jest.fn(),
   };
   const shippingCarrierAdapterMock = {
     listGhnServices: jest.fn(),
@@ -17,6 +18,9 @@ describe('QuoteCartShippingOptionsUseCase', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    ordersRepositoryMock.findActiveShippingCarriers.mockResolvedValue([
+      { code: 'GHN', name: 'Giao Hang Nhanh', description: null },
+    ]);
     useCase = new QuoteCartShippingOptionsUseCase(
       ordersRepositoryMock as unknown as OrdersRepository,
       shippingCarrierAdapterMock as unknown as ShippingCarrierAdapterService,

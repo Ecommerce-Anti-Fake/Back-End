@@ -28,18 +28,19 @@ export class QuoteCartItemShippingOptionsUseCase {
 
     const baseAmount = Number(offer.price.toString()) * cartItem.quantity;
     const options: CartItemShippingOption[] = [];
-    for (const method of offer.shippingMethods ?? []) {
-      if (method.providerCode === 'GHN') {
+    const carriers = await this.ordersRepository.findActiveShippingCarriers();
+    for (const carrier of carriers) {
+      if (carrier.code === 'GHN') {
         options.push(...(await this.quoteGhnOptions(input, offer, baseAmount)));
         continue;
       }
 
       options.push({
-        providerCode: method.providerCode,
-        providerName: method.providerName,
-        label: method.providerName,
-        description: method.estimatedDays || null,
-        shippingFee: Number(method.shippingFee.toString()),
+        providerCode: carrier.code,
+        providerName: carrier.name,
+        label: carrier.name,
+        description: carrier.description ?? null,
+        shippingFee: 0,
         shippingServiceId: null,
         shippingServiceTypeId: null,
       });

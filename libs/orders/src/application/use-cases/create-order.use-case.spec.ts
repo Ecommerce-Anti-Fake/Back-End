@@ -12,6 +12,7 @@ describe('CreateOrderUseCase', () => {
     findOfferForOrdering: jest.fn(),
     findOwnedShop: jest.fn(),
     getOfferAllocatedBatchQuantity: jest.fn(),
+    findActiveShippingCarriers: jest.fn(),
   };
   const orderPlacementService = { createOrder: jest.fn() };
   const wholesalePricing = { resolve: jest.fn() };
@@ -20,6 +21,9 @@ describe('CreateOrderUseCase', () => {
 
   beforeEach(async () => {
     jest.resetAllMocks();
+    ordersRepository.findActiveShippingCarriers.mockResolvedValue([
+      { code: 'GHN', name: 'Giao Hang Nhanh' },
+    ]);
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CreateOrderUseCase,
@@ -45,11 +49,10 @@ describe('CreateOrderUseCase', () => {
       shopId: 'shop-1',
       brandId: 'brand-1',
       shop: { registrationType: 'NORMAL' },
-      shippingMethods: [{
-        providerCode: 'SELF_DELIVERY',
-        providerName: 'Seller tu giao',
-        shippingFee: new Prisma.Decimal(0),
-      }],
+      parcelWeightGrams: 500,
+      parcelLengthCm: 20,
+      parcelWidthCm: 12,
+      parcelHeightCm: 8,
     });
     shippingCarrierAdapter.quoteShipment.mockResolvedValue({
       shippingFeeAmount: 0,

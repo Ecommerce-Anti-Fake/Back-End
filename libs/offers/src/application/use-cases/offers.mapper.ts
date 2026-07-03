@@ -25,13 +25,6 @@ type OfferWithRelations = Offer & {
   parcelLengthCm?: number | null;
   parcelWidthCm?: number | null;
   parcelHeightCm?: number | null;
-  shippingMethods?: Array<{
-    providerCode: string;
-    providerName: string;
-    shippingFee: Prisma.Decimal | number;
-    estimatedDays: string | null;
-    isEnabled: boolean;
-  }>;
 };
 
 type OfferBatchLinkWithBatch = {
@@ -95,13 +88,6 @@ export function toOfferResponse(offer: OfferWithRelations) {
     thumbnailUrl:
       thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
     imageUrls,
-    shippingMethods: (offer.shippingMethods ?? []).map((method) => ({
-      providerCode: method.providerCode,
-      providerName: method.providerName,
-      shippingFee: decimalToNumber(method.shippingFee),
-      estimatedDays: method.estimatedDays,
-      isEnabled: method.isEnabled,
-    })),
     createdAt: offer.createdAt,
   };
 }

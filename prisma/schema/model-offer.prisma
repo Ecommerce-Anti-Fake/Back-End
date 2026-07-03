@@ -33,7 +33,6 @@ model Offer {
   cartItems            CartItem[]
   affiliatePrograms    AffiliateProgram[]
   affiliateConversions AffiliateConversion[]
-  shippingMethods      OfferShippingMethod[]
   favoritedBy          UserFavoriteOffer[]
   socialPosts          SocialPost[]
   liveSessionOffers    LiveSessionOffer[]

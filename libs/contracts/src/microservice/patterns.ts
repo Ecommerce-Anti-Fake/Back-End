@@ -786,7 +786,6 @@ export type CreateOfferMessage = {
   availableQuantity: number;
   verificationLevel?: string;
   offerStatus?: 'active' | 'inactive' | 'draft';
-  shippingProviderCodes?: string[];
   parcelWeightGrams?: number | null;
   parcelLengthCm?: number | null;
   parcelWidthCm?: number | null;
@@ -801,7 +800,6 @@ export type UpdateOfferMessage = {
   price?: number;
   availableQuantity?: number;
   offerStatus?: 'active' | 'inactive' | 'draft';
-  shippingProviderCodes?: string[];
   parcelWeightGrams?: number | null;
   parcelLengthCm?: number | null;
   parcelWidthCm?: number | null;

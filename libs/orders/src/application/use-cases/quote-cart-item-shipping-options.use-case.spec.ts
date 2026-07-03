@@ -8,6 +8,7 @@ describe('QuoteCartItemShippingOptionsUseCase', () => {
   const ordersRepositoryMock = {
     findCartItemById: jest.fn(),
     findOfferForOrdering: jest.fn(),
+    findActiveShippingCarriers: jest.fn(),
   };
   const shippingCarrierAdapterMock = {
     listGhnServices: jest.fn(),
@@ -17,6 +18,9 @@ describe('QuoteCartItemShippingOptionsUseCase', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
+    ordersRepositoryMock.findActiveShippingCarriers.mockResolvedValue([
+      { code: 'GHN', name: 'Giao Hang Nhanh', description: null },
+    ]);
     useCase = new QuoteCartItemShippingOptionsUseCase(
       ordersRepositoryMock as unknown as OrdersRepository,
       shippingCarrierAdapterMock as unknown as ShippingCarrierAdapterService,
@@ -59,7 +63,6 @@ describe('QuoteCartItemShippingOptionsUseCase', () => {
       }),
     );
     expect(result).toEqual([
-      expect.objectContaining({ providerCode: 'SELF_DELIVERY', shippingFee: 0 }),
       expect.objectContaining({ providerCode: 'GHN', shippingFee: 31000, shippingServiceId: 53320 }),
     ]);
   });
@@ -105,20 +108,6 @@ function createOffer(overrides: Record<string, unknown> = {}) {
     parcelLengthCm: 20,
     parcelWidthCm: 12,
     parcelHeightCm: 8,
-    shippingMethods: [
-      {
-        providerCode: 'SELF_DELIVERY',
-        providerName: 'Seller tu giao',
-        shippingFee: new Prisma.Decimal(0),
-        estimatedDays: '1-2 ngay',
-      },
-      {
-        providerCode: 'GHN',
-        providerName: 'Giao Hang Nhanh',
-        shippingFee: new Prisma.Decimal(25000),
-        estimatedDays: '2-3 ngay',
-      },
-    ],
     ...overrides,
   };
 }

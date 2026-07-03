@@ -13,16 +13,12 @@ describe('CreateOfferUseCase', () => {
     findCategoryById: jest.fn(),
     findApprovedShopCategoryRegistration: jest.fn(),
     findOwnedDistributionNode: jest.fn(),
-    findActiveShippingCarriersByCodes: jest.fn(),
     createProductModel: jest.fn(),
     createOffer: jest.fn(),
   };
 
   beforeEach(async () => {
     jest.resetAllMocks();
-    productRepositoryMock.findActiveShippingCarriersByCodes.mockImplementation(
-      async (codes: string[]) => codes.map((code) => ({ code })),
-    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -204,7 +200,6 @@ describe('CreateOfferUseCase', () => {
         gtin: null,
         verificationPolicy: 'manual_review',
         offerStatus: 'draft',
-        shippingProviderCodes: ['SELF_DELIVERY'],
       }),
     );
   });
@@ -270,26 +265,5 @@ describe('CreateOfferUseCase', () => {
         verificationPolicy: 'manual_review',
       }),
     );
-  });
-
-  it('should reject unknown shipping providers', async () => {
-    mockActiveApprovedShop();
-    productRepositoryMock.findActiveShippingCarriersByCodes.mockResolvedValueOnce(
-      [{ code: 'SELF_DELIVERY' }],
-    );
-
-    await expect(
-      useCase.execute({
-        sellerUserId: 'user-1',
-        shopId: 'shop-1',
-        categoryId: 'category-1',
-        brandId: 'brand-1',
-        title: 'Offer 1',
-        description: 'Desc',
-        price: 100000,
-        availableQuantity: 10,
-        shippingProviderCodes: ['SELF_DELIVERY', 'UNKNOWN'],
-      }),
-    ).rejects.toThrow('One or more shipping providers are invalid');
   });
 });
