@@ -355,10 +355,6 @@ export class OfferBatchLinkResponseDto {
 }
 
 export class CreateOfferDto {
-  @ApiProperty({ example: 'shop-id' })
-  @IsString()
-  shopId!: string;
-
   @ApiProperty({ example: 'category-id' })
   @IsString()
   categoryId!: string;
@@ -390,16 +386,16 @@ export class CreateOfferDto {
   @IsPositive()
   price!: number;
 
-  @ApiPropertyOptional({ example: 'VND' })
-  @IsOptional()
+  @ApiProperty({ enum: ['VND'], example: 'VND' })
   @IsString()
+  @IsIn(['VND'])
   @MaxLength(10)
-  currency?: string;
+  currency!: 'VND';
 
-  @ApiPropertyOptional({ example: 'new' })
-  @IsOptional()
+  @ApiProperty({ enum: ['new', 'used'], example: 'new' })
   @IsString()
-  itemCondition?: string;
+  @IsIn(['new', 'used'])
+  itemCondition!: 'new' | 'used';
 
   @ApiProperty({ example: 500 })
   @Type(() => Number)

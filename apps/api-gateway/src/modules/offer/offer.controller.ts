@@ -6,11 +6,16 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import {
+  ApiBody,
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiConsumes,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
@@ -46,6 +51,37 @@ export class OfferController {
 
   @ApiOperation({ summary: 'Tao offer moi cho shop hien tai' })
   @ApiBearerAuth('access-token')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: [
+        'title',
+        'categoryId',
+        'description',
+        'productImages',
+        'price',
+        'currency',
+        'availableQuantity',
+        'itemCondition',
+      ],
+      properties: {
+        title: { type: 'string', example: 'Kem chong nang SPF50 - lo 2026' },
+        categoryId: { type: 'string', example: 'category-id' },
+        brandId: { type: 'string', example: 'brand-id' },
+        description: { type: 'string', example: 'Mo ta san pham' },
+        productImages: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: 'Danh sach anh san pham, toi da 10 anh JPG/PNG/WEBP.',
+        },
+        price: { type: 'number', example: 150000 },
+        currency: { type: 'string', enum: ['VND'], example: 'VND' },
+        availableQuantity: { type: 'integer', example: 500 },
+        itemCondition: { type: 'string', enum: ['new', 'used'], example: 'new' },
+      },
+    },
+  })
   @ApiCreatedResponse({
     description: 'Tao offer thanh cong va cho kiem duyet.',
     type: CreateOfferResponseDto,
@@ -58,14 +94,25 @@ export class OfferController {
     description: 'Thieu access token hoac token khong hop le.',
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @UseInterceptors(
+    FilesInterceptor('productImages', 10, {
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
   @Post('offers')
   async createOffer(
     @CurrentUserId() sellerUserId: string,
     @Body() dto: CreateOfferDto,
+    @UploadedFiles()
+    productImages: Array<{
+      buffer: Buffer;
+      mimetype: string;
+      originalname?: string;
+      size: number;
+    }> = [],
   ) {
     const result = await this.catalogRpcService.createOffer({
       sellerUserId,
-      shopId: dto.shopId,
       categoryId: dto.categoryId,
       brandId: dto.brandId ?? null,
       distributionNodeId: dto.distributionNodeId ?? null,
@@ -81,10 +128,12 @@ export class OfferController {
       parcelLengthCm: dto.parcelLengthCm,
       parcelWidthCm: dto.parcelWidthCm,
       parcelHeightCm: dto.parcelHeightCm,
+      productImages,
     });
-    this.dashboardSseBrokerService.notifyShop(
-      shopIdFromResult(result) ?? dto.shopId,
-    );
+    const createdShopId = shopIdFromResult(result);
+    if (createdShopId) {
+      this.dashboardSseBrokerService.notifyShop(createdShopId);
+    }
 
     return {
       success: true,

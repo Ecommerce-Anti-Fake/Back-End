@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '@database/prisma/prisma.module';
+import { MediaModule } from '@media';
 import {
   AllocateOfferBatchesUseCase,
   CreateOfferUseCase,
@@ -12,7 +13,7 @@ import { OffersRepository } from './infrastructure/persistence/offers.repository
 import { OffersRpcController } from './presentation/rpc/offers.rpc-controller';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, MediaModule],
   controllers: [OffersRpcController],
   providers: [
     OffersRepository,

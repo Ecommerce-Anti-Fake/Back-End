@@ -133,21 +133,36 @@ describe('OfferController', () => {
     );
 
     const result = await controller.createOffer('seller-1', {
-      shopId: 'shop-1',
       categoryId: 'category-1',
       brandId: 'brand-1',
       title: 'Kem chong nang SPF50',
       description: 'Mo ta san pham',
       price: 150000,
+      currency: 'VND',
       availableQuantity: 12,
-    });
+      itemCondition: 'new',
+    }, [
+      {
+        buffer: Buffer.from('image-bytes'),
+        mimetype: 'image/jpeg',
+        originalname: 'product.jpg',
+        size: 11,
+      },
+    ]);
 
     expect(catalogRpcService.createOffer).toHaveBeenCalledWith(
       expect.objectContaining({
         sellerUserId: 'seller-1',
-        shopId: 'shop-1',
         categoryId: 'category-1',
         brandId: 'brand-1',
+        productImages: [
+          {
+            buffer: Buffer.from('image-bytes'),
+            mimetype: 'image/jpeg',
+            originalname: 'product.jpg',
+            size: 11,
+          },
+        ],
       }),
     );
     expect(dashboardSseBrokerService.notifyShop).toHaveBeenCalledWith('shop-1');

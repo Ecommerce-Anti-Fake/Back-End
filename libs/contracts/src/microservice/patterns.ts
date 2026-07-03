@@ -774,7 +774,7 @@ export type DeleteLiveCommentMessage = LiveSessionLookupMessage & {
 
 export type CreateOfferMessage = {
   sellerUserId: string;
-  shopId: string;
+  shopId?: string | null;
   categoryId: string;
   brandId?: string | null;
   distributionNodeId?: string | null;
@@ -790,6 +790,12 @@ export type CreateOfferMessage = {
   parcelLengthCm?: number | null;
   parcelWidthCm?: number | null;
   parcelHeightCm?: number | null;
+  productImages?: Array<{
+    buffer: Buffer;
+    mimetype: string;
+    originalname?: string;
+    size: number;
+  }>;
 };
 
 export type UpdateOfferMessage = {

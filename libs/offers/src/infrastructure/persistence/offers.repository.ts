@@ -36,6 +36,17 @@ export class OffersRepository {
     });
   }
 
+  findShopByOwnerUserId(ownerUserId: string) {
+    return this.prisma.shop.findFirst({
+      where: { ownerUserId },
+      select: {
+        id: true,
+        shopStatus: true,
+        registrationType: true,
+      },
+    });
+  }
+
   findApprovedShopCategoryRegistration(shopId: string, categoryId: string) {
     return this.prisma.shopBusinessCategory.findFirst({
       where: {
@@ -94,6 +105,19 @@ export class OffersRepository {
     return this.prisma.offer.create({
       data,
       include: this.offerResponseInclude(),
+    });
+  }
+
+  createOfferMedia(data: {
+    offerId: string;
+    mediaAssetId: string | null;
+    mediaType: string;
+    fileUrl: string;
+    phash: string | null;
+  }) {
+    return this.prisma.offerMedia.create({
+      data,
+      include: { mediaAsset: true },
     });
   }
 

@@ -3,16 +3,28 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { MediaService } from '@media';
 import { OffersRepository } from '../../infrastructure/persistence/offers.repository';
 import { toOfferResponse } from './offers.mapper';
 
+const MAX_PRODUCT_IMAGES = 10;
+const MAX_PRODUCT_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_PRODUCT_IMAGE_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+
 @Injectable()
 export class CreateOfferUseCase {
-  constructor(private readonly productRepository: OffersRepository) {}
+  constructor(
+    private readonly productRepository: OffersRepository,
+    private readonly mediaService: MediaService,
+  ) {}
 
   async execute(input: {
     sellerUserId: string;
-    shopId: string;
+    shopId?: string | null;
     categoryId: string;
     brandId?: string | null;
     distributionNodeId?: string | null;
@@ -28,11 +40,21 @@ export class CreateOfferUseCase {
     parcelLengthCm?: number | null;
     parcelWidthCm?: number | null;
     parcelHeightCm?: number | null;
+    productImages?: Array<{
+      buffer: Buffer | { data?: number[] };
+      mimetype: string;
+      originalname?: string;
+      size: number;
+    }>;
   }) {
-    const ownedShop = await this.productRepository.findOwnedShop(
-      input.shopId,
-      input.sellerUserId,
-    );
+    const productImages = this.validateProductImages(input.productImages ?? []);
+    const requestedShopId = input.shopId?.trim();
+    const ownedShop = requestedShopId
+      ? await this.productRepository.findOwnedShop(
+          requestedShopId,
+          input.sellerUserId,
+        )
+      : await this.productRepository.findShopByOwnerUserId(input.sellerUserId);
     if (!ownedShop) {
       throw new BadRequestException('Shop does not belong to current user');
     }
@@ -59,7 +81,7 @@ export class CreateOfferUseCase {
 
     const approvedCategoryRegistration =
       await this.productRepository.findApprovedShopCategoryRegistration(
-        input.shopId,
+        ownedShop.id,
         input.categoryId,
       );
     if (!approvedCategoryRegistration) {
@@ -75,7 +97,7 @@ export class CreateOfferUseCase {
       const distributionNode =
         await this.productRepository.findOwnedDistributionNode(
           distributionNodeId,
-          input.shopId,
+          ownedShop.id,
           input.sellerUserId,
         );
 
@@ -116,7 +138,7 @@ export class CreateOfferUseCase {
 
     const offer = await this.productRepository.createOffer({
       sellerUserId: input.sellerUserId,
-      shopId: input.shopId,
+      shopId: ownedShop.id,
       categoryId: input.categoryId,
       brandId: productIdentity.brandId,
       modelName: productIdentity.modelName,
@@ -133,6 +155,46 @@ export class CreateOfferUseCase {
       offerStatus,
       ...this.resolveParcelSnapshot(input),
     });
+
+    const uploadedImages: Array<{ publicId: string; assetType: 'IMAGE' }> = [];
+    try {
+      for (const [index, image] of productImages.entries()) {
+        const uploaded = await this.mediaService.uploadCloudinaryBuffer({
+          buffer: image.buffer,
+          folder: `offers/${offer.id}/media`,
+          requesterUserId: input.sellerUserId,
+          assetType: 'IMAGE',
+          mimeType: image.mimetype,
+          sequence: index + 1,
+        });
+        uploadedImages.push({ publicId: uploaded.publicId, assetType: 'IMAGE' });
+
+        const mediaAsset = await this.mediaService.createCloudinaryAsset({
+          ownerUserId: input.sellerUserId,
+          assetType: 'IMAGE',
+          resourceType: 'PRODUCT_IMAGE',
+          publicId: uploaded.publicId,
+          secureUrl: uploaded.secureUrl,
+          mimeType: image.mimetype,
+          folder: `offers/${offer.id}/media`,
+        });
+
+        await this.productRepository.createOfferMedia({
+          offerId: offer.id,
+          mediaAssetId: mediaAsset.id,
+          mediaType: index === 0 ? 'thumbnail' : 'gallery',
+          fileUrl: uploaded.secureUrl,
+          phash: null,
+        });
+      }
+    } catch (error) {
+      await Promise.allSettled(
+        uploadedImages.map((image) =>
+          this.mediaService.deleteCloudinaryAsset(image),
+        ),
+      );
+      throw error;
+    }
 
     return toOfferResponse(offer);
   }
@@ -177,4 +239,64 @@ export class CreateOfferUseCase {
       parcelHeightCm: input.parcelHeightCm ?? null,
     };
   }
+
+  private validateProductImages(
+    files: Array<{
+      buffer: Buffer | { data?: number[] };
+      mimetype: string;
+      originalname?: string;
+      size: number;
+    }>,
+  ) {
+    if (files.length === 0) {
+      throw new BadRequestException('At least one product image is required');
+    }
+
+    if (files.length > MAX_PRODUCT_IMAGES) {
+      throw new BadRequestException(
+        `Offer creation supports up to ${MAX_PRODUCT_IMAGES} product images`,
+      );
+    }
+
+    return files.map((file) => {
+      const buffer = normalizeBuffer(file.buffer);
+      const mimetype = file.mimetype.trim().toLowerCase();
+
+      if (!ALLOWED_PRODUCT_IMAGE_TYPES.has(mimetype)) {
+        throw new BadRequestException('Product images must be JPG, PNG or WEBP');
+      }
+
+      if (!buffer.length || file.size <= 0) {
+        throw new BadRequestException('Uploaded product image is empty');
+      }
+
+      if (
+        file.size > MAX_PRODUCT_IMAGE_BYTES ||
+        buffer.length > MAX_PRODUCT_IMAGE_BYTES
+      ) {
+        throw new BadRequestException(
+          'Product image file size must be at most 5MB',
+        );
+      }
+
+      return {
+        buffer,
+        mimetype,
+        originalname: file.originalname,
+        size: file.size,
+      };
+    });
+  }
+}
+
+function normalizeBuffer(buffer: Buffer | { data?: number[] }) {
+  if (Buffer.isBuffer(buffer)) {
+    return buffer;
+  }
+
+  if (Array.isArray(buffer?.data)) {
+    return Buffer.from(buffer.data);
+  }
+
+  throw new BadRequestException('Uploaded product image is invalid');
 }
