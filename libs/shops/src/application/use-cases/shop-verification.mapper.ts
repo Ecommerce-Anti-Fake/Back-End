@@ -133,8 +133,7 @@ export function toShopVerificationSummaryResponse(shop: VerificationSummaryRecor
   const hasRequiredKycDocuments =
     shop.owner.kyc?.documents.some((document) => document.side === 'FRONT') === true &&
     shop.owner.kyc?.documents.some((document) => document.side === 'BACK') === true;
-  const requiresShopDocuments =
-    shop.registrationType === 'MANUFACTURER' || shop.registrationType === 'DISTRIBUTOR';
+  const requiresShopDocuments = true;
   const approvedShopDocuments = shop.documents.filter((document) => document.reviewStatus === 'approved').length;
   const hasApprovedShopDocument = approvedShopDocuments > 0;
 

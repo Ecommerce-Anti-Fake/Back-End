@@ -68,7 +68,9 @@ export async function seedMasterData(prisma: PrismaClient, ctx: SeedContext) {
   }
 
   const mappings = [
-    ['HANDMADE', 'HANDMADE_PROOF', true, 10],
+    ['NORMAL', 'BUSINESS_LICENSE', true, 10],
+    ['HANDMADE', 'BUSINESS_LICENSE', true, 10],
+    ['HANDMADE', 'HANDMADE_PROOF', true, 20],
     ['MANUFACTURER', 'BUSINESS_LICENSE', true, 10],
     ['MANUFACTURER', 'TAX_REGISTRATION', true, 20],
     ['MANUFACTURER', 'MANUFACTURING_CERTIFICATE', true, 30],

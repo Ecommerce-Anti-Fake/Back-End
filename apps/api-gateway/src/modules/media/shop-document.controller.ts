@@ -1,11 +1,11 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
   CategoryDocumentUploadSignaturesDto,
-  ShopDocumentUploadSignaturesDto,
   SubmitCategoryDocumentsDto,
-  SubmitShopDocumentsDto,
+  SubmitShopDocumentsMultipartDto,
   UpdateShopRegistrationTypeDto,
 } from '@shops';
 import { RateLimit } from '../../observability';
@@ -43,36 +43,61 @@ export class ShopDocumentController {
     });
   }
 
-  @ApiOperation({ summary: 'Lay chu ky upload ho so phap ly cua shop' })
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @RateLimit({ profile: 'uploadSignature' })
-  @Post(':shopId/documents/upload-signatures')
-  getShopDocumentUploadSignatures(
-    @Param('shopId') shopId: string,
-    @CurrentUserId() requesterUserId: string,
-    @Body() dto: ShopDocumentUploadSignaturesDto,
-  ) {
-    return this.shopsRpcService.getShopDocumentUploadSignatures({
-      shopId,
-      requesterUserId,
-      items: dto.items,
-    });
-  }
-
   @ApiOperation({ summary: 'Nop ho so phap ly cua shop' })
   @ApiBearerAuth('access-token')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['docTypes', 'files'],
+      properties: {
+        docTypes: {
+          type: 'array',
+          items: { type: 'string', example: 'BUSINESS_LICENSE' },
+          description: 'Danh sach loai ho so, theo dung thu tu voi files.',
+        },
+        files: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: 'Danh sach anh ho so phap ly, toi da 10 file.',
+        },
+      },
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Thieu file, thieu docTypes, so luong khong khop, file khong phai anh hoac qua lon.',
+  })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @UseInterceptors(FilesInterceptor('files', 10, { limits: { fileSize: 5 * 1024 * 1024 } }))
   @Post(':shopId/documents')
   submitShopDocuments(
     @Param('shopId') shopId: string,
     @CurrentUserId() requesterUserId: string,
-    @Body() dto: SubmitShopDocumentsDto,
+    @Body() dto: SubmitShopDocumentsMultipartDto = { docTypes: [] },
+    @UploadedFiles()
+    files: Array<{
+      buffer: Buffer;
+      mimetype: string;
+      originalname?: string;
+      size: number;
+    }> = [],
   ) {
+    const docTypes = normalizeDocTypes(dto.docTypes);
+    if (files.length === 0) {
+      throw new BadRequestException('At least one shop document file is required');
+    }
+
+    if (docTypes.length !== files.length) {
+      throw new BadRequestException('docTypes count must match files count');
+    }
+
     return this.shopsRpcService.submitShopDocuments({
       shopId,
       requesterUserId,
-      items: dto.items,
+      items: files.map((file, index) => ({
+        docType: docTypes[index],
+        file,
+      })),
     });
   }
 
@@ -150,4 +175,26 @@ export class ShopDocumentController {
       requesterUserId,
     });
   }
+}
+
+function normalizeDocTypes(docTypes?: string | string[]) {
+  if (Array.isArray(docTypes)) {
+    return docTypes.map((docType) => docType.trim()).filter(Boolean);
+  }
+
+  const value = docTypes?.trim();
+  if (!value) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (Array.isArray(parsed)) {
+      return parsed.map((docType) => String(docType).trim()).filter(Boolean);
+    }
+  } catch {
+    // Fall back to comma-separated form.
+  }
+
+  return value.split(',').map((docType) => docType.trim()).filter(Boolean);
 }

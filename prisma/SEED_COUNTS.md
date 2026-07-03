@@ -31,7 +31,7 @@ This package contains the complete replacement seed files for the AntiFake backe
 - PasswordResetToken: 5
 - ShopType: 4
 - VerificationRequirement: 5
-- ShopTypeRequirement: 7
+- ShopTypeRequirement: 9
 - ShippingCarrier: 5
 - Shop: 15
 - ShopBusinessCategory: 30

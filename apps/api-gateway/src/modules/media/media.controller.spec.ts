@@ -56,11 +56,8 @@ describe('ShopDocumentController routes', () => {
       ),
     ).toBe(':shopId/documents');
     expect(
-      Reflect.getMetadata(
-        PATH_METADATA,
-        ShopDocumentController.prototype.getShopDocumentUploadSignatures,
-      ),
-    ).toBe(':shopId/documents/upload-signatures');
+      (ShopDocumentController.prototype as Record<string, unknown>).getShopDocumentUploadSignatures,
+    ).toBeUndefined();
     expect(
       Reflect.getMetadata(
         PATH_METADATA,
@@ -73,5 +70,40 @@ describe('ShopDocumentController routes', () => {
         ShopDocumentController.prototype.findShopDocumentRequirements,
       ),
     ).toBe(':shopId/document-requirements');
+  });
+
+  it('submits multipart shop documents by matching docTypes to files', async () => {
+    const shopsRpcService = {
+      submitShopDocuments: jest.fn().mockResolvedValue({ success: true }),
+    };
+    const controller = new ShopDocumentController(shopsRpcService as never);
+    const files = [
+      {
+        buffer: Buffer.from('license'),
+        mimetype: 'image/jpeg',
+        originalname: 'license.jpg',
+        size: 7,
+      },
+    ];
+
+    await expect(
+      controller.submitShopDocuments(
+        'shop-1',
+        'user-1',
+        { docTypes: ['BUSINESS_LICENSE'] },
+        files,
+      ),
+    ).resolves.toEqual({ success: true });
+
+    expect(shopsRpcService.submitShopDocuments).toHaveBeenCalledWith({
+      shopId: 'shop-1',
+      requesterUserId: 'user-1',
+      items: [
+        {
+          docType: 'BUSINESS_LICENSE',
+          file: files[0],
+        },
+      ],
+    });
   });
 });

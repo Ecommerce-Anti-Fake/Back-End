@@ -90,10 +90,6 @@ export class CreateShopUseCase {
       return 'pending_kyc';
     }
 
-    if (input.registrationType === 'MANUFACTURER' || input.registrationType === 'DISTRIBUTOR') {
-      return 'pending_verification';
-    }
-
-    return 'verified';
+    return 'pending_verification';
   }
 }

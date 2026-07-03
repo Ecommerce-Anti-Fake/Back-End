@@ -105,7 +105,7 @@ describe('CreateShopUseCase', () => {
     });
   });
 
-  it('should create normal shop as verified when KYC is approved even for high-risk categories', async () => {
+  it('should create normal shop in pending_verification when KYC is approved until shop documents are approved', async () => {
     shopsRepositoryMock.countByOwnerUserId.mockResolvedValueOnce(0);
     shopsRepositoryMock.countCategoriesByIds.mockResolvedValueOnce(1);
     shopsRepositoryMock.findCategoriesByIds.mockResolvedValueOnce([{ id: 'category-1', riskTier: 'HIGH' }]);
@@ -118,7 +118,7 @@ describe('CreateShopUseCase', () => {
       registrationType: 'NORMAL',
       businessType: 'retail',
       taxCode: null,
-      shopStatus: 'verified',
+      shopStatus: 'pending_verification',
       createdAt: new Date('2026-04-15T10:00:00.000Z'),
       registeredCategories: [],
     });
@@ -134,7 +134,7 @@ describe('CreateShopUseCase', () => {
 
     expect(shopsRepositoryMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        shopStatus: 'verified',
+        shopStatus: 'pending_verification',
         categoryRegistrations: [
           expect.objectContaining({
             categoryId: 'category-1',
@@ -146,7 +146,7 @@ describe('CreateShopUseCase', () => {
     );
     expect(result).toMatchObject({
       id: 'shop-3',
-      shopStatus: 'verified',
+      shopStatus: 'pending_verification',
     });
   });
 

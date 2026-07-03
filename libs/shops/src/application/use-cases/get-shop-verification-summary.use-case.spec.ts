@@ -24,18 +24,18 @@ describe('GetShopVerificationSummaryUseCase', () => {
     useCase = module.get<GetShopVerificationSummaryUseCase>(GetShopVerificationSummaryUseCase);
   });
 
-  it('should return missing requirements for manufacturer shop pending verification', async () => {
+  it('should return shop document requirement for pending verification shop', async () => {
     shopsRepositoryMock.findOwnedShop.mockResolvedValueOnce({
       id: 'shop-1',
       ownerUserId: 'user-1',
-      registrationType: 'MANUFACTURER',
+      registrationType: 'NORMAL',
       shopStatus: 'pending_verification',
     });
     shopsRepositoryMock.recomputeShopStatus.mockResolvedValueOnce(undefined);
     shopsRepositoryMock.findShopVerificationSummaryById.mockResolvedValueOnce({
       id: 'shop-1',
       shopStatus: 'pending_verification',
-      registrationType: 'MANUFACTURER',
+      registrationType: 'NORMAL',
       documents: [],
       registeredCategories: [
         {

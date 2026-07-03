@@ -1271,18 +1271,9 @@ export class ShopsRepository {
 
     let nextStatus = 'pending_kyc';
     if (hasApprovedKyc) {
-      const requiresShopVerification =
-        shop.registrationType === ShopRegistrationType.MANUFACTURER ||
-        shop.registrationType === ShopRegistrationType.DISTRIBUTOR;
       const hasApprovedShopDocument = shop.documents.some((document) => document.reviewStatus === 'approved');
 
-      if (
-        requiresShopVerification && !hasApprovedShopDocument
-      ) {
-        nextStatus = 'pending_verification';
-      } else {
-        nextStatus = 'verified';
-      }
+      nextStatus = hasApprovedShopDocument ? 'verified' : 'pending_verification';
     }
 
     return this.prisma.shop.update({
