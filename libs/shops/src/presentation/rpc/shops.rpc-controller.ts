@@ -7,13 +7,10 @@ import type {
   AdminShopVerificationSummaryMessage,
   BrandAuthorizationUploadSignaturesMessage,
   BrandAuthorizationsLookupMessage,
-  CategoryDocumentsLookupMessage,
-  CategoryDocumentUploadSignaturesMessage,
   CreateShopMessage,
   MyShopsLookupMessage,
   PendingVerificationShopsLookupMessage,
   PublicShopsLookupMessage,
-  ReviewShopCategoryMessage,
   ReviewBrandAuthorizationMessage,
   ReviewShopDocumentMessage,
   ShopCategoriesLookupMessage,
@@ -24,7 +21,6 @@ import type {
   ShopLookupMessage,
   ShopVerificationSummaryMessage,
   SubmitBrandAuthorizationMessage,
-  SubmitCategoryDocumentsMessage,
   SubmitShopDocumentsMessage,
   UpdateShopRegistrationTypeMessage,
   UpdateShopProfileMessage,
@@ -35,14 +31,12 @@ import {
   GetBrandAuthorizationUploadSignaturesUseCase,
   GetAdminShopVerificationDetailUseCase,
   GetAdminShopVerificationSummaryUseCase,
-  GetCategoryDocumentUploadSignaturesUseCase,
   GetPublicShopByOfferUseCase,
   GetShopVerificationSummaryUseCase,
   GetShopDocumentUploadSignaturesUseCase,
   GetShopByIdUseCase,
   ListAdminBrandAuthorizationsUseCase,
   ListBrandAuthorizationsUseCase,
-  ListCategoryDocumentsUseCase,
   ListMyShopsUseCase,
   ListPendingVerificationShopsUseCase,
   ListPublicShopCategoriesUseCase,
@@ -50,10 +44,8 @@ import {
   ListShopDocumentRequirementsUseCase,
   ListShopDocumentsUseCase,
   ReviewBrandAuthorizationUseCase,
-  ReviewShopCategoryUseCase,
   ReviewShopDocumentUseCase,
   SubmitBrandAuthorizationUseCase,
-  SubmitCategoryDocumentsUseCase,
   SubmitShopDocumentsUseCase,
   UpdateShopProfileUseCase,
   UpdateShopRegistrationTypeUseCase,
@@ -70,13 +62,9 @@ export class ShopsRpcController {
     private readonly listPendingVerificationShopsUseCase: ListPendingVerificationShopsUseCase,
     private readonly listShopDocumentsUseCase: ListShopDocumentsUseCase,
     private readonly listShopDocumentRequirementsUseCase: ListShopDocumentRequirementsUseCase,
-    private readonly listCategoryDocumentsUseCase: ListCategoryDocumentsUseCase,
     private readonly getShopDocumentUploadSignaturesUseCase: GetShopDocumentUploadSignaturesUseCase,
     private readonly submitShopDocumentsUseCase: SubmitShopDocumentsUseCase,
-    private readonly getCategoryDocumentUploadSignaturesUseCase: GetCategoryDocumentUploadSignaturesUseCase,
-    private readonly submitCategoryDocumentsUseCase: SubmitCategoryDocumentsUseCase,
     private readonly reviewShopDocumentUseCase: ReviewShopDocumentUseCase,
-    private readonly reviewShopCategoryUseCase: ReviewShopCategoryUseCase,
     private readonly getPublicShopByOfferUseCase: GetPublicShopByOfferUseCase,
     private readonly getShopByIdUseCase: GetShopByIdUseCase,
     private readonly listAdminBrandAuthorizationsUseCase: ListAdminBrandAuthorizationsUseCase,
@@ -216,15 +204,6 @@ export class ShopsRpcController {
     }
   }
 
-  @MessagePattern(SHOPS_MESSAGE_PATTERNS.findCategoryDocuments)
-  async findCategoryDocuments(@Payload() payload: CategoryDocumentsLookupMessage) {
-    try {
-      return await this.listCategoryDocumentsUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
   @MessagePattern(SHOPS_MESSAGE_PATTERNS.getShopDocumentUploadSignatures)
   async getShopDocumentUploadSignatures(@Payload() payload: ShopDocumentUploadSignaturesMessage) {
     try {
@@ -243,37 +222,10 @@ export class ShopsRpcController {
     }
   }
 
-  @MessagePattern(SHOPS_MESSAGE_PATTERNS.getCategoryDocumentUploadSignatures)
-  async getCategoryDocumentUploadSignatures(@Payload() payload: CategoryDocumentUploadSignaturesMessage) {
-    try {
-      return await this.getCategoryDocumentUploadSignaturesUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(SHOPS_MESSAGE_PATTERNS.submitCategoryDocuments)
-  async submitCategoryDocuments(@Payload() payload: SubmitCategoryDocumentsMessage) {
-    try {
-      return await this.submitCategoryDocumentsUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
   @MessagePattern(SHOPS_MESSAGE_PATTERNS.reviewShopDocument)
   async reviewShopDocument(@Payload() payload: ReviewShopDocumentMessage) {
     try {
       return await this.reviewShopDocumentUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-
-  @MessagePattern(SHOPS_MESSAGE_PATTERNS.reviewShopCategory)
-  async reviewShopCategory(@Payload() payload: ReviewShopCategoryMessage) {
-    try {
-      return await this.reviewShopCategoryUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

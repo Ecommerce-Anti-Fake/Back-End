@@ -8,7 +8,6 @@ model ShopBusinessCategory {
   createdAt          DateTime               @default(now()) @map("created_at")
   shop               Shop                   @relation(fields: [shopId], references: [id])
   category           Category               @relation(fields: [categoryId], references: [id])
-  documents          ShopCategoryDocument[]
 
   @@unique([shopId, categoryId])
   @@index([shopId])

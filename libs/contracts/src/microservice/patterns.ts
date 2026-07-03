@@ -65,18 +65,14 @@ export const SHOPS_MESSAGE_PATTERNS = {
   getAdminVerificationDetail: 'shops.get-admin-verification-detail',
   findShopDocuments: 'shops.find-shop-documents',
   findShopDocumentRequirements: 'shops.find-shop-document-requirements',
-  findCategoryDocuments: 'shops.find-category-documents',
   getShopDocumentUploadSignatures: 'shops.get-shop-document-upload-signatures',
   submitShopDocuments: 'shops.submit-shop-documents',
-  getCategoryDocumentUploadSignatures: 'shops.get-category-document-upload-signatures',
-  submitCategoryDocuments: 'shops.submit-category-documents',
   getBrandAuthorizationUploadSignatures: 'shops.get-brand-authorization-upload-signatures',
   submitBrandAuthorization: 'shops.submit-brand-authorization',
   findBrandAuthorizations: 'shops.find-brand-authorizations',
   findAdminBrandAuthorizations: 'shops.find-admin-brand-authorizations',
   reviewBrandAuthorization: 'shops.review-brand-authorization',
   reviewShopDocument: 'shops.review-shop-document',
-  reviewShopCategory: 'shops.review-shop-category',
 } as const;
 
 export const PRODUCTS_MESSAGE_PATTERNS = {
@@ -494,12 +490,6 @@ export type ShopDocumentRequirementsLookupMessage = {
   requesterUserId: string;
 };
 
-export type CategoryDocumentsLookupMessage = {
-  shopId: string;
-  categoryId: string;
-  requesterUserId: string;
-};
-
 export type ShopDocumentUploadSignaturesMessage = {
   shopId: string;
   requesterUserId: string;
@@ -522,44 +512,11 @@ export type SubmitShopDocumentsMessage = {
   }>;
 };
 
-export type CategoryDocumentUploadSignaturesMessage = {
-  shopId: string;
-  categoryId: string;
-  requesterUserId: string;
-  items: Array<{
-    documentType: string;
-  }>;
-};
-
-export type SubmitCategoryDocumentsMessage = {
-  shopId: string;
-  categoryId: string;
-  requesterUserId: string;
-  items: Array<{
-    documentType: string;
-    mimeType: string;
-    fileUrl: string;
-    publicId: string;
-    documentNumber?: string | null;
-    issuedBy?: string | null;
-    issuedAt?: string | null;
-    expiresAt?: string | null;
-  }>;
-};
-
 export type ReviewShopDocumentMessage = {
   shopId: string;
   documentId: string;
   reviewerUserId: string;
   reviewStatus: 'approved' | 'rejected';
-  reviewNote?: string | null;
-};
-
-export type ReviewShopCategoryMessage = {
-  shopId: string;
-  categoryId: string;
-  reviewerUserId: string;
-  registrationStatus: 'approved' | 'rejected';
   reviewNote?: string | null;
 };
 

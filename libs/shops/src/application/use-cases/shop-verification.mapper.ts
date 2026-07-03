@@ -29,21 +29,6 @@ type AuditLogRecord = {
   };
 };
 
-type ShopCategoryDocumentRecord = {
-  id: string;
-  documentType: string;
-  fileUrl: string;
-  mediaAssetId: string | null;
-  documentNumber: string | null;
-  issuedBy: string | null;
-  issuedAt: Date | null;
-  expiresAt: Date | null;
-  reviewStatus: string;
-  reviewNote: string | null;
-  reviewedAt: Date | null;
-  uploadedAt: Date;
-};
-
 type VerificationSummaryRecord = {
   id: string;
   shopStatus: string;
@@ -59,7 +44,6 @@ type VerificationSummaryRecord = {
       name: string;
       riskTier: string;
     };
-    documents: Array<{ reviewStatus: string }>;
   }>;
   owner: {
     kyc: {
@@ -82,23 +66,6 @@ export function toShopDocumentResponse(document: ShopDocumentRecord) {
     fileUrl: firstFile?.fileUrl ?? '',
     mediaAssetId: firstFile?.mediaAssetId ?? null,
     files,
-    reviewStatus: document.reviewStatus,
-    reviewNote: document.reviewNote,
-    reviewedAt: document.reviewedAt,
-    uploadedAt: document.uploadedAt,
-  };
-}
-
-export function toShopCategoryDocumentResponse(document: ShopCategoryDocumentRecord) {
-  return {
-    id: document.id,
-    documentType: document.documentType,
-    fileUrl: document.fileUrl,
-    mediaAssetId: document.mediaAssetId,
-    documentNumber: document.documentNumber,
-    issuedBy: document.issuedBy,
-    issuedAt: document.issuedAt,
-    expiresAt: document.expiresAt,
     reviewStatus: document.reviewStatus,
     reviewNote: document.reviewNote,
     reviewedAt: document.reviewedAt,
@@ -137,23 +104,15 @@ export function toShopVerificationSummaryResponse(shop: VerificationSummaryRecor
   const approvedShopDocuments = shop.documents.filter((document) => document.reviewStatus === 'approved').length;
   const hasApprovedShopDocument = approvedShopDocuments > 0;
 
-  const categories = shop.registeredCategories.map((registration) => {
-    const approvedDocumentCount = registration.documents.filter(
-      (document) => document.reviewStatus === 'approved',
-    ).length;
-
-    return {
-      categoryId: registration.category.id,
-      categoryName: registration.category.name,
-      riskTier: registration.category.riskTier,
-      requiredVerification: false,
-      registrationStatus: registration.registrationStatus,
-      reviewNote: registration.reviewNote,
-      approvedAt: registration.approvedAt,
-      documentCount: registration.documents.length,
-      approvedDocumentCount,
-    };
-  });
+  const categories = shop.registeredCategories.map((registration) => ({
+    categoryId: registration.category.id,
+    categoryName: registration.category.name,
+    riskTier: registration.category.riskTier,
+    requiredVerification: false,
+    registrationStatus: registration.registrationStatus,
+    reviewNote: registration.reviewNote,
+    approvedAt: registration.approvedAt,
+  }));
 
   const missingRequirements: string[] = [];
   if (kycStatus !== 'approved' || !hasRequiredKycDocuments) {
@@ -247,7 +206,6 @@ type AdminVerificationDetailRecord = {
         name: string;
         riskTier: string;
       };
-      documents: Array<ShopCategoryDocumentRecord>;
     }
   >;
 };
@@ -277,13 +235,6 @@ export function toPendingVerificationShopResponse(shop: PendingVerificationShopR
 
 export function toAdminShopVerificationDetailResponse(shop: AdminVerificationDetailRecord, timeline: AuditLogRecord[]) {
   const shopDocuments = shop.documents.map(toShopDocumentResponse);
-  const categoryDocuments = shop.registeredCategories.flatMap((registration) =>
-    registration.documents.map((document) => ({
-      ...toShopCategoryDocumentResponse(document),
-      categoryId: registration.category.id,
-      categoryName: registration.category.name,
-    })),
-  );
 
   const shopDocumentGroups = Object.values(
     shopDocuments.reduce<Record<string, typeof shopDocuments>>((accumulator, document) => {
@@ -293,20 +244,6 @@ export function toAdminShopVerificationDetailResponse(shop: AdminVerificationDet
     }, {}),
   ).map((documents) => ({
     docType: documents[0].docType,
-    ...groupLatestAndHistory(documents),
-  }));
-
-  const categoryDocumentGroups = Object.values(
-    categoryDocuments.reduce<Record<string, typeof categoryDocuments>>((accumulator, document) => {
-      const key = `${document.categoryId}:${document.documentType}`;
-      accumulator[key] ??= [];
-      accumulator[key].push(document);
-      return accumulator;
-    }, {}),
-  ).map((documents) => ({
-    categoryId: documents[0].categoryId,
-    categoryName: documents[0].categoryName,
-    documentType: documents[0].documentType,
     ...groupLatestAndHistory(documents),
   }));
 
@@ -354,9 +291,7 @@ export function toAdminShopVerificationDetailResponse(shop: AdminVerificationDet
         };
       }) ?? [],
     shopDocuments,
-    categoryDocuments,
     shopDocumentGroups,
-    categoryDocumentGroups,
     timeline: timeline.map(toAuditLogResponse),
   };
 }

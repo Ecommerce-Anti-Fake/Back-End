@@ -13,7 +13,6 @@ model MediaAsset {
   disputeEvidence           DisputeEvidence[]
   userKycDocument           UserKycDocument?
   shopDocumentFiles         ShopDocumentFile[]
-  shopCategoryDocument      ShopCategoryDocument?
   userKycSubmissionDocument UserKycSubmissionDocument?
   offerMedia                OfferMedia?
   reviewMedia               ReviewMedia[]

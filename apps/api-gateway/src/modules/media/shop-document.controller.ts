@@ -3,12 +3,9 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBadRequestResponse, ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
-  CategoryDocumentUploadSignaturesDto,
-  SubmitCategoryDocumentsDto,
   SubmitShopDocumentsMultipartDto,
   UpdateShopRegistrationTypeDto,
 } from '@shops';
-import { RateLimit } from '../../observability';
 import { ShopsRpcService } from '../shop/shops-rpc.service';
 
 @ApiTags('Shop-Document')
@@ -23,22 +20,6 @@ export class ShopDocumentController {
   findShopDocuments(@Param('shopId') shopId: string, @CurrentUserId() requesterUserId: string) {
     return this.shopsRpcService.findShopDocuments({
       shopId,
-      requesterUserId,
-    });
-  }
-
-  @ApiOperation({ summary: 'Lay danh sach ho so theo category da nop cua shop hien tai' })
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Get(':shopId/categories/:categoryId/documents')
-  findCategoryDocuments(
-    @Param('shopId') shopId: string,
-    @Param('categoryId') categoryId: string,
-    @CurrentUserId() requesterUserId: string,
-  ) {
-    return this.shopsRpcService.findCategoryDocuments({
-      shopId,
-      categoryId,
       requesterUserId,
     });
   }
@@ -98,43 +79,6 @@ export class ShopDocumentController {
         docType: docTypes[index],
         file,
       })),
-    });
-  }
-
-  @ApiOperation({ summary: 'Lay chu ky upload ho so theo danh muc nganh hang cua shop' })
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @RateLimit({ profile: 'uploadSignature' })
-  @Post(':shopId/categories/:categoryId/documents/upload-signatures')
-  getCategoryDocumentUploadSignatures(
-    @Param('shopId') shopId: string,
-    @Param('categoryId') categoryId: string,
-    @CurrentUserId() requesterUserId: string,
-    @Body() dto: CategoryDocumentUploadSignaturesDto,
-  ) {
-    return this.shopsRpcService.getCategoryDocumentUploadSignatures({
-      shopId,
-      categoryId,
-      requesterUserId,
-      items: dto.items,
-    });
-  }
-
-  @ApiOperation({ summary: 'Nop ho so theo danh muc nganh hang cua shop' })
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post(':shopId/categories/:categoryId/documents')
-  submitCategoryDocuments(
-    @Param('shopId') shopId: string,
-    @Param('categoryId') categoryId: string,
-    @CurrentUserId() requesterUserId: string,
-    @Body() dto: SubmitCategoryDocumentsDto,
-  ) {
-    return this.shopsRpcService.submitCategoryDocuments({
-      shopId,
-      categoryId,
-      requesterUserId,
-      items: dto.items,
     });
   }
 

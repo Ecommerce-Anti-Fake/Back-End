@@ -2807,11 +2807,6 @@ export class OrdersRepository {
       where: { id: shopId },
       include: {
         documents: { select: { reviewStatus: true } },
-        registeredCategories: {
-          include: {
-            documents: { select: { reviewStatus: true } },
-          },
-        },
         brandAuthorizations: { select: { verificationStatus: true } },
       },
     });
@@ -2829,7 +2824,6 @@ export class OrdersRepository {
     const statuses = [
       shop.shopStatus,
       ...shop.documents.map((doc) => doc.reviewStatus),
-      ...shop.registeredCategories.flatMap((category) => category.documents.map((doc) => doc.reviewStatus)),
       ...shop.brandAuthorizations.map((authorization) => authorization.verificationStatus),
     ];
 

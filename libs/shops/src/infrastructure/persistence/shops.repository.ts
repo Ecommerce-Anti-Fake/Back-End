@@ -78,11 +78,6 @@ const shopVerificationSummaryArgs = Prisma.validator<Prisma.ShopDefaultArgs>()({
             riskTier: true,
           },
         },
-        documents: {
-          orderBy: {
-            uploadedAt: 'asc',
-          },
-        },
       },
       orderBy: {
         createdAt: 'asc',
@@ -164,11 +159,6 @@ const adminShopVerificationDetailArgs = Prisma.validator<Prisma.ShopDefaultArgs>
             id: true,
             name: true,
             riskTier: true,
-          },
-        },
-        documents: {
-          orderBy: {
-            uploadedAt: 'asc',
           },
         },
       },
@@ -915,23 +905,6 @@ export class ShopsRepository {
     });
   }
 
-  findShopBusinessCategory(shopId: string, categoryId: string) {
-    return this.prisma.shopBusinessCategory.findFirst({
-      where: {
-        shopId,
-        categoryId,
-      },
-      include: {
-        category: {
-          select: {
-            id: true,
-            riskTier: true,
-          },
-        },
-      },
-    });
-  }
-
   findBrandById(brandId: string) {
     return this.prisma.brand.findUnique({
       where: {
@@ -972,31 +945,6 @@ export class ShopsRepository {
             sortOrder: 'asc',
           },
         },
-      },
-    });
-  }
-
-  createCategoryDocument(data: {
-    shopBusinessCategoryId: string;
-    mediaAssetId: string;
-    documentType: string;
-    fileUrl: string;
-    documentNumber: string | null;
-    issuedBy: string | null;
-    issuedAt: Date | null;
-    expiresAt: Date | null;
-  }) {
-    return this.prisma.shopCategoryDocument.create({
-      data: {
-        shopBusinessCategoryId: data.shopBusinessCategoryId,
-        mediaAssetId: data.mediaAssetId,
-        documentType: data.documentType,
-        fileUrl: data.fileUrl,
-        documentNumber: data.documentNumber,
-        issuedBy: data.issuedBy,
-        issuedAt: data.issuedAt,
-        expiresAt: data.expiresAt,
-        reviewStatus: 'pending',
       },
     });
   }
@@ -1128,40 +1076,6 @@ export class ShopsRepository {
     });
   }
 
-  reviewShopCategory(input: {
-    shopId: string;
-    categoryId: string;
-    registrationStatus: 'approved' | 'rejected';
-    reviewNote: string | null;
-  }) {
-    return this.prisma.shopBusinessCategory.updateMany({
-      where: {
-        shopId: input.shopId,
-        categoryId: input.categoryId,
-      },
-      data: {
-        registrationStatus: input.registrationStatus,
-        reviewNote: input.reviewNote,
-        approvedAt: input.registrationStatus === 'approved' ? new Date() : null,
-      },
-    });
-  }
-
-  markShopCategoryPendingReview(shopId: string, categoryId: string) {
-    return this.prisma.shopBusinessCategory.updateMany({
-      where: {
-        shopId,
-        categoryId,
-        registrationStatus: 'rejected',
-      },
-      data: {
-        registrationStatus: 'pending',
-        reviewNote: null,
-        approvedAt: null,
-      },
-    });
-  }
-
   findShopDocumentById(shopId: string, documentId: string) {
     return this.prisma.shopDocument.findFirst({
       where: {
@@ -1200,34 +1114,6 @@ export class ShopsRepository {
             uploadedAt: true,
           },
         },
-        reviewStatus: true,
-        reviewNote: true,
-        reviewedAt: true,
-        uploadedAt: true,
-      },
-    });
-  }
-
-  findCategoryDocumentsByShopId(shopId: string, categoryId: string) {
-    return this.prisma.shopCategoryDocument.findMany({
-      where: {
-        shopBusinessCategory: {
-          shopId,
-          categoryId,
-        },
-      },
-      orderBy: {
-        uploadedAt: 'asc',
-      },
-      select: {
-        id: true,
-        documentType: true,
-        fileUrl: true,
-        mediaAssetId: true,
-        documentNumber: true,
-        issuedBy: true,
-        issuedAt: true,
-        expiresAt: true,
         reviewStatus: true,
         reviewNote: true,
         reviewedAt: true,

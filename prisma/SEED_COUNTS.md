@@ -37,7 +37,6 @@ This package contains the complete replacement seed files for the AntiFake backe
 - ShopBusinessCategory: 30
 - ShopDocument: 25
 - ShopDocumentFile: 50
-- ShopCategoryDocument: 30
 - BrandAuthorization: up to 20, unique by shop-brand
 - Category: 15
 - Brand: 15

@@ -81,15 +81,13 @@ export async function seedShops(prisma: PrismaClient, ctx: SeedContext) {
         id: id(),
         shopId: shop.id,
         categoryId: category.id,
-        registrationStatus: i % 8 === 0 ? 'pending' : 'approved',
-        approvedAt: i % 8 === 0 ? null : recentDate(60 - (i % 30)),
-        reviewNote: i % 8 === 0 ? 'Đang chờ kiểm tra hồ sơ ngành hàng.' : null,
+        registrationStatus: 'approved',
+        approvedAt: recentDate(60 - (i % 30)),
+        reviewNote: null,
         createdAt: recentDate(80 - (i % 40)),
       },
     });
   }
-
-  const shopCategories = await prisma.shopBusinessCategory.findMany();
 
   for (let i = 0; i < COUNTS.shopDocuments; i += 1) {
     const shop = pick(ctx.shops, i);
@@ -128,33 +126,6 @@ export async function seedShops(prisma: PrismaClient, ctx: SeedContext) {
         },
       });
     }
-  }
-
-  for (let i = 0; i < COUNTS.shopCategoryDocuments; i += 1) {
-    const shopCategory = pick(shopCategories, i);
-    const media = await createMediaAsset(prisma, {
-      ownerUserId: pick(ctx.shops, i).ownerUserId,
-      resourceType: 'SHOP_DOCUMENT',
-      secureUrl: documentUrl(`shop-category-${shopCategory.id}-${i}`),
-      publicId: `seed/shop-category-documents/${shopCategory.id}`,
-      mimeType: 'application/pdf',
-      assetType: 'RAW',
-    });
-    await prisma.shopCategoryDocument.create({
-      data: {
-        id: id(),
-        shopBusinessCategoryId: shopCategory.id,
-        mediaAssetId: media.id,
-        documentType: i % 3 === 0 ? 'FOOD_SAFETY_CERTIFICATE' : 'CATEGORY_REGISTRATION',
-        fileUrl: media.secureUrl,
-        documentNumber: `CAT-DOC-${String(i + 1).padStart(4, '0')}`,
-        issuedBy: 'Sở Công Thương TP.HCM',
-        issuedAt: recentDate(180 - i),
-        expiresAt: recentDate(-365 - i),
-        reviewStatus: i % 6 === 0 ? 'pending' : 'approved',
-        reviewedAt: i % 6 === 0 ? null : recentDate(20 - (i % 10)),
-      },
-    });
   }
 
   for (let i = 0; i < COUNTS.brandAuthorizations; i += 1) {

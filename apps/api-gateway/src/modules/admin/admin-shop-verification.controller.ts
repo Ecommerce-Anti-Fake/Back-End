@@ -4,7 +4,6 @@ import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from 
 import {
   PendingVerificationShopQueryDto,
   ReviewBrandAuthorizationDto,
-  ReviewShopCategoryDto,
   ReviewShopDocumentDto,
 } from '@shops';
 import { ShopsRpcService } from '../shop/shops-rpc.service';
@@ -60,27 +59,6 @@ export class AdminShopVerificationController {
       documentId,
       reviewerUserId,
       reviewStatus: dto.reviewStatus,
-      reviewNote: dto.reviewNote ?? null,
-    });
-  }
-
-  @ApiOperation({ summary: 'Admin duyet category registration cua shop' })
-  @ApiBearerAuth('access-token')
-  @ApiForbiddenResponse({ description: 'Chi admin moi co quyen truy cap.' })
-  @Roles('admin')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
-  @Post(':shopId/categories/:categoryId/review')
-  reviewShopCategory(
-    @Param('shopId') shopId: string,
-    @Param('categoryId') categoryId: string,
-    @CurrentUserId() reviewerUserId: string,
-    @Body() dto: ReviewShopCategoryDto,
-  ) {
-    return this.shopsRpcService.reviewShopCategory({
-      shopId,
-      categoryId,
-      reviewerUserId,
-      registrationStatus: dto.registrationStatus,
       reviewNote: dto.reviewNote ?? null,
     });
   }

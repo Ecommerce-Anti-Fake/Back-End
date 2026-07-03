@@ -24,7 +24,7 @@ describe('GetAdminShopVerificationDetailUseCase', () => {
     useCase = module.get<GetAdminShopVerificationDetailUseCase>(GetAdminShopVerificationDetailUseCase);
   });
 
-  it('should group shop and category document history with latest submission first', async () => {
+  it('should group shop document history with latest submission first', async () => {
     shopsRepositoryMock.recomputeShopStatus.mockResolvedValueOnce(undefined);
     shopsRepositoryMock.findAdminShopVerificationDetailById.mockResolvedValueOnce({
       id: 'shop-1',
@@ -78,36 +78,6 @@ describe('GetAdminShopVerificationDetailUseCase', () => {
             name: 'My pham',
             riskTier: 'HIGH',
           },
-          documents: [
-            {
-              id: 'cat-doc-old',
-              documentType: 'CATEGORY_CERTIFICATE',
-              fileUrl: 'https://example.com/cat-old.jpg',
-              mediaAssetId: 'media-cat-old',
-              documentNumber: 'GCN-001',
-              issuedBy: 'Bo Y Te',
-              issuedAt: null,
-              expiresAt: null,
-              reviewStatus: 'rejected',
-              reviewNote: 'Het han',
-              reviewedAt: new Date('2026-04-15T09:15:00.000Z'),
-              uploadedAt: new Date('2026-04-15T08:45:00.000Z'),
-            },
-            {
-              id: 'cat-doc-new',
-              documentType: 'CATEGORY_CERTIFICATE',
-              fileUrl: 'https://example.com/cat-new.jpg',
-              mediaAssetId: 'media-cat-new',
-              documentNumber: 'GCN-002',
-              issuedBy: 'Bo Y Te',
-              issuedAt: null,
-              expiresAt: null,
-              reviewStatus: 'pending',
-              reviewNote: null,
-              reviewedAt: null,
-              uploadedAt: new Date('2026-04-15T10:45:00.000Z'),
-            },
-          ],
         },
       ],
     });
@@ -142,20 +112,6 @@ describe('GetAdminShopVerificationDetailUseCase', () => {
       'shop-doc-old',
     ]);
 
-    expect(result.categoryDocumentGroups).toHaveLength(1);
-    expect(result.categoryDocumentGroups[0]).toMatchObject({
-      categoryId: 'category-1',
-      categoryName: 'My pham',
-      documentType: 'CATEGORY_CERTIFICATE',
-      latestSubmission: {
-        id: 'cat-doc-new',
-        reviewStatus: 'pending',
-      },
-    });
-    expect(result.categoryDocumentGroups[0].history.map((item: { id: string }) => item.id)).toEqual([
-      'cat-doc-new',
-      'cat-doc-old',
-    ]);
     expect(result.timeline).toMatchObject([
       {
         id: 'audit-1',

@@ -6,15 +6,12 @@ import {
   AdminShopVerificationSummaryMessage,
   BrandAuthorizationUploadSignaturesMessage,
   BrandAuthorizationsLookupMessage,
-  CategoryDocumentsLookupMessage,
-  CategoryDocumentUploadSignaturesMessage,
   CATALOG_SERVICE_CLIENT,
   CreateShopMessage,
   MyShopsLookupMessage,
   PendingVerificationShopsLookupMessage,
   PublicShopsLookupMessage,
   ReviewBrandAuthorizationMessage,
-  ReviewShopCategoryMessage,
   ReviewShopDocumentMessage,
   SHOPS_MESSAGE_PATTERNS,
   ShopByOfferLookupMessage,
@@ -25,7 +22,6 @@ import {
   ShopLookupMessage,
   ShopVerificationSummaryMessage,
   SubmitBrandAuthorizationMessage,
-  SubmitCategoryDocumentsMessage,
   SubmitShopDocumentsMessage,
   UpdateShopRegistrationTypeMessage,
   UpdateShopProfileMessage,
@@ -116,10 +112,6 @@ export class ShopsRpcService {
     return this.send(SHOPS_MESSAGE_PATTERNS.findShopDocumentRequirements, payload);
   }
 
-  findCategoryDocuments(payload: CategoryDocumentsLookupMessage) {
-    return this.send(SHOPS_MESSAGE_PATTERNS.findCategoryDocuments, payload);
-  }
-
   getShopDocumentUploadSignatures(payload: ShopDocumentUploadSignaturesMessage) {
     return this.send(SHOPS_MESSAGE_PATTERNS.getShopDocumentUploadSignatures, payload);
   }
@@ -128,20 +120,8 @@ export class ShopsRpcService {
     return this.send(SHOPS_MESSAGE_PATTERNS.submitShopDocuments, payload);
   }
 
-  getCategoryDocumentUploadSignatures(payload: CategoryDocumentUploadSignaturesMessage) {
-    return this.send(SHOPS_MESSAGE_PATTERNS.getCategoryDocumentUploadSignatures, payload);
-  }
-
-  submitCategoryDocuments(payload: SubmitCategoryDocumentsMessage) {
-    return this.send(SHOPS_MESSAGE_PATTERNS.submitCategoryDocuments, payload);
-  }
-
   reviewShopDocument(payload: ReviewShopDocumentMessage) {
     return this.send(SHOPS_MESSAGE_PATTERNS.reviewShopDocument, payload);
-  }
-
-  reviewShopCategory(payload: ReviewShopCategoryMessage) {
-    return this.send(SHOPS_MESSAGE_PATTERNS.reviewShopCategory, payload);
   }
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {

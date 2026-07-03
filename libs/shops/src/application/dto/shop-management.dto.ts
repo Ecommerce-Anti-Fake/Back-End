@@ -2,7 +2,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayMinSize,
   IsArray,
-  IsDateString,
   IsIn,
   IsInt,
   IsOptional,
@@ -356,44 +355,6 @@ export class ShopDocumentResponseDto {
   uploadedAt!: Date;
 }
 
-export class ShopCategoryDocumentResponseDto {
-  @ApiProperty({ example: 'category-document-1' })
-  id!: string;
-
-  @ApiProperty({ example: 'CATEGORY_CERTIFICATE' })
-  documentType!: string;
-
-  @ApiProperty({ example: 'https://res.cloudinary.com/example/image/upload/v1/shops/shop-1/categories/category-1/certificate.jpg' })
-  fileUrl!: string;
-
-  @ApiPropertyOptional({ example: 'media-asset-2', nullable: true })
-  mediaAssetId!: string | null;
-
-  @ApiPropertyOptional({ example: 'GCN-001', nullable: true })
-  documentNumber!: string | null;
-
-  @ApiPropertyOptional({ example: 'Bo Y Te', nullable: true })
-  issuedBy!: string | null;
-
-  @ApiPropertyOptional({ example: '2026-01-01T00:00:00.000Z', nullable: true })
-  issuedAt!: Date | null;
-
-  @ApiPropertyOptional({ example: '2028-01-01T00:00:00.000Z', nullable: true })
-  expiresAt!: Date | null;
-
-  @ApiProperty({ example: 'pending' })
-  reviewStatus!: string;
-
-  @ApiPropertyOptional({ example: 'Can bo sung ho so nguon goc', nullable: true })
-  reviewNote!: string | null;
-
-  @ApiPropertyOptional({ example: '2026-04-15T11:00:00.000Z', nullable: true })
-  reviewedAt!: Date | null;
-
-  @ApiProperty({ example: '2026-04-15T10:00:00.000Z' })
-  uploadedAt!: Date;
-}
-
 export class BrandAuthorizationResponseDto {
   @ApiProperty({ example: 'brand-auth-1' })
   id!: string;
@@ -456,12 +417,6 @@ export class ShopVerificationCategoryResponseDto {
 
   @ApiPropertyOptional({ example: '2026-04-15T11:00:00.000Z', nullable: true })
   approvedAt!: Date | null;
-
-  @ApiProperty({ example: 2 })
-  documentCount!: number;
-
-  @ApiProperty({ example: 1 })
-  approvedDocumentCount!: number;
 }
 
 export class ShopVerificationSummaryResponseDto {
@@ -652,13 +607,6 @@ export class AdminShopVerificationDetailResponseDto {
   shopDocuments!: ShopDocumentResponseDto[];
 
   @ApiProperty({
-    type: ShopCategoryDocumentResponseDto,
-    isArray: true,
-    description: 'Toan bo ho so category cua shop, gom ca categoryId/categoryName.',
-  })
-  categoryDocuments!: Array<ShopCategoryDocumentResponseDto & { categoryId: string; categoryName: string }>;
-
-  @ApiProperty({
     description: 'Ho so shop duoc nhom theo loai tai lieu, gom lan nop moi nhat va lich su review.',
     isArray: true,
   })
@@ -666,18 +614,6 @@ export class AdminShopVerificationDetailResponseDto {
     docType: string;
     latestSubmission: ShopDocumentResponseDto;
     history: ShopDocumentResponseDto[];
-  }>;
-
-  @ApiProperty({
-    description: 'Ho so category duoc nhom theo category va documentType, gom lan nop moi nhat va lich su review.',
-    isArray: true,
-  })
-  categoryDocumentGroups!: Array<{
-    categoryId: string;
-    categoryName: string;
-    documentType: string;
-    latestSubmission: ShopCategoryDocumentResponseDto;
-    history: ShopCategoryDocumentResponseDto[];
   }>;
 
   @ApiProperty({
@@ -746,20 +682,6 @@ export class SubmitShopDocumentsMultipartDto {
   docTypes!: string[] | string;
 }
 
-export class CategoryDocumentSignatureItemDto {
-  @ApiProperty({ example: 'CATEGORY_CERTIFICATE' })
-  @IsString()
-  documentType!: string;
-}
-
-export class CategoryDocumentUploadSignaturesDto {
-  @ApiProperty({ type: CategoryDocumentSignatureItemDto, isArray: true })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CategoryDocumentSignatureItemDto)
-  items!: CategoryDocumentSignatureItemDto[];
-}
-
 export class SubmitBrandAuthorizationDto {
   @ApiProperty({ example: 'DISTRIBUTOR_AUTHORIZATION' })
   @IsString()
@@ -780,52 +702,6 @@ export class SubmitBrandAuthorizationDto {
   publicId!: string;
 }
 
-export class SubmitCategoryDocumentItemDto {
-  @ApiProperty({ example: 'CATEGORY_CERTIFICATE' })
-  @IsString()
-  documentType!: string;
-
-  @ApiProperty({ example: 'image/jpeg' })
-  @IsString()
-  mimeType!: string;
-
-  @ApiProperty({ example: 'https://res.cloudinary.com/example/image/upload/v1/shops/shop-1/categories/category-1/certificate.jpg' })
-  @IsString()
-  fileUrl!: string;
-
-  @ApiProperty({ example: 'shops/shop-1/categories/category-1/user-1-1776240000-1' })
-  @IsString()
-  publicId!: string;
-
-  @ApiPropertyOptional({ example: 'GCN-001' })
-  @IsOptional()
-  @IsString()
-  documentNumber?: string;
-
-  @ApiPropertyOptional({ example: 'Bo Y Te' })
-  @IsOptional()
-  @IsString()
-  issuedBy?: string;
-
-  @ApiPropertyOptional({ example: '2026-01-01' })
-  @IsOptional()
-  @IsDateString()
-  issuedAt?: string;
-
-  @ApiPropertyOptional({ example: '2028-01-01' })
-  @IsOptional()
-  @IsDateString()
-  expiresAt?: string;
-}
-
-export class SubmitCategoryDocumentsDto {
-  @ApiProperty({ type: SubmitCategoryDocumentItemDto, isArray: true })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => SubmitCategoryDocumentItemDto)
-  items!: SubmitCategoryDocumentItemDto[];
-}
-
 export class ReviewShopDocumentDto {
   @ApiProperty({ enum: REVIEW_STATUSES, example: 'approved' })
   @IsString()
@@ -833,18 +709,6 @@ export class ReviewShopDocumentDto {
   reviewStatus!: 'approved' | 'rejected';
 
   @ApiPropertyOptional({ example: 'Ho so hop le' })
-  @IsOptional()
-  @IsString()
-  reviewNote?: string;
-}
-
-export class ReviewShopCategoryDto {
-  @ApiProperty({ enum: REVIEW_STATUSES, example: 'approved' })
-  @IsString()
-  @IsIn(REVIEW_STATUSES)
-  registrationStatus!: 'approved' | 'rejected';
-
-  @ApiPropertyOptional({ example: 'Da doi chieu giay to nganh hang' })
   @IsOptional()
   @IsString()
   reviewNote?: string;
