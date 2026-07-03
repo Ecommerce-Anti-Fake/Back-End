@@ -1,5 +1,19 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
   SellerDashboardAnalyticsQueryDto,
@@ -7,6 +21,8 @@ import {
   SellerShopSummaryMetricsQueryDto,
   SellerShopSummaryMetricsResponseDto,
   SellerShopOrderStatusSummaryResponseDto,
+  ShopBestSellingProductDto,
+  ShopBestSellingProductsQueryDto,
 } from '@orders';
 import {
   CreateShopDto,
@@ -35,7 +51,10 @@ export class ShopController {
   @ApiOkResponse({ type: ShopMutationResponseDto })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post()
-  async create(@CurrentUserId() ownerUserId: string, @Body() dto: CreateShopDto) {
+  async create(
+    @CurrentUserId() ownerUserId: string,
+    @Body() dto: CreateShopDto,
+  ) {
     await this.shopsRpcService.create({
       ownerUserId,
       shopName: dto.shopName,
@@ -115,7 +134,10 @@ export class ShopController {
     @Param('shopId') shopId: string,
     @CurrentUserId() requesterUserId: string,
   ) {
-    return this.ordersRpcService.getSellerShopOrderStatusSummary({ shopId, requesterUserId });
+    return this.ordersRpcService.getSellerShopOrderStatusSummary({
+      shopId,
+      requesterUserId,
+    });
   }
 
   @ApiOperation({ summary: 'Lay analytics dashboard cua shop' })
@@ -159,6 +181,19 @@ export class ShopController {
   @Get(':shopId/categories')
   findCategoriesByShopId(@Param('shopId') shopId: string) {
     return this.shopsRpcService.findCategoriesByShopId({ shopId });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach san pham ban chay nhat cua shop' })
+  @ApiOkResponse({ type: ShopBestSellingProductDto, isArray: true })
+  @Get(':shopId/best-selling-products')
+  getBestSellingProducts(
+    @Param('shopId') shopId: string,
+    @Query() query: ShopBestSellingProductsQueryDto,
+  ) {
+    return this.ordersRpcService.getShopBestSellingProducts({
+      shopId,
+      limit: query.limit ?? 10,
+    });
   }
 
   @ApiOperation({ summary: 'Lay thong tin chi tiet mot shop' })

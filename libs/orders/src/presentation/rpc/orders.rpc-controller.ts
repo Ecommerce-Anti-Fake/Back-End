@@ -53,6 +53,7 @@ import type {
   SellerShopDashboardAnalyticsMessage,
   SellerShopSummaryMetricsMessage,
   SellerShopOrderStatusSummaryMessage,
+  ShopBestSellingProductsLookupMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
 import {
@@ -89,6 +90,7 @@ import {
   GetSellerShopDashboardAnalyticsUseCase,
   GetSellerShopSummaryMetricsUseCase,
   GetSellerShopOrderStatusSummaryUseCase,
+  GetShopBestSellingProductsUseCase,
   MarkOrderPaidUseCase,
   HandlePayOSWebhookUseCase,
   ReceiveWholesaleOrderInventoryUseCase,
@@ -126,6 +128,7 @@ export class OrdersRpcController {
     private readonly getSellerShopDashboardAnalyticsUseCase: GetSellerShopDashboardAnalyticsUseCase,
     private readonly getSellerShopSummaryMetricsUseCase: GetSellerShopSummaryMetricsUseCase,
     private readonly getSellerShopOrderStatusSummaryUseCase: GetSellerShopOrderStatusSummaryUseCase,
+    private readonly getShopBestSellingProductsUseCase: GetShopBestSellingProductsUseCase,
     private readonly getAdminDisputeDetailUseCase: GetAdminDisputeDetailUseCase,
     private readonly getAdminDisputeSummaryUseCase: GetAdminDisputeSummaryUseCase,
     private readonly getAdminOpenDisputeCountUseCase: GetAdminOpenDisputeCountUseCase,
@@ -289,6 +292,15 @@ export class OrdersRpcController {
   async getSellerShopOrderStatusSummary(@Payload() payload: SellerShopOrderStatusSummaryMessage) {
     try {
       return await this.getSellerShopOrderStatusSummaryUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.getShopBestSellingProducts)
+  async getShopBestSellingProducts(@Payload() payload: ShopBestSellingProductsLookupMessage) {
+    try {
+      return await this.getShopBestSellingProductsUseCase.execute(payload.shopId, payload.limit ?? 10);
     } catch (error) {
       throwRpcException(error);
     }

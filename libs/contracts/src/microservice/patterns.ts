@@ -148,6 +148,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   getSellerShopDashboardAnalytics: 'orders.get-seller-shop-dashboard-analytics',
   getSellerShopSummaryMetrics: 'orders.get-seller-shop-summary-metrics',
   getSellerShopOrderStatusSummary: 'orders.get-seller-shop-order-status-summary',
+  getShopBestSellingProducts: 'orders.get-shop-best-selling-products',
   findAdminOrders: 'orders.find-admin-orders',
   getAdminFinanceReconciliation: 'orders.get-admin-finance-reconciliation',
   findById: 'orders.find-by-id',
@@ -1036,6 +1037,11 @@ export type SellerShopSummaryMetricsMessage = {
 export type SellerShopOrderStatusSummaryMessage = {
   requesterUserId: string;
   shopId: string;
+};
+
+export type ShopBestSellingProductsLookupMessage = {
+  shopId: string;
+  limit?: number;
 };
 
 export type AdminOrdersLookupMessage = {

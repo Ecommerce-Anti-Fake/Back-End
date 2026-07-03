@@ -32,6 +32,7 @@ import {
   SellerShopDashboardAnalyticsMessage,
   SellerShopSummaryMetricsMessage,
   SellerShopOrderStatusSummaryMessage,
+  ShopBestSellingProductsLookupMessage,
   SellerShopOrdersLookupMessage,
   DisputeEvidenceUploadSignaturesMessage,
   AddDisputeEvidenceBatchMessage,
@@ -90,7 +91,10 @@ export class OrdersRpcService {
   }
 
   quoteCartItemShippingOptions(payload: QuoteCartItemShippingOptionsMessage) {
-    return this.send(ORDERS_MESSAGE_PATTERNS.quoteCartItemShippingOptions, payload);
+    return this.send(
+      ORDERS_MESSAGE_PATTERNS.quoteCartItemShippingOptions,
+      payload,
+    );
   }
 
   quoteCartShippingOptions(payload: QuoteCartShippingOptionsMessage) {
@@ -109,24 +113,49 @@ export class OrdersRpcService {
     return this.send(ORDERS_MESSAGE_PATTERNS.findSellerShopOrders, payload);
   }
 
-  getSellerShopDashboardAnalytics(payload: SellerShopDashboardAnalyticsMessage) {
-    return this.send(ORDERS_MESSAGE_PATTERNS.getSellerShopDashboardAnalytics, payload);
+  getSellerShopDashboardAnalytics(
+    payload: SellerShopDashboardAnalyticsMessage,
+  ) {
+    return this.send(
+      ORDERS_MESSAGE_PATTERNS.getSellerShopDashboardAnalytics,
+      payload,
+    );
   }
 
   getSellerShopSummaryMetrics(payload: SellerShopSummaryMetricsMessage) {
-    return this.send(ORDERS_MESSAGE_PATTERNS.getSellerShopSummaryMetrics, payload);
+    return this.send(
+      ORDERS_MESSAGE_PATTERNS.getSellerShopSummaryMetrics,
+      payload,
+    );
   }
 
-  getSellerShopOrderStatusSummary(payload: SellerShopOrderStatusSummaryMessage) {
-    return this.send(ORDERS_MESSAGE_PATTERNS.getSellerShopOrderStatusSummary, payload);
+  getSellerShopOrderStatusSummary(
+    payload: SellerShopOrderStatusSummaryMessage,
+  ) {
+    return this.send(
+      ORDERS_MESSAGE_PATTERNS.getSellerShopOrderStatusSummary,
+      payload,
+    );
+  }
+
+  getShopBestSellingProducts(payload: ShopBestSellingProductsLookupMessage) {
+    return this.send(
+      ORDERS_MESSAGE_PATTERNS.getShopBestSellingProducts,
+      payload,
+    );
   }
 
   findAdminOrders(payload: AdminOrdersLookupMessage = {}) {
     return this.send(ORDERS_MESSAGE_PATTERNS.findAdminOrders, payload);
   }
 
-  getAdminFinanceReconciliation(payload: AdminFinanceReconciliationMessage = {}) {
-    return this.send(ORDERS_MESSAGE_PATTERNS.getAdminFinanceReconciliation, payload);
+  getAdminFinanceReconciliation(
+    payload: AdminFinanceReconciliationMessage = {},
+  ) {
+    return this.send(
+      ORDERS_MESSAGE_PATTERNS.getAdminFinanceReconciliation,
+      payload,
+    );
   }
 
   findById(payload: OrderLookupMessage) {
@@ -170,7 +199,10 @@ export class OrdersRpcService {
   }
 
   updateAdminModerationCase(payload: UpdateAdminModerationCaseMessage) {
-    return this.send(ORDERS_MESSAGE_PATTERNS.updateAdminModerationCase, payload);
+    return this.send(
+      ORDERS_MESSAGE_PATTERNS.updateAdminModerationCase,
+      payload,
+    );
   }
 
   updateAdminReport(payload: UpdateAdminReportMessage) {
@@ -206,7 +238,10 @@ export class OrdersRpcService {
   }
 
   receiveWholesaleInventory(payload: ReceiveWholesaleInventoryMessage) {
-    return this.send(ORDERS_MESSAGE_PATTERNS.receiveWholesaleInventory, payload);
+    return this.send(
+      ORDERS_MESSAGE_PATTERNS.receiveWholesaleInventory,
+      payload,
+    );
   }
 
   bookShipping(payload: BookOrderShippingMessage) {
@@ -253,8 +288,13 @@ export class OrdersRpcService {
     return this.send(ORDERS_MESSAGE_PATTERNS.openDispute, payload);
   }
 
-  getDisputeEvidenceUploadSignatures(payload: DisputeEvidenceUploadSignaturesMessage) {
-    return this.send(ORDERS_MESSAGE_PATTERNS.getDisputeEvidenceUploadSignatures, payload);
+  getDisputeEvidenceUploadSignatures(
+    payload: DisputeEvidenceUploadSignaturesMessage,
+  ) {
+    return this.send(
+      ORDERS_MESSAGE_PATTERNS.getDisputeEvidenceUploadSignatures,
+      payload,
+    );
   }
 
   addDisputeEvidenceBatch(payload: AddDisputeEvidenceBatchMessage) {
@@ -273,9 +313,14 @@ export class OrdersRpcService {
     return this.send(ORDERS_MESSAGE_PATTERNS.refund, payload);
   }
 
-  private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {
+  private async send<TResult>(
+    pattern: string,
+    payload: unknown,
+  ): Promise<TResult> {
     try {
-      return await lastValueFrom(this.ordersClient.send<TResult, unknown>(pattern, payload));
+      return await lastValueFrom(
+        this.ordersClient.send<TResult, unknown>(pattern, payload),
+      );
     } catch (error) {
       throwHttpExceptionFromRpc(error);
     }

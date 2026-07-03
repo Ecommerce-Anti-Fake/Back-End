@@ -38,6 +38,7 @@ import {
   GetSellerShopDashboardAnalyticsUseCase,
   GetSellerShopSummaryMetricsUseCase,
   GetSellerShopOrderStatusSummaryUseCase,
+  GetShopBestSellingProductsUseCase,
   MarkOrderPaidUseCase,
   HandlePayOSWebhookUseCase,
   ReceiveWholesaleOrderInventoryUseCase,
@@ -63,7 +64,11 @@ import {
   UpdateAdminDisputeCaseUseCase,
   UpdateOrderFulfillmentUseCase,
 } from './application/use-cases';
-import { CatalogWholesalePricingAdapter, LocalOrderInventoryAdapter, LocalWholesalePricingAdapter } from './infrastructure/adapters';
+import {
+  CatalogWholesalePricingAdapter,
+  LocalOrderInventoryAdapter,
+  LocalWholesalePricingAdapter,
+} from './infrastructure/adapters';
 import { OrdersRepository } from './infrastructure/persistence/orders.repository';
 import { OrdersRpcController } from './presentation/rpc/orders.rpc-controller';
 import { CATALOG_SERVICE_CLIENT } from '@contracts';
@@ -85,7 +90,10 @@ import { CATALOG_SERVICE_CLIENT } from '@contracts';
               configService.get<string>('CATALOG_SERVICE_HOST')?.trim() ||
               configService.get<string>('USERS_SERVICE_HOST')?.trim() ||
               '127.0.0.1',
-            port: configService.get<number>('CATALOG_SERVICE_PORT') ?? configService.get<number>('USERS_SERVICE_PORT') ?? 4002,
+            port:
+              configService.get<number>('CATALOG_SERVICE_PORT') ??
+              configService.get<number>('USERS_SERVICE_PORT') ??
+              4002,
           },
         }),
       },
@@ -100,13 +108,21 @@ import { CATALOG_SERVICE_CLIENT } from '@contracts';
     },
     {
       provide: WholesalePricingPort,
-      inject: [ConfigService, LocalWholesalePricingAdapter, CatalogWholesalePricingAdapter],
+      inject: [
+        ConfigService,
+        LocalWholesalePricingAdapter,
+        CatalogWholesalePricingAdapter,
+      ],
       useFactory: (
         configService: ConfigService,
         localAdapter: LocalWholesalePricingAdapter,
         catalogAdapter: CatalogWholesalePricingAdapter,
       ) => {
-        const mode = configService.get<string>('ORDERS_PRICING_ADAPTER')?.trim().toLowerCase() || 'local';
+        const mode =
+          configService
+            .get<string>('ORDERS_PRICING_ADAPTER')
+            ?.trim()
+            .toLowerCase() || 'local';
         return mode === 'catalog' ? catalogAdapter : localAdapter;
       },
     },
@@ -133,6 +149,7 @@ import { CATALOG_SERVICE_CLIENT } from '@contracts';
     GetSellerShopDashboardAnalyticsUseCase,
     GetSellerShopSummaryMetricsUseCase,
     GetSellerShopOrderStatusSummaryUseCase,
+    GetShopBestSellingProductsUseCase,
     GetAdminDisputeDetailUseCase,
     GetAdminOpenDisputeCountUseCase,
     GetAdminDisputeSummaryUseCase,

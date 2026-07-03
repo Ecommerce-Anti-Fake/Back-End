@@ -1,8 +1,14 @@
 import { ShopController } from './shop.controller';
 
 describe('ShopController', () => {
-  function createController(shopsRpcService: Record<string, unknown>, ordersRpcService: Record<string, unknown> = {}) {
-    return new ShopController(shopsRpcService as never, ordersRpcService as never);
+  function createController(
+    shopsRpcService: Record<string, unknown>,
+    ordersRpcService: Record<string, unknown> = {},
+  ) {
+    return new ShopController(
+      shopsRpcService as never,
+      ordersRpcService as never,
+    );
   }
 
   it('lists public shops with pagination defaults', async () => {
@@ -83,7 +89,9 @@ describe('ShopController', () => {
       createdAt: '2026-06-24T02:00:00.000Z',
       verify: true,
     });
-    expect(shopsRpcService.findByOffer).toHaveBeenCalledWith({ offerId: 'offer-1' });
+    expect(shopsRpcService.findByOffer).toHaveBeenCalledWith({
+      offerId: 'offer-1',
+    });
   });
 
   it('gets public shop detail by shop id', async () => {
@@ -135,7 +143,9 @@ describe('ShopController', () => {
         categoryName: 'My pham',
       },
     ]);
-    expect(shopsRpcService.findCategoriesByShopId).toHaveBeenCalledWith({ shopId: 'shop-1' });
+    expect(shopsRpcService.findCategoriesByShopId).toHaveBeenCalledWith({
+      shopId: 'shop-1',
+    });
   });
 
   it('gets seller shop summary metrics from the shop route', async () => {
@@ -183,13 +193,17 @@ describe('ShopController', () => {
     };
     const controller = createController({}, ordersRpcService);
 
-    await expect(controller.getOrderStatusSummary('shop-1', 'seller-1')).resolves.toEqual({
+    await expect(
+      controller.getOrderStatusSummary('shop-1', 'seller-1'),
+    ).resolves.toEqual({
       totalOrders: 1284,
       pendingOrders: 42,
       shippingOrders: 156,
       completedOrders: 1086,
     });
-    expect(ordersRpcService.getSellerShopOrderStatusSummary).toHaveBeenCalledWith({
+    expect(
+      ordersRpcService.getSellerShopOrderStatusSummary,
+    ).toHaveBeenCalledWith({
       shopId: 'shop-1',
       requesterUserId: 'seller-1',
     });
@@ -211,13 +225,19 @@ describe('ShopController', () => {
     };
     const controller = createController(shopsRpcService, ordersRpcService);
 
-    const result = await controller.getDashboardAnalytics('shop-1', 'seller-1', {
-      days: 7,
-      fromDate: '2026-06-01',
-      toDate: '2026-06-29',
-    });
+    const result = await controller.getDashboardAnalytics(
+      'shop-1',
+      'seller-1',
+      {
+        days: 7,
+        fromDate: '2026-06-01',
+        toDate: '2026-06-29',
+      },
+    );
 
-    expect(ordersRpcService.getSellerShopDashboardAnalytics).toHaveBeenCalledWith({
+    expect(
+      ordersRpcService.getSellerShopDashboardAnalytics,
+    ).toHaveBeenCalledWith({
       shopId: 'shop-1',
       requesterUserId: 'seller-1',
       days: 7,
@@ -228,6 +248,21 @@ describe('ShopController', () => {
       stats: {
         revenue: { value: 128500000, growthPercent: -12.5 },
       },
+    });
+  });
+
+  it('gets best-selling products with the default limit', async () => {
+    const ordersRpcService = {
+      getShopBestSellingProducts: jest.fn().mockResolvedValue([]),
+    };
+    const controller = createController({}, ordersRpcService);
+
+    await expect(
+      controller.getBestSellingProducts('shop-1', {}),
+    ).resolves.toEqual([]);
+    expect(ordersRpcService.getShopBestSellingProducts).toHaveBeenCalledWith({
+      shopId: 'shop-1',
+      limit: 10,
     });
   });
 });

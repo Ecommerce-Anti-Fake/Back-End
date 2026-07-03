@@ -1,22 +1,75 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayNotEmpty, IsArray, IsIn, IsInt, IsOptional, IsString, IsUrl, IsUUID, Max, Min, ValidateNested } from 'class-validator';
+import {
+  ArrayNotEmpty,
+  IsArray,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUrl,
+  IsUUID,
+  Max,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 const ADMIN_DISPUTE_STATUSES = ['OPEN', 'RESOLVED', 'REFUNDED'] as const;
-const ADMIN_DISPUTE_SORT_FIELDS = ['openedAt', 'orderId', 'disputeStatus'] as const;
-const REPORT_TARGET_TYPES = ['ORDER', 'OFFER', 'SHOP', 'SOCIAL_POST', 'SOCIAL_COMMENT'] as const;
+const ADMIN_DISPUTE_SORT_FIELDS = [
+  'openedAt',
+  'orderId',
+  'disputeStatus',
+] as const;
+const REPORT_TARGET_TYPES = [
+  'ORDER',
+  'OFFER',
+  'SHOP',
+  'SOCIAL_POST',
+  'SOCIAL_COMMENT',
+] as const;
 const REPORT_STATUSES = ['OPEN', 'IN_REVIEW', 'RESOLVED', 'REJECTED'] as const;
 const RISK_TARGET_TYPES = ['SHOP', 'OFFER', 'BATCH'] as const;
 const RISK_LEVELS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as const;
-const MODERATION_TARGET_TYPES = ['KYC', 'SHOP', 'OFFER', 'BATCH', 'REPORT', 'DISPUTE'] as const;
-const MODERATION_CASE_STATUSES = ['ASSIGNED', 'IN_REVIEW', 'ESCALATED', 'RESOLVED', 'CLOSED'] as const;
+const MODERATION_TARGET_TYPES = [
+  'KYC',
+  'SHOP',
+  'OFFER',
+  'BATCH',
+  'REPORT',
+  'DISPUTE',
+] as const;
+const MODERATION_CASE_STATUSES = [
+  'ASSIGNED',
+  'IN_REVIEW',
+  'ESCALATED',
+  'RESOLVED',
+  'CLOSED',
+] as const;
 const SORT_ORDERS = ['asc', 'desc'] as const;
-const FINANCE_ESCROW_STATUSES = ['PENDING', 'HELD', 'FROZEN', 'RELEASED', 'CANCELLED', 'REFUNDED'] as const;
-export const SELLER_FULFILLMENT_STATUSES = ['PENDING', 'PROCESSING', 'SHIPPING', 'DELIVERED', 'CANCELLED'] as const;
-export const SELLER_FULFILLMENT_STATUS_FILTERS = ['all', ...SELLER_FULFILLMENT_STATUSES] as const;
+const FINANCE_ESCROW_STATUSES = [
+  'PENDING',
+  'HELD',
+  'FROZEN',
+  'RELEASED',
+  'CANCELLED',
+  'REFUNDED',
+] as const;
+export const SELLER_FULFILLMENT_STATUSES = [
+  'PENDING',
+  'PROCESSING',
+  'SHIPPING',
+  'DELIVERED',
+  'CANCELLED',
+] as const;
+export const SELLER_FULFILLMENT_STATUS_FILTERS = [
+  'all',
+  ...SELLER_FULFILLMENT_STATUSES,
+] as const;
 
-export type SellerFulfillmentStatus = (typeof SELLER_FULFILLMENT_STATUSES)[number];
-export type SellerFulfillmentStatusFilter = (typeof SELLER_FULFILLMENT_STATUS_FILTERS)[number];
+export type SellerFulfillmentStatus =
+  (typeof SELLER_FULFILLMENT_STATUSES)[number];
+export type SellerFulfillmentStatusFilter =
+  (typeof SELLER_FULFILLMENT_STATUS_FILTERS)[number];
 
 export class ShippingMethodResponseDto {
   @ApiProperty({ example: 'GHN' })
@@ -181,7 +234,8 @@ export class OrderShopGroupResponseDto {
 
 export class SellerShopOrdersQueryDto {
   @ApiPropertyOptional({
-    description: 'Loc theo trang thai xu ly cua shop. Dung all hoac bo trong de lay tat ca.',
+    description:
+      'Loc theo trang thai xu ly cua shop. Dung all hoac bo trong de lay tat ca.',
     enum: SELLER_FULFILLMENT_STATUS_FILTERS,
     example: 'all',
   })
@@ -873,7 +927,8 @@ export class CreateReportDto {
   reason!: string;
 
   @ApiPropertyOptional({
-    example: 'Tem niem phong bi rach va ma lo khong khop voi thong tin truy xuat.',
+    example:
+      'Tem niem phong bi rach va ma lo khong khop voi thong tin truy xuat.',
   })
   @IsOptional()
   @IsString()
@@ -1267,7 +1322,8 @@ export class AddDisputeEvidenceDto {
   mimeType!: string;
 
   @ApiProperty({
-    example: 'https://res.cloudinary.com/example/image/upload/v1/disputes/dispute-1/proof.jpg',
+    example:
+      'https://res.cloudinary.com/example/image/upload/v1/disputes/dispute-1/proof.jpg',
   })
   @IsString()
   @IsUrl({
@@ -1322,7 +1378,8 @@ export class DisputeEvidenceResponseDto {
   publicId!: string | null;
 
   @ApiProperty({
-    example: 'https://res.cloudinary.com/example/image/upload/v1/disputes/dispute-1/proof.jpg',
+    example:
+      'https://res.cloudinary.com/example/image/upload/v1/disputes/dispute-1/proof.jpg',
   })
   fileUrl!: string;
 
@@ -1887,4 +1944,49 @@ export class GhnServiceResponseDto {
 
   @ApiProperty({ example: 'Hang nhe' })
   shortName!: string;
+}
+
+export class ShopBestSellingProductsQueryDto {
+  @ApiPropertyOptional({ example: 10, default: 10, minimum: 1, maximum: 50 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  limit?: number;
+}
+
+export class ShopBestSellingProductDto {
+  @ApiProperty({ example: '06b5f15b-4c48-4f57-a2d6-0f2eb45fd001' })
+  id!: string;
+
+  @ApiProperty({ example: 'Kem chong nang SPF50 - lo 2026' })
+  title!: string;
+
+  @ApiProperty({ example: 150000 })
+  price!: number;
+
+  @ApiProperty({ example: 'VND' })
+  currency!: string;
+
+  @ApiProperty({ example: 500 })
+  availableQuantity!: number;
+
+  @ApiProperty({ example: 120 })
+  soldQuantity!: number;
+
+  @ApiProperty({ example: 'standard' })
+  verificationLevel!: string;
+
+  @ApiProperty({ example: 'active' })
+  offerStatus!: string;
+
+  @ApiPropertyOptional({
+    example: 'https://res.cloudinary.com/demo/image/upload/product.jpg',
+    nullable: true,
+  })
+  thumbnailUrl!: string | null;
+
+  @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
+  createdAt!: Date;
 }
