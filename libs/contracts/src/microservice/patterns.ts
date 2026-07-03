@@ -513,9 +513,12 @@ export type SubmitShopDocumentsMessage = {
   requesterUserId: string;
   items: Array<{
     docType: string;
-    mimeType: string;
-    fileUrl: string;
-    publicId: string;
+    file: {
+      buffer: Buffer | { data?: number[] };
+      mimetype: string;
+      originalname?: string;
+      size: number;
+    };
   }>;
 };
 

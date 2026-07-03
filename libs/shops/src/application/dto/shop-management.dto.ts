@@ -445,7 +445,7 @@ export class ShopVerificationCategoryResponseDto {
   @ApiProperty({ example: 'high' })
   riskTier!: string;
 
-  @ApiProperty({ example: true })
+  @ApiProperty({ example: false })
   requiredVerification!: boolean;
 
   @ApiProperty({ example: 'pending' })
@@ -498,7 +498,7 @@ export class ShopVerificationSummaryResponseDto {
   @ApiProperty({ example: 1 })
   approvedShopDocuments!: number;
 
-  @ApiProperty({ type: String, isArray: true, example: ['CATEGORY_APPROVAL_REQUIRED'] })
+  @ApiProperty({ type: String, isArray: true, example: ['SHOP_DOCUMENT_APPROVAL_REQUIRED'] })
   missingRequirements!: string[];
 
   @ApiProperty({ type: ShopVerificationCategoryResponseDto, isArray: true })
@@ -735,6 +735,15 @@ export class SubmitShopDocumentsDto {
   @ValidateNested({ each: true })
   @Type(() => SubmitShopDocumentItemDto)
   items!: SubmitShopDocumentItemDto[];
+}
+
+export class SubmitShopDocumentsMultipartDto {
+  @ApiProperty({
+    example: ['BUSINESS_LICENSE'],
+    description: 'Danh sach loai ho so theo dung thu tu voi truong files trong multipart/form-data.',
+    isArray: true,
+  })
+  docTypes!: string[] | string;
 }
 
 export class CategoryDocumentSignatureItemDto {

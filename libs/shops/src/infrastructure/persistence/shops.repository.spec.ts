@@ -215,4 +215,48 @@ describe('ShopsRepository', () => {
       }),
     });
   });
+
+  it('recomputes approved KYC normal shop as verified without category document approval', async () => {
+    const prisma = {
+      shop: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'shop-1',
+          registrationType: 'NORMAL',
+          owner: {
+            kyc: {
+              verificationStatus: 'approved',
+              documents: [{ side: 'FRONT' }, { side: 'BACK' }],
+            },
+          },
+          documents: [],
+          registeredCategories: [
+            {
+              registrationStatus: 'pending',
+              category: {
+                riskTier: 'HIGH',
+              },
+            },
+          ],
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'shop-1',
+          shopStatus: 'verified',
+          registeredCategories: [],
+        }),
+      },
+    };
+    const repository = new ShopsRepository(prisma as never);
+
+    await expect(repository.recomputeShopStatus('shop-1')).resolves.toMatchObject({
+      id: 'shop-1',
+      shopStatus: 'verified',
+    });
+
+    expect(prisma.shop.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'shop-1' },
+        data: { shopStatus: 'verified' },
+      }),
+    );
+  });
 });

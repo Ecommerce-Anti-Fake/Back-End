@@ -139,7 +139,6 @@ export function toShopVerificationSummaryResponse(shop: VerificationSummaryRecor
   const hasApprovedShopDocument = approvedShopDocuments > 0;
 
   const categories = shop.registeredCategories.map((registration) => {
-    const requiredVerification = registration.category.riskTier.trim().toLowerCase() !== 'low';
     const approvedDocumentCount = registration.documents.filter(
       (document) => document.reviewStatus === 'approved',
     ).length;
@@ -148,7 +147,7 @@ export function toShopVerificationSummaryResponse(shop: VerificationSummaryRecor
       categoryId: registration.category.id,
       categoryName: registration.category.name,
       riskTier: registration.category.riskTier,
-      requiredVerification,
+      requiredVerification: false,
       registrationStatus: registration.registrationStatus,
       reviewNote: registration.reviewNote,
       approvedAt: registration.approvedAt,
@@ -163,9 +162,6 @@ export function toShopVerificationSummaryResponse(shop: VerificationSummaryRecor
   }
   if (requiresShopDocuments && !hasApprovedShopDocument) {
     missingRequirements.push('SHOP_DOCUMENT_APPROVAL_REQUIRED');
-  }
-  if (categories.some((category) => category.requiredVerification && category.registrationStatus !== 'approved')) {
-    missingRequirements.push('CATEGORY_APPROVAL_REQUIRED');
   }
 
   return {

@@ -105,6 +105,51 @@ describe('CreateShopUseCase', () => {
     });
   });
 
+  it('should create normal shop as verified when KYC is approved even for high-risk categories', async () => {
+    shopsRepositoryMock.countByOwnerUserId.mockResolvedValueOnce(0);
+    shopsRepositoryMock.countCategoriesByIds.mockResolvedValueOnce(1);
+    shopsRepositoryMock.findCategoriesByIds.mockResolvedValueOnce([{ id: 'category-1', riskTier: 'HIGH' }]);
+    shopsRepositoryMock.findActiveShopTypeByCode.mockResolvedValueOnce({ id: 'shop-type-normal' });
+    shopsRepositoryMock.hasApprovedKycForOwner.mockResolvedValueOnce({ id: 'kyc-1' });
+    shopsRepositoryMock.create.mockResolvedValueOnce({
+      id: 'shop-3',
+      ownerUserId: 'user-1',
+      shopName: 'Normal Shop',
+      registrationType: 'NORMAL',
+      businessType: 'retail',
+      taxCode: null,
+      shopStatus: 'verified',
+      createdAt: new Date('2026-04-15T10:00:00.000Z'),
+      registeredCategories: [],
+    });
+
+    const result = await useCase.execute({
+      ownerUserId: 'user-1',
+      shopName: 'Normal Shop',
+      registrationType: 'NORMAL',
+      businessType: 'retail',
+      taxCode: null,
+      categoryIds: ['category-1'],
+    });
+
+    expect(shopsRepositoryMock.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        shopStatus: 'verified',
+        categoryRegistrations: [
+          expect.objectContaining({
+            categoryId: 'category-1',
+            registrationStatus: 'approved',
+            approvedAt: expect.any(Date),
+          }),
+        ],
+      }),
+    );
+    expect(result).toMatchObject({
+      id: 'shop-3',
+      shopStatus: 'verified',
+    });
+  });
+
   it('should reject creating a second shop for the same owner', async () => {
     shopsRepositoryMock.countByOwnerUserId.mockResolvedValueOnce(1);
 

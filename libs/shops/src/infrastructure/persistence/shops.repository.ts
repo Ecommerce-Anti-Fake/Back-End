@@ -1274,19 +1274,10 @@ export class ShopsRepository {
       const requiresShopVerification =
         shop.registrationType === ShopRegistrationType.MANUFACTURER ||
         shop.registrationType === ShopRegistrationType.DISTRIBUTOR;
-      const requiresCategoryVerification = shop.registeredCategories.some(
-        (item) => item.category.riskTier.trim().toLowerCase() !== 'low',
-      );
-
       const hasApprovedShopDocument = shop.documents.some((document) => document.reviewStatus === 'approved');
-      const hasPendingCategoryRegistration = shop.registeredCategories.some(
-        (item) => item.category.riskTier.trim().toLowerCase() !== 'low' && item.registrationStatus !== 'approved',
-      );
 
       if (
-        (requiresShopVerification && !hasApprovedShopDocument) ||
-        (requiresCategoryVerification && hasPendingCategoryRegistration) ||
-        (requiresShopVerification && hasPendingCategoryRegistration)
+        requiresShopVerification && !hasApprovedShopDocument
       ) {
         nextStatus = 'pending_verification';
       } else {

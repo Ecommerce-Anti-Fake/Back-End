@@ -40,9 +40,9 @@ describe('GetShopVerificationSummaryUseCase', () => {
       registeredCategories: [
         {
           categoryId: 'category-1',
-          registrationStatus: 'pending',
+          registrationStatus: 'approved',
           reviewNote: null,
-          approvedAt: null,
+          approvedAt: new Date('2026-04-15T11:00:00.000Z'),
           category: {
             id: 'category-1',
             name: 'My pham',
@@ -71,7 +71,14 @@ describe('GetShopVerificationSummaryUseCase', () => {
       kycStatus: 'approved',
       requiresShopDocuments: true,
       hasApprovedShopDocument: false,
-      missingRequirements: ['SHOP_DOCUMENT_APPROVAL_REQUIRED', 'CATEGORY_APPROVAL_REQUIRED'],
+      missingRequirements: ['SHOP_DOCUMENT_APPROVAL_REQUIRED'],
+      categories: [
+        expect.objectContaining({
+          categoryId: 'category-1',
+          requiredVerification: false,
+          registrationStatus: 'approved',
+        }),
+      ],
     });
   });
 });

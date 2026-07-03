@@ -57,7 +57,6 @@ export class CreateShopUseCase {
     const shopStatus = this.resolveInitialShopStatus({
       registrationType: input.registrationType,
       hasApprovedKyc: !!approvedKyc,
-      categoryRiskTiers: categories.map((category) => category.riskTier),
     });
 
     const shop = await this.shopsRepository.create({
@@ -75,8 +74,8 @@ export class CreateShopUseCase {
       shopStatus,
       categoryRegistrations: categories.map((category) => ({
         categoryId: category.id,
-        registrationStatus: category.riskTier.trim().toLowerCase() === 'low' ? 'approved' : 'pending',
-        approvedAt: category.riskTier.trim().toLowerCase() === 'low' ? new Date() : null,
+        registrationStatus: 'approved',
+        approvedAt: new Date(),
       })),
     });
 
@@ -86,18 +85,12 @@ export class CreateShopUseCase {
   private resolveInitialShopStatus(input: {
     registrationType: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
     hasApprovedKyc: boolean;
-    categoryRiskTiers: string[];
   }) {
     if (!input.hasApprovedKyc) {
       return 'pending_kyc';
     }
 
     if (input.registrationType === 'MANUFACTURER' || input.registrationType === 'DISTRIBUTOR') {
-      return 'pending_verification';
-    }
-
-    const hasRegulatedCategory = input.categoryRiskTiers.some((riskTier) => riskTier.trim().toLowerCase() !== 'low');
-    if (hasRegulatedCategory) {
       return 'pending_verification';
     }
 
