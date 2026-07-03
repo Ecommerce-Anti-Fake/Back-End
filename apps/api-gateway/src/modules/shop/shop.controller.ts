@@ -18,6 +18,8 @@ import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
   SellerDashboardAnalyticsQueryDto,
   SellerDashboardAnalyticsResponseDto,
+  SellerShopDailyMetricsQueryDto,
+  SellerShopDailyMetricsResponseDto,
   SellerShopSummaryMetricsQueryDto,
   SellerShopSummaryMetricsResponseDto,
   SellerShopOrderStatusSummaryResponseDto,
@@ -122,6 +124,25 @@ export class ShopController {
       requesterUserId,
       from: query.from,
       to: query.to,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay doanh thu va so don hang theo ngay cua shop' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: SellerShopDailyMetricsResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get(':shopId/daily-metrics')
+  getDailyMetrics(
+    @Param('shopId') shopId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Query() query: SellerShopDailyMetricsQueryDto,
+  ) {
+    return this.ordersRpcService.getSellerShopDailyMetrics({
+      shopId,
+      requesterUserId,
+      days: query.days,
+      fromDate: query.fromDate,
+      toDate: query.toDate,
     });
   }
 

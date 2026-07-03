@@ -209,6 +209,43 @@ describe('ShopController', () => {
     });
   });
 
+  it('gets seller shop daily metrics from the shop route', async () => {
+    const ordersRpcService = {
+      getSellerShopDailyMetrics: jest.fn().mockResolvedValue({
+        range: {
+          days: 2,
+          from: '2026-06-10T00:00:00.000Z',
+          to: '2026-06-11T23:59:59.999Z',
+        },
+        series: [
+          { date: '2026-06-10', label: '10/06', revenue: 1200, orders: 2 },
+          { date: '2026-06-11', label: '11/06', revenue: 600, orders: 1 },
+        ],
+      }),
+    };
+    const controller = createController({}, ordersRpcService);
+
+    const result = await controller.getDailyMetrics('shop-1', 'seller-1', {
+      days: 7,
+      fromDate: '2026-06-10',
+      toDate: '2026-06-11',
+    });
+
+    expect(ordersRpcService.getSellerShopDailyMetrics).toHaveBeenCalledWith({
+      shopId: 'shop-1',
+      requesterUserId: 'seller-1',
+      days: 7,
+      fromDate: '2026-06-10',
+      toDate: '2026-06-11',
+    });
+    expect(result).toMatchObject({
+      series: [
+        { date: '2026-06-10', revenue: 1200, orders: 2 },
+        { date: '2026-06-11', revenue: 600, orders: 1 },
+      ],
+    });
+  });
+
   it('gets seller shop dashboard analytics from the shop route', async () => {
     const shopsRpcService = {};
     const ordersRpcService = {

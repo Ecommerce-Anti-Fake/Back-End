@@ -10,6 +10,7 @@ export * from './create-order.use-case';
 export * from './list-my-orders.use-case';
 export * from './list-seller-shop-orders.use-case';
 export * from './get-seller-shop-dashboard-analytics.use-case';
+export * from './get-seller-shop-daily-metrics.use-case';
 export * from './get-seller-shop-summary-metrics.use-case';
 export * from './get-seller-shop-order-status-summary.use-case';
 export * from './get-shop-best-selling-products.use-case';

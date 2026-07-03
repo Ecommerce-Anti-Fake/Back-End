@@ -591,6 +591,54 @@ export class SellerDashboardAnalyticsResponseDto {
   revenueOrders!: SellerDashboardRevenueOrderDto[];
 }
 
+export class SellerShopDailyMetricsQueryDto {
+  @ApiPropertyOptional({ example: 7, minimum: 1, maximum: 31 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(31)
+  days?: number;
+
+  @ApiPropertyOptional({ example: '2026-06-01' })
+  @IsOptional()
+  @IsString()
+  fromDate?: string;
+
+  @ApiPropertyOptional({ example: '2026-06-07' })
+  @IsOptional()
+  @IsString()
+  toDate?: string;
+}
+
+export class SellerShopDailyMetricPointDto {
+  @ApiProperty({ example: '2026-06-01' })
+  date!: string;
+
+  @ApiProperty({ example: '01/06' })
+  label!: string;
+
+  @ApiProperty({ example: 18500000 })
+  revenue!: number;
+
+  @ApiProperty({ example: 18 })
+  orders!: number;
+}
+
+export class SellerShopDailyMetricsResponseDto {
+  @ApiProperty({
+    example: {
+      days: 7,
+      from: '2026-06-01T00:00:00.000Z',
+      to: '2026-06-07T23:59:59.999Z',
+    },
+  })
+  range!: { days: number; from: string; to: string };
+
+  @ApiProperty({ type: SellerShopDailyMetricPointDto, isArray: true })
+  series!: SellerShopDailyMetricPointDto[];
+}
+
 export class SellerShopSummaryMetricsQueryDto {
   @ApiPropertyOptional({ example: '2026-06-01' })
   @IsOptional()

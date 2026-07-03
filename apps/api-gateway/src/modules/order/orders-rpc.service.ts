@@ -30,6 +30,7 @@ import {
   OrderLookupMessage,
   RetryPayOSPaymentMessage,
   SellerShopDashboardAnalyticsMessage,
+  SellerShopDailyMetricsMessage,
   SellerShopSummaryMetricsMessage,
   SellerShopOrderStatusSummaryMessage,
   ShopBestSellingProductsLookupMessage,
@@ -118,6 +119,13 @@ export class OrdersRpcService {
   ) {
     return this.send(
       ORDERS_MESSAGE_PATTERNS.getSellerShopDashboardAnalytics,
+      payload,
+    );
+  }
+
+  getSellerShopDailyMetrics(payload: SellerShopDailyMetricsMessage) {
+    return this.send(
+      ORDERS_MESSAGE_PATTERNS.getSellerShopDailyMetrics,
       payload,
     );
   }

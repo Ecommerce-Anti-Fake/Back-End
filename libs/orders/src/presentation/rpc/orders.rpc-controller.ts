@@ -51,6 +51,7 @@ import type {
   GhnServicesLookupMessage,
   GhnWardsLookupMessage,
   SellerShopDashboardAnalyticsMessage,
+  SellerShopDailyMetricsMessage,
   SellerShopSummaryMetricsMessage,
   SellerShopOrderStatusSummaryMessage,
   ShopBestSellingProductsLookupMessage,
@@ -88,6 +89,7 @@ import {
   ListAdminOrdersUseCase,
   ListSellerShopOrdersUseCase,
   GetSellerShopDashboardAnalyticsUseCase,
+  GetSellerShopDailyMetricsUseCase,
   GetSellerShopSummaryMetricsUseCase,
   GetSellerShopOrderStatusSummaryUseCase,
   GetShopBestSellingProductsUseCase,
@@ -126,6 +128,7 @@ export class OrdersRpcController {
     private readonly getAdminFinanceReconciliationUseCase: GetAdminFinanceReconciliationUseCase,
     private readonly listSellerShopOrdersUseCase: ListSellerShopOrdersUseCase,
     private readonly getSellerShopDashboardAnalyticsUseCase: GetSellerShopDashboardAnalyticsUseCase,
+    private readonly getSellerShopDailyMetricsUseCase: GetSellerShopDailyMetricsUseCase,
     private readonly getSellerShopSummaryMetricsUseCase: GetSellerShopSummaryMetricsUseCase,
     private readonly getSellerShopOrderStatusSummaryUseCase: GetSellerShopOrderStatusSummaryUseCase,
     private readonly getShopBestSellingProductsUseCase: GetShopBestSellingProductsUseCase,
@@ -274,6 +277,15 @@ export class OrdersRpcController {
   async getSellerShopDashboardAnalytics(@Payload() payload: SellerShopDashboardAnalyticsMessage) {
     try {
       return await this.getSellerShopDashboardAnalyticsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.getSellerShopDailyMetrics)
+  async getSellerShopDailyMetrics(@Payload() payload: SellerShopDailyMetricsMessage) {
+    try {
+      return await this.getSellerShopDailyMetricsUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

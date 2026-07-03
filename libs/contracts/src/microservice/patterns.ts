@@ -142,6 +142,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   findMine: 'orders.find-mine',
   findSellerShopOrders: 'orders.find-seller-shop-orders',
   getSellerShopDashboardAnalytics: 'orders.get-seller-shop-dashboard-analytics',
+  getSellerShopDailyMetrics: 'orders.get-seller-shop-daily-metrics',
   getSellerShopSummaryMetrics: 'orders.get-seller-shop-summary-metrics',
   getSellerShopOrderStatusSummary: 'orders.get-seller-shop-order-status-summary',
   getShopBestSellingProducts: 'orders.get-shop-best-selling-products',
@@ -991,6 +992,14 @@ export type SellerShopOrdersLookupMessage = {
 };
 
 export type SellerShopDashboardAnalyticsMessage = {
+  requesterUserId: string;
+  shopId: string;
+  days?: number;
+  fromDate?: string;
+  toDate?: string;
+};
+
+export type SellerShopDailyMetricsMessage = {
   requesterUserId: string;
   shopId: string;
   days?: number;
