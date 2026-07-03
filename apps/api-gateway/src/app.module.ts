@@ -27,7 +27,6 @@ import { GatewayShopModule } from './modules/shop/shop.module';
 import { GatewayChatModule } from './modules/chat/chat.module';
 import { GatewaySocialModule } from './modules/social/social.module';
 import { GatewayUserModule } from './modules/user/user.module';
-import { GatewayVerificationModule } from './modules/verification/verification.module';
 import {
   HealthController,
   RateLimitGuard,
@@ -65,7 +64,6 @@ import {
     GatewayShopModule,
     GatewaySocialModule,
     GatewayUserModule,
-    GatewayVerificationModule,
     GatewayAuthModule,
   ],
   controllers: [HealthController],

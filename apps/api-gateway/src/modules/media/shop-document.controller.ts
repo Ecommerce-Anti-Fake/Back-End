@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
@@ -6,11 +6,12 @@ import {
   ShopDocumentUploadSignaturesDto,
   SubmitCategoryDocumentsDto,
   SubmitShopDocumentsDto,
+  UpdateShopRegistrationTypeDto,
 } from '@shops';
 import { RateLimit } from '../../observability';
 import { ShopsRpcService } from '../shop/shops-rpc.service';
 
-@ApiTags('Media')
+@ApiTags('Shop-Document')
 @Controller('shops')
 export class ShopDocumentController {
   constructor(private readonly shopsRpcService: ShopsRpcService) {}
@@ -109,6 +110,44 @@ export class ShopDocumentController {
       categoryId,
       requesterUserId,
       items: dto.items,
+    });
+  }
+
+  @ApiOperation({ summary: 'Yeu cau doi loai tai khoan gian hang' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Patch(':shopId/registration-type')
+  updateRegistrationType(
+    @Param('shopId') shopId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: UpdateShopRegistrationTypeDto,
+  ) {
+    return this.shopsRpcService.updateRegistrationType({
+      shopId,
+      requesterUserId,
+      registrationType: dto.registrationType,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay tong quan trang thai verification cua shop hien tai' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get(':shopId/verification-summary')
+  getVerificationSummary(@Param('shopId') shopId: string, @CurrentUserId() requesterUserId: string) {
+    return this.shopsRpcService.getVerificationSummary({
+      shopId,
+      requesterUserId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay checklist ho so can nop theo loai shop' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get(':shopId/document-requirements')
+  findShopDocumentRequirements(@Param('shopId') shopId: string, @CurrentUserId() requesterUserId: string) {
+    return this.shopsRpcService.findShopDocumentRequirements({
+      shopId,
+      requesterUserId,
     });
   }
 }

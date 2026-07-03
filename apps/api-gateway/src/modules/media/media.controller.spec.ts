@@ -1,5 +1,7 @@
 import { PATH_METADATA } from '@nestjs/common/constants';
+import { DECORATORS } from '@nestjs/swagger/dist/constants';
 import { MediaController } from './media.controller';
+import { ShopDocumentController } from './shop-document.controller';
 
 describe('MediaController routes', () => {
   it('exposes offer media and documents without the legacy products prefix', () => {
@@ -40,5 +42,36 @@ describe('MediaController routes', () => {
         MediaController.prototype.findOfferDocuments,
       ),
     ).toBe('offers/:offerId/documents');
+  });
+});
+
+describe('ShopDocumentController routes', () => {
+  it('groups shop document APIs under the Shop-Document Swagger tag', () => {
+    expect(Reflect.getMetadata(DECORATORS.API_TAGS, ShopDocumentController)).toEqual(['Shop-Document']);
+    expect(Reflect.getMetadata(PATH_METADATA, ShopDocumentController)).toBe('shops');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        ShopDocumentController.prototype.findShopDocuments,
+      ),
+    ).toBe(':shopId/documents');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        ShopDocumentController.prototype.getShopDocumentUploadSignatures,
+      ),
+    ).toBe(':shopId/documents/upload-signatures');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        ShopDocumentController.prototype.submitShopDocuments,
+      ),
+    ).toBe(':shopId/documents');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        ShopDocumentController.prototype.findShopDocumentRequirements,
+      ),
+    ).toBe(':shopId/document-requirements');
   });
 });

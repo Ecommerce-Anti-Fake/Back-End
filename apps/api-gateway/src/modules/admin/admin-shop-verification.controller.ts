@@ -1,41 +1,25 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiForbiddenResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import {
   PendingVerificationShopQueryDto,
   ReviewBrandAuthorizationDto,
   ReviewShopCategoryDto,
   ReviewShopDocumentDto,
-  UpdateShopRegistrationTypeDto,
 } from '@shops';
 import { ShopsRpcService } from '../shop/shops-rpc.service';
 
-@ApiTags('Verification')
-@Controller('shops')
-export class VerificationController {
+@ApiTags('Admin')
+@Controller('shops/admin')
+export class AdminShopVerificationController {
   constructor(private readonly shopsRpcService: ShopsRpcService) {}
-
-  @ApiOperation({ summary: 'Yeu cau doi loai tai khoan gian hang' })
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Patch(':shopId/registration-type')
-  updateRegistrationType(
-    @Param('shopId') shopId: string,
-    @CurrentUserId() requesterUserId: string,
-    @Body() dto: UpdateShopRegistrationTypeDto,
-  ) {
-    return this.shopsRpcService.updateRegistrationType({
-      shopId,
-      requesterUserId,
-      registrationType: dto.registrationType,
-    });
-  }
 
   @ApiOperation({ summary: 'Admin lay danh sach shop dang cho verification' })
   @ApiBearerAuth('access-token')
+  @ApiForbiddenResponse({ description: 'Chi admin moi co quyen truy cap.' })
   @Roles('admin')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
-  @Get('admin/pending-verification')
+  @Get('pending-verification')
   findPendingVerification(@Query() query: PendingVerificationShopQueryDto) {
     return this.shopsRpcService.findPendingVerification({
       shopStatus: query.shopStatus ?? 'pending_verification',
@@ -51,37 +35,17 @@ export class VerificationController {
 
   @ApiOperation({ summary: 'Admin lay chi tiet verification cua mot shop' })
   @ApiBearerAuth('access-token')
+  @ApiForbiddenResponse({ description: 'Chi admin moi co quyen truy cap.' })
   @Roles('admin')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
-  @Get('admin/:shopId/verification-detail')
+  @Get(':shopId/verification-detail')
   getAdminVerificationDetail(@Param('shopId') shopId: string) {
     return this.shopsRpcService.getAdminVerificationDetail({ shopId });
   }
 
-  @ApiOperation({ summary: 'Lay tong quan trang thai verification cua shop hien tai' })
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Get(':shopId/verification-summary')
-  getVerificationSummary(@Param('shopId') shopId: string, @CurrentUserId() requesterUserId: string) {
-    return this.shopsRpcService.getVerificationSummary({
-      shopId,
-      requesterUserId,
-    });
-  }
-
-  @ApiOperation({ summary: 'Lay checklist ho so can nop theo loai shop' })
-  @ApiBearerAuth('access-token')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Get(':shopId/document-requirements')
-  findShopDocumentRequirements(@Param('shopId') shopId: string, @CurrentUserId() requesterUserId: string) {
-    return this.shopsRpcService.findShopDocumentRequirements({
-      shopId,
-      requesterUserId,
-    });
-  }
-
   @ApiOperation({ summary: 'Admin duyet ho so phap ly cua shop' })
   @ApiBearerAuth('access-token')
+  @ApiForbiddenResponse({ description: 'Chi admin moi co quyen truy cap.' })
   @Roles('admin')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
   @Post(':shopId/documents/:documentId/review')
@@ -102,6 +66,7 @@ export class VerificationController {
 
   @ApiOperation({ summary: 'Admin duyet category registration cua shop' })
   @ApiBearerAuth('access-token')
+  @ApiForbiddenResponse({ description: 'Chi admin moi co quyen truy cap.' })
   @Roles('admin')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
   @Post(':shopId/categories/:categoryId/review')
@@ -122,6 +87,7 @@ export class VerificationController {
 
   @ApiOperation({ summary: 'Admin duyet ho so uy quyen brand cua shop' })
   @ApiBearerAuth('access-token')
+  @ApiForbiddenResponse({ description: 'Chi admin moi co quyen truy cap.' })
   @Roles('admin')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
   @Post('brand-authorizations/:authorizationId/review')

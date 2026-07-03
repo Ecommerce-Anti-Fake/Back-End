@@ -1,4 +1,6 @@
 import { PATH_METADATA } from '@nestjs/common/constants';
+import { DECORATORS } from '@nestjs/swagger/dist/constants';
+import { AdminShopVerificationController } from './admin-shop-verification.controller';
 import { AdminController } from './admin.controller';
 
 describe('AdminController routes', () => {
@@ -8,5 +10,27 @@ describe('AdminController routes', () => {
     expect(Reflect.getMetadata(PATH_METADATA, AdminController.prototype.getUserById)).toBe('users/:id');
     expect(Reflect.getMetadata(PATH_METADATA, AdminController.prototype.updateUser)).toBe('users/:id');
     expect(Reflect.getMetadata(PATH_METADATA, AdminController.prototype.removeUser)).toBe('users/:id');
+  });
+});
+
+describe('AdminShopVerificationController routes', () => {
+  it('owns admin shop verification routes under the shops admin prefix', () => {
+    expect(Reflect.getMetadata(DECORATORS.API_TAGS, AdminShopVerificationController)).toEqual(['Admin']);
+    expect(Reflect.getMetadata(PATH_METADATA, AdminShopVerificationController)).toBe('shops/admin');
+    expect(Reflect.getMetadata(PATH_METADATA, AdminShopVerificationController.prototype.findPendingVerification)).toBe(
+      'pending-verification',
+    );
+    expect(Reflect.getMetadata(PATH_METADATA, AdminShopVerificationController.prototype.getAdminVerificationDetail)).toBe(
+      ':shopId/verification-detail',
+    );
+    expect(Reflect.getMetadata(PATH_METADATA, AdminShopVerificationController.prototype.reviewShopDocument)).toBe(
+      ':shopId/documents/:documentId/review',
+    );
+    expect(Reflect.getMetadata(PATH_METADATA, AdminShopVerificationController.prototype.reviewShopCategory)).toBe(
+      ':shopId/categories/:categoryId/review',
+    );
+    expect(Reflect.getMetadata(PATH_METADATA, AdminShopVerificationController.prototype.reviewBrandAuthorization)).toBe(
+      'brand-authorizations/:authorizationId/review',
+    );
   });
 });
