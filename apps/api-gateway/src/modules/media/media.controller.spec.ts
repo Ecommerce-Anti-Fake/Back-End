@@ -1,5 +1,7 @@
+import { ValidationPipe } from '@nestjs/common';
 import { PATH_METADATA } from '@nestjs/common/constants';
 import { DECORATORS } from '@nestjs/swagger/dist/constants';
+import { SubmitShopDocumentsMultipartDto } from '@shops';
 import { MediaController } from './media.controller';
 import { ShopDocumentController } from './shop-document.controller';
 
@@ -105,5 +107,16 @@ describe('ShopDocumentController routes', () => {
         },
       ],
     });
+  });
+
+  it('allows docTypes through whitelist validation for multipart uploads', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true });
+
+    await expect(
+      pipe.transform(
+        { docTypes: ['BUSINESS_LICENSE'] },
+        { type: 'body', metatype: SubmitShopDocumentsMultipartDto },
+      ),
+    ).resolves.toEqual({ docTypes: ['BUSINESS_LICENSE'] });
   });
 });

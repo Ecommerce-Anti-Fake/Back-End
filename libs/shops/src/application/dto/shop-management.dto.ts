@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  Allow,
   ArrayMinSize,
   IsArray,
   IsIn,
@@ -685,6 +686,7 @@ export class SubmitShopDocumentsMultipartDto {
     description: 'Danh sach loai ho so theo dung thu tu voi truong files trong multipart/form-data.',
     isArray: true,
   })
+  @Allow()
   docTypes!: string[] | string;
 }
 
