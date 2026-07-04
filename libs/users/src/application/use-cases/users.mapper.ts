@@ -1,6 +1,12 @@
 
 import { User, UserAddress } from '@prisma/client';
-import { UserProfileCompletion, UserSummary } from '../../domain/interfaces/user.types';
+import { AdminUserListItem, UserProfileCompletion, UserSummary } from '../../domain/interfaces/user.types';
+
+type UserWithOwnedShops = User & {
+  ownedShops?: Array<{
+    shopName: string;
+  }>;
+};
 
 export function toUserAddress(address: UserAddress) {
   return {
@@ -32,6 +38,30 @@ export function toUserSummary(user: User, defaultAddress?: UserAddress | null): 
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
+}
+
+export function toAdminUserListItem(user: UserWithOwnedShops): AdminUserListItem {
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.displayName,
+    shopName: user.ownedShops?.[0]?.shopName ?? null,
+    accountStatus: toVietnameseAccountStatus(user.accountStatus),
+    createdAt: user.createdAt,
+  };
+}
+
+function toVietnameseAccountStatus(accountStatus: string) {
+  switch (accountStatus) {
+    case 'active':
+      return 'Đang hoạt động';
+    case 'inactive':
+      return 'Ngừng hoạt động';
+    case 'blocked':
+      return 'Đã khóa';
+    default:
+      return accountStatus;
+  }
 }
 
 export function toUserProfileCompletion(user: User, defaultAddress?: UserAddress | null): UserProfileCompletion {

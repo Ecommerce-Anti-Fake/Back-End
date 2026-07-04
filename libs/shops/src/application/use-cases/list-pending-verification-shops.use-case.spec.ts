@@ -29,25 +29,17 @@ describe('ListPendingVerificationShopsUseCase', () => {
         {
           id: 'shop-1',
           shopName: 'Factory Shop',
-          ownerUserId: 'user-1',
-          registrationType: 'MANUFACTURER',
+          businessType: 'Doanh nghiệp',
           shopStatus: 'pending_verification',
+          avatarMedia: {
+            secureUrl: 'https://cdn.example.com/shop.jpg',
+          },
           createdAt: new Date('2026-04-15T10:00:00.000Z'),
           owner: {
+            id: 'user-1',
             displayName: 'Nguyen Van A',
             email: 'owner@example.com',
-            phone: '0987654321',
           },
-          documents: [{ reviewStatus: 'pending' }],
-          registeredCategories: [
-            {
-              registrationStatus: 'pending',
-              category: {
-                id: 'category-1',
-                name: 'My pham',
-              },
-            },
-          ],
         },
       ],
     });
@@ -55,7 +47,6 @@ describe('ListPendingVerificationShopsUseCase', () => {
     const result = await useCase.execute({
       shopStatus: 'pending_verification',
       registrationType: 'MANUFACTURER',
-      categoryId: 'category-1',
       search: 'factory',
       page: 3,
       pageSize: 5,
@@ -66,7 +57,6 @@ describe('ListPendingVerificationShopsUseCase', () => {
     expect(shopsRepositoryMock.findPendingVerificationShops).toHaveBeenCalledWith({
       shopStatus: 'pending_verification',
       registrationType: 'MANUFACTURER',
-      categoryId: 'category-1',
       search: 'factory',
       page: 3,
       pageSize: 5,
@@ -77,17 +67,20 @@ describe('ListPendingVerificationShopsUseCase', () => {
     expect(result).toMatchObject({
       page: 3,
       pageSize: 5,
-      total: 1,
+      totalItems: 1,
+      totalPages: 1,
       items: [
         {
           id: 'shop-1',
           shopName: 'Factory Shop',
-          ownerUserId: 'user-1',
-          ownerDisplayName: 'Nguyen Van A',
-          registrationType: 'MANUFACTURER',
-          shopStatus: 'pending_verification',
-          shopDocumentCount: 1,
-          approvedShopDocumentCount: 0,
+          owner: {
+            id: 'user-1',
+            displayName: 'Nguyen Van A',
+            email: 'owner@example.com',
+          },
+          businessType: 'Doanh nghiệp',
+          avatar: 'https://cdn.example.com/shop.jpg',
+          shopStatus: 'pending',
         },
       ],
     });

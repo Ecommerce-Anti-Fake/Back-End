@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { UsersRepository } from '../../infrastructure/persistence/users.repository';
-import { toUserSummary } from './users.mapper';
+import { toAdminUserListItem } from './users.mapper';
 
 @Injectable()
 export class ListUsersUseCase {
@@ -8,6 +8,6 @@ export class ListUsersUseCase {
 
   async execute(role?: 'user') {
     const users = await this.usersRepository.findAll(role ?? 'user');
-    return users.map((user) => toUserSummary(user));
+    return users.map((user) => toAdminUserListItem(user));
   }
 }

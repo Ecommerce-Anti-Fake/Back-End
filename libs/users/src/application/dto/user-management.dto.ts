@@ -73,6 +73,47 @@ export class UserResponseDto {
   updatedAt!: Date;
 }
 
+export class AdminUserListItemResponseDto {
+  @ApiProperty({
+    description: 'ID nguoi dung.',
+    example: '73d1fd5d-62e0-4a17-ac4c-fd8db5a4ade7',
+  })
+  id!: string;
+
+  @ApiPropertyOptional({
+    description: 'Email cua nguoi dung.',
+    example: 'e@gmail.com',
+    nullable: true,
+  })
+  email!: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Ten hien thi cua nguoi dung.',
+    example: 'E',
+    nullable: true,
+  })
+  displayName!: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Ten shop moi nhat cua nguoi dung.',
+    example: 'E Shop',
+    nullable: true,
+  })
+  shopName!: string | null;
+
+  @ApiProperty({
+    description: 'Trang thai tai khoan hien thi cho admin.',
+    example: 'Đang hoạt động',
+  })
+  accountStatus!: string;
+
+  @ApiProperty({
+    description: 'Thoi diem tao tai khoan.',
+    example: '2026-03-07T00:00:00.000Z',
+  })
+  createdAt!: Date;
+}
+
 export class ProfileCompletionResponseDto {
   @ApiProperty({
     description: 'ID nguoi dung.',

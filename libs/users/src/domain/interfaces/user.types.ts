@@ -12,6 +12,15 @@ export type UserSummary = {
   updatedAt: Date;
 };
 
+export type AdminUserListItem = {
+  id: string;
+  email: string | null;
+  displayName: string | null;
+  shopName: string | null;
+  accountStatus: string;
+  createdAt: Date;
+};
+
 export type UserAddressSummary = {
   id: string;
   userId: string;

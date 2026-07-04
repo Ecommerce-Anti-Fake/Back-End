@@ -463,6 +463,15 @@ export class UsersRepository {
   findAll(role?: string) {
     return this.prisma.user.findMany({
       where: role ? { role } : undefined,
+      include: {
+        ownedShops: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            shopName: true,
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
