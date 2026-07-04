@@ -1,7 +1,21 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  UploadedFiles,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiForbiddenResponse,
   ApiOkResponse,
   ApiOperation,
@@ -18,7 +32,6 @@ import {
   PaginatedAdminUserKycResponseDto,
   PendingKycQueryDto,
   ReviewUserKycDto,
-  SubmitKycDto,
   UserKycResponseDto,
 } from '@users';
 import { RateLimit } from '../../observability';
@@ -110,6 +123,18 @@ export class KycController {
 
   @ApiOperation({ summary: 'Gui ho so KYC voi CCCD 2 mat' })
   @ApiBearerAuth('access-token')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['idType', 'front', 'back'],
+      properties: {
+        idType: { type: 'string', example: 'CCCD' },
+        front: { type: 'string', format: 'binary', description: 'Anh mat truoc CCCD.' },
+        back: { type: 'string', format: 'binary', description: 'Anh mat sau CCCD.' },
+      },
+    },
+  })
   @ApiOkResponse({
     description: 'Gui KYC thanh cong, cho phe duyet.',
     type: KycMutationResponseDto,
@@ -121,12 +146,61 @@ export class KycController {
     description: 'Thieu access token hoac token khong hop le.',
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'front', maxCount: 1 },
+        { name: 'back', maxCount: 1 },
+      ],
+      { limits: { fileSize: 5 * 1024 * 1024 } },
+    ),
+  )
   @Post('kyc')
-  async submitKyc(@CurrentUserId() userId: string, @Body() dto: SubmitKycDto) {
+  async submitKyc(
+    @CurrentUserId() userId: string,
+    @Body('idType') idType: string,
+    @UploadedFiles()
+    files: {
+      front?: Array<{
+        buffer: Buffer;
+        mimetype: string;
+        originalname?: string;
+        size: number;
+      }>;
+      back?: Array<{
+        buffer: Buffer;
+        mimetype: string;
+        originalname?: string;
+        size: number;
+      }>;
+    } = {},
+  ) {
+    const front = files.front?.[0];
+    const back = files.back?.[0];
+    if (!idType?.trim()) {
+      throw new BadRequestException('ID type is required');
+    }
+    if (!front || !back) {
+      throw new BadRequestException('KYC files must include front and back images');
+    }
+
     await this.usersRpcService.submitKyc({
       userId,
-      idType: dto.idType,
-      documents: dto.documents,
+      idType,
+      documents: [
+        {
+          side: 'FRONT',
+          assetType: 'IMAGE',
+          mimeType: front.mimetype,
+          file: front,
+        },
+        {
+          side: 'BACK',
+          assetType: 'IMAGE',
+          mimeType: back.mimetype,
+          file: back,
+        },
+      ],
     });
     this.dashboardSseBrokerService.notifyAccount(userId);
     this.dashboardSseBrokerService.notifyAdminQueue('moderation');

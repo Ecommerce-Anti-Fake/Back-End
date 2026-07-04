@@ -359,8 +359,12 @@ export type SubmitKycMessage = {
     side: 'FRONT' | 'BACK';
     assetType: 'IMAGE';
     mimeType: string;
-    fileUrl: string;
-    publicId: string;
+    file: {
+      buffer: Buffer | { data?: number[] };
+      mimetype: string;
+      originalname?: string;
+      size: number;
+    };
   }>;
 };
 
