@@ -467,45 +467,38 @@ export class ShopVerificationSummaryResponseDto {
   categories!: ShopVerificationCategoryResponseDto[];
 }
 
-export class PendingVerificationShopResponseDto {
-  @ApiProperty({ example: 'shop-1' })
+export class PendingVerificationShopOwnerResponseDto {
+  @ApiProperty({ example: 'user_001' })
   id!: string;
 
-  @ApiProperty({ example: 'Cong ty TNHH San Xuat ABC' })
+  @ApiPropertyOptional({ example: 'Nguyễn Văn A', nullable: true })
+  displayName!: string | null;
+
+  @ApiPropertyOptional({ example: 'owner@gmail.com', nullable: true })
+  email!: string | null;
+}
+
+export class PendingVerificationShopResponseDto {
+  @ApiProperty({ example: 'shop_001' })
+  id!: string;
+
+  @ApiProperty({ example: 'Coffee House' })
   shopName!: string;
 
-  @ApiProperty({ example: 'user-1' })
-  ownerUserId!: string;
+  @ApiProperty({ type: PendingVerificationShopOwnerResponseDto })
+  owner!: PendingVerificationShopOwnerResponseDto;
 
-  @ApiPropertyOptional({ example: 'Nguyen Van A', nullable: true })
-  ownerDisplayName!: string | null;
+  @ApiProperty({ example: 'Cá nhân' })
+  businessType!: string;
 
-  @ApiPropertyOptional({ example: 'owner@example.com', nullable: true })
-  ownerEmail!: string | null;
+  @ApiPropertyOptional({ example: 'https://example.com/shop.jpg', nullable: true })
+  avatar!: string | null;
 
-  @ApiPropertyOptional({ example: '0987654321', nullable: true })
-  ownerPhone!: string | null;
-
-  @ApiProperty({
-    enum: SHOP_REGISTRATION_TYPES,
-    example: 'MANUFACTURER',
-  })
-  registrationType!: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
+  @ApiProperty({ example: '2026-07-03T10:20:00.000Z' })
+  createdAt!: Date;
 
   @ApiProperty({ example: 'pending_verification' })
   shopStatus!: string;
-
-  @ApiProperty({ example: 1 })
-  shopDocumentCount!: number;
-
-  @ApiProperty({ example: 0 })
-  approvedShopDocumentCount!: number;
-
-  @ApiProperty({ type: ShopRegisteredCategoryResponseDto, isArray: true })
-  registeredCategories!: ShopRegisteredCategoryResponseDto[];
-
-  @ApiProperty({ example: '2026-04-15T10:00:00.000Z' })
-  createdAt!: Date;
 }
 
 export class PendingVerificationShopQueryDto {
@@ -530,14 +523,6 @@ export class PendingVerificationShopQueryDto {
   registrationType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
 
   @ApiPropertyOptional({
-    description: 'Loc theo category ma shop da dang ky.',
-    example: 'category-1',
-  })
-  @IsOptional()
-  @IsString()
-  categoryId?: string;
-
-  @ApiPropertyOptional({
     description: 'Tu khoa tim theo ten shop, owner display name, email hoac phone.',
     example: 'factory',
   })
@@ -558,8 +543,8 @@ export class PendingVerificationShopQueryDto {
 
   @ApiPropertyOptional({
     description: 'So phan tu moi trang.',
-    example: 20,
-    default: 20,
+    example: 10,
+    default: 10,
   })
   @IsOptional()
   @Type(() => Number)
@@ -593,11 +578,14 @@ export class PaginatedPendingVerificationShopResponseDto {
   @ApiProperty({ example: 1 })
   page!: number;
 
-  @ApiProperty({ example: 20 })
+  @ApiProperty({ example: 10 })
   pageSize!: number;
 
-  @ApiProperty({ example: 12 })
-  total!: number;
+  @ApiProperty({ example: 2 })
+  totalItems!: number;
+
+  @ApiProperty({ example: 1 })
+  totalPages!: number;
 
   @ApiProperty({ type: PendingVerificationShopResponseDto, isArray: true })
   items!: PendingVerificationShopResponseDto[];

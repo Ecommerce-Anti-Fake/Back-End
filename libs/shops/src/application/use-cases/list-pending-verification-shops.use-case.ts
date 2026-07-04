@@ -9,7 +9,6 @@ export class ListPendingVerificationShopsUseCase {
   async execute(filters?: {
     shopStatus?: 'pending_kyc' | 'pending_verification' | 'verified';
     registrationType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
-    categoryId?: string;
     search?: string;
     page?: number;
     pageSize?: number;
@@ -17,13 +16,14 @@ export class ListPendingVerificationShopsUseCase {
     sortOrder?: 'asc' | 'desc';
   }) {
     const page = filters?.page && filters.page > 0 ? filters.page : 1;
-    const pageSize = filters?.pageSize && filters.pageSize > 0 ? filters.pageSize : 20;
+    const pageSize = filters?.pageSize && filters.pageSize > 0 ? filters.pageSize : 10;
     const result = await this.shopsRepository.findPendingVerificationShops({ ...filters, page, pageSize });
 
     return {
       page,
       pageSize,
-      total: result.total,
+      totalItems: result.total,
+      totalPages: Math.ceil(result.total / pageSize),
       items: result.items.map(toPendingVerificationShopResponse),
     };
   }

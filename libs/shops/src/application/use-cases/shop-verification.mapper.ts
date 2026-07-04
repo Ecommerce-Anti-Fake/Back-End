@@ -142,23 +142,17 @@ export function toShopVerificationSummaryResponse(shop: VerificationSummaryRecor
 type PendingVerificationShopRecord = {
   id: string;
   shopName: string;
-  ownerUserId: string;
-  registrationType: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
+  businessType: string;
   shopStatus: string;
   createdAt: Date;
+  avatarMedia?: {
+    secureUrl: string;
+  } | null;
   owner: {
+    id: string;
     displayName: string | null;
     email: string | null;
-    phone: string | null;
   };
-  documents: Array<{ reviewStatus: string }>;
-  registeredCategories: Array<{
-    registrationStatus: string;
-    category: {
-      id: string;
-      name: string;
-    };
-  }>;
 };
 
 type AdminVerificationDetailRecord = {
@@ -211,25 +205,18 @@ type AdminVerificationDetailRecord = {
 };
 
 export function toPendingVerificationShopResponse(shop: PendingVerificationShopRecord) {
-  const approvedShopDocumentCount = shop.documents.filter((document) => document.reviewStatus === 'approved').length;
-
   return {
     id: shop.id,
     shopName: shop.shopName,
-    ownerUserId: shop.ownerUserId,
-    ownerDisplayName: shop.owner.displayName,
-    ownerEmail: shop.owner.email,
-    ownerPhone: shop.owner.phone,
-    registrationType: shop.registrationType,
-    shopStatus: shop.shopStatus,
-    shopDocumentCount: shop.documents.length,
-    approvedShopDocumentCount,
-    registeredCategories: shop.registeredCategories.map((item) => ({
-      categoryId: item.category.id,
-      categoryName: item.category.name,
-      registrationStatus: item.registrationStatus,
-    })),
+    owner: {
+      id: shop.owner.id,
+      displayName: shop.owner.displayName,
+      email: shop.owner.email,
+    },
+    businessType: shop.businessType,
+    avatar: shop.avatarMedia?.secureUrl ?? null,
     createdAt: shop.createdAt,
+    shopStatus: shop.shopStatus,
   };
 }
 

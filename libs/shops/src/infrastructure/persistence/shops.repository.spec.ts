@@ -1,6 +1,22 @@
 import { ShopsRepository } from './shops.repository';
 
 describe('ShopsRepository', () => {
+  it('lists all shops when the admin status filter is omitted', async () => {
+    const prisma = {
+      shop: {
+        count: jest.fn().mockResolvedValue(0),
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      $transaction: jest.fn((queries) => Promise.all(queries)),
+    };
+    const repository = new ShopsRepository(prisma as never);
+
+    await repository.findPendingVerificationShops({ page: 1, pageSize: 10 });
+
+    expect(prisma.shop.count).toHaveBeenCalledWith({ where: {} });
+    expect(prisma.shop.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
+  });
+
   it('returns paginated public shop summaries with review and sale metrics', async () => {
     const prisma = {
       shop: {

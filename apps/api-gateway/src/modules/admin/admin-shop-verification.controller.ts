@@ -1,8 +1,9 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiForbiddenResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import {
   PendingVerificationShopQueryDto,
+  PaginatedPendingVerificationShopResponseDto,
   ReviewBrandAuthorizationDto,
   ReviewShopDocumentDto,
 } from '@shops';
@@ -13,17 +14,20 @@ import { ShopsRpcService } from '../shop/shops-rpc.service';
 export class AdminShopVerificationController {
   constructor(private readonly shopsRpcService: ShopsRpcService) {}
 
-  @ApiOperation({ summary: 'Admin lay danh sach shop dang cho verification' })
+  @ApiOperation({ summary: 'Admin lay danh sach shop' })
   @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach cua hang theo bo loc.',
+    type: PaginatedPendingVerificationShopResponseDto,
+  })
   @ApiForbiddenResponse({ description: 'Chi admin moi co quyen truy cap.' })
   @Roles('admin')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
-  @Get('pending-verification')
+  @Get('list-shop')
   findPendingVerification(@Query() query: PendingVerificationShopQueryDto) {
     return this.shopsRpcService.findPendingVerification({
-      shopStatus: query.shopStatus ?? 'pending_verification',
+      shopStatus: query.shopStatus,
       registrationType: query.registrationType,
-      categoryId: query.categoryId,
       search: query.search,
       page: query.page,
       pageSize: query.pageSize,

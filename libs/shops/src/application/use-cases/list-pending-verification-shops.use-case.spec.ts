@@ -80,9 +80,20 @@ describe('ListPendingVerificationShopsUseCase', () => {
           },
           businessType: 'Doanh nghiệp',
           avatar: 'https://cdn.example.com/shop.jpg',
-          shopStatus: 'pending',
+          shopStatus: 'pending_verification',
         },
       ],
+    });
+  });
+
+  it('should request all shops when shopStatus is omitted', async () => {
+    shopsRepositoryMock.findPendingVerificationShops.mockResolvedValueOnce({ total: 0, items: [] });
+
+    await useCase.execute();
+
+    expect(shopsRepositoryMock.findPendingVerificationShops).toHaveBeenCalledWith({
+      page: 1,
+      pageSize: 10,
     });
   });
 });

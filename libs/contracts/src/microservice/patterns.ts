@@ -466,7 +466,6 @@ export type MyShopsLookupMessage = {
 export type PendingVerificationShopsLookupMessage = {
   shopStatus?: 'pending_kyc' | 'pending_verification' | 'verified';
   registrationType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
-  categoryId?: string;
   search?: string;
   page?: number;
   pageSize?: number;

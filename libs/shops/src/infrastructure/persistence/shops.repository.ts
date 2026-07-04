@@ -604,7 +604,6 @@ export class ShopsRepository {
   async findPendingVerificationShops(filters?: {
     shopStatus?: 'pending_kyc' | 'pending_verification' | 'verified';
     registrationType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
-    categoryId?: string;
     search?: string;
     page?: number;
     pageSize?: number;
@@ -616,19 +615,10 @@ export class ShopsRepository {
     const sortBy = filters?.sortBy ?? 'createdAt';
     const sortOrder = filters?.sortOrder ?? 'desc';
     const where: Prisma.ShopWhereInput = {
-      shopStatus: filters?.shopStatus ?? 'pending_verification',
+      ...(filters?.shopStatus ? { shopStatus: filters.shopStatus } : {}),
       ...(filters?.registrationType
         ? {
             registrationType: filters.registrationType,
-          }
-        : {}),
-      ...(filters?.categoryId
-        ? {
-            registeredCategories: {
-              some: {
-                categoryId: filters.categoryId,
-              },
-            },
           }
         : {}),
       ...(filters?.search
@@ -685,25 +675,11 @@ export class ShopsRepository {
               id: true,
               displayName: true,
               email: true,
-              phone: true,
             },
           },
-          registeredCategories: {
-            include: {
-              category: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-            orderBy: {
-              createdAt: 'asc',
-            },
-          },
-          documents: {
+          avatarMedia: {
             select: {
-              reviewStatus: true,
+              secureUrl: true,
             },
           },
         },

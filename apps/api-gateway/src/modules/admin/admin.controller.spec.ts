@@ -18,7 +18,7 @@ describe('AdminShopVerificationController routes', () => {
     expect(Reflect.getMetadata(DECORATORS.API_TAGS, AdminShopVerificationController)).toEqual(['Admin']);
     expect(Reflect.getMetadata(PATH_METADATA, AdminShopVerificationController)).toBe('shops/admin');
     expect(Reflect.getMetadata(PATH_METADATA, AdminShopVerificationController.prototype.findPendingVerification)).toBe(
-      'pending-verification',
+      'list-shop',
     );
     expect(Reflect.getMetadata(PATH_METADATA, AdminShopVerificationController.prototype.getAdminVerificationDetail)).toBe(
       ':shopId/verification-detail',

@@ -10,7 +10,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ActiveUserGuard, JwtAuthGuard, Roles, RolesGuard } from '@security';
-import { ListUsersQueryDto, UpdateUserDto, UserResponseDto } from '@users';
+import { AdminUserListItemResponseDto, ListUsersQueryDto, UpdateUserDto, UserResponseDto } from '@users';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 import { UsersRpcService } from '../user/users-rpc.service';
 import { AdminService } from './admin.service';
@@ -120,7 +120,7 @@ export class AdminController {
   @ApiBearerAuth('access-token')
   @ApiOkResponse({
     description: 'Danh sach user.',
-    type: UserResponseDto,
+    type: AdminUserListItemResponseDto,
     isArray: true,
   })
   @ApiUnauthorizedResponse({
