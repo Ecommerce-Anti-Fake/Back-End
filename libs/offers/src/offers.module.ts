@@ -7,6 +7,7 @@ import {
   GetOfferByIdUseCase,
   ListOfferBatchLinksUseCase,
   ListOffersUseCase,
+  ListAdminOffersUseCase,
   UpdateOfferUseCase,
 } from './application/use-cases';
 import { OffersRepository } from './infrastructure/persistence/offers.repository';
@@ -22,6 +23,7 @@ import { OffersRpcController } from './presentation/rpc/offers.rpc-controller';
     AllocateOfferBatchesUseCase,
     ListOfferBatchLinksUseCase,
     ListOffersUseCase,
+    ListAdminOffersUseCase,
     GetOfferByIdUseCase,
   ],
   exports: [
@@ -31,6 +33,7 @@ import { OffersRpcController } from './presentation/rpc/offers.rpc-controller';
     AllocateOfferBatchesUseCase,
     ListOfferBatchLinksUseCase,
     ListOffersUseCase,
+    ListAdminOffersUseCase,
     GetOfferByIdUseCase,
   ],
 })

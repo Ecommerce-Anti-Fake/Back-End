@@ -8,6 +8,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  Max,
   MaxLength,
   Min,
   MinLength,
@@ -15,6 +16,7 @@ import {
 } from 'class-validator';
 
 const OFFER_STATUSES = ['active', 'inactive', 'draft'] as const;
+const MODERATION_STATUSES = ['pending', 'approved', 'rejected', 'banned'] as const;
 const SHOP_TYPES = [
   'NORMAL',
   'HANDMADE',
@@ -116,6 +118,75 @@ export class OfferResponseDto {
 
   @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
   createdAt!: Date;
+}
+
+export class AdminOfferListQueryDto {
+  @ApiPropertyOptional({
+    enum: OFFER_STATUSES,
+    example: 'inactive',
+    description:
+      'Trạng thái bán do seller điều khiển: active = đang mở bán; inactive = tạm ngừng bán; draft = bản nháp chưa gửi bán. Bỏ trống để lấy tất cả.',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(OFFER_STATUSES)
+  offerStatus?: 'active' | 'inactive' | 'draft';
+
+  @ApiPropertyOptional({
+    enum: MODERATION_STATUSES,
+    example: 'pending',
+    description:
+      'Trạng thái kiểm duyệt do admin/hệ thống điều khiển: pending = chờ duyệt; approved = đã duyệt; rejected = bị từ chối, có thể chỉnh sửa để gửi lại; banned = bị cấm, không được phép mở bán. Bỏ trống để lấy tất cả.',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(MODERATION_STATUSES)
+  moderationStatus?: 'pending' | 'approved' | 'rejected' | 'banned';
+
+  @ApiPropertyOptional({ example: 1, default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 10, default: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize?: number;
+}
+
+export class AdminOfferRelationResponseDto {
+  @ApiProperty({ example: 'shop_001' })
+  id!: string;
+
+  @ApiProperty({ example: 'Shop Chinh Hang' })
+  name!: string;
+}
+
+export class AdminOfferListItemResponseDto {
+  @ApiProperty({ example: 'offer_001' }) id!: string;
+  @ApiProperty({ example: 'Kem chong nang SPF50' }) title!: string;
+  @ApiPropertyOptional({ example: 'https://example.com/image.jpg', nullable: true }) thumbnail!: string | null;
+  @ApiProperty({ example: 150000 }) price!: number;
+  @ApiProperty({ example: 'VND' }) currency!: string;
+  @ApiProperty({ type: AdminOfferRelationResponseDto }) shop!: AdminOfferRelationResponseDto;
+  @ApiProperty({ type: AdminOfferRelationResponseDto }) category!: AdminOfferRelationResponseDto;
+  @ApiProperty({ example: 'standard' }) verificationLevel!: string;
+  @ApiProperty({ example: 'inactive' }) offerStatus!: string;
+  @ApiProperty({ example: 'pending' }) moderationStatus!: string;
+  @ApiProperty({ example: '2026-07-03T08:30:00.000Z' }) createdAt!: Date;
+}
+
+export class PaginatedAdminOfferListResponseDto {
+  @ApiProperty({ example: 1 }) page!: number;
+  @ApiProperty({ example: 10 }) pageSize!: number;
+  @ApiProperty({ example: 2 }) totalItems!: number;
+  @ApiProperty({ example: 1 }) totalPages!: number;
+  @ApiProperty({ type: AdminOfferListItemResponseDto, isArray: true }) items!: AdminOfferListItemResponseDto[];
 }
 
 export class CreateOfferResponseDto {

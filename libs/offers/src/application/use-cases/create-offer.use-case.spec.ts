@@ -240,6 +240,7 @@ describe('CreateOfferUseCase', () => {
         modelName: 'Resale draft',
         gtin: null,
         verificationPolicy: 'manual_review',
+        offerStatus: 'inactive',
         offerStatus: 'draft',
       }),
     );

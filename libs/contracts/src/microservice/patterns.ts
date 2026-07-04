@@ -84,6 +84,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   updateOffer: 'products.update-offer',
   findShippingCarriers: 'products.find-shipping-carriers',
   findOffers: 'products.find-offers',
+  findAdminOffers: 'products.find-admin-offers',
   findOfferById: 'products.find-offer-by-id',
   findFavoriteOffers: 'products.find-favorite-offers',
   addFavoriteOffer: 'products.add-favorite-offer',
@@ -781,6 +782,13 @@ export type UpdateOfferMessage = {
   parcelLengthCm?: number | null;
   parcelWidthCm?: number | null;
   parcelHeightCm?: number | null;
+};
+
+export type AdminOffersLookupMessage = {
+  offerStatus?: 'active' | 'inactive' | 'draft';
+  moderationStatus?: 'pending' | 'approved' | 'rejected' | 'banned';
+  page?: number;
+  pageSize?: number;
 };
 
 export type OfferMediaUploadSignaturesMessage = {

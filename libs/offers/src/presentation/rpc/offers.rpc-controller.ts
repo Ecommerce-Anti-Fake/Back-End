@@ -5,6 +5,7 @@ import type {
   AllocateOfferBatchesMessage,
   CreateOfferMessage,
   ListOffersMessage,
+  AdminOffersLookupMessage,
   OfferBatchLinksLookupMessage,
   OfferLookupMessage,
   UpdateOfferMessage,
@@ -16,6 +17,7 @@ import {
   GetOfferByIdUseCase,
   ListOfferBatchLinksUseCase,
   ListOffersUseCase,
+  ListAdminOffersUseCase,
   UpdateOfferUseCase,
 } from '../../application/use-cases';
 
@@ -27,6 +29,7 @@ export class OffersRpcController {
     private readonly allocateOfferBatchesUseCase: AllocateOfferBatchesUseCase,
     private readonly listOfferBatchLinksUseCase: ListOfferBatchLinksUseCase,
     private readonly listOffersUseCase: ListOffersUseCase,
+    private readonly listAdminOffersUseCase: ListAdminOffersUseCase,
     private readonly getOfferByIdUseCase: GetOfferByIdUseCase,
   ) {}
 
@@ -70,6 +73,15 @@ export class OffersRpcController {
   async findOffers(@Payload() payload?: ListOffersMessage) {
     try {
       return await this.listOffersUseCase.execute(payload ?? {});
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findAdminOffers)
+  async findAdminOffers(@Payload() payload?: AdminOffersLookupMessage) {
+    try {
+      return await this.listAdminOffersUseCase.execute(payload ?? {});
     } catch (error) {
       throwRpcException(error);
     }

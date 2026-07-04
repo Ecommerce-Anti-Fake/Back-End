@@ -23,15 +23,17 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
+import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import {
   AllocateOfferBatchesDto,
+  AdminOfferListQueryDto,
   ListOffersQueryDto,
   ListShopOffersQueryDto,
   OfferBatchLinkResponseDto,
   OfferListItemResponseDto,
   OfferResponseDto,
   PaginatedOfferListResponseDto,
+  PaginatedAdminOfferListResponseDto,
   PublicOfferDetailResponseDto,
   CreateOfferDto,
   CreateOfferResponseDto,
@@ -48,6 +50,24 @@ export class OfferController {
     private readonly catalogRpcService: CatalogRpcService,
     private readonly dashboardSseBrokerService: DashboardSseBrokerService,
   ) {}
+
+  @ApiOperation({ summary: 'Admin lay danh sach offer' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Danh sach offer theo trang thai ban va trang thai kiem duyet.',
+    type: PaginatedAdminOfferListResponseDto,
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Get('offers/admin/list-offer')
+  findAdminOffers(@Query() query: AdminOfferListQueryDto) {
+    return this.catalogRpcService.findAdminOffers({
+      offerStatus: query.offerStatus,
+      moderationStatus: query.moderationStatus,
+      page: query.page,
+      pageSize: query.pageSize,
+    });
+  }
 
   @ApiOperation({ summary: 'Tao offer moi cho shop hien tai' })
   @ApiBearerAuth('access-token')

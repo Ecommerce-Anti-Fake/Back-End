@@ -6,6 +6,49 @@ import { PrismaService } from '@database/prisma/prisma.service';
 export class OffersRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findAdminOffers(input: {
+    offerStatus?: 'active' | 'inactive' | 'draft';
+    moderationStatus?: 'pending' | 'approved' | 'rejected' | 'banned';
+    page: number;
+    pageSize: number;
+  }) {
+    const where: Prisma.OfferWhereInput = {
+      ...(input.offerStatus ? { offerStatus: input.offerStatus } : {}),
+      ...(input.moderationStatus ? { moderationStatus: input.moderationStatus } : {}),
+    };
+    const [total, items] = await this.prisma.$transaction([
+      this.prisma.offer.count({ where }),
+      this.prisma.offer.findMany({
+        where,
+        select: {
+          id: true,
+          title: true,
+          price: true,
+          currency: true,
+          verificationLevel: true,
+          offerStatus: true,
+          moderationStatus: true,
+          createdAt: true,
+          shop: { select: { id: true, shopName: true } },
+          category: { select: { id: true, name: true } },
+          media: {
+            orderBy: { createdAt: 'asc' },
+            take: 1,
+            select: {
+              fileUrl: true,
+              mediaAsset: { select: { secureUrl: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (input.page - 1) * input.pageSize,
+        take: input.pageSize,
+      }),
+    ]);
+
+    return { total, items };
+  }
+
   findBrandById(id: string) {
     return this.prisma.brand.findUnique({
       where: { id },
@@ -192,7 +235,9 @@ export class OffersRepository {
     const where: Prisma.OfferWhereInput = {
       ...(input.shopId ? { shopId: input.shopId } : {}),
       ...(Object.keys(shopWhere).length ? { shop: { is: shopWhere } } : {}),
-      ...(!input.includeInactive ? { offerStatus: 'active' } : {}),
+      ...(!input.includeInactive
+        ? { offerStatus: 'active', moderationStatus: 'approved' }
+        : {}),
       ...(input.categoryId ? { categoryId: input.categoryId } : {}),
       ...(input.brandId ? { brandId: input.brandId } : {}),
       ...(input.verificationStatus

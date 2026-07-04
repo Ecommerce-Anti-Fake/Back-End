@@ -25,6 +25,7 @@ import {
   ListLiveCommentsMessage,
   ListLiveSessionsMessage,
   ListOffersMessage,
+  AdminOffersLookupMessage,
   ListSocialCommentRepliesMessage,
   ListSocialCommentsMessage,
   ListSocialPostsMessage,
@@ -153,6 +154,10 @@ export class CatalogRpcService {
 
   findOffers(payload: ListOffersMessage = {}) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.findOffers, payload);
+  }
+
+  findAdminOffers(payload: AdminOffersLookupMessage = {}) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.findAdminOffers, payload);
   }
 
   findOfferById(payload: OfferLookupMessage) {

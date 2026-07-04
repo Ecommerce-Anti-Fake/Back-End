@@ -1,6 +1,34 @@
 import { OffersRepository } from './offers.repository';
 
 describe('OffersRepository', () => {
+  it('applies only provided status filters to the admin offer list', async () => {
+    const prisma = {
+      offer: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+      $transaction: jest.fn((queries) => Promise.all(queries)),
+    };
+    const repository = new OffersRepository(prisma as never);
+
+    await repository.findAdminOffers({ moderationStatus: 'pending', page: 2, pageSize: 10 });
+
+    expect(prisma.offer.count).toHaveBeenCalledWith({ where: { moderationStatus: 'pending' } });
+    expect(prisma.offer.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { moderationStatus: 'pending' }, orderBy: { createdAt: 'desc' }, skip: 10, take: 10,
+    }));
+  });
+
+  it('lists all offers when admin status filters are omitted', async () => {
+    const prisma = {
+      offer: { count: jest.fn().mockResolvedValue(0), findMany: jest.fn().mockResolvedValue([]) },
+      $transaction: jest.fn((queries) => Promise.all(queries)),
+    };
+    const repository = new OffersRepository(prisma as never);
+
+    await repository.findAdminOffers({ page: 1, pageSize: 10 });
+
+    expect(prisma.offer.count).toHaveBeenCalledWith({ where: {} });
+    expect(prisma.offer.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
+  });
+
   it('should apply public catalog search filters to offer queries', async () => {
     const prisma = {
       offer: {
