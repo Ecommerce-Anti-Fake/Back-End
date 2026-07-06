@@ -23,6 +23,9 @@ describe('AdminShopVerificationController routes', () => {
     expect(Reflect.getMetadata(PATH_METADATA, AdminShopVerificationController.prototype.getAdminVerificationDetail)).toBe(
       ':shopId/verification-detail',
     );
+    expect(Reflect.getMetadata(PATH_METADATA, AdminShopVerificationController.prototype.getAdminRegistrationDetail)).toBe(
+      ':shopId/registration-detail',
+    );
     expect(Reflect.getMetadata(PATH_METADATA, AdminShopVerificationController.prototype.reviewShopDocument)).toBe(
       ':shopId/documents/:documentId/review',
     );

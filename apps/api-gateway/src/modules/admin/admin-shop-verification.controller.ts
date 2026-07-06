@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/co
 import { ApiBearerAuth, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import {
+  AdminShopRegistrationDetailResponseDto,
   PendingVerificationShopQueryDto,
   PaginatedPendingVerificationShopResponseDto,
   ReviewBrandAuthorizationDto,
@@ -44,6 +45,17 @@ export class AdminShopVerificationController {
   @Get(':shopId/verification-detail')
   getAdminVerificationDetail(@Param('shopId') shopId: string) {
     return this.shopsRpcService.getAdminVerificationDetail({ shopId });
+  }
+
+  @ApiOperation({ summary: 'Admin lay chi tiet thong tin dang ky cua mot shop' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: AdminShopRegistrationDetailResponseDto })
+  @ApiForbiddenResponse({ description: 'Chi admin moi co quyen truy cap.' })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Get(':shopId/registration-detail')
+  getAdminRegistrationDetail(@Param('shopId') shopId: string) {
+    return this.shopsRpcService.getAdminRegistrationDetail({ shopId });
   }
 
   @ApiOperation({ summary: 'Admin duyet ho so phap ly cua shop' })

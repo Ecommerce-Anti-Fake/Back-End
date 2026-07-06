@@ -591,6 +591,149 @@ export class PaginatedPendingVerificationShopResponseDto {
   items!: PendingVerificationShopResponseDto[];
 }
 
+export class AdminShopRegistrationBasicInfoResponseDto {
+  @ApiProperty({ example: 'shop-1' })
+  id!: string;
+
+  @ApiProperty({ example: 'user-1' })
+  ownerUserId!: string;
+
+  @ApiProperty({ example: 'Cong ty TNHH San Xuat ABC' })
+  shopName!: string;
+
+  @ApiProperty({ enum: SHOP_REGISTRATION_TYPES, example: 'MANUFACTURER' })
+  registrationType!: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
+
+  @ApiProperty({ example: 'manufacturer' })
+  businessType!: string;
+
+  @ApiPropertyOptional({ example: '0312345678', nullable: true })
+  taxCode!: string | null;
+
+  @ApiProperty({ example: 'pending_verification' })
+  shopStatus!: string;
+
+  @ApiPropertyOptional({ example: '12 Nguyen Trai', nullable: true })
+  warehouseAddress!: string | null;
+
+  @ApiPropertyOptional({ example: 'VN-P202', nullable: true })
+  warehouseProvinceCode!: string | null;
+
+  @ApiPropertyOptional({ example: 'TP Ho Chi Minh', nullable: true })
+  warehouseProvinceName!: string | null;
+
+  @ApiPropertyOptional({ example: 'VN-P202-D1450-W21211', nullable: true })
+  warehouseWardCode!: string | null;
+
+  @ApiPropertyOptional({ example: 'Phuong Ben Nghe', nullable: true })
+  warehouseWardName!: string | null;
+
+  @ApiProperty({ example: '2026-04-15T08:00:00.000Z' })
+  createdAt!: Date;
+
+  @ApiProperty({
+    example: {
+      id: 'user-1',
+      displayName: 'Nguyen Van A',
+      email: 'owner@example.com',
+      phone: '0987654321',
+    },
+  })
+  owner!: {
+    id: string;
+    displayName: string | null;
+    email: string | null;
+    phone: string | null;
+  };
+
+  @ApiProperty({ type: ShopRegisteredCategoryResponseDto, isArray: true })
+  registeredCategories!: ShopRegisteredCategoryResponseDto[];
+}
+
+export class AdminShopRegistrationLegalProfileResponseDto {
+  @ApiProperty({ type: ShopDocumentResponseDto, isArray: true })
+  documents!: ShopDocumentResponseDto[];
+
+  @ApiProperty({ isArray: true })
+  documentGroups!: Array<{
+    docType: string;
+    latestSubmission: ShopDocumentResponseDto;
+    history: ShopDocumentResponseDto[];
+  }>;
+}
+
+export class AdminShopRegistrationIdentityDocumentResponseDto {
+  @ApiProperty({ example: 'kyc-doc-front' })
+  id!: string;
+
+  @ApiProperty({ example: 'FRONT' })
+  side!: 'FRONT' | 'BACK';
+
+  @ApiProperty({ example: 'media-front' })
+  mediaAssetId!: string;
+
+  @ApiProperty({ example: 'IMAGE' })
+  assetType!: 'IMAGE' | 'VIDEO' | 'RAW';
+
+  @ApiPropertyOptional({ example: 'image/jpeg', nullable: true })
+  mimeType!: string | null;
+
+  @ApiPropertyOptional({ example: 'kyc/user-1/front', nullable: true })
+  publicId!: string | null;
+
+  @ApiProperty({ example: 'https://res.cloudinary.com/example/image/upload/v1/kyc/user-1/front.jpg' })
+  fileUrl!: string;
+
+  @ApiProperty({ example: '2026-04-15T08:10:00.000Z' })
+  uploadedAt!: Date;
+}
+
+export class AdminShopRegistrationIdentityProfileResponseDto {
+  @ApiProperty({ example: 'kyc-1' })
+  id!: string;
+
+  @ApiProperty({ example: 'user-1' })
+  userId!: string;
+
+  @ApiProperty({ example: 'Nguyen Van A' })
+  fullName!: string;
+
+  @ApiProperty({ example: '1998-05-10T00:00:00.000Z' })
+  dateOfBirth!: Date;
+
+  @ApiProperty({ example: 'CCCD' })
+  idType!: string;
+
+  @ApiProperty({ example: 'basic' })
+  kycLevel!: string;
+
+  @ApiProperty({ example: 'approved' })
+  verificationStatus!: string;
+
+  @ApiPropertyOptional({ example: 'Thong tin hop le', nullable: true })
+  reviewNote!: string | null;
+
+  @ApiPropertyOptional({ example: '2026-04-16T09:00:00.000Z', nullable: true })
+  verifiedAt!: Date | null;
+
+  @ApiProperty({ type: AdminShopRegistrationIdentityDocumentResponseDto, isArray: true })
+  documents!: AdminShopRegistrationIdentityDocumentResponseDto[];
+}
+
+export class AdminShopRegistrationDetailResponseDto {
+  @ApiProperty({ example: 'shop-1' })
+  shopId!: string;
+
+  @ApiProperty({ type: AdminShopRegistrationBasicInfoResponseDto })
+  basicInfo!: AdminShopRegistrationBasicInfoResponseDto;
+
+  @ApiProperty({ type: AdminShopRegistrationLegalProfileResponseDto })
+  legalProfile!: AdminShopRegistrationLegalProfileResponseDto;
+
+  @ApiPropertyOptional({ type: AdminShopRegistrationIdentityProfileResponseDto, nullable: true })
+  identityProfile!: AdminShopRegistrationIdentityProfileResponseDto | null;
+}
+
 export class AdminShopVerificationDetailResponseDto {
   @ApiProperty({ type: ShopResponseDto })
   shop!: ShopResponseDto;

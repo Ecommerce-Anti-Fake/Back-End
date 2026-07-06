@@ -63,6 +63,7 @@ export const SHOPS_MESSAGE_PATTERNS = {
   findPendingVerification: 'shops.find-pending-verification',
   getAdminVerificationSummary: 'shops.get-admin-verification-summary',
   getAdminVerificationDetail: 'shops.get-admin-verification-detail',
+  getAdminRegistrationDetail: 'shops.get-admin-registration-detail',
   findShopDocuments: 'shops.find-shop-documents',
   findShopDocumentRequirements: 'shops.find-shop-document-requirements',
   getShopDocumentUploadSignatures: 'shops.get-shop-document-upload-signatures',
@@ -475,6 +476,10 @@ export type PendingVerificationShopsLookupMessage = {
 };
 
 export type AdminShopVerificationDetailMessage = {
+  shopId: string;
+};
+
+export type AdminShopRegistrationDetailMessage = {
   shopId: string;
 };
 

@@ -10,6 +10,7 @@ export * from './get-shop-verification-summary.use-case';
 export * from './list-pending-verification-shops.use-case';
 export * from './get-admin-shop-verification-summary.use-case';
 export * from './get-admin-shop-verification-detail.use-case';
+export * from './get-admin-shop-registration-detail.use-case';
 export * from './list-shop-documents.use-case';
 export * from './list-shop-document-requirements.use-case';
 export * from './get-shop-document-upload-signatures.use-case';

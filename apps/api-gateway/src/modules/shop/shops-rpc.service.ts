@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   AdminBrandAuthorizationsLookupMessage,
+  AdminShopRegistrationDetailMessage,
   AdminShopVerificationDetailMessage,
   AdminShopVerificationSummaryMessage,
   BrandAuthorizationUploadSignaturesMessage,
@@ -94,6 +95,10 @@ export class ShopsRpcService {
 
   getAdminVerificationDetail(payload: AdminShopVerificationDetailMessage) {
     return this.send(SHOPS_MESSAGE_PATTERNS.getAdminVerificationDetail, payload);
+  }
+
+  getAdminRegistrationDetail(payload: AdminShopRegistrationDetailMessage) {
+    return this.send(SHOPS_MESSAGE_PATTERNS.getAdminRegistrationDetail, payload);
   }
 
   getAdminVerificationSummary(payload: AdminShopVerificationSummaryMessage = {}) {

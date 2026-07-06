@@ -3,6 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { SHOPS_MESSAGE_PATTERNS } from '@contracts';
 import type {
   AdminBrandAuthorizationsLookupMessage,
+  AdminShopRegistrationDetailMessage,
   AdminShopVerificationDetailMessage,
   AdminShopVerificationSummaryMessage,
   BrandAuthorizationUploadSignaturesMessage,
@@ -29,6 +30,7 @@ import { throwRpcException } from '@common';
 import {
   CreateShopUseCase,
   GetBrandAuthorizationUploadSignaturesUseCase,
+  GetAdminShopRegistrationDetailUseCase,
   GetAdminShopVerificationDetailUseCase,
   GetAdminShopVerificationSummaryUseCase,
   GetPublicShopByOfferUseCase,
@@ -56,6 +58,7 @@ export class ShopsRpcController {
   constructor(
     private readonly createShopUseCase: CreateShopUseCase,
     private readonly getBrandAuthorizationUploadSignaturesUseCase: GetBrandAuthorizationUploadSignaturesUseCase,
+    private readonly getAdminShopRegistrationDetailUseCase: GetAdminShopRegistrationDetailUseCase,
     private readonly getAdminShopVerificationDetailUseCase: GetAdminShopVerificationDetailUseCase,
     private readonly getAdminShopVerificationSummaryUseCase: GetAdminShopVerificationSummaryUseCase,
     private readonly getShopVerificationSummaryUseCase: GetShopVerificationSummaryUseCase,
@@ -172,6 +175,15 @@ export class ShopsRpcController {
   async getAdminVerificationDetail(@Payload() payload: AdminShopVerificationDetailMessage) {
     try {
       return await this.getAdminShopVerificationDetailUseCase.execute(payload.shopId);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(SHOPS_MESSAGE_PATTERNS.getAdminRegistrationDetail)
+  async getAdminRegistrationDetail(@Payload() payload: AdminShopRegistrationDetailMessage) {
+    try {
+      return await this.getAdminShopRegistrationDetailUseCase.execute(payload.shopId);
     } catch (error) {
       throwRpcException(error);
     }
