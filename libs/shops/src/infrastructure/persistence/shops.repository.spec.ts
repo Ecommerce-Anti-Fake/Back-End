@@ -234,7 +234,7 @@ describe('ShopsRepository', () => {
     });
   });
 
-  it('recomputes approved KYC normal shop as pending verification until shop document approval', async () => {
+  it('recomputes approved KYC normal shop as pending document until shop document submission', async () => {
     const prisma = {
       shop: {
         findUnique: jest.fn().mockResolvedValue({
@@ -258,6 +258,43 @@ describe('ShopsRepository', () => {
         }),
         update: jest.fn().mockResolvedValue({
           id: 'shop-1',
+          shopStatus: 'pending_document',
+          registeredCategories: [],
+        }),
+      },
+    };
+    const repository = new ShopsRepository(prisma as never);
+
+    await expect(repository.recomputeShopStatus('shop-1')).resolves.toMatchObject({
+      id: 'shop-1',
+      shopStatus: 'pending_document',
+    });
+
+    expect(prisma.shop.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'shop-1' },
+        data: { shopStatus: 'pending_document' },
+      }),
+    );
+  });
+
+  it('recomputes submitted KYC normal shop as pending verification until admin review', async () => {
+    const prisma = {
+      shop: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'shop-1',
+          registrationType: 'NORMAL',
+          owner: {
+            kyc: {
+              verificationStatus: 'pending',
+              documents: [{ side: 'FRONT' }, { side: 'BACK' }],
+            },
+          },
+          documents: [{ reviewStatus: 'pending' }],
+          registeredCategories: [],
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'shop-1',
           shopStatus: 'pending_verification',
           registeredCategories: [],
         }),
@@ -274,6 +311,43 @@ describe('ShopsRepository', () => {
       expect.objectContaining({
         where: { id: 'shop-1' },
         data: { shopStatus: 'pending_verification' },
+      }),
+    );
+  });
+
+  it('recomputes shop with documents but missing KYC as pending KYC', async () => {
+    const prisma = {
+      shop: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'shop-1',
+          registrationType: 'NORMAL',
+          owner: {
+            kyc: {
+              verificationStatus: 'pending',
+              documents: [{ side: 'FRONT' }],
+            },
+          },
+          documents: [{ reviewStatus: 'pending' }],
+          registeredCategories: [],
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'shop-1',
+          shopStatus: 'pending_kyc',
+          registeredCategories: [],
+        }),
+      },
+    };
+    const repository = new ShopsRepository(prisma as never);
+
+    await expect(repository.recomputeShopStatus('shop-1')).resolves.toMatchObject({
+      id: 'shop-1',
+      shopStatus: 'pending_kyc',
+    });
+
+    expect(prisma.shop.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'shop-1' },
+        data: { shopStatus: 'pending_kyc' },
       }),
     );
   });

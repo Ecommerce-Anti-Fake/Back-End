@@ -17,7 +17,7 @@ import { Type } from 'class-transformer';
 
 const SHOP_REGISTRATION_TYPES = ['NORMAL', 'HANDMADE', 'MANUFACTURER', 'DISTRIBUTOR'] as const;
 const REVIEW_STATUSES = ['approved', 'rejected'] as const;
-const SHOP_LOOKUP_STATUSES = ['pending_kyc', 'pending_verification', 'verified'] as const;
+const SHOP_LOOKUP_STATUSES = ['pending_kyc', 'pending_document', 'pending_verification', 'verified'] as const;
 const SHOP_SORT_FIELDS = ['createdAt', 'shopName'] as const;
 const SORT_ORDERS = ['asc', 'desc'] as const;
 
@@ -510,7 +510,7 @@ export class PendingVerificationShopQueryDto {
   @IsOptional()
   @IsString()
   @IsIn(SHOP_LOOKUP_STATUSES)
-  shopStatus?: 'pending_kyc' | 'pending_verification' | 'verified';
+  shopStatus?: 'pending_kyc' | 'pending_document' | 'pending_verification' | 'verified';
 
   @ApiPropertyOptional({
     description: 'Loc theo loai dang ky cua shop.',

@@ -11,6 +11,7 @@ describe('SubmitUserKycUseCase', () => {
     findUserKycByUserId: jest.fn(),
     findUserByEmailOrPhone: jest.fn(),
     submitKyc: jest.fn(),
+    markOwnedShopsAfterKycSubmitted: jest.fn(),
     createAuditLog: jest.fn(),
   };
 
@@ -149,6 +150,7 @@ describe('SubmitUserKycUseCase', () => {
         toStatus: 'pending',
       }),
     );
+    expect(usersRepositoryMock.markOwnedShopsAfterKycSubmitted).toHaveBeenCalledWith('user-1');
   });
 
   it('uploads KYC front and back files before submitting', async () => {

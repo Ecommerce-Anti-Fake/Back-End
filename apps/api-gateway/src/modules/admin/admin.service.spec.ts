@@ -73,8 +73,9 @@ describe('AdminService', () => {
       total: 8,
       byShopStatus: {
         pending_kyc: 2,
+        pending_document: 1,
         pending_verification: 3,
-        active: 3,
+        verified: 2,
       },
       byRegistrationType: {
         NORMAL: 2,
@@ -114,8 +115,9 @@ describe('AdminService', () => {
         total: 8,
         byShopStatus: {
           pending_kyc: 2,
+          pending_document: 1,
           pending_verification: 3,
-          active: 3,
+          verified: 2,
         },
         byRegistrationType: {
           NORMAL: 2,

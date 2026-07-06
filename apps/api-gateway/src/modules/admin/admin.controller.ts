@@ -42,8 +42,9 @@ class AdminShopVerificationSummaryDto {
   total!: number;
   byShopStatus!: {
     pending_kyc: number;
+    pending_document: number;
     pending_verification: number;
-    active: number;
+    verified: number;
   };
   byRegistrationType!: {
     NORMAL: number;

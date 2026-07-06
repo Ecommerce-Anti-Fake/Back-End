@@ -602,7 +602,7 @@ export class ShopsRepository {
   }
 
   async findPendingVerificationShops(filters?: {
-    shopStatus?: 'pending_kyc' | 'pending_verification' | 'verified';
+    shopStatus?: 'pending_kyc' | 'pending_document' | 'pending_verification' | 'verified';
     registrationType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
     search?: string;
     page?: number;
@@ -695,6 +695,7 @@ export class ShopsRepository {
   async countShopsByStatusAndRegistrationType() {
     const [
       pendingKyc,
+      pendingDocument,
       pendingVerification,
       verified,
       normal,
@@ -703,6 +704,7 @@ export class ShopsRepository {
       distributor,
     ] = await this.prisma.$transaction([
       this.prisma.shop.count({ where: { shopStatus: 'pending_kyc' } }),
+      this.prisma.shop.count({ where: { shopStatus: 'pending_document' } }),
       this.prisma.shop.count({ where: { shopStatus: 'pending_verification' } }),
       this.prisma.shop.count({ where: { shopStatus: 'verified' } }),
       this.prisma.shop.count({ where: { registrationType: ShopRegistrationType.NORMAL } }),
@@ -714,6 +716,7 @@ export class ShopsRepository {
     return {
       byShopStatus: {
         pending_kyc: pendingKyc,
+        pending_document: pendingDocument,
         pending_verification: pendingVerification,
         verified,
       },
@@ -1207,16 +1210,21 @@ export class ShopsRepository {
       return null;
     }
 
-    const hasApprovedKyc =
-      shop.owner.kyc?.verificationStatus === 'approved' &&
-      shop.owner.kyc.documents.some((document) => document.side === 'FRONT') &&
-      shop.owner.kyc.documents.some((document) => document.side === 'BACK');
+    const hasRequiredKycDocuments =
+      shop.owner.kyc?.documents.some((document) => document.side === 'FRONT') === true &&
+      shop.owner.kyc?.documents.some((document) => document.side === 'BACK') === true;
+    const hasApprovedKyc = shop.owner.kyc?.verificationStatus === 'approved' && hasRequiredKycDocuments;
+
+    const hasShopDocument = shop.documents.length > 0;
 
     let nextStatus = 'pending_kyc';
-    if (hasApprovedKyc) {
+    if (hasRequiredKycDocuments) {
       const hasApprovedShopDocument = shop.documents.some((document) => document.reviewStatus === 'approved');
-
-      nextStatus = hasApprovedShopDocument ? 'verified' : 'pending_verification';
+      nextStatus = hasShopDocument
+        ? hasApprovedKyc && hasApprovedShopDocument
+          ? 'verified'
+          : 'pending_verification'
+        : 'pending_document';
     }
 
     return this.prisma.shop.update({

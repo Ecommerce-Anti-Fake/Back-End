@@ -90,6 +90,6 @@ export class CreateShopUseCase {
       return 'pending_kyc';
     }
 
-    return 'pending_verification';
+    return 'pending_document';
   }
 }

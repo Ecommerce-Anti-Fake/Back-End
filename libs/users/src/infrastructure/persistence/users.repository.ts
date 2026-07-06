@@ -823,6 +823,35 @@ export class UsersRepository {
       });
     });
   }
+
+  markOwnedShopsAfterKycSubmitted(userId: string) {
+    return this.prisma.$transaction([
+      this.prisma.shop.updateMany({
+        where: {
+          ownerUserId: userId,
+          shopStatus: 'pending_kyc',
+          documents: {
+            some: {},
+          },
+        },
+        data: {
+          shopStatus: 'pending_verification',
+        },
+      }),
+      this.prisma.shop.updateMany({
+        where: {
+          ownerUserId: userId,
+          shopStatus: 'pending_kyc',
+          documents: {
+            none: {},
+          },
+        },
+        data: {
+          shopStatus: 'pending_document',
+        },
+      }),
+    ]);
+  }
 }
 
 function hashFcmToken(token: string) {

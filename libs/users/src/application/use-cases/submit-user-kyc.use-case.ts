@@ -114,6 +114,7 @@ export class SubmitUserKycUseCase {
         documentSides: input.documents.map((document) => document.side),
       },
     });
+    await this.usersRepository.markOwnedShopsAfterKycSubmitted(input.userId);
 
     return toUserKycResponse(kyc);
   }

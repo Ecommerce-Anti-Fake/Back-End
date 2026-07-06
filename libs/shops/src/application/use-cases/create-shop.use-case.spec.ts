@@ -67,7 +67,7 @@ describe('CreateShopUseCase', () => {
     });
   });
 
-  it('should create manufacturer shop in pending_verification even when KYC is approved', async () => {
+  it('should create manufacturer shop in pending_document when KYC is approved and shop documents are missing', async () => {
     shopsRepositoryMock.countByOwnerUserId.mockResolvedValueOnce(0);
     shopsRepositoryMock.countCategoriesByIds.mockResolvedValueOnce(1);
     shopsRepositoryMock.findCategoriesByIds.mockResolvedValueOnce([{ id: 'category-1', riskTier: 'LOW' }]);
@@ -80,7 +80,7 @@ describe('CreateShopUseCase', () => {
       registrationType: 'MANUFACTURER',
       businessType: 'manufacturer',
       taxCode: '0312345678',
-      shopStatus: 'pending_verification',
+      shopStatus: 'pending_document',
       createdAt: new Date('2026-04-15T10:00:00.000Z'),
       registeredCategories: [],
     });
@@ -96,16 +96,16 @@ describe('CreateShopUseCase', () => {
 
     expect(shopsRepositoryMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        shopStatus: 'pending_verification',
+        shopStatus: 'pending_document',
       }),
     );
     expect(result).toMatchObject({
       id: 'shop-2',
-      shopStatus: 'pending_verification',
+      shopStatus: 'pending_document',
     });
   });
 
-  it('should create normal shop in pending_verification when KYC is approved until shop documents are approved', async () => {
+  it('should create normal shop in pending_document when KYC is approved until shop documents are submitted', async () => {
     shopsRepositoryMock.countByOwnerUserId.mockResolvedValueOnce(0);
     shopsRepositoryMock.countCategoriesByIds.mockResolvedValueOnce(1);
     shopsRepositoryMock.findCategoriesByIds.mockResolvedValueOnce([{ id: 'category-1', riskTier: 'HIGH' }]);
@@ -118,7 +118,7 @@ describe('CreateShopUseCase', () => {
       registrationType: 'NORMAL',
       businessType: 'retail',
       taxCode: null,
-      shopStatus: 'pending_verification',
+      shopStatus: 'pending_document',
       createdAt: new Date('2026-04-15T10:00:00.000Z'),
       registeredCategories: [],
     });
@@ -134,7 +134,7 @@ describe('CreateShopUseCase', () => {
 
     expect(shopsRepositoryMock.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        shopStatus: 'pending_verification',
+        shopStatus: 'pending_document',
         categoryRegistrations: [
           expect.objectContaining({
             categoryId: 'category-1',
@@ -146,7 +146,7 @@ describe('CreateShopUseCase', () => {
     );
     expect(result).toMatchObject({
       id: 'shop-3',
-      shopStatus: 'pending_verification',
+      shopStatus: 'pending_document',
     });
   });
 
