@@ -112,6 +112,9 @@ export class ChatThreadListItemResponseDto {
   @ApiProperty({ example: 'Shop AntiFake' })
   chatUserName!: string;
 
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/shop-avatar.jpg', nullable: true })
+  chatUserAvatar!: string | null;
+
   @ApiProperty({
     type: ChatThreadListItemMessageResponseDto,
     isArray: true,
@@ -168,6 +171,9 @@ export class ChatThreadDetailResponseDto {
 
   @ApiProperty({ example: 'Shop AntiFake' })
   chatUserName!: string;
+
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/shop-avatar.jpg', nullable: true })
+  chatUserAvatar!: string | null;
 
   @ApiProperty({
     type: ChatThreadDetailMessageResponseDto,

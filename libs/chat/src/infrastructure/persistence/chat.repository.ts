@@ -28,6 +28,7 @@ export class ChatRepository {
       shop: {
         select: {
           shopName: true,
+          avatarMedia: { select: { secureUrl: true } },
         },
       },
       buyer: {
@@ -35,6 +36,7 @@ export class ChatRepository {
           displayName: true,
           email: true,
           phone: true,
+          avatarMedia: { select: { secureUrl: true } },
         },
       },
       seller: {
@@ -202,8 +204,20 @@ export class ChatRepository {
       sentAt: messageTake === 1 ? 'desc' : 'asc',
     };
     return {
-      shop: { select: { shopName: true } },
-      buyer: { select: { displayName: true, email: true, phone: true } },
+      shop: {
+        select: {
+          shopName: true,
+          avatarMedia: { select: { secureUrl: true } },
+        },
+      },
+      buyer: {
+        select: {
+          displayName: true,
+          email: true,
+          phone: true,
+          avatarMedia: { select: { secureUrl: true } },
+        },
+      },
       seller: { select: { displayName: true, email: true, phone: true } },
       messages: {
         ...(messageTake ? { take: messageTake } : {}),

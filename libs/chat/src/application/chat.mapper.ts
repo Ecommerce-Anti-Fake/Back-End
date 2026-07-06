@@ -2,6 +2,7 @@ type ChatUserRecord = {
   displayName: string | null;
   email: string | null;
   phone: string | null;
+  avatarMedia?: { secureUrl: string } | null;
 };
 
 type ChatMessageWithSender = {
@@ -31,7 +32,7 @@ type ChatThreadWithRelations = {
   buyerUserId: string;
   sellerUserId: string;
   createdAt: Date;
-  shop: { shopName: string };
+  shop: { shopName: string; avatarMedia?: { secureUrl: string } | null };
   buyer: ChatUserRecord;
   seller: ChatUserRecord;
   messages?: ChatMessageWithSender[];
@@ -86,6 +87,9 @@ export function toChatThreadDetailResponse(
     id: thread.id,
     chatUserID: isBuyer ? thread.shopId : thread.buyerUserId,
     chatUserName: isBuyer ? thread.shop.shopName : chatDisplayName(thread.buyer),
+    chatUserAvatar: isBuyer
+      ? thread.shop.avatarMedia?.secureUrl ?? null
+      : thread.buyer.avatarMedia?.secureUrl ?? null,
     messages: messagesPage.messages.map((message) => ({
       id: message.id,
       senderUserId: message.senderUserId,
@@ -107,6 +111,9 @@ export function toChatThreadListItemResponse(thread: ChatThreadWithRelations, re
     id: thread.id,
     chatUserID: isBuyer ? thread.shopId : thread.buyerUserId,
     chatUserName: isBuyer ? thread.shop.shopName : chatDisplayName(thread.buyer),
+    chatUserAvatar: isBuyer
+      ? thread.shop.avatarMedia?.secureUrl ?? null
+      : thread.buyer.avatarMedia?.secureUrl ?? null,
     lastMessage: lastMessage
       ? [{
           id: lastMessage.id,
