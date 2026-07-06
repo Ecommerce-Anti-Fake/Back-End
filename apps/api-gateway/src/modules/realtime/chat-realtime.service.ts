@@ -39,7 +39,7 @@ type ChatThreadRecord = {
 };
 
 type ChatAck =
-  | { ok: true; thread?: unknown; clientMessageId?: string | null }
+  | { ok: true; thread?: unknown; message?: unknown; clientMessageId?: string | null }
   | { ok: false; error: string };
 
 type ChatAckCallback = (ack: ChatAck) => void;
@@ -167,14 +167,16 @@ export class ChatRealtimeService implements OnModuleDestroy {
         clientMessageId,
         messageType: 'TEXT',
       });
+      const message = extractCreatedChatMessage(thread);
       const event = {
         eventName: 'chat.message.created.v1',
         threadId,
         thread,
+        message,
         clientMessageId,
       };
       this.io?.to(this.roomName(threadId)).emit('chat:message.created', event);
-      ack?.({ ok: true, thread, clientMessageId });
+      ack?.({ ok: true, thread, message, clientMessageId });
     } catch (error) {
       this.logger.warn({
         metric: 'realtime.websocket.send_failed',
@@ -325,4 +327,24 @@ export class ChatRealtimeService implements OnModuleDestroy {
   private ackError(ack: ChatAckCallback | undefined, error: string) {
     ack?.({ ok: false, error });
   }
+}
+
+function extractCreatedChatMessage(thread: unknown) {
+  if (!thread || typeof thread !== 'object') {
+    return null;
+  }
+
+  const record = thread as { lastMessage?: unknown; messages?: unknown };
+  if (record.lastMessage) {
+    if (Array.isArray(record.lastMessage)) {
+      return record.lastMessage[0] ?? null;
+    }
+    return record.lastMessage;
+  }
+
+  if (Array.isArray(record.messages)) {
+    return record.messages.at(-1) ?? null;
+  }
+
+  return null;
 }
