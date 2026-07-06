@@ -11,6 +11,7 @@ import {
   ListSocialCommentsQueryDto,
   ListSocialPostsQueryDto,
   SocialCommentMutationResponseDto,
+  SocialCommentResponseDto,
   SocialCommentReplyMutationResponseDto,
   SocialCommentRepliesPageResponseDto,
   SocialCommentsPageResponseDto,
@@ -249,6 +250,24 @@ export class SocialController {
       requesterRole: requester?.role,
       reactionType: dto.reactionType ?? 'LIKE',
     });
+  }
+
+  @ApiOperation({ summary: 'Thich binh luan cong dong' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ description: 'Trang thai binh luan sau khi thich.', type: SocialCommentResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('social/comments/:commentId/likes')
+  setSocialCommentLike(@Param('commentId') commentId: string, @CurrentUserId() requesterUserId: string) {
+    return this.catalogRpcService.setSocialCommentLike({ commentId, requesterUserId });
+  }
+
+  @ApiOperation({ summary: 'Bo thich binh luan cong dong' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ description: 'Trang thai binh luan sau khi bo thich.', type: SocialCommentResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Delete('social/comments/:commentId/likes')
+  removeSocialCommentLike(@Param('commentId') commentId: string, @CurrentUserId() requesterUserId: string) {
+    return this.catalogRpcService.removeSocialCommentLike({ commentId, requesterUserId });
   }
 
   @ApiOperation({ summary: 'Chia se bai viet cong dong' })

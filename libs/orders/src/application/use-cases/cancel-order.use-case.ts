@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
-import { OrderReversalService } from '../services';
+import { OrderNotificationService, OrderReversalService } from '../services';
 import { toOrderResponse } from './orders.mapper';
 
 @Injectable()
@@ -8,6 +8,7 @@ export class CancelOrderUseCase {
   constructor(
     private readonly ordersRepository: OrdersRepository,
     private readonly orderReversalService: OrderReversalService,
+    private readonly orderNotificationService: OrderNotificationService,
   ) {}
 
   async execute(input: { id: string; requesterUserId: string }) {
@@ -29,6 +30,7 @@ export class CancelOrderUseCase {
     }
 
     const updatedOrder = await this.orderReversalService.cancelOrder(order.id, input.requesterUserId);
+    await this.orderNotificationService.notifyCancelled(updatedOrder, input.requesterUserId);
     return toOrderResponse(updatedOrder);
   }
 }

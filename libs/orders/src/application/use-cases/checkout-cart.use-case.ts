@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CartWithItems, OrdersRepository } from '../../infrastructure/persistence/orders.repository';
-import { OrderPlacementService, PayOSPaymentService } from '../services';
+import { OrderNotificationService, OrderPlacementService, PayOSPaymentService } from '../services';
 import { QuoteCartShippingOptionsUseCase } from './quote-cart-shipping-options.use-case';
 
 type CheckoutCartInput = {
@@ -27,6 +27,7 @@ export class CheckoutCartUseCase {
     private readonly orderPlacementService: OrderPlacementService,
     private readonly quoteCartShippingOptionsUseCase: QuoteCartShippingOptionsUseCase,
     private readonly payOSPaymentService: PayOSPaymentService,
+    private readonly orderNotificationService: OrderNotificationService,
   ) {}
 
   async execute(input: CheckoutCartInput) {
@@ -70,6 +71,7 @@ export class CheckoutCartUseCase {
           }
         : undefined,
     });
+    await this.orderNotificationService.notifyCreated(order);
 
     if (input.paymentMethod === 'COD') {
       await this.ordersRepository.removeCartItems({

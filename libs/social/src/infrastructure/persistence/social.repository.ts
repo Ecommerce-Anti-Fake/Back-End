@@ -165,6 +165,7 @@ export class SocialRepository {
     return this.prisma.socialComment.findUnique({
       where: { id: commentId },
       include: {
+        ...this.socialCommentReplyInclude(requesterUserId),
         post: { include: this.socialPostInclude(requesterUserId) },
       },
     });
@@ -271,10 +272,11 @@ export class SocialRepository {
     authorUserId: string;
     body: string;
   }) {
-    await this.prisma.socialComment.create({
+    const comment = await this.prisma.socialComment.create({
       data: { ...input, parentCommentId: null },
     });
-    return this.findSocialPostById(input.postId, input.authorUserId);
+    const post = await this.findSocialPostById(input.postId, input.authorUserId);
+    return { post, commentId: comment.id };
   }
 
   async createSocialCommentReply(input: {
@@ -341,6 +343,32 @@ export class SocialRepository {
       },
     });
     return this.findSocialPostById(input.postId, input.userId);
+  }
+
+  async setSocialCommentLike(input: { commentId: string; userId: string }) {
+    await this.prisma.socialCommentLike.upsert({
+      where: { commentId_userId: input },
+      create: input,
+      update: {},
+    });
+    return this.findSocialCommentById(input.commentId, input.userId);
+  }
+
+  async removeSocialCommentLike(input: { commentId: string; userId: string }) {
+    await this.prisma.socialCommentLike.deleteMany({ where: input });
+    return this.findSocialCommentById(input.commentId, input.userId);
+  }
+
+  createNotification(input: {
+    userId: string;
+    notificationType: string;
+    title: string;
+    body: string;
+    targetType: string;
+    targetId: string;
+    dedupeKey: string;
+  }) {
+    return this.prisma.notification.upsert({ where: { dedupeKey: input.dedupeKey }, create: input, update: {} });
   }
 
   async shareSocialPost(input: { postId: string; userId: string }) {

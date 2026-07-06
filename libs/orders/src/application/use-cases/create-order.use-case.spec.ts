@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { WholesalePricingPort } from '../ports';
-import { OrderPlacementService, PayOSPaymentService, ShippingCarrierAdapterService } from '../services';
+import { OrderNotificationService, OrderPlacementService, PayOSPaymentService, ShippingCarrierAdapterService } from '../services';
 import { CreateOrderUseCase } from './create-order.use-case';
 
 describe('CreateOrderUseCase', () => {
@@ -18,6 +18,7 @@ describe('CreateOrderUseCase', () => {
   const wholesalePricing = { resolve: jest.fn() };
   const payOSPaymentService = { createPaymentLink: jest.fn() };
   const shippingCarrierAdapter = { quoteShipment: jest.fn() };
+  const orderNotificationService = { notifyCreated: jest.fn() };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -32,6 +33,7 @@ describe('CreateOrderUseCase', () => {
         { provide: WholesalePricingPort, useValue: wholesalePricing },
         { provide: PayOSPaymentService, useValue: payOSPaymentService },
         { provide: ShippingCarrierAdapterService, useValue: shippingCarrierAdapter },
+        { provide: OrderNotificationService, useValue: orderNotificationService },
       ],
     }).compile();
     useCase = module.get(CreateOrderUseCase);
@@ -83,5 +85,6 @@ describe('CreateOrderUseCase', () => {
         }),
       }),
     );
+    expect(orderNotificationService.notifyCreated).toHaveBeenCalledWith(expect.objectContaining({ id: 'order-1' }));
   });
 });

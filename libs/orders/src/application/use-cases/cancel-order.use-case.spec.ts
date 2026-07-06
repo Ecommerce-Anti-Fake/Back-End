@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
-import { OrderReversalService } from '../services';
+import { OrderNotificationService, OrderReversalService } from '../services';
 import { CancelOrderUseCase } from './cancel-order.use-case';
 
 describe('CancelOrderUseCase', () => {
@@ -13,6 +13,7 @@ describe('CancelOrderUseCase', () => {
   const orderReversalServiceMock = {
     cancelOrder: jest.fn(),
   };
+  const orderNotificationServiceMock = { notifyCancelled: jest.fn() };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -22,6 +23,7 @@ describe('CancelOrderUseCase', () => {
         CancelOrderUseCase,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
         { provide: OrderReversalService, useValue: orderReversalServiceMock },
+        { provide: OrderNotificationService, useValue: orderNotificationServiceMock },
       ],
     }).compile();
 
@@ -40,6 +42,10 @@ describe('CancelOrderUseCase', () => {
     });
 
     expect(orderReversalServiceMock.cancelOrder).toHaveBeenCalledWith('order-1', 'seller-user-1');
+    expect(orderNotificationServiceMock.notifyCancelled).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'order-1' }),
+      'seller-user-1',
+    );
     expect(result).toMatchObject({
       id: 'order-1',
       orderStatus: 'cancelled',

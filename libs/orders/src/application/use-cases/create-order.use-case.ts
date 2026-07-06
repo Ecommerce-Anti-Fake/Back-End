@@ -1,7 +1,7 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { OfferForOrdering, OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { WholesalePricingPort } from '../ports';
-import { OrderPlacementService, PayOSPaymentService, ShippingCarrierAdapterService } from '../services';
+import { OrderNotificationService, OrderPlacementService, PayOSPaymentService, ShippingCarrierAdapterService } from '../services';
 import { toOrderResponse } from './orders.mapper';
 
 @Injectable()
@@ -12,6 +12,7 @@ export class CreateOrderUseCase {
     @Inject(WholesalePricingPort) private readonly wholesalePricingPort: WholesalePricingPort,
     private readonly payOSPaymentService: PayOSPaymentService,
     private readonly shippingCarrierAdapterService: ShippingCarrierAdapterService,
+    private readonly orderNotificationService: OrderNotificationService,
   ) {}
 
   async execute(input: {
@@ -124,6 +125,7 @@ export class CreateOrderUseCase {
           }
         : undefined,
     });
+    await this.orderNotificationService.notifyCreated(order);
 
     const response = toOrderResponse(order);
     if (paymentMethod !== 'PAYOS' || input.skipPayOSPaymentLink) return response;

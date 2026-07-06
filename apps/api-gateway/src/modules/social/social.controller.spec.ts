@@ -33,6 +33,12 @@ describe('SocialController routes', () => {
       Reflect.getMetadata(PATH_METADATA, SocialController.prototype.removeSocialReaction),
     ).toBe('social/posts/:postId/reactions');
     expect(
+      Reflect.getMetadata(PATH_METADATA, SocialController.prototype.setSocialCommentLike),
+    ).toBe('social/comments/:commentId/likes');
+    expect(
+      Reflect.getMetadata(PATH_METADATA, SocialController.prototype.removeSocialCommentLike),
+    ).toBe('social/comments/:commentId/likes');
+    expect(
       Reflect.getMetadata(PATH_METADATA, SocialController.prototype.shareSocialPost),
     ).toBe('social/posts/:postId/shares');
     expect(

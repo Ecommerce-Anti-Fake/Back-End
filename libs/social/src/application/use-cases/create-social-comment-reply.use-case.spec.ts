@@ -5,6 +5,7 @@ describe('CreateSocialCommentReplyUseCase', () => {
   const repository = {
     findSocialCommentById: jest.fn(),
     createSocialCommentReply: jest.fn(),
+    createNotification: jest.fn(),
   };
   const useCase = new CreateSocialCommentReplyUseCase(repository as never);
 
@@ -14,6 +15,7 @@ describe('CreateSocialCommentReplyUseCase', () => {
       id: 'comment-a',
       postId: 'post-1',
       visibility: 'PUBLIC',
+      authorUserId: 'user-a',
     });
     repository.createSocialCommentReply.mockResolvedValue(reply());
   });
@@ -35,6 +37,11 @@ describe('CreateSocialCommentReplyUseCase', () => {
       userId: 'user-a',
       userName: 'User A',
     });
+    expect(repository.createNotification).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 'user-a',
+      notificationType: 'SOCIAL_COMMENT_REPLY',
+      dedupeKey: 'SOCIAL_COMMENT_REPLY:reply-b:user-a',
+    }));
   });
 
   it('rejects replies to missing or hidden parents', async () => {

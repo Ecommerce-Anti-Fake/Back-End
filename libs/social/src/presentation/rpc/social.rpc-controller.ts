@@ -10,6 +10,7 @@ import type {
   ListSocialCommentsMessage,
   ListSocialPostsMessage,
   SetSocialReactionMessage,
+  SocialCommentLikeMessage,
   SocialPostLookupMessage,
   UpdateSocialPostVisibilityMessage,
 } from '@contracts';
@@ -22,6 +23,8 @@ import {
   ListSocialCommentsUseCase,
   ListSocialPostsUseCase,
   RemoveSocialReactionUseCase,
+  RemoveSocialCommentLikeUseCase,
+  SetSocialCommentLikeUseCase,
   SetSocialReactionUseCase,
   ShareSocialPostUseCase,
   UpdateSocialPostVisibilityUseCase,
@@ -39,6 +42,8 @@ export class SocialRpcController {
     private readonly createSocialCommentReplyUseCase: CreateSocialCommentReplyUseCase,
     private readonly setSocialReactionUseCase: SetSocialReactionUseCase,
     private readonly removeSocialReactionUseCase: RemoveSocialReactionUseCase,
+    private readonly setSocialCommentLikeUseCase: SetSocialCommentLikeUseCase,
+    private readonly removeSocialCommentLikeUseCase: RemoveSocialCommentLikeUseCase,
     private readonly shareSocialPostUseCase: ShareSocialPostUseCase,
     private readonly updateSocialPostVisibilityUseCase: UpdateSocialPostVisibilityUseCase,
   ) {}
@@ -123,6 +128,24 @@ export class SocialRpcController {
   async removeSocialReaction(@Payload() payload: SetSocialReactionMessage) {
     try {
       return await this.removeSocialReactionUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.setSocialCommentLike)
+  async setSocialCommentLike(@Payload() payload: SocialCommentLikeMessage) {
+    try {
+      return await this.setSocialCommentLikeUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.removeSocialCommentLike)
+  async removeSocialCommentLike(@Payload() payload: SocialCommentLikeMessage) {
+    try {
+      return await this.removeSocialCommentLikeUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

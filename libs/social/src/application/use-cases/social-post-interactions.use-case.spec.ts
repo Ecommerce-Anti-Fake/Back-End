@@ -15,14 +15,16 @@ describe('social post interaction use cases in SocialModule', () => {
     removeSocialReaction: jest.fn(),
     shareSocialPost: jest.fn(),
     updateSocialPostVisibility: jest.fn(),
+    createNotification: jest.fn(),
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
     repository.findSocialPostById.mockResolvedValue(socialPost());
-    repository.createSocialComment.mockResolvedValue(
-      socialPost({ commentCount: 1 }),
-    );
+    repository.createSocialComment.mockResolvedValue({
+      post: socialPost({ commentCount: 1 }),
+      commentId: 'comment-1',
+    });
     repository.setSocialReaction.mockResolvedValue(
       socialPost({ liked: true, reactionCount: 1 }),
     );
@@ -48,6 +50,12 @@ describe('social post interaction use cases in SocialModule', () => {
       body: 'Dong y',
     });
     expect(result.stats.comments).toBe(1);
+    expect(repository.createNotification).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 'user-1',
+      notificationType: 'SOCIAL_POST_COMMENT',
+      targetType: 'SOCIAL_POST',
+      targetId: 'post-1',
+    }));
   });
 
   it('sets and removes a like reaction idempotently through repository upsert/delete', async () => {
@@ -75,6 +83,11 @@ describe('social post interaction use cases in SocialModule', () => {
     });
     expect(liked.viewer.liked).toBe(true);
     expect(unliked.viewer.liked).toBe(false);
+    expect(repository.createNotification).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 'user-1',
+      notificationType: 'SOCIAL_POST_REACTION',
+      dedupeKey: 'SOCIAL_POST_REACTION:post-1:user-2',
+    }));
   });
 
   it('records one share per user', async () => {

@@ -28,15 +28,27 @@ export class CreateSocialCommentUseCase {
       throw new NotFoundException('Social post not found');
     }
 
-    const updatedPost = await this.socialRepository.createSocialComment({
+    const created = await this.socialRepository.createSocialComment({
       postId: input.postId,
       authorUserId: input.requesterUserId,
       body,
     });
-    if (!updatedPost) {
+    if (!created.post) {
       throw new NotFoundException('Social post not found');
     }
 
-    return toSocialPostResponse(updatedPost, input.requesterUserId);
+    if (post.authorUserId !== input.requesterUserId) {
+      await this.socialRepository.createNotification({
+        userId: post.authorUserId,
+        notificationType: 'SOCIAL_POST_COMMENT',
+        title: 'Binh luan moi',
+        body: 'Bai viet cua ban vua co binh luan moi.',
+        targetType: 'SOCIAL_POST',
+        targetId: post.id,
+        dedupeKey: `SOCIAL_POST_COMMENT:${created.commentId}:${post.authorUserId}`,
+      });
+    }
+
+    return toSocialPostResponse(created.post, input.requesterUserId);
   }
 }

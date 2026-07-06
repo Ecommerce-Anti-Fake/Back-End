@@ -103,6 +103,8 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   createSocialCommentReply: 'products.create-social-comment-reply',
   setSocialReaction: 'products.set-social-reaction',
   removeSocialReaction: 'products.remove-social-reaction',
+  setSocialCommentLike: 'products.set-social-comment-like',
+  removeSocialCommentLike: 'products.remove-social-comment-like',
   shareSocialPost: 'products.share-social-post',
   updateSocialPostVisibility: 'products.update-social-post-visibility',
   listLiveSessions: 'products.list-live-sessions',
@@ -436,6 +438,15 @@ export type UpdateShopProfileMessage = {
   warehouseProvinceName?: string | null;
   warehouseWardCode?: string | null;
   warehouseWardName?: string | null;
+  avatar?: ShopProfileUploadMessageFile;
+  banner?: ShopProfileUploadMessageFile;
+};
+
+type ShopProfileUploadMessageFile = {
+  buffer: Buffer | { data?: number[] };
+  mimetype: string;
+  originalname?: string;
+  size: number;
 };
 
 export type UpdateShopRegistrationTypeMessage = {
@@ -692,6 +703,11 @@ export type CreateSocialCommentReplyMessage = {
 
 export type SetSocialReactionMessage = SocialPostLookupMessage & {
   reactionType?: 'LIKE';
+};
+
+export type SocialCommentLikeMessage = {
+  commentId: string;
+  requesterUserId: string;
 };
 
 export type UpdateSocialPostVisibilityMessage = SocialPostLookupMessage & {

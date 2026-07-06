@@ -28,6 +28,18 @@ export class SetSocialReactionUseCase {
       throw new NotFoundException('Social post not found');
     }
 
+    if (post.authorUserId !== input.requesterUserId) {
+      await this.socialRepository.createNotification({
+        userId: post.authorUserId,
+        notificationType: 'SOCIAL_POST_REACTION',
+        title: 'Luot thich moi',
+        body: 'Bai viet cua ban vua duoc thich.',
+        targetType: 'SOCIAL_POST',
+        targetId: post.id,
+        dedupeKey: `SOCIAL_POST_REACTION:${post.id}:${input.requesterUserId}`,
+      });
+    }
+
     return toSocialPostResponse(updatedPost, input.requesterUserId);
   }
 }

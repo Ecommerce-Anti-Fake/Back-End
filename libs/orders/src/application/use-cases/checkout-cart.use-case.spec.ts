@@ -12,6 +12,7 @@ describe('CheckoutCartUseCase', () => {
   const orderPlacementService = { createAggregateOrder: jest.fn() };
   const quoteCartShippingOptionsUseCase = { execute: jest.fn() };
   const payOSPaymentService = { createPaymentLink: jest.fn() };
+  const orderNotificationService = { notifyCreated: jest.fn() };
   let useCase: CheckoutCartUseCase;
 
   beforeEach(() => {
@@ -21,6 +22,7 @@ describe('CheckoutCartUseCase', () => {
       orderPlacementService as never,
       quoteCartShippingOptionsUseCase as never,
       payOSPaymentService as never,
+      orderNotificationService as never,
     );
     ordersRepository.getOrCreateActiveCart.mockResolvedValue(createCart());
     ordersRepository.findDefaultAddressByUserId.mockResolvedValue({
@@ -78,6 +80,7 @@ describe('CheckoutCartUseCase', () => {
       buyerUserId: 'buyer-1',
       cartItemIds: ['cart-item-1', 'cart-item-2'],
     });
+    expect(orderNotificationService.notifyCreated).toHaveBeenCalledWith(expect.objectContaining({ id: 'order-1' }));
   });
 
   it('creates one pending PayOS order and keeps cart items until webhook success', async () => {

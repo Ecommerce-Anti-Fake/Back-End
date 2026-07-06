@@ -34,6 +34,17 @@ export class CreateSocialCommentReplyUseCase {
       authorUserId: input.requesterUserId,
       body,
     });
+    if (parentComment.authorUserId !== input.requesterUserId) {
+      await this.socialRepository.createNotification({
+        userId: parentComment.authorUserId,
+        notificationType: 'SOCIAL_COMMENT_REPLY',
+        title: 'Phan hoi moi',
+        body: 'Binh luan cua ban vua co phan hoi moi.',
+        targetType: 'SOCIAL_COMMENT',
+        targetId: parentComment.id,
+        dedupeKey: `SOCIAL_COMMENT_REPLY:${reply.id}:${parentComment.authorUserId}`,
+      });
+    }
     return toSocialCommentReplyResponse(reply);
   }
 }

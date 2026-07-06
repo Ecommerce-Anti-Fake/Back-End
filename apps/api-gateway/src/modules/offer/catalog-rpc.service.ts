@@ -41,6 +41,7 @@ import {
   SendChatMessageMessage,
   SetOfferPrimaryMediaMessage,
   SetSocialReactionMessage,
+  SocialCommentLikeMessage,
   SocialPostLookupMessage,
   StartChatThreadMessage,
   LiveSessionLookupMessage,
@@ -226,6 +227,14 @@ export class CatalogRpcService {
 
   removeSocialReaction(payload: SetSocialReactionMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.removeSocialReaction, payload);
+  }
+
+  setSocialCommentLike(payload: SocialCommentLikeMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.setSocialCommentLike, payload);
+  }
+
+  removeSocialCommentLike(payload: SocialCommentLikeMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.removeSocialCommentLike, payload);
   }
 
   shareSocialPost(payload: SocialPostLookupMessage) {

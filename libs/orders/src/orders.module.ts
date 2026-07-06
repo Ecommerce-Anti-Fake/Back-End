@@ -6,6 +6,7 @@ import { MediaModule } from '@media';
 import { OrderInventoryPort, WholesalePricingPort } from './application/ports';
 import {
   OrderInventoryService,
+  OrderNotificationService,
   OrderPlacementService,
   OrderReversalService,
   PayOSPaymentService,
@@ -128,6 +129,7 @@ import { CATALOG_SERVICE_CLIENT } from '@contracts';
       },
     },
     OrderInventoryService,
+    OrderNotificationService,
     OrderPlacementService,
     OrderReversalService,
     PayOSPaymentService,
@@ -192,6 +194,7 @@ import { CATALOG_SERVICE_CLIENT } from '@contracts';
     OrderInventoryPort,
     WholesalePricingPort,
     OrderInventoryService,
+    OrderNotificationService,
     OrderPlacementService,
     OrderReversalService,
     PayOSPaymentService,
