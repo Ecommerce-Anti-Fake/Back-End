@@ -114,10 +114,7 @@ export class QuoteCartShippingOptionsUseCase {
       (total, item) => total + Number(item.offer.price.toString()) * item.quantity,
       0,
     );
-    const services = await this.shippingCarrierAdapterService.listGhnServices(
-      destination.shippingDistrictId,
-      parseInternalAddressWardCode(group.warehouseWardCode)?.districtId ?? null,
-    );
+    const services = await this.shippingCarrierAdapterService.listGhnServices(destination.shippingDistrictId);
     const quoted = await Promise.all(
       services.map(async (service, index) => {
         const quote = await this.shippingCarrierAdapterService.quoteShipment({

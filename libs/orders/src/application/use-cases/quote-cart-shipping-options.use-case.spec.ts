@@ -61,7 +61,7 @@ describe('QuoteCartShippingOptionsUseCase', () => {
     });
 
     expect(shippingCarrierAdapterMock.listGhnServices).toHaveBeenCalledTimes(1);
-    expect(shippingCarrierAdapterMock.listGhnServices).toHaveBeenCalledWith(1450, 1442);
+    expect(shippingCarrierAdapterMock.listGhnServices).toHaveBeenCalledWith(1450);
     expect(shippingCarrierAdapterMock.quoteShipment).toHaveBeenCalledTimes(1);
     expect(shippingCarrierAdapterMock.quoteShipment).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -154,6 +154,28 @@ describe('QuoteCartShippingOptionsUseCase', () => {
         shippingWardCode: '21211',
       }),
     );
+  });
+
+  it('does not use seller warehouse district for GHN service lookup', async () => {
+    ordersRepositoryMock.getOrCreateActiveCart.mockResolvedValueOnce({
+      id: 'cart-1',
+      buyerUserId: 'buyer-1',
+      cartStatus: 'ACTIVE',
+      items: [createCartItem({ id: 'item-1', warehouseWardCode: 'VN-P202-D9999-W20101' })],
+    });
+    mockDefaultAddress(ordersRepositoryMock);
+    shippingCarrierAdapterMock.listGhnServices.mockResolvedValueOnce([
+      { serviceId: null, serviceTypeId: 2, shortName: 'GHN' },
+    ]);
+    shippingCarrierAdapterMock.quoteShipment.mockResolvedValueOnce({
+      shippingFeeAmount: 30000,
+      serviceId: null,
+      serviceTypeId: 2,
+    });
+
+    await useCase.execute({ buyerUserId: 'buyer-1', cartItemIds: ['item-1'] });
+
+    expect(shippingCarrierAdapterMock.listGhnServices).toHaveBeenCalledWith(1450);
   });
 
   it('requires parcel snapshots before quoting GHN options', async () => {
