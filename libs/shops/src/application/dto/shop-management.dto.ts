@@ -746,39 +746,71 @@ export class AdminShopRegistrationDetailResponseDto {
 }
 
 export class AdminShopVerificationDetailResponseDto {
-  @ApiProperty({ type: ShopResponseDto })
-  shop!: ShopResponseDto;
-
-  @ApiProperty({ type: ShopVerificationSummaryResponseDto })
-  summary!: ShopVerificationSummaryResponseDto;
-
-  @ApiProperty({ type: ShopDocumentResponseDto, isArray: true })
-  shopDocuments!: ShopDocumentResponseDto[];
-
   @ApiProperty({
-    description: 'Ho so shop duoc nhom theo loai tai lieu, gom lan nop moi nhat va lich su review.',
-    isArray: true,
+    example: {
+      id: 'shop-1',
+      shopName: 'E Shop',
+      registrationType: 'DISTRIBUTOR',
+      businessType: 'MANUFACTURER',
+      taxCode: '023847672124',
+      status: 'pending_verification',
+      createdAt: '2026-07-03T07:54:57.000Z',
+    },
   })
-  shopDocumentGroups!: Array<{
-    docType: string;
-    latestSubmission: ShopDocumentResponseDto;
-    history: ShopDocumentResponseDto[];
-  }>;
-
-  @ApiProperty({
-    description: 'Timeline hoat dong verification cua shop.',
-    isArray: true,
-  })
-  timeline!: Array<{
+  shop!: {
     id: string;
-    action: string;
-    fromStatus: string | null;
-    toStatus: string | null;
-    note: string | null;
-    actorUserId: string;
-    actorDisplayName: string | null;
-    actorEmail: string | null;
+    shopName: string;
+    registrationType: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
+    businessType: string;
+    taxCode: string | null;
+    status: string;
     createdAt: Date;
+  };
+
+  @ApiProperty({
+    example: { id: 'user-1', displayName: 'Nguyen Van A', email: 'abc@gmail.com', phone: '0987654321' },
+  })
+  owner!: { id: string; displayName: string | null; email: string | null; phone: string | null };
+
+  @ApiProperty({ example: [{ id: 'category-1', name: 'Thuc pham' }], isArray: true })
+  categories!: Array<{ id: string; name: string }>;
+
+  @ApiPropertyOptional({
+    nullable: true,
+    example: {
+      type: 'CCCD',
+      frontImage: 'https://example.com/front.jpg',
+      backImage: 'https://example.com/back.jpg',
+      status: 'pending',
+    },
+  })
+  kyc!: {
+    type: string;
+    frontImage: string | null;
+    backImage: string | null;
+    status: string;
+  } | null;
+
+  @ApiProperty({
+    example: [
+      {
+        id: 'requirement-1',
+        code: 'BUSINESS_LICENSE',
+        name: 'Giay phep kinh doanh',
+        required: true,
+        status: 'pending',
+        files: ['https://example.com/business-license.jpg'],
+      },
+    ],
+    isArray: true,
+  })
+  documents!: Array<{
+    id: string;
+    code: string;
+    name: string;
+    required: boolean;
+    status: string;
+    files: string[];
   }>;
 }
 

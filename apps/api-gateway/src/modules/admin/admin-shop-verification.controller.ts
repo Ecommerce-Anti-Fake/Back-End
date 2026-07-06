@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/co
 import { ApiBearerAuth, ApiForbiddenResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
 import {
+  AdminShopVerificationDetailResponseDto,
   AdminShopRegistrationDetailResponseDto,
   PendingVerificationShopQueryDto,
   PaginatedPendingVerificationShopResponseDto,
@@ -39,6 +40,7 @@ export class AdminShopVerificationController {
 
   @ApiOperation({ summary: 'Admin lay chi tiet verification cua mot shop' })
   @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: AdminShopVerificationDetailResponseDto })
   @ApiForbiddenResponse({ description: 'Chi admin moi co quyen truy cap.' })
   @Roles('admin')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)

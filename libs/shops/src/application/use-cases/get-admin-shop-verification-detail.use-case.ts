@@ -14,7 +14,6 @@ export class GetAdminShopVerificationDetailUseCase {
       throw new NotFoundException('Shop not found');
     }
 
-    const timeline = await this.shopsRepository.findAuditLogsByTarget('SHOP_VERIFICATION', shop.id);
-    return toAdminShopVerificationDetailResponse(shop, timeline);
+    return toAdminShopVerificationDetailResponse(shop);
   }
 }

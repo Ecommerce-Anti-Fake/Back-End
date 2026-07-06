@@ -248,66 +248,55 @@ export function toPendingVerificationShopResponse(shop: PendingVerificationShopR
   };
 }
 
-export function toAdminShopVerificationDetailResponse(shop: AdminVerificationDetailRecord, timeline: AuditLogRecord[]) {
+export function toAdminShopVerificationDetailResponse(shop: AdminVerificationDetailRecord) {
   const shopDocuments = shop.documents.map(toShopDocumentResponse);
-
-  const shopDocumentGroups = Object.values(
-    shopDocuments.reduce<Record<string, typeof shopDocuments>>((accumulator, document) => {
-      accumulator[document.docType] ??= [];
-      accumulator[document.docType].push(document);
-      return accumulator;
-    }, {}),
-  ).map((documents) => ({
-    docType: documents[0].docType,
-    ...groupLatestAndHistory(documents),
-  }));
+  const kyc = shop.owner.kyc;
 
   return {
     shop: {
       id: shop.id,
-      ownerUserId: shop.ownerUserId,
       shopName: shop.shopName,
       registrationType: shop.registrationType,
-      shopType: shop.shopType
-        ? {
-            id: shop.shopType.id,
-            code: shop.shopType.code,
-            name: shop.shopType.name,
-            description: shop.shopType.description,
-          }
-        : null,
       businessType: shop.businessType,
       taxCode: shop.taxCode,
-      shopStatus: shop.shopStatus,
+      status: shop.shopStatus,
       createdAt: shop.createdAt,
-      registeredCategories: shop.registeredCategories.map((item) => ({
-        categoryId: item.category.id,
-        categoryName: item.category.name,
-        registrationStatus: item.registrationStatus,
-      })),
     },
-    summary: toShopVerificationSummaryResponse(shop),
-    shopDocumentRequirements:
+    owner: {
+      id: shop.owner.id,
+      displayName: shop.owner.displayName,
+      email: shop.owner.email,
+      phone: shop.owner.phone,
+    },
+    categories: shop.registeredCategories.map((item) => ({
+      id: item.category.id,
+      name: item.category.name,
+    })),
+    kyc: kyc
+      ? {
+          type: kyc.idType,
+          frontImage: kyc.documents.find((document) => document.side === 'FRONT')?.mediaAsset.secureUrl ?? null,
+          backImage: kyc.documents.find((document) => document.side === 'BACK')?.mediaAsset.secureUrl ?? null,
+          status: kyc.verificationStatus,
+        }
+      : null,
+    documents:
       shop.shopType?.requirements.map((item) => {
-        const document =
-          shopDocuments.find((shopDocument) => shopDocument.requirementId === item.requirement.id) ??
-          shopDocuments.find((shopDocument) => shopDocument.docType === item.requirement.code) ??
-          null;
+        const submissions = shopDocuments.filter(
+          (document) =>
+            document.requirementId === item.requirement.id || document.docType === item.requirement.code,
+        );
+        const latest = submissions.length > 0 ? groupLatestAndHistory(submissions).latestSubmission : null;
 
         return {
           id: item.requirement.id,
           code: item.requirement.code,
           name: item.requirement.name,
-          description: item.requirement.description,
           required: item.required,
-          multipleFilesAllowed: item.requirement.multipleFilesAllowed,
-          sortOrder: item.sortOrder,
-          document,
+          status: latest?.reviewStatus ?? 'pending',
+          files: latest?.files.map((file) => file.fileUrl) ?? [],
         };
       }) ?? [],
-    shopDocuments,
-    shopDocumentGroups,
-    timeline: timeline.map(toAuditLogResponse),
   };
 }
 
