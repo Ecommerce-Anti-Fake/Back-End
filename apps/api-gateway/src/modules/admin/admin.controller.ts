@@ -10,7 +10,7 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ActiveUserGuard, JwtAuthGuard, Roles, RolesGuard } from '@security';
-import { AdminUserListItemResponseDto, ListUsersQueryDto, UpdateUserDto, UserResponseDto } from '@users';
+import { AdminUserListResponseDto, ListUsersQueryDto, UpdateUserDto, UserResponseDto } from '@users';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 import { UsersRpcService } from '../user/users-rpc.service';
 import { AdminService } from './admin.service';
@@ -120,9 +120,8 @@ export class AdminController {
   @ApiOperation({ summary: 'Admin lay danh sach user' })
   @ApiBearerAuth('access-token')
   @ApiOkResponse({
-    description: 'Danh sach user.',
-    type: AdminUserListItemResponseDto,
-    isArray: true,
+    description: 'Danh sach user co phan trang, bo loc trang thai va so lieu tong hop.',
+    type: AdminUserListResponseDto,
   })
   @ApiUnauthorizedResponse({
     description: 'Thieu access token hoac token khong hop le.',

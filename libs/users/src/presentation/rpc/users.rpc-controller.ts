@@ -96,7 +96,7 @@ export class UsersRpcController {
   @MessagePattern(USERS_MESSAGE_PATTERNS.findAll)
   async findAll(@Payload() payload?: ListUsersMessage) {
     try {
-      return await this.listUsersUseCase.execute(payload?.role);
+      return await this.listUsersUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

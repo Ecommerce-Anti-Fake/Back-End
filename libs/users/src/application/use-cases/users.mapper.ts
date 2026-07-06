@@ -3,6 +3,7 @@ import { User, UserAddress } from '@prisma/client';
 import { AdminUserListItem, UserProfileCompletion, UserSummary } from '../../domain/interfaces/user.types';
 
 type UserWithOwnedShops = User & {
+  avatarMedia?: { secureUrl: string | null } | null;
   ownedShops?: Array<{
     shopName: string;
   }>;
@@ -45,6 +46,7 @@ export function toAdminUserListItem(user: UserWithOwnedShops): AdminUserListItem
     id: user.id,
     email: user.email,
     displayName: user.displayName,
+    avatar: user.avatarMedia?.secureUrl ?? null,
     shopName: user.ownedShops?.[0]?.shopName ?? null,
     accountStatus: toVietnameseAccountStatus(user.accountStatus),
     createdAt: user.createdAt,
@@ -56,9 +58,8 @@ function toVietnameseAccountStatus(accountStatus: string) {
     case 'active':
       return 'Đang hoạt động';
     case 'inactive':
-      return 'Ngừng hoạt động';
     case 'blocked':
-      return 'Đã khóa';
+      return 'Bị cấm';
     default:
       return accountStatus;
   }

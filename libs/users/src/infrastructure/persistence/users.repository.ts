@@ -476,6 +476,46 @@ export class UsersRepository {
     });
   }
 
+  async listForAdmin(input: {
+    role: 'user';
+    status: 'all' | 'active' | 'inactive' | 'blocked' | 'banned';
+    page: number;
+    pageSize: number;
+  }) {
+    const baseWhere: Prisma.UserWhereInput = { role: input.role };
+    const statusWhere: Prisma.UserWhereInput =
+      input.status === 'all'
+        ? {}
+        : input.status === 'banned'
+          ? { accountStatus: { not: 'active' } }
+          : { accountStatus: input.status };
+    const where = { ...baseWhere, ...statusWhere };
+
+    const [totalItems, totalUser, totalShop, activeUser, bannedUser, items] = await this.prisma.$transaction([
+      this.prisma.user.count({ where }),
+      this.prisma.user.count({ where: baseWhere }),
+      this.prisma.shop.count({ where: { owner: { is: baseWhere } } }),
+      this.prisma.user.count({ where: { ...baseWhere, accountStatus: 'active' } }),
+      this.prisma.user.count({ where: { ...baseWhere, accountStatus: { not: 'active' } } }),
+      this.prisma.user.findMany({
+        where,
+        include: {
+          avatarMedia: { select: { secureUrl: true } },
+          ownedShops: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { shopName: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (input.page - 1) * input.pageSize,
+        take: input.pageSize,
+      }),
+    ]);
+
+    return { totalItems, totalUser, totalShop, activeUser, bannedUser, items };
+  }
+
   findUserById(id: string) {
     return this.prisma.user.findFirst({
       where: {

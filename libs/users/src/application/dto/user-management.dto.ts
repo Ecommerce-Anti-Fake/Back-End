@@ -4,6 +4,7 @@ import { IsArray, IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUrl, Max, Min,
 
 const USER_MANAGEMENT_ROLES = ['user'] as const;
 const USER_ACCOUNT_STATUSES = ['active', 'inactive', 'blocked'] as const;
+const USER_ACCOUNT_FILTER_STATUSES = ['all', 'active', 'inactive', 'blocked', 'banned'] as const;
 const KYC_DOCUMENT_SIDES = ['FRONT', 'BACK'] as const;
 const MEDIA_IMAGE_ASSET_TYPES = ['IMAGE'] as const;
 const KYC_REVIEW_STATUSES = ['approved', 'rejected'] as const;
@@ -94,6 +95,9 @@ export class AdminUserListItemResponseDto {
   })
   displayName!: string | null;
 
+  @ApiPropertyOptional({ description: 'URL avatar cua nguoi dung.', nullable: true })
+  avatar!: string | null;
+
   @ApiPropertyOptional({
     description: 'Ten shop moi nhat cua nguoi dung.',
     example: 'E Shop',
@@ -112,6 +116,18 @@ export class AdminUserListItemResponseDto {
     example: '2026-03-07T00:00:00.000Z',
   })
   createdAt!: Date;
+}
+
+export class AdminUserListResponseDto {
+  @ApiProperty({ example: 1 }) page!: number;
+  @ApiProperty({ example: 10 }) pageSize!: number;
+  @ApiProperty({ example: 2 }) totalItems!: number;
+  @ApiProperty({ example: 1 }) totalPages!: number;
+  @ApiProperty({ example: 150 }) totalUser!: number;
+  @ApiProperty({ example: 58 }) totalShop!: number;
+  @ApiProperty({ example: 138 }) activeUser!: number;
+  @ApiProperty({ example: 12 }) bannedUser!: number;
+  @ApiProperty({ type: AdminUserListItemResponseDto, isArray: true }) items!: AdminUserListItemResponseDto[];
 }
 
 export class ProfileCompletionResponseDto {
@@ -480,6 +496,31 @@ export class ListUsersQueryDto {
   @IsString()
   @IsIn(USER_MANAGEMENT_ROLES)
   role?: 'user';
+
+  @ApiPropertyOptional({
+    description: 'Loc trang thai; all bo qua dieu kien trang thai, banned gom moi tai khoan khong active.',
+    enum: USER_ACCOUNT_FILTER_STATUSES,
+    default: 'all',
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(USER_ACCOUNT_FILTER_STATUSES)
+  status?: 'all' | 'active' | 'inactive' | 'blocked' | 'banned';
+
+  @ApiPropertyOptional({ example: 1, minimum: 1, default: 1 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({ example: 10, minimum: 1, maximum: 100, default: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  pageSize?: number;
 }
 
 export class KycUploadSignatureItemDto {

@@ -16,6 +16,7 @@ export type AdminUserListItem = {
   id: string;
   email: string | null;
   displayName: string | null;
+  avatar: string | null;
   shopName: string | null;
   accountStatus: string;
   createdAt: Date;

@@ -400,6 +400,9 @@ export type UpdateUserPasswordMessage = {
 
 export type ListUsersMessage = {
   role?: 'user';
+  status?: 'all' | 'active' | 'inactive' | 'blocked' | 'banned';
+  page?: number;
+  pageSize?: number;
 };
 
 export type UserLookupMessage = {
