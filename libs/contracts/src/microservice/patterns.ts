@@ -627,9 +627,16 @@ export type ChatThreadLookupMessage = ChatRequesterMessage & {
 };
 
 export type SendChatMessageMessage = ChatThreadLookupMessage & {
-  body: string;
+  body?: string | null;
   clientMessageId?: string | null;
   messageType?: 'TEXT';
+  attachments?: Array<{
+    type: 'IMAGE' | 'FILE';
+    url: string;
+    fileName: string;
+    mimeType: string;
+    sizeBytes: number;
+  }>;
 };
 
 export type ListSocialPostsMessage = {

@@ -447,18 +447,33 @@ model Category {
 }
 
 model ChatMessage {
-  id              String     @id @default(uuid())
-  threadId        String     @map("thread_id")
-  senderUserId    String     @map("sender_user_id")
-  clientMessageId String?    @map("client_message_id")
-  messageType     String     @map("message_type")
-  body            String
-  sentAt          DateTime   @default(now()) @map("sent_at")
-  thread          ChatThread @relation(fields: [threadId], references: [id])
-  sender          User       @relation("ChatMessageSender", fields: [senderUserId], references: [id])
+  id              String                  @id @default(uuid())
+  threadId        String                  @map("thread_id")
+  senderUserId    String                  @map("sender_user_id")
+  clientMessageId String?                 @map("client_message_id")
+  messageType     String                  @map("message_type")
+  body            String?
+  sentAt          DateTime                @default(now()) @map("sent_at")
+  thread          ChatThread              @relation(fields: [threadId], references: [id])
+  sender          User                    @relation("ChatMessageSender", fields: [senderUserId], references: [id])
+  attachments     ChatMessageAttachment[]
 
   @@unique([threadId, clientMessageId])
   @@map("chat_message")
+}
+
+model ChatMessageAttachment {
+  id        String      @id @default(uuid())
+  messageId String      @map("message_id")
+  type      String
+  url       String
+  fileName  String      @map("file_name")
+  mimeType  String      @map("mime_type")
+  sizeBytes Int         @map("size_bytes")
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("chat_message_attachment")
 }
 
 model ChatThread {

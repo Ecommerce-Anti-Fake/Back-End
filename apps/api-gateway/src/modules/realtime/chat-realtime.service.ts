@@ -25,6 +25,15 @@ type ChatSendPayload = {
   threadId?: string;
   body?: string;
   clientMessageId?: string | null;
+  attachments?: ChatAttachmentPayload[];
+};
+
+type ChatAttachmentPayload = {
+  type?: string;
+  url?: string;
+  fileName?: string;
+  mimeType?: string;
+  sizeBytes?: number;
 };
 
 type ChatTypingPayload = {
@@ -151,10 +160,15 @@ export class ChatRealtimeService implements OnModuleDestroy {
 
   async sendMessage(socket: Socket, principal: ChatSocketPrincipal, payload: ChatSendPayload, ack?: ChatAckCallback) {
     const threadId = payload.threadId?.trim();
-    const body = payload.body?.trim();
+    const body = payload.body?.trim() || null;
     const clientMessageId = payload.clientMessageId?.trim() || null;
-    if (!threadId || !body) {
-      this.ackError(ack, 'threadId and body are required');
+    const attachments = normalizeChatAttachments(payload.attachments);
+    if (!attachments.valid) {
+      this.ackError(ack, 'Invalid attachment metadata');
+      return;
+    }
+    if (!threadId || (!body && attachments.items.length === 0)) {
+      this.ackError(ack, 'threadId and body or attachment are required');
       return;
     }
 
@@ -165,6 +179,7 @@ export class ChatRealtimeService implements OnModuleDestroy {
         requesterRole: principal.role,
         body,
         clientMessageId,
+        attachments: attachments.items,
         messageType: 'TEXT',
       });
       const message = extractCreatedChatMessage(thread);
@@ -347,4 +362,43 @@ function extractCreatedChatMessage(thread: unknown) {
   }
 
   return null;
+}
+
+function normalizeChatAttachments(attachments: ChatAttachmentPayload[] | undefined) {
+  if (!Array.isArray(attachments)) {
+    return { valid: true, items: [] };
+  }
+
+  if (attachments.length > 10) {
+    return { valid: false, items: [] };
+  }
+
+  const items = attachments
+    .map((attachment) => ({
+      type: attachment.type === 'IMAGE' ? 'IMAGE' as const : attachment.type === 'FILE' ? 'FILE' as const : null,
+      url: attachment.url?.trim(),
+      fileName: attachment.fileName?.trim(),
+      mimeType: attachment.mimeType?.trim(),
+      sizeBytes: Number(attachment.sizeBytes),
+    }))
+    .filter(
+      (
+        attachment,
+      ): attachment is {
+        type: 'IMAGE' | 'FILE';
+        url: string;
+        fileName: string;
+        mimeType: string;
+        sizeBytes: number;
+      } =>
+        Boolean(attachment.type) &&
+        Boolean(attachment.url) &&
+        Boolean(attachment.fileName) &&
+        Boolean(attachment.mimeType) &&
+        Number.isInteger(attachment.sizeBytes) &&
+        attachment.sizeBytes > 0 &&
+        attachment.sizeBytes <= 50 * 1024 * 1024,
+    );
+
+  return { valid: items.length === attachments.length, items };
 }

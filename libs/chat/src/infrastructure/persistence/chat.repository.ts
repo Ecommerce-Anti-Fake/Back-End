@@ -86,6 +86,9 @@ export class ChatRepository {
         },
       ],
       take: limit + 1,
+      include: {
+        attachments: true,
+      },
     });
 
     const hasMoreBefore = messagesDesc.length > limit;
@@ -125,7 +128,14 @@ export class ChatRepository {
     threadId: string;
     senderUserId: string;
     clientMessageId?: string | null;
-    body: string;
+    body: string | null;
+    attachments?: Array<{
+      type: 'IMAGE' | 'FILE';
+      url: string;
+      fileName: string;
+      mimeType: string;
+      sizeBytes: number;
+    }>;
     messageType: 'TEXT';
   }) {
     const existingMessage = input.clientMessageId
@@ -136,8 +146,26 @@ export class ChatRepository {
     if (existingMessage) return this.findChatThreadById(input.threadId);
 
     const message = await this.prisma.chatMessage.create({
-      data: input,
+      data: {
+        threadId: input.threadId,
+        senderUserId: input.senderUserId,
+        clientMessageId: input.clientMessageId,
+        body: input.body,
+        messageType: input.messageType,
+        attachments: input.attachments?.length
+          ? {
+              create: input.attachments.map((attachment) => ({
+                type: attachment.type,
+                url: attachment.url,
+                fileName: attachment.fileName,
+                mimeType: attachment.mimeType,
+                sizeBytes: attachment.sizeBytes,
+              })),
+            }
+          : undefined,
+      },
       include: {
+        attachments: true,
         sender: { select: { displayName: true, email: true, phone: true } },
         thread: { select: { buyerUserId: true, sellerUserId: true } },
       },
@@ -149,7 +177,7 @@ export class ChatRepository {
       userId: recipientUserId,
       notificationType: 'CHAT_MESSAGE',
       title: `Tin nhan moi tu ${message.sender.displayName || message.sender.email || message.sender.phone || 'nguoi dung'}`,
-      body: message.body.length > 120 ? `${message.body.slice(0, 117)}...` : message.body,
+      body: notificationBody(message.body, message.attachments.length),
       targetType: 'CHAT_THREAD',
       targetId: input.threadId,
       dedupeKey: `CHAT_MESSAGE:${message.id}:${recipientUserId}`,
@@ -180,10 +208,20 @@ export class ChatRepository {
       messages: {
         ...(messageTake ? { take: messageTake } : {}),
         orderBy: messageOrderBy,
-        include: { sender: { select: { displayName: true, email: true, phone: true } } },
+        include: {
+          attachments: true,
+          sender: { select: { displayName: true, email: true, phone: true } },
+        },
       },
     };
   }
+}
+
+function notificationBody(body: string | null, attachmentCount: number) {
+  if (body) {
+    return body.length > 120 ? `${body.slice(0, 117)}...` : body;
+  }
+  return attachmentCount > 1 ? `${attachmentCount} tep dinh kem` : 'Tep dinh kem';
 }
 
 function parseChatMessageCursor(cursor?: string | null) {
@@ -204,4 +242,3 @@ function parseChatMessageCursor(cursor?: string | null) {
   function buildChatMessageCursor(message: { sentAt: Date; id: string }) {
     return `${message.sentAt.toISOString()}|${message.id}`;
   }
-

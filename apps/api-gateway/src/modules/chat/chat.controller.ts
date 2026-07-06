@@ -106,6 +106,7 @@ export class ChatController {
       requesterRole: requester?.role,
       body: dto.body,
       clientMessageId: dto.clientMessageId ?? null,
+      attachments: dto.attachments ?? [],
       messageType: 'TEXT',
     });
   }

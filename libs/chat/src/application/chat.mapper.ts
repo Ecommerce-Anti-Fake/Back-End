@@ -10,9 +10,19 @@ type ChatMessageWithSender = {
   senderUserId: string;
   clientMessageId?: string | null;
   messageType: string;
-  body: string;
+  body: string | null;
   sentAt: Date;
   sender?: ChatUserRecord;
+  attachments?: ChatMessageAttachmentRecord[];
+};
+
+type ChatMessageAttachmentRecord = {
+  id: string;
+  type: string;
+  url: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
 };
 
 type ChatThreadWithRelations = {
@@ -35,7 +45,8 @@ export function toChatMessageResponse(message: ChatMessageWithSender) {
     clientMessageId: message.clientMessageId ?? null,
     senderName: message.sender ? chatDisplayName(message.sender) : null,
     messageType: message.messageType,
-    body: message.body,
+    body: message.body ?? null,
+    attachments: (message.attachments ?? []).map(toChatMessageAttachmentResponse),
     sentAt: message.sentAt,
   };
 }
@@ -80,7 +91,8 @@ export function toChatThreadDetailResponse(
       senderUserId: message.senderUserId,
       clientMessageId: message.clientMessageId ?? null,
       messageType: message.messageType,
-      body: message.body,
+      body: message.body ?? null,
+      attachments: (message.attachments ?? []).map(toChatMessageAttachmentResponse),
       sentAt: message.sentAt,
     })),
     pageInfo: messagesPage.pageInfo,
@@ -100,7 +112,8 @@ export function toChatThreadListItemResponse(thread: ChatThreadWithRelations, re
           id: lastMessage.id,
           clientMessageId: lastMessage.clientMessageId ?? null,
           messageType: lastMessage.messageType,
-          body: lastMessage.body,
+          body: lastMessage.body ?? null,
+          attachments: (lastMessage.attachments ?? []).map(toChatMessageAttachmentResponse),
           sentAt: lastMessage.sentAt,
         }]
       : [],
@@ -112,3 +125,13 @@ function chatDisplayName(user: ChatUserRecord) {
   return user.displayName || user.email || user.phone || 'Nguoi dung';
 }
 
+function toChatMessageAttachmentResponse(attachment: ChatMessageAttachmentRecord) {
+  return {
+    id: attachment.id,
+    type: attachment.type,
+    url: attachment.url,
+    fileName: attachment.fileName,
+    mimeType: attachment.mimeType,
+    sizeBytes: attachment.sizeBytes,
+  };
+}

@@ -9,6 +9,16 @@ describe('ChatRealtimeService', () => {
       clientMessageId: 'client-1',
       messageType: 'TEXT',
       body: 'Xin chao shop',
+      attachments: [
+        {
+          id: 'attachment-1',
+          type: 'IMAGE',
+          url: 'https://res.cloudinary.com/demo/image/upload/v1/chat/photo.jpg',
+          fileName: 'photo.jpg',
+          mimeType: 'image/jpeg',
+          sizeBytes: 120000,
+        },
+      ],
       sentAt: new Date('2026-07-06T00:00:00.000Z'),
     };
     const thread = {
@@ -38,9 +48,39 @@ describe('ChatRealtimeService', () => {
     await service.sendMessage(
       {} as never,
       { userId: 'user-1', role: 'BUYER' },
-      { threadId: ' thread-1 ', body: ' Xin chao shop ', clientMessageId: ' client-1 ' },
+      {
+        threadId: ' thread-1 ',
+        body: ' Xin chao shop ',
+        clientMessageId: ' client-1 ',
+        attachments: [
+          {
+            type: 'IMAGE',
+            url: ' https://res.cloudinary.com/demo/image/upload/v1/chat/photo.jpg ',
+            fileName: ' photo.jpg ',
+            mimeType: ' image/jpeg ',
+            sizeBytes: 120000,
+          },
+        ],
+      },
     );
 
+    expect(catalogRpcService.sendChatMessage).toHaveBeenCalledWith({
+      threadId: 'thread-1',
+      requesterUserId: 'user-1',
+      requesterRole: 'BUYER',
+      body: 'Xin chao shop',
+      clientMessageId: 'client-1',
+      attachments: [
+        {
+          type: 'IMAGE',
+          url: 'https://res.cloudinary.com/demo/image/upload/v1/chat/photo.jpg',
+          fileName: 'photo.jpg',
+          mimeType: 'image/jpeg',
+          sizeBytes: 120000,
+        },
+      ],
+      messageType: 'TEXT',
+    });
     expect(io.to).toHaveBeenCalledWith('chat:thread:thread-1');
     expect(emit).toHaveBeenCalledWith('chat:message.created', {
       eventName: 'chat.message.created.v1',

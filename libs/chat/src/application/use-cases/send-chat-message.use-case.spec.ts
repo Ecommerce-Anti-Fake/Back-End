@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { SendChatMessageUseCase } from './send-chat-message.use-case';
 
 describe('SendChatMessageUseCase in ChatModule', () => {
@@ -42,6 +42,7 @@ describe('SendChatMessageUseCase in ChatModule', () => {
       senderUserId: 'admin-1',
       clientMessageId: null,
       body: 'Can ho tro dispute',
+      attachments: [],
       messageType: 'TEXT',
     });
     expect(result.lastMessage?.body).toBe('Can ho tro dispute');
@@ -63,9 +64,101 @@ describe('SendChatMessageUseCase in ChatModule', () => {
       senderUserId: 'buyer-1',
       clientMessageId: 'client-1',
       body: 'Can ho tro dispute',
+      attachments: [],
       messageType: 'TEXT',
     });
     expect(result.lastMessage?.clientMessageId).toBe('client-1');
+  });
+
+  it('allows text and attachments in the same message', async () => {
+    const attachments = [
+      {
+        type: 'IMAGE' as const,
+        url: 'https://res.cloudinary.com/demo/image/upload/v1/chat/photo.jpg',
+        fileName: 'photo.jpg',
+        mimeType: 'image/jpeg',
+        sizeBytes: 120_000,
+      },
+    ];
+    repository.findChatThreadById.mockResolvedValue(chatThread());
+    repository.createChatMessage.mockResolvedValue(chatThread({ body: 'Anh san pham', attachments }));
+
+    const result = await useCase.execute({
+      threadId: 'thread-1',
+      requesterUserId: 'buyer-1',
+      body: ' Anh san pham ',
+      attachments,
+    });
+
+    expect(repository.createChatMessage).toHaveBeenCalledWith({
+      threadId: 'thread-1',
+      senderUserId: 'buyer-1',
+      clientMessageId: null,
+      body: 'Anh san pham',
+      attachments,
+      messageType: 'TEXT',
+    });
+    expect(result.lastMessage?.attachments).toEqual([
+      {
+        id: 'attachment-1',
+        type: 'IMAGE',
+        url: 'https://res.cloudinary.com/demo/image/upload/v1/chat/photo.jpg',
+        fileName: 'photo.jpg',
+        mimeType: 'image/jpeg',
+        sizeBytes: 120_000,
+      },
+    ]);
+  });
+
+  it('allows attachment-only messages', async () => {
+    const attachments = [
+      {
+        type: 'FILE' as const,
+        url: 'https://res.cloudinary.com/demo/raw/upload/v1/chat/spec.pdf',
+        fileName: 'spec.pdf',
+        mimeType: 'application/pdf',
+        sizeBytes: 240_000,
+      },
+    ];
+    repository.findChatThreadById.mockResolvedValue(chatThread());
+    repository.createChatMessage.mockResolvedValue(chatThread({ body: null, attachments }));
+
+    await useCase.execute({
+      threadId: 'thread-1',
+      requesterUserId: 'buyer-1',
+      attachments,
+    });
+
+    expect(repository.createChatMessage).toHaveBeenCalledWith({
+      threadId: 'thread-1',
+      senderUserId: 'buyer-1',
+      clientMessageId: null,
+      body: null,
+      attachments,
+      messageType: 'TEXT',
+    });
+  });
+
+  it('rejects invalid attachment metadata', async () => {
+    repository.findChatThreadById.mockResolvedValue(chatThread());
+
+    await expect(
+      useCase.execute({
+        threadId: 'thread-1',
+        requesterUserId: 'buyer-1',
+        attachments: [
+          {
+            type: 'IMAGE',
+            url: '',
+            fileName: 'photo.jpg',
+            mimeType: 'image/jpeg',
+            sizeBytes: 120_000,
+          },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(repository.createChatMessage).not.toHaveBeenCalled();
   });
 
   it('returns not found for missing threads', async () => {
@@ -81,7 +174,19 @@ describe('SendChatMessageUseCase in ChatModule', () => {
   });
 });
 
-function chatThread(input: { body?: string; clientMessageId?: string | null } = {}) {
+function chatThread(
+  input: {
+    body?: string | null;
+    clientMessageId?: string | null;
+    attachments?: Array<{
+      type: 'IMAGE' | 'FILE';
+      url: string;
+      fileName: string;
+      mimeType: string;
+      sizeBytes: number;
+    }>;
+  } = {},
+) {
   return {
     id: 'thread-1',
     shopId: 'shop-1',
@@ -98,7 +203,11 @@ function chatThread(input: { body?: string; clientMessageId?: string | null } = 
         senderUserId: 'buyer-1',
         clientMessageId: input.clientMessageId ?? null,
         messageType: 'TEXT',
-        body: input.body ?? 'Xin chao',
+        body: input.body === undefined ? 'Xin chao' : input.body,
+        attachments: (input.attachments ?? []).map((attachment, index) => ({
+          id: `attachment-${index + 1}`,
+          ...attachment,
+        })),
         sentAt: new Date('2026-05-26T01:01:00.000Z'),
         sender: { displayName: 'Buyer', email: null, phone: null },
       },

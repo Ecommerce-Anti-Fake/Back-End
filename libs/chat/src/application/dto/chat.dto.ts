@@ -1,5 +1,65 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Max,
+  MaxLength,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+
+export class ChatMessageAttachmentResponseDto {
+  @ApiProperty({ example: 'attachment-id' })
+  id!: string;
+
+  @ApiProperty({ example: 'IMAGE', enum: ['IMAGE', 'FILE'] })
+  type!: 'IMAGE' | 'FILE';
+
+  @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/v1/chat/thread-1/photo.jpg' })
+  url!: string;
+
+  @ApiProperty({ example: 'photo.jpg' })
+  fileName!: string;
+
+  @ApiProperty({ example: 'image/jpeg' })
+  mimeType!: string;
+
+  @ApiProperty({ example: 245760 })
+  sizeBytes!: number;
+}
+
+export class ChatMessageAttachmentInputDto {
+  @ApiProperty({ example: 'IMAGE', enum: ['IMAGE', 'FILE'] })
+  @IsIn(['IMAGE', 'FILE'])
+  type!: 'IMAGE' | 'FILE';
+
+  @ApiProperty({ example: 'https://res.cloudinary.com/demo/image/upload/v1/chat/thread-1/photo.jpg' })
+  @IsUrl({ require_tld: false })
+  @MaxLength(2000)
+  url!: string;
+
+  @ApiProperty({ example: 'photo.jpg' })
+  @IsString()
+  @MaxLength(255)
+  fileName!: string;
+
+  @ApiProperty({ example: 'image/jpeg' })
+  @IsString()
+  @MaxLength(100)
+  mimeType!: string;
+
+  @ApiProperty({ example: 245760 })
+  @IsInt()
+  @Min(1)
+  @Max(50 * 1024 * 1024)
+  sizeBytes!: number;
+}
 
 export class ChatMessageResponseDto {
   @ApiProperty({ example: 'message-id' })
@@ -14,8 +74,10 @@ export class ChatMessageResponseDto {
   senderName!: string;
   @ApiProperty({ example: 'TEXT' })
   messageType!: string;
-  @ApiProperty({ example: 'Shop tu van giup minh san pham nay.' })
-  body!: string;
+  @ApiPropertyOptional({ example: 'Shop tu van giup minh san pham nay.', nullable: true })
+  body!: string | null;
+  @ApiProperty({ type: ChatMessageAttachmentResponseDto, isArray: true })
+  attachments!: ChatMessageAttachmentResponseDto[];
   @ApiProperty({ example: '2026-05-26T10:00:00.000Z' })
   sentAt!: Date;
 }
@@ -30,8 +92,11 @@ export class ChatThreadListItemMessageResponseDto {
   @ApiProperty({ example: 'TEXT' })
   messageType!: string;
 
-  @ApiProperty({ example: 'Shop tu van giup minh san pham nay.' })
-  body!: string;
+  @ApiPropertyOptional({ example: 'Shop tu van giup minh san pham nay.', nullable: true })
+  body!: string | null;
+
+  @ApiProperty({ type: ChatMessageAttachmentResponseDto, isArray: true })
+  attachments!: ChatMessageAttachmentResponseDto[];
 
   @ApiProperty({ example: '2026-05-26T10:00:00.000Z' })
   sentAt!: Date;
@@ -84,8 +149,11 @@ export class ChatThreadDetailMessageResponseDto {
   @ApiProperty({ example: 'TEXT' })
   messageType!: string;
 
-  @ApiProperty({ example: 'RT3 smoke init 1780566663734' })
-  body!: string;
+  @ApiPropertyOptional({ example: 'RT3 smoke init 1780566663734', nullable: true })
+  body!: string | null;
+
+  @ApiProperty({ type: ChatMessageAttachmentResponseDto, isArray: true })
+  attachments!: ChatMessageAttachmentResponseDto[];
 
   @ApiProperty({ example: '2026-06-04T09:51:05.445Z' })
   sentAt!: Date;
@@ -146,15 +214,22 @@ export class StartChatThreadResponseDto {
 }
 
 export class SendChatMessageDto {
-  @ApiProperty({ example: 'Minh can them thong tin xac thuc.' })
+  @ApiPropertyOptional({ example: 'Minh can them thong tin xac thuc.' })
+  @IsOptional()
   @IsString()
-  @MinLength(1)
   @MaxLength(1000)
-  body!: string;
+  body?: string;
   @ApiPropertyOptional({ example: 'client-generated-message-id' })
   @IsOptional()
   @IsString()
   @MaxLength(100)
   clientMessageId?: string;
-}
 
+  @ApiPropertyOptional({ type: ChatMessageAttachmentInputDto, isArray: true })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @ValidateNested({ each: true })
+  @Type(() => ChatMessageAttachmentInputDto)
+  attachments?: ChatMessageAttachmentInputDto[];
+}
