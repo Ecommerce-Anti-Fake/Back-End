@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ShopsRepository } from '../../infrastructure/persistence/shops.repository';
-import { toShopResponse } from './shops.mapper';
 
 @Injectable()
 export class ReviewShopDocumentUseCase {
@@ -8,46 +7,55 @@ export class ReviewShopDocumentUseCase {
 
   async execute(input: {
     shopId: string;
-    documentId: string;
     reviewerUserId?: string;
     reviewStatus: 'approved' | 'rejected';
     reviewNote?: string | null;
   }) {
-    const document = await this.shopsRepository.findShopDocumentById(input.shopId, input.documentId);
-    if (!document) {
-      throw new NotFoundException('Shop document not found');
+    const shop = await this.shopsRepository.findAdminShopVerificationDetailById(input.shopId);
+    if (!shop) {
+      throw new NotFoundException('Shop not found');
     }
 
-    const result = await this.shopsRepository.reviewShopDocument({
-      shopId: input.shopId,
-      documentId: input.documentId,
+    if (shop.documents.length === 0) {
+      throw new BadRequestException('Shop legal documents are required before review');
+    }
+
+    const hasFrontId = shop.owner.kyc?.documents.some((document) => document.side === 'FRONT') === true;
+    const hasBackId = shop.owner.kyc?.documents.some((document) => document.side === 'BACK') === true;
+    if (!shop.owner.kyc || !hasFrontId || !hasBackId) {
+      throw new BadRequestException('Owner KYC must include front and back ID documents before shop review');
+    }
+
+    const reviewResult = await this.shopsRepository.reviewShopDocumentsAndOwnerKyc({
+      shopId: shop.id,
+      ownerUserId: shop.ownerUserId,
       reviewStatus: input.reviewStatus,
       reviewNote: input.reviewNote?.trim() || null,
     });
 
-    if (result.count === 0) {
-      throw new BadRequestException('Shop document review could not be applied');
-    }
-
-    const shop = await this.shopsRepository.recomputeShopStatus(input.shopId);
-    if (!shop) {
+    const updatedShop = await this.shopsRepository.recomputeShopStatus(input.shopId);
+    if (!updatedShop) {
       throw new NotFoundException('Shop not found');
     }
 
     await this.shopsRepository.createAuditLog({
       targetType: 'SHOP_VERIFICATION',
       targetId: input.shopId,
-      actorUserId: input.reviewerUserId ?? shop.ownerUserId,
-      action: 'SHOP_DOCUMENT_REVIEWED',
-      fromStatus: document.reviewStatus,
-      toStatus: input.reviewStatus,
+      actorUserId: input.reviewerUserId ?? updatedShop.ownerUserId,
+      action: 'SHOP_REGISTRATION_REVIEWED',
+      fromStatus: shop.shopStatus,
+      toStatus: updatedShop.shopStatus,
       note: input.reviewNote?.trim() || null,
       metadata: {
-        documentId: input.documentId,
-        docType: document.docType,
+        reviewStatus: input.reviewStatus,
+        reviewedKyc: reviewResult.reviewedKyc,
+        reviewedShopDocumentIds: reviewResult.reviewedShopDocumentIds,
       },
     });
 
-    return toShopResponse(shop);
+    return {
+      success: true,
+      message: 'Shop registration reviewed',
+    };
   }
 }

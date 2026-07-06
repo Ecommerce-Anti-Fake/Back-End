@@ -842,7 +842,11 @@ export class SubmitBrandAuthorizationDto {
 }
 
 export class ReviewShopDocumentDto {
-  @ApiProperty({ enum: REVIEW_STATUSES, example: 'approved' })
+  @ApiProperty({
+    description: 'Trang thai duyet ho so. FE render dropdown tu enum nay, khong nhap tu do.',
+    enum: REVIEW_STATUSES,
+    example: 'approved',
+  })
   @IsString()
   @IsIn(REVIEW_STATUSES)
   reviewStatus!: 'approved' | 'rejected';

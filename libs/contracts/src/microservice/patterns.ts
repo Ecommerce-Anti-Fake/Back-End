@@ -524,7 +524,6 @@ export type SubmitShopDocumentsMessage = {
 
 export type ReviewShopDocumentMessage = {
   shopId: string;
-  documentId: string;
   reviewerUserId: string;
   reviewStatus: 'approved' | 'rejected';
   reviewNote?: string | null;

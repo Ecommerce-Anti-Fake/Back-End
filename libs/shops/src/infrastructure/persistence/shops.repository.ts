@@ -1054,6 +1054,85 @@ export class ShopsRepository {
     });
   }
 
+  reviewShopDocumentsAndOwnerKyc(input: {
+    shopId: string;
+    ownerUserId: string;
+    reviewStatus: 'approved' | 'rejected';
+    reviewNote: string | null;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      const now = new Date();
+      const pendingDocuments = await tx.shopDocument.findMany({
+        where: {
+          shopId: input.shopId,
+          reviewStatus: 'pending',
+        },
+        select: {
+          id: true,
+        },
+      });
+      const reviewedShopDocumentIds = pendingDocuments.map((document) => document.id);
+
+      if (reviewedShopDocumentIds.length > 0) {
+        await tx.shopDocument.updateMany({
+          where: {
+            id: {
+              in: reviewedShopDocumentIds,
+            },
+          },
+          data: {
+            reviewStatus: input.reviewStatus,
+            reviewNote: input.reviewNote,
+            reviewedAt: now,
+          },
+        });
+      }
+
+      const latestSubmission = await tx.userKycSubmission.findFirst({
+        where: {
+          userKyc: {
+            userId: input.ownerUserId,
+          },
+        },
+        orderBy: {
+          submittedAt: 'desc',
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (latestSubmission) {
+        await tx.userKycSubmission.update({
+          where: {
+            id: latestSubmission.id,
+          },
+          data: {
+            verificationStatus: input.reviewStatus,
+            reviewNote: input.reviewNote,
+            reviewedAt: now,
+          },
+        });
+      }
+
+      await tx.userKyc.update({
+        where: {
+          userId: input.ownerUserId,
+        },
+        data: {
+          verificationStatus: input.reviewStatus,
+          reviewNote: input.reviewNote,
+          verifiedAt: input.reviewStatus === 'approved' ? now : null,
+        },
+      });
+
+      return {
+        reviewedShopDocumentIds,
+        reviewedKyc: true,
+      };
+    });
+  }
+
   findShopDocumentById(shopId: string, documentId: string) {
     return this.prisma.shopDocument.findFirst({
       where: {

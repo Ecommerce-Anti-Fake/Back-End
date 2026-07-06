@@ -58,21 +58,27 @@ export class AdminShopVerificationController {
     return this.shopsRpcService.getAdminRegistrationDetail({ shopId });
   }
 
-  @ApiOperation({ summary: 'Admin duyet ho so phap ly cua shop' })
+  @ApiOperation({ summary: 'Admin duyet ho so dang ky cua shop va KYC chu shop' })
   @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    schema: {
+      example: {
+        success: true,
+        message: 'Shop registration reviewed',
+      },
+    },
+  })
   @ApiForbiddenResponse({ description: 'Chi admin moi co quyen truy cap.' })
   @Roles('admin')
   @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
-  @Post(':shopId/documents/:documentId/review')
+  @Post(':shopId/documents/review')
   reviewShopDocument(
     @Param('shopId') shopId: string,
-    @Param('documentId') documentId: string,
     @CurrentUserId() reviewerUserId: string,
     @Body() dto: ReviewShopDocumentDto,
   ) {
     return this.shopsRpcService.reviewShopDocument({
       shopId,
-      documentId,
       reviewerUserId,
       reviewStatus: dto.reviewStatus,
       reviewNote: dto.reviewNote ?? null,
