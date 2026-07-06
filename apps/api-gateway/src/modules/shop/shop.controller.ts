@@ -6,14 +6,19 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
   SellerDashboardAnalyticsQueryDto,
@@ -76,13 +81,29 @@ export class ShopController {
 
   @ApiOperation({ summary: 'Cap nhat ho so co ban cua shop hien tai' })
   @ApiBearerAuth('access-token')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: { type: 'object', properties: {
+    shopName: { type: 'string' }, businessType: { type: 'string' }, taxCode: { type: 'string', nullable: true },
+    warehouseAddress: { type: 'string', nullable: true }, warehouseProvinceCode: { type: 'string', nullable: true },
+    warehouseProvinceName: { type: 'string', nullable: true }, warehouseWardCode: { type: 'string', nullable: true },
+    warehouseWardName: { type: 'string', nullable: true },
+    avatar: { type: 'string', format: 'binary' }, banner: { type: 'string', format: 'binary' },
+  } } })
   @ApiOkResponse({ type: ShopMutationResponseDto })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'avatar', maxCount: 1 },
+    { name: 'banner', maxCount: 1 },
+  ], { limits: { fileSize: 5 * 1024 * 1024 } }))
   @Patch(':shopId/profile')
   async updateProfile(
     @Param('shopId') shopId: string,
     @CurrentUserId() requesterUserId: string,
     @Body() dto: UpdateShopProfileDto,
+    @UploadedFiles() files: {
+      avatar?: Array<{ buffer: Buffer; mimetype: string; originalname?: string; size: number }>;
+      banner?: Array<{ buffer: Buffer; mimetype: string; originalname?: string; size: number }>;
+    } = {},
   ) {
     await this.shopsRpcService.updateProfile({
       shopId,
@@ -95,6 +116,8 @@ export class ShopController {
       warehouseProvinceName: dto.warehouseProvinceName,
       warehouseWardCode: dto.warehouseWardCode,
       warehouseWardName: dto.warehouseWardName,
+      avatar: files.avatar?.[0],
+      banner: files.banner?.[0],
     });
 
     return { success: true };

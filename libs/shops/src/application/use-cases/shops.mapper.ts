@@ -12,6 +12,8 @@ type ShopWithCategories = {
   warehouseWardName?: string | null;
   shopStatus: string;
   createdAt: Date;
+  avatarMedia?: { secureUrl: string } | null;
+  bannerMedia?: { secureUrl: string } | null;
   registeredCategories?: Array<{
     registrationStatus: string;
     category: {
@@ -36,6 +38,8 @@ export function toShopResponse(shop: ShopWithCategories) {
     warehouseWardName: shop.warehouseWardName ?? null,
     shopStatus: shop.shopStatus,
     createdAt: shop.createdAt,
+    avatar: shop.avatarMedia?.secureUrl ?? null,
+    banner: shop.bannerMedia?.secureUrl ?? null,
     registeredCategories: (shop.registeredCategories ?? []).map((item) => ({
       categoryId: item.category.id,
       categoryName: item.category.name,
@@ -58,6 +62,8 @@ export function toMyShopResponse(shop: ShopWithCategories) {
     warehouseWardCode: shop.warehouseWardCode ?? null,
     warehouseWardName: shop.warehouseWardName ?? null,
     shopStatus: shop.shopStatus,
+    avatar: shop.avatarMedia?.secureUrl ?? null,
+    banner: shop.bannerMedia?.secureUrl ?? null,
     createdAt: shop.createdAt,
   };
 }

@@ -378,6 +378,10 @@ export class ShopsRepository {
   findByOwnerUserId(ownerUserId: string) {
     return this.prisma.shop.findMany({
       where: { ownerUserId },
+      include: {
+        avatarMedia: { select: { secureUrl: true } },
+        bannerMedia: { select: { secureUrl: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -556,6 +560,8 @@ export class ShopsRepository {
       warehouseProvinceName?: string | null;
       warehouseWardCode?: string | null;
       warehouseWardName?: string | null;
+      avatarMediaId?: string;
+      bannerMediaId?: string;
     },
   ) {
     return this.prisma.shop.update({
@@ -882,6 +888,8 @@ export class ShopsRepository {
         shopTypeId: true,
         registrationType: true,
         shopStatus: true,
+        avatarMedia: { select: { publicId: true } },
+        bannerMedia: { select: { publicId: true } },
       },
     });
   }

@@ -37,6 +37,8 @@ describe('ListMyShopsUseCase', () => {
         warehouseWardCode: 'VN-P202-W1',
         warehouseWardName: 'Phuong 1',
         shopStatus: 'verified',
+        avatarMedia: { secureUrl: 'https://cdn.test/shop-avatar.jpg' },
+        bannerMedia: { secureUrl: 'https://cdn.test/shop-banner.jpg' },
         createdAt: new Date('2026-06-29T02:00:00.000Z'),
         registeredCategories: [
           {
@@ -66,6 +68,8 @@ describe('ListMyShopsUseCase', () => {
         warehouseWardCode: 'VN-P202-W1',
         warehouseWardName: 'Phuong 1',
         shopStatus: 'verified',
+        avatar: 'https://cdn.test/shop-avatar.jpg',
+        banner: 'https://cdn.test/shop-banner.jpg',
         createdAt: new Date('2026-06-29T02:00:00.000Z'),
       },
     ]);

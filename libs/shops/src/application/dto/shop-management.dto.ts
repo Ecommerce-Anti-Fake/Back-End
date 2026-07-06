@@ -113,6 +113,12 @@ export class ShopResponseDto {
     isArray: true,
   })
   registeredCategories!: ShopRegisteredCategoryResponseDto[];
+
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/shop-avatar.jpg', nullable: true })
+  avatar!: string | null;
+
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/shop-banner.jpg', nullable: true })
+  banner!: string | null;
 }
 
 export class MyShopResponseDto {
@@ -180,6 +186,11 @@ export class MyShopResponseDto {
     example: '2026-04-14T10:00:00.000Z',
   })
   createdAt!: Date;
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/shop-avatar.jpg', nullable: true })
+  avatar!: string | null;
+
+  @ApiPropertyOptional({ example: 'https://cdn.example.com/shop-banner.jpg', nullable: true })
+  banner!: string | null;
 }
 
 export class PublicShopSummaryResponseDto {

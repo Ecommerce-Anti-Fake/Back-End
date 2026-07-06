@@ -60,6 +60,21 @@ describe('ShopController', () => {
     });
   });
 
+  it('forwards avatar and banner when updating the owned shop profile', async () => {
+    const shopsRpcService = { updateProfile: jest.fn().mockResolvedValue({ success: true }) };
+    const controller = createController(shopsRpcService);
+    const avatar = { buffer: Buffer.from('avatar'), mimetype: 'image/png', size: 6 };
+    const banner = { buffer: Buffer.from('banner'), mimetype: 'image/png', size: 6 };
+
+    await expect(controller.updateProfile(
+      'shop-1', 'user-1', { shopName: 'Shop ABC' }, { avatar: [avatar], banner: [banner] },
+    )).resolves.toEqual({ success: true });
+
+    expect(shopsRpcService.updateProfile).toHaveBeenCalledWith(expect.objectContaining({
+      shopId: 'shop-1', requesterUserId: 'user-1', shopName: 'Shop ABC', avatar, banner,
+    }));
+  });
+
   it('gets public shop summary by offer id', async () => {
     const shopsRpcService = {
       findByOffer: jest.fn().mockResolvedValue({
