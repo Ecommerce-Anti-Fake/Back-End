@@ -9,8 +9,13 @@ export class StructuredExceptionFilter implements ExceptionFilter {
     const context = host.switchToHttp();
     const request = context.getRequest<Request & { requestId?: string }>();
     const response = context.getResponse<Response>();
-    const statusCode = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
-    const payload = exception instanceof HttpException ? exception.getResponse() : { message: 'Internal server error' };
+    const statusCode = this.statusCode(exception);
+    const payload =
+      exception instanceof HttpException
+        ? exception.getResponse()
+        : statusCode === HttpStatus.PAYLOAD_TOO_LARGE
+          ? { message: 'Request payload too large' }
+          : { message: 'Internal server error' };
     const message =
       typeof payload === 'string'
         ? payload
@@ -18,23 +23,44 @@ export class StructuredExceptionFilter implements ExceptionFilter {
           ? (payload as { message: unknown }).message
           : 'Internal server error';
 
-    this.logger.error(
-      JSON.stringify({
-        event: 'http.error',
-        requestId: request.requestId ?? null,
-        method: request.method,
-        path: request.originalUrl ?? request.url,
-        statusCode,
-        message,
-        errorName: exception instanceof Error ? exception.name : 'UnknownError',
-      }),
-      exception instanceof Error ? exception.stack : undefined,
-    );
+    const logPayload = JSON.stringify({
+      event: 'http.error',
+      requestId: request.requestId ?? null,
+      method: request.method,
+      path: request.originalUrl ?? request.url,
+      statusCode,
+      message,
+      errorName: exception instanceof Error ? exception.name : 'UnknownError',
+    });
+    const stack = exception instanceof Error ? exception.stack : undefined;
+
+    if (statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      this.logger.error(logPayload, stack);
+    } else {
+      this.logger.warn(logPayload);
+    }
 
     response.status(statusCode).json({
       statusCode,
       message,
       requestId: request.requestId ?? null,
     });
+  }
+
+  private statusCode(exception: unknown) {
+    if (exception instanceof HttpException) {
+      return exception.getStatus();
+    }
+
+    if (
+      typeof exception === 'object' &&
+      exception !== null &&
+      'status' in exception &&
+      (exception as { status?: unknown }).status === HttpStatus.PAYLOAD_TOO_LARGE
+    ) {
+      return HttpStatus.PAYLOAD_TOO_LARGE;
+    }
+
+    return HttpStatus.INTERNAL_SERVER_ERROR;
   }
 }

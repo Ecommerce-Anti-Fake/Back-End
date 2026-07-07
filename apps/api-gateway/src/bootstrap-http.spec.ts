@@ -1,6 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 
-import { configureHttpCors, configureRootSwaggerRedirect } from './bootstrap-http';
+import { configureHttpBodyParser, configureHttpCors, configureRootSwaggerRedirect } from './bootstrap-http';
 
 describe('configureHttpCors', () => {
   it('allows Swagger UI requests from the local gateway origin', () => {
@@ -91,6 +91,22 @@ describe('configureHttpCors', () => {
     corsOptions.origin('https://example.invalid', callback);
 
     expect(callback).toHaveBeenCalledWith(null, false);
+  });
+});
+
+describe('configureHttpBodyParser', () => {
+  it('registers JSON and urlencoded parsers with the configured payload limit', () => {
+    const app = {
+      use: jest.fn(),
+    };
+    const configService = {
+      get: jest.fn().mockReturnValue('7mb'),
+    } as unknown as ConfigService;
+
+    configureHttpBodyParser(app as never, configService);
+
+    expect(configService.get).toHaveBeenCalledWith('API_JSON_BODY_LIMIT');
+    expect(app.use).toHaveBeenCalledTimes(2);
   });
 });
 

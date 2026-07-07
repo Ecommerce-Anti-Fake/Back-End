@@ -3,13 +3,14 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { configureHttpCors, configureRootSwaggerRedirect } from './bootstrap-http';
+import { configureHttpBodyParser, configureHttpCors, configureRootSwaggerRedirect } from './bootstrap-http';
 import { ChatRealtimeService } from './modules/realtime/chat-realtime.service';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
   const configService = app.get(ConfigService);
 
+  configureHttpBodyParser(app, configService);
   app.setGlobalPrefix('api');
   configureHttpCors(app, configService);
   configureRootSwaggerRedirect(app);

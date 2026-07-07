@@ -1,5 +1,8 @@
 import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { json, urlencoded } from 'express';
+
+const DEFAULT_BODY_LIMIT = '5mb';
 
 const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:3000',
@@ -48,6 +51,16 @@ export function configureHttpCors(
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Request-Id'],
   });
+}
+
+export function configureHttpBodyParser(
+  app: INestApplication,
+  configService: ConfigService,
+) {
+  const limit = configService.get<string>('API_JSON_BODY_LIMIT') ?? DEFAULT_BODY_LIMIT;
+
+  app.use(json({ limit }));
+  app.use(urlencoded({ extended: true, limit }));
 }
 
 export function configureRootSwaggerRedirect(

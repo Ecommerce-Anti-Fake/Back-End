@@ -4,7 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule as ApiGatewayModule } from './app.module';
-import { configureHttpCors, configureRootSwaggerRedirect } from './bootstrap-http';
+import { configureHttpBodyParser, configureHttpCors, configureRootSwaggerRedirect } from './bootstrap-http';
 import { ChatRealtimeService } from './modules/realtime/chat-realtime.service';
 import { AppModule as AffiliateServiceModule } from '../../affiliate-service/src/app.module';
 import { AppModule as AuthServiceModule } from '../../auth-service/src/app.module';
@@ -43,9 +43,10 @@ function configureLocalServiceHosts() {
 }
 
 async function bootstrapGateway() {
-  const app = await NestFactory.create(ApiGatewayModule);
+  const app = await NestFactory.create(ApiGatewayModule, { bodyParser: false });
   const configService = app.get(ConfigService);
 
+  configureHttpBodyParser(app, configService);
   app.setGlobalPrefix('api');
   configureHttpCors(app, configService);
   configureRootSwaggerRedirect(app);
