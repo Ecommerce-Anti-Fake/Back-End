@@ -3,6 +3,7 @@ import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiForbiddenResponse,
+  ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -10,7 +11,13 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ActiveUserGuard, JwtAuthGuard, Roles, RolesGuard } from '@security';
-import { AdminUserListResponseDto, ListUsersQueryDto, UpdateUserDto, UserResponseDto } from '@users';
+import {
+  AdminUserDetailResponseDto,
+  AdminUserListResponseDto,
+  ListUsersQueryDto,
+  UpdateUserDto,
+  UserResponseDto,
+} from '@users';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 import { UsersRpcService } from '../user/users-rpc.service';
 import { AdminService } from './admin.service';
@@ -140,9 +147,10 @@ export class AdminController {
   @ApiBearerAuth('access-token')
   @ApiParam({ name: 'id', description: 'ID user can xem chi tiet.' })
   @ApiOkResponse({
-    description: 'Thong tin chi tiet user.',
-    type: UserResponseDto,
+    description: 'Thong tin chi tiet user va shop moi nhat; shop la null neu user khong co shop.',
+    type: AdminUserDetailResponseDto,
   })
+  @ApiNotFoundResponse({ description: 'Khong tim thay user.' })
   @ApiUnauthorizedResponse({
     description: 'Thieu access token hoac token khong hop le.',
   })

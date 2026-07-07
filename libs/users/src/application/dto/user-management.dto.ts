@@ -12,6 +12,53 @@ const KYC_LOOKUP_STATUSES = ['pending', 'approved', 'rejected'] as const;
 const KYC_SORT_FIELDS = ['id', 'fullName', 'verifiedAt'] as const;
 const SORT_ORDERS = ['asc', 'desc'] as const;
 
+class AdminUserStatisticsResponseDto {
+  @ApiProperty({ example: 1240 }) orders!: number;
+  @ApiProperty({ example: 45 }) posts!: number;
+  @ApiProperty({ example: 2 }) reports!: number;
+  @ApiProperty({ example: 98, minimum: 0, maximum: 100 }) positiveRate!: number;
+}
+
+class AdminUserDetailItemResponseDto {
+  @ApiProperty({ example: '73d1fd5d-62e0-4a17-ac4c-fd8db5a4ade7' }) id!: string;
+  @ApiPropertyOptional({ nullable: true, example: 'Nguyen Van A' }) displayName!: string | null;
+  @ApiPropertyOptional({ nullable: true, example: 'https://cdn.example.com/avatar.jpg' }) avatar!: string | null;
+  @ApiPropertyOptional({ nullable: true, example: 'nguyenvana@example.com' }) email!: string | null;
+  @ApiPropertyOptional({ nullable: true, example: '0901234567' }) phone!: string | null;
+  @ApiPropertyOptional({ nullable: true, example: '123 Duy Tan, Ha Noi' }) address!: string | null;
+  @ApiProperty({ example: 'user' }) role!: string;
+  @ApiProperty({ example: 'active' }) accountStatus!: string;
+  @ApiProperty({ example: true }) emailVerified!: boolean;
+  @ApiProperty({ example: true }) phoneVerified!: boolean;
+  @ApiProperty({ example: true }) sellerVerified!: boolean;
+  @ApiProperty({ example: '2022-10-12T08:00:00.000Z' }) joinedAt!: Date;
+  @ApiProperty({ example: '2024-05-15T10:20:00.000Z' }) updatedAt!: Date;
+  @ApiProperty({ type: AdminUserStatisticsResponseDto }) statistics!: AdminUserStatisticsResponseDto;
+}
+
+class AdminUserShopDetailResponseDto {
+  @ApiProperty({ example: 'shop-001' }) id!: string;
+  @ApiProperty({ example: 'Masan Consumer Store' }) shopName!: string;
+  @ApiPropertyOptional({ nullable: true }) logo!: string | null;
+  @ApiPropertyOptional({ nullable: true }) banner!: string | null;
+  @ApiProperty({ example: 'verified' }) shopStatus!: string;
+  @ApiProperty({ enum: ['pending', 'verified', 'rejected'], example: 'verified' }) verificationStatus!: string;
+  @ApiProperty({ example: '2023-01-01T00:00:00.000Z' }) createdAt!: Date;
+  @ApiPropertyOptional({ nullable: true, example: 'Hang tieu dung & Thuc pham' }) category!: string | null;
+  @ApiPropertyOptional({ nullable: true, example: '123 Duy Tan, Ha Noi' }) address!: string | null;
+  @ApiProperty({ example: 4.4 }) rating!: number;
+  @ApiProperty({ example: 1200 }) reviewCount!: number;
+  @ApiProperty({ example: 91 }) productCount!: number;
+  @ApiProperty({ example: 850 }) totalSold!: number;
+  @ApiProperty({ example: 450000000 }) revenue!: number;
+}
+
+export class AdminUserDetailResponseDto {
+  @ApiProperty({ type: AdminUserDetailItemResponseDto }) user!: AdminUserDetailItemResponseDto;
+  @ApiPropertyOptional({ type: AdminUserShopDetailResponseDto, nullable: true })
+  shop!: AdminUserShopDetailResponseDto | null;
+}
+
 export class UserResponseDto {
   @ApiProperty({
     description: 'ID nguoi dung.',

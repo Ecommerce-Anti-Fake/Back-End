@@ -1,18 +1,66 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UsersRepository } from '../../infrastructure/persistence/users.repository';
-import { toUserSummary } from './users.mapper';
 
 @Injectable()
 export class GetUserByIdUseCase {
   constructor(private readonly usersRepository: UsersRepository) {}
 
   async execute(id: string) {
-    const user = await this.usersRepository.findUserById(id);
-    if (!user) {
+    const detail = await this.usersRepository.findAdminUserDetailById(id);
+    if (!detail) {
       throw new NotFoundException('User not found');
     }
 
-    const defaultAddress = await this.usersRepository.findDefaultAddressByUserId(id);
-    return toUserSummary(user, defaultAddress);
+    const { user, shopMetrics } = detail;
+    const shop = user.ownedShops[0];
+    const sellerVerified = shop?.shopStatus === 'verified';
+
+    return {
+      user: {
+        id: user.id,
+        displayName: user.displayName,
+        avatar: user.avatarMedia?.secureUrl ?? null,
+        email: user.email,
+        phone: user.phone,
+        address: user.addresses[0]?.addressLine ?? null,
+        role: user.role,
+        accountStatus: user.accountStatus,
+        emailVerified: Boolean(user.email),
+        phoneVerified: Boolean(user.phone),
+        sellerVerified,
+        joinedAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        statistics: {
+          orders: detail.orders,
+          posts: detail.posts,
+          reports: detail.reports,
+          positiveRate: detail.receivedReviews === 0
+            ? 0
+            : Math.round((detail.positiveReviews / detail.receivedReviews) * 100),
+        },
+      },
+      shop: shop && shopMetrics
+        ? {
+            id: shop.id,
+            shopName: shop.shopName,
+            logo: shop.avatarMedia?.secureUrl ?? null,
+            banner: shop.bannerMedia?.secureUrl ?? null,
+            shopStatus: shop.shopStatus,
+            verificationStatus: sellerVerified
+              ? 'verified'
+              : shop.shopStatus === 'rejected'
+                ? 'rejected'
+                : 'pending',
+            createdAt: shop.createdAt,
+            category: shop.registeredCategories.map(({ category }) => category.name).join(', ') || null,
+            address: shop.warehouseAddress ?? null,
+            rating: shopMetrics.rating,
+            reviewCount: shopMetrics.reviewCount,
+            productCount: shop._count.offers,
+            totalSold: shopMetrics.totalSold,
+            revenue: shopMetrics.revenue,
+          }
+        : null,
+    };
   }
 }

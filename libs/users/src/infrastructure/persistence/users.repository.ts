@@ -525,6 +525,89 @@ export class UsersRepository {
     });
   }
 
+  async findAdminUserDetailById(id: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, role: 'user' },
+      include: {
+        avatarMedia: { select: { secureUrl: true } },
+        addresses: {
+          where: { isDefault: true },
+          take: 1,
+          select: { addressLine: true },
+        },
+        ownedShops: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          include: {
+            avatarMedia: { select: { secureUrl: true } },
+            bannerMedia: { select: { secureUrl: true } },
+            registeredCategories: {
+              where: { registrationStatus: 'approved' },
+              orderBy: { createdAt: 'asc' },
+              select: { category: { select: { name: true } } },
+            },
+            _count: { select: { offers: true } },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return null;
+    }
+
+    const shop = user.ownedShops[0];
+    const [orders, posts, reports, receivedReviews, positiveReviews, shopReviewStats, shopSaleStats, shopRevenueStats] =
+      await Promise.all([
+        this.prisma.order.count({ where: { buyerUserId: id } }),
+        this.prisma.socialPost.count({ where: { authorUserId: id } }),
+        this.prisma.report.count({ where: { reporterUserId: id } }),
+        this.prisma.review.count({ where: { toUserId: id } }),
+        this.prisma.review.count({ where: { toUserId: id, rating: { gte: 4 } } }),
+        shop
+          ? this.prisma.review.aggregate({
+              where: {
+                OR: [
+                  { orderItem: { is: { orderShopGroup: { is: { shopId: shop.id } } } } },
+                  { orderItemId: null, order: { shopId: shop.id } },
+                ],
+              },
+              _avg: { rating: true },
+              _count: { _all: true },
+            })
+          : null,
+        shop
+          ? this.prisma.orderItem.aggregate({
+              where: { orderShopGroup: { is: { shopId: shop.id, fulfillmentStatus: 'DELIVERED' } } },
+              _sum: { quantity: true },
+            })
+          : null,
+        shop
+          ? this.prisma.orderShopGroup.aggregate({
+              where: { shopId: shop.id, fulfillmentStatus: 'DELIVERED' },
+              _sum: { sellerReceivableAmount: true },
+            })
+          : null,
+      ]);
+
+    return {
+      user,
+      orders,
+      posts,
+      reports,
+      receivedReviews,
+      positiveReviews,
+      shopMetrics: shop
+        ? {
+            rating: Number((shopReviewStats?._avg.rating ?? 0).toFixed(1)),
+            reviewCount: shopReviewStats?._count._all ?? 0,
+            totalSold: shopSaleStats?._sum.quantity ?? 0,
+            revenue: Number(shopRevenueStats?._sum.sellerReceivableAmount ?? 0),
+          }
+        : null,
+    };
+  }
+
   findUserKycByUserId(userId: string): Promise<UserKycWithDocuments | null> {
     return this.prisma.userKyc.findUnique({
       where: { userId },
