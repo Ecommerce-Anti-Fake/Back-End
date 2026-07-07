@@ -35,6 +35,13 @@ export class AuthUserResponseDto {
   })
   avatar!: string | null;
 
+  @ApiPropertyOptional({
+    description: 'ID shop dau tien cua nguoi dung neu co. Null neu la tai khoan nguoi dung thuong.',
+    example: '3b78611b-0b4f-4f8a-9d71-54c80a251001',
+    nullable: true,
+  })
+  shopId!: string | null;
+
   @ApiProperty({
     description: 'Vai tro cua nguoi dung.',
     example: 'user',

@@ -26,6 +26,13 @@ export class AuthSessionRepository {
                 secureUrl: true,
               },
             },
+            ownedShops: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: {
+                id: true,
+              },
+            },
           },
         },
       },

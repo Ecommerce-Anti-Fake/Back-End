@@ -186,6 +186,8 @@ export class SocialPostMutationResponseDto {
 
 export class SocialPostResponseDto {
   @ApiProperty() id!: string;
+  @ApiPropertyOptional({ nullable: true })
+  shopId!: string | null;
   @ApiProperty({ type: SocialPostAuthorResponseDto })
   author!: SocialPostAuthorResponseDto;
   @ApiProperty({ enum: SOCIAL_POST_TYPES }) postType!: string;

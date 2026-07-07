@@ -104,6 +104,13 @@ export class UsersRepository {
             secureUrl: true,
           },
         },
+        ownedShops: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+          },
+        },
       },
     });
   }
@@ -411,6 +418,13 @@ export class UsersRepository {
         avatarMedia: {
           select: {
             secureUrl: true,
+          },
+        },
+        ownedShops: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
           },
         },
       },

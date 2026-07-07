@@ -80,6 +80,7 @@ describe('LoginUseCase', () => {
       avatarMedia: {
         secureUrl: 'https://cdn.example.com/avatar.jpg',
       },
+      ownedShops: [{ id: 'shop-1' }],
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -109,6 +110,7 @@ describe('LoginUseCase', () => {
       user: {
         id: 'user-1',
         email: 'user@example.com',
+        shopId: 'shop-1',
         avatar: 'https://cdn.example.com/avatar.jpg',
         role: 'user',
         accountStatus: 'active',

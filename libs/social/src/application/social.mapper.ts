@@ -64,6 +64,7 @@ export function toSocialPostResponse(
 ) {
   return {
     id: post.id,
+    shopId: post.authorShopId ?? null,
     author: {
       id: post.authorUserId,
       name: displayName(post.author),

@@ -111,6 +111,7 @@ describe('RefreshTokenUseCase', () => {
         displayName: 'User',
         role: 'user',
         accountStatus: 'active',
+        ownedShops: [{ id: 'shop-1' }],
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -131,6 +132,7 @@ describe('RefreshTokenUseCase', () => {
       user: {
         id: 'user-1',
         email: 'user@example.com',
+        shopId: 'shop-1',
       },
     });
     expect(authSessionRepositoryMock.update).toHaveBeenCalledWith('session-1', {

@@ -24,6 +24,7 @@ describe('GetSocialPostUseCase', () => {
     );
     expect(result).toEqual({
       id: 'post-1',
+      shopId: 'shop-1',
       author: {
         id: 'user-1',
         name: 'Cong ty An Phat',
@@ -65,13 +66,24 @@ describe('GetSocialPostUseCase', () => {
       }),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
+
+  it('returns null shopId for user-authored posts', async () => {
+    repository.findSocialPostById.mockResolvedValue(socialPost({ shopId: null }));
+
+    const result = await useCase.execute({
+      postId: 'post-1',
+      requesterUserId: 'viewer-1',
+    });
+
+    expect(result.shopId).toBeNull();
+  });
 });
 
-function socialPost(input: { visibility?: string } = {}) {
+function socialPost(input: { visibility?: string; shopId?: string | null } = {}) {
   return {
     id: 'post-1',
     authorUserId: 'user-1',
-    authorShopId: 'shop-1',
+    authorShopId: input.shopId === undefined ? 'shop-1' : input.shopId,
     offerId: 'offer-1',
     postType: 'PRODUCT_SHARE',
     body: 'Kham pha san pham chinh hang',

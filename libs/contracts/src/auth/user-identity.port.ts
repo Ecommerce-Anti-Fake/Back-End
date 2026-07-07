@@ -5,6 +5,7 @@ export type UserIdentityRecord = {
   displayName: string | null;
   avatar?: string | null;
   avatarMedia?: { secureUrl: string | null } | null;
+  ownedShops?: Array<{ id: string }>;
   role: string;
   accountStatus: string;
   password?: string | null;

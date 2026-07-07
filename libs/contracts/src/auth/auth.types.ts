@@ -4,6 +4,7 @@ export type SafeUser = {
   phone: string | null;
   displayName: string | null;
   avatar: string | null;
+  shopId: string | null;
   role: string;
   accountStatus: string;
   createdAt?: Date;

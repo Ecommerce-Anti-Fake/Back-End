@@ -83,6 +83,7 @@ describe('social post interaction use cases in SocialModule', () => {
     });
     expect(liked.viewer.liked).toBe(true);
     expect(unliked.viewer.liked).toBe(false);
+    expect(liked.shopId).toBeNull();
     expect(repository.createNotification).toHaveBeenCalledWith(expect.objectContaining({
       userId: 'user-1',
       notificationType: 'SOCIAL_POST_REACTION',
