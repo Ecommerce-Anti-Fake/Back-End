@@ -1,9 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { CartWithItems, OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { ShippingCarrierAdapterService } from '../services';
 
 @Injectable()
 export class QuoteCartShippingOptionsUseCase {
+  private readonly logger = new Logger(QuoteCartShippingOptionsUseCase.name);
+
   constructor(
     private readonly ordersRepository: OrdersRepository,
     private readonly shippingCarrierAdapterService: ShippingCarrierAdapterService,
@@ -109,16 +111,25 @@ export class QuoteCartShippingOptionsUseCase {
       throw new BadRequestException('Default shipping address district and ward are required for GHN quotes');
     }
 
+    const origin = this.resolveShopOrigin(group);
     const parcel = this.resolveShopParcel(group);
     const declaredValue = group.items.reduce(
       (total, item) => total + Number(item.offer.price.toString()) * item.quantity,
       0,
     );
-    const services = await this.shippingCarrierAdapterService.listGhnServices(destination.shippingDistrictId);
+    this.logger.log(
+      `Loading GHN available services for shopId=${group.shopId}, fromDistrictId=${origin.fromDistrictId}, toDistrictId=${destination.shippingDistrictId}`,
+    );
+    const services = await this.shippingCarrierAdapterService.listGhnServices(
+      destination.shippingDistrictId,
+      origin.fromDistrictId,
+    );
     const quoted = await Promise.all(
       services.map(async (service, index) => {
         const quote = await this.shippingCarrierAdapterService.quoteShipment({
           providerCode: 'GHN',
+          fromDistrictId: origin.fromDistrictId,
+          fromWardCode: origin.fromWardCode,
           shippingName: null,
           shippingPhone: null,
           shippingAddress: destination.shippingAddress ?? null,
@@ -178,11 +189,31 @@ export class QuoteCartShippingOptionsUseCase {
 
   private async resolveShippingDestination(buyerUserId: string): Promise<ShippingQuoteDestination> {
     const defaultAddress = await this.ordersRepository.findDefaultAddressByUserId(buyerUserId);
-    const carrierLocation = parseInternalAddressWardCode(defaultAddress?.wardCode);
+    if (!defaultAddress) {
+      throw new BadRequestException('Buyer default shipping address is required for shipping quote');
+    }
+
+    const carrierLocation = parseInternalAddressWardCode(defaultAddress.wardCode);
+    if (!carrierLocation) {
+      throw new BadRequestException('Buyer default shipping address ward code is invalid for shipping quote');
+    }
+
     return {
-      shippingAddress: defaultAddress?.addressLine ?? null,
-      shippingDistrictId: carrierLocation?.districtId ?? null,
-      shippingWardCode: carrierLocation?.carrierWardCode ?? null,
+      shippingAddress: defaultAddress.addressLine ?? null,
+      shippingDistrictId: carrierLocation.districtId,
+      shippingWardCode: carrierLocation.carrierWardCode,
+    };
+  }
+
+  private resolveShopOrigin(group: ShopCartItemGroup): ShippingQuoteOrigin {
+    const carrierLocation = parseInternalAddressWardCode(group.warehouseWardCode);
+    if (!carrierLocation) {
+      throw new BadRequestException('Shop warehouse address is required for shipping quote');
+    }
+
+    return {
+      fromDistrictId: carrierLocation.districtId,
+      fromWardCode: carrierLocation.carrierWardCode,
     };
   }
 
@@ -246,11 +277,11 @@ export class QuoteCartShippingOptionsUseCase {
       .toLowerCase();
 
     if (normalized.includes('nhanh')) {
-      return '2-3 ngay';
+      return '2-3 ngày';
     }
 
     if (normalized.includes('chuan') || normalized.includes('tiet kiem')) {
-      return '3-4 ngay';
+      return '3-4 ngày';
     }
 
     return null;
@@ -270,6 +301,11 @@ type ShippingQuoteDestination = {
   shippingAddress: string | null;
   shippingDistrictId: number | null;
   shippingWardCode: string | null;
+};
+
+type ShippingQuoteOrigin = {
+  fromDistrictId: number;
+  fromWardCode: string;
 };
 
 function parseInternalAddressWardCode(wardCode?: string | null) {

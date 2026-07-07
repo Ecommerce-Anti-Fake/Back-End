@@ -1,4 +1,4 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export type ShippingBookingInput = {
@@ -24,6 +24,8 @@ export type ShippingBookingResult = {
 };
 
 export type ShippingQuoteInput = Omit<ShippingBookingInput, 'orderId' | 'providerName'> & {
+  fromDistrictId?: number | null;
+  fromWardCode?: string | null;
   itemName: string;
   declaredValue: number;
   fallbackFee: number;
@@ -63,6 +65,8 @@ export type GhnService = {
 
 @Injectable()
 export class ShippingCarrierAdapterService {
+  private readonly logger = new Logger(ShippingCarrierAdapterService.name);
+
   constructor(private readonly configService: ConfigService) {}
 
   async bookShipment(input: ShippingBookingInput): Promise<ShippingBookingResult> {
@@ -108,6 +112,7 @@ export class ShippingCarrierAdapterService {
     } | null;
     const fee = Number(payload?.data?.total ?? payload?.data?.service_fee ?? 0);
     if (!response.ok || fee <= 0) {
+      this.logger.warn(`GHN fee failed with status=${response.status}, message=${payload?.message || 'empty response'}`);
       throw new ServiceUnavailableException(payload?.message || 'Could not calculate GHN shipping fee');
     }
 
@@ -186,6 +191,9 @@ export class ShippingCarrierAdapterService {
       ];
     }
 
+    this.logger.log(
+      `Loading GHN available services with GHN_SHOP_ID=${credentials.shopId}, fromDistrictId=${fromDistrictId}, toDistrictId=${districtId}`,
+    );
     const response = await fetch(this.resolveGhnAvailableServicesUrl(credentials.baseUrl), {
       method: 'POST',
       headers: {
@@ -412,9 +420,12 @@ export class ShippingCarrierAdapterService {
     parcelWidthCm?: number | null;
     parcelHeightCm?: number | null;
     itemName: string;
+    fromDistrictId?: number | null;
+    fromWardCode?: string | null;
   }) {
     const toDistrictId = input.shippingDistrictId;
     const toWardCode = input.shippingWardCode?.trim();
+    const fromDistrictId = input.fromDistrictId ?? null;
     const serviceTypeId = this.resolveServiceTypeId(input);
     const weight = input.parcelWeightGrams;
     const length = input.parcelLengthCm;
@@ -432,6 +443,7 @@ export class ShippingCarrierAdapterService {
     return {
       to_district_id: toDistrictId,
       to_ward_code: toWardCode,
+      from_district_id: fromDistrictId || undefined,
       service_id: input.shippingServiceId ?? undefined,
       service_type_id: input.shippingServiceId ? undefined : serviceTypeId,
       weight,

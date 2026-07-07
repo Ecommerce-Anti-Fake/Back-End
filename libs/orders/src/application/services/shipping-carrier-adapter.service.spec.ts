@@ -138,6 +138,8 @@ describe('ShippingCarrierAdapterService', () => {
       shippingAddress: '12 Nguyen Trai',
       shippingDistrictId: 1450,
       shippingWardCode: '21211',
+      fromDistrictId: 1442,
+      fromWardCode: '20101',
       shippingServiceTypeId: 2,
       parcelWeightGrams: 500,
       parcelLengthCm: 20,
@@ -155,6 +157,7 @@ describe('ShippingCarrierAdapterService', () => {
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
       to_district_id: 1450,
       to_ward_code: '21211',
+      from_district_id: 1442,
       service_type_id: 2,
       weight: 500,
       insurance_value: 200000,
@@ -241,7 +244,7 @@ describe('ShippingCarrierAdapterService', () => {
     );
   });
 
-  it('loads GHN available services when origin district is configured', async () => {
+  it('loads GHN available services with the origin district override before env fallback', async () => {
     configServiceMock.get.mockImplementation((key: string) => {
       const values: Record<string, string> = {
         GHN_BASE_URL: 'https://dev-online-gateway.ghn.vn',
@@ -259,12 +262,12 @@ describe('ShippingCarrierAdapterService', () => {
     } as Response);
     const service = new ShippingCarrierAdapterService(configServiceMock as unknown as ConfigService);
 
-    await expect(service.listGhnServices(1450)).resolves.toEqual([
+    await expect(service.listGhnServices(1450, 9999)).resolves.toEqual([
       { serviceId: 53320, serviceTypeId: 2, shortName: 'Hang nhe' },
     ]);
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
       shop_id: 12345,
-      from_district: 1442,
+      from_district: 9999,
       to_district: 1450,
     });
   });

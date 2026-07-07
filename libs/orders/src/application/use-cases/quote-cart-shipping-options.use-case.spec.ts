@@ -61,11 +61,13 @@ describe('QuoteCartShippingOptionsUseCase', () => {
     });
 
     expect(shippingCarrierAdapterMock.listGhnServices).toHaveBeenCalledTimes(1);
-    expect(shippingCarrierAdapterMock.listGhnServices).toHaveBeenCalledWith(1450);
+    expect(shippingCarrierAdapterMock.listGhnServices).toHaveBeenCalledWith(1450, 1442);
     expect(shippingCarrierAdapterMock.quoteShipment).toHaveBeenCalledTimes(1);
     expect(shippingCarrierAdapterMock.quoteShipment).toHaveBeenCalledWith(
       expect.objectContaining({
         providerCode: 'GHN',
+        fromDistrictId: 1442,
+        fromWardCode: '20101',
         declaredValue: 500000,
         parcelWeightGrams: 1300,
         parcelLengthCm: 30,
@@ -81,7 +83,7 @@ describe('QuoteCartShippingOptionsUseCase', () => {
           providerName: 'Giao Hang Nhanh',
           methodName: 'Nhanh',
           shippingFee: 39000,
-          estimatedDelivery: '2-3 ngay',
+          estimatedDelivery: '2-3 ngày',
         },
       ],
     });
@@ -121,7 +123,7 @@ describe('QuoteCartShippingOptionsUseCase', () => {
           providerName: 'Giao Hang Nhanh',
           methodName: 'Nhanh',
           shippingFee: 55000,
-          estimatedDelivery: '2-3 ngay',
+          estimatedDelivery: '2-3 ngày',
         },
       ],
     });
@@ -156,7 +158,7 @@ describe('QuoteCartShippingOptionsUseCase', () => {
     );
   });
 
-  it('does not use seller warehouse district for GHN service lookup', async () => {
+  it('uses the seller warehouse district for GHN service lookup instead of GHN_FROM_DISTRICT_ID', async () => {
     ordersRepositoryMock.getOrCreateActiveCart.mockResolvedValueOnce({
       id: 'cart-1',
       buyerUserId: 'buyer-1',
@@ -175,7 +177,68 @@ describe('QuoteCartShippingOptionsUseCase', () => {
 
     await useCase.execute({ buyerUserId: 'buyer-1', cartItemIds: ['item-1'] });
 
-    expect(shippingCarrierAdapterMock.listGhnServices).toHaveBeenCalledWith(1450);
+    expect(shippingCarrierAdapterMock.listGhnServices).toHaveBeenCalledWith(1450, 9999);
+    expect(shippingCarrierAdapterMock.quoteShipment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        fromDistrictId: 9999,
+        fromWardCode: '20101',
+      }),
+    );
+  });
+
+  it('rejects quotes when buyer has no default address', async () => {
+    ordersRepositoryMock.getOrCreateActiveCart.mockResolvedValueOnce({
+      id: 'cart-1',
+      buyerUserId: 'buyer-1',
+      cartStatus: 'ACTIVE',
+      items: [createCartItem({ id: 'item-1' })],
+    });
+    ordersRepositoryMock.findDefaultAddressByUserId.mockResolvedValueOnce(null);
+
+    await expect(useCase.execute({ buyerUserId: 'buyer-1', cartItemIds: ['item-1'] })).rejects.toThrow(
+      'Buyer default shipping address is required for shipping quote',
+    );
+  });
+
+  it('rejects quotes when shop warehouse ward code is missing', async () => {
+    ordersRepositoryMock.getOrCreateActiveCart.mockResolvedValueOnce({
+      id: 'cart-1',
+      buyerUserId: 'buyer-1',
+      cartStatus: 'ACTIVE',
+      items: [createCartItem({ id: 'item-1', warehouseWardCode: null })],
+    });
+    mockDefaultAddress(ordersRepositoryMock);
+
+    await expect(useCase.execute({ buyerUserId: 'buyer-1', cartItemIds: ['item-1'] })).rejects.toThrow(
+      'Shop warehouse address is required for shipping quote',
+    );
+  });
+
+  it('returns every positive GHN Nhanh, Chuan, and Tiet kiem option', async () => {
+    ordersRepositoryMock.getOrCreateActiveCart.mockResolvedValueOnce({
+      id: 'cart-1',
+      buyerUserId: 'buyer-1',
+      cartStatus: 'ACTIVE',
+      items: [createCartItem({ id: 'item-1' })],
+    });
+    mockDefaultAddress(ordersRepositoryMock);
+    shippingCarrierAdapterMock.listGhnServices.mockResolvedValueOnce([
+      { serviceId: 53320, serviceTypeId: 2, shortName: 'Nhanh' },
+      { serviceId: 53321, serviceTypeId: 3, shortName: 'Chuan' },
+      { serviceId: 53322, serviceTypeId: 4, shortName: 'Tiet kiem' },
+    ]);
+    shippingCarrierAdapterMock.quoteShipment
+      .mockResolvedValueOnce({ shippingFeeAmount: 31000, serviceId: 53320, serviceTypeId: 2 })
+      .mockResolvedValueOnce({ shippingFeeAmount: 24000, serviceId: 53321, serviceTypeId: 3 })
+      .mockResolvedValueOnce({ shippingFeeAmount: 19000, serviceId: 53322, serviceTypeId: 4 });
+
+    const result = await useCase.execute({ buyerUserId: 'buyer-1', cartItemIds: ['item-1'] });
+
+    expect(result.options).toEqual([
+      expect.objectContaining({ methodName: 'Nhanh', shippingFee: 31000, estimatedDelivery: '2-3 ngày' }),
+      expect.objectContaining({ methodName: 'Chuan', shippingFee: 24000, estimatedDelivery: '3-4 ngày' }),
+      expect.objectContaining({ methodName: 'Tiet kiem', shippingFee: 19000, estimatedDelivery: '3-4 ngày' }),
+    ]);
   });
 
   it('requires parcel snapshots before quoting GHN options', async () => {
@@ -258,7 +321,9 @@ function createCartItem(overrides: Record<string, unknown> = {}) {
         id: shopId,
         shopName,
         warehouseAddress: overrides.warehouseAddress ?? 'Warehouse address',
-        warehouseWardCode: overrides.warehouseWardCode ?? 'VN-P202-D1442-W20101',
+        warehouseWardCode: Object.prototype.hasOwnProperty.call(overrides, 'warehouseWardCode')
+          ? overrides.warehouseWardCode
+          : 'VN-P202-D1442-W20101',
         warehouseWardName: overrides.warehouseWardName ?? 'Phuong kho',
       },
       shippingMethods: [
