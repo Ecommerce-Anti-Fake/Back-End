@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CreateOfferUseCase } from './create-offer.use-case';
 import { OffersRepository } from '../../infrastructure/persistence/offers.repository';
-import { MediaService } from '@media';
 
 describe('CreateOfferUseCase', () => {
   let useCase: CreateOfferUseCase;
@@ -20,12 +19,6 @@ describe('CreateOfferUseCase', () => {
     createOfferMedia: jest.fn(),
   };
 
-  const mediaServiceMock = {
-    uploadCloudinaryBuffer: jest.fn(),
-    createCloudinaryAsset: jest.fn(),
-    deleteCloudinaryAsset: jest.fn(),
-  };
-
   beforeEach(async () => {
     jest.resetAllMocks();
 
@@ -33,7 +26,6 @@ describe('CreateOfferUseCase', () => {
       providers: [
         CreateOfferUseCase,
         { provide: OffersRepository, useValue: productRepositoryMock },
-        { provide: MediaService, useValue: mediaServiceMock },
       ],
     }).compile();
 
@@ -58,25 +50,10 @@ describe('CreateOfferUseCase', () => {
   }
 
   function productImages() {
-    return [
-      {
-        buffer: Buffer.from('image-bytes'),
-        mimetype: 'image/jpeg',
-        originalname: 'product.jpg',
-        size: 11,
-      },
-    ];
+    return ['https://cdn.example.com/product.jpg'];
   }
 
   function mockSuccessfulImagePersistence() {
-    mediaServiceMock.uploadCloudinaryBuffer.mockResolvedValueOnce({
-      publicId: 'offers/offer-1/media/user-1-1',
-      secureUrl:
-        'https://res.cloudinary.com/demo/image/upload/v1/offers/offer-1/media/user-1-1.jpg',
-    });
-    mediaServiceMock.createCloudinaryAsset.mockResolvedValueOnce({
-      id: 'media-asset-1',
-    });
     productRepositoryMock.createOfferMedia.mockResolvedValueOnce({
       id: 'offer-media-1',
     });
@@ -293,10 +270,16 @@ describe('CreateOfferUseCase', () => {
       shopId: 'shop-1',
       categoryId: 'category-1',
       brandId: 'brand-1',
+      modelName: 'Kem chong nang SPF50',
+      gtin: '8930000000141',
       title: 'Offer first product',
       description: 'Desc',
       price: 100000,
       availableQuantity: 10,
+      parcelWeightGrams: 450,
+      parcelLengthCm: 25,
+      parcelWidthCm: 10,
+      parcelHeightCm: 8,
       productImages: productImages(),
     });
 
@@ -304,25 +287,20 @@ describe('CreateOfferUseCase', () => {
     expect(productRepositoryMock.createOffer).toHaveBeenCalledWith(
       expect.objectContaining({
         brandId: 'brand-1',
-        modelName: 'Offer first product',
-        gtin: null,
+        modelName: 'Kem chong nang SPF50',
+        gtin: '8930000000141',
         verificationPolicy: 'manual_review',
+        parcelWeightGrams: 450,
+        parcelLengthCm: 25,
+        parcelWidthCm: 10,
+        parcelHeightCm: 8,
       }),
     );
-    expect(mediaServiceMock.uploadCloudinaryBuffer).toHaveBeenCalledWith({
-      buffer: Buffer.from('image-bytes'),
-      folder: 'offers/offer-1/media',
-      requesterUserId: 'user-1',
-      assetType: 'IMAGE',
-      mimeType: 'image/jpeg',
-      sequence: 1,
-    });
     expect(productRepositoryMock.createOfferMedia).toHaveBeenCalledWith({
       offerId: 'offer-1',
-      mediaAssetId: 'media-asset-1',
+      mediaAssetId: null,
       mediaType: 'thumbnail',
-      fileUrl:
-        'https://res.cloudinary.com/demo/image/upload/v1/offers/offer-1/media/user-1-1.jpg',
+      fileUrl: 'https://cdn.example.com/product.jpg',
       phash: null,
     });
   });

@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsIn,
   IsInt,
@@ -430,15 +432,9 @@ export class CreateOfferDto {
   @IsString()
   categoryId!: string;
 
-  @ApiPropertyOptional({ example: 'brand-id', nullable: true })
-  @IsOptional()
+  @ApiProperty({ example: 'brand-id' })
   @IsString()
-  brandId?: string;
-
-  @ApiPropertyOptional({ example: 'distribution-node-id' })
-  @IsOptional()
-  @IsString()
-  distributionNodeId?: string;
+  brandId!: string;
 
   @ApiProperty({ example: 'Kem chong nang SPF50 - lo 2026' })
   @IsString()
@@ -450,6 +446,16 @@ export class CreateOfferDto {
   @IsString()
   @MinLength(3)
   description!: string;
+
+  @ApiProperty({
+    example: ['image1', 'image2', 'image3', 'image4'],
+    isArray: true,
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(10)
+  @IsString({ each: true })
+  productImages!: string[];
 
   @ApiProperty({ example: 150000 })
   @Type(() => Number)
@@ -474,44 +480,39 @@ export class CreateOfferDto {
   @Min(1)
   availableQuantity!: number;
 
-  @ApiPropertyOptional({ enum: OFFER_STATUSES, example: 'draft' })
-  @IsOptional()
+  @ApiProperty({ example: '8930000000141' })
   @IsString()
-  @IsIn(OFFER_STATUSES)
-  offerStatus?: 'active' | 'inactive' | 'draft';
+  gtin!: string;
 
-  @ApiPropertyOptional({ example: 'standard' })
-  @IsOptional()
+  @ApiProperty({ example: 'Kem chong nang SPF50' })
   @IsString()
-  verificationLevel?: string;
+  @MinLength(1)
+  @MaxLength(255)
+  model!: string;
 
-  @ApiPropertyOptional({ example: 500 })
-  @IsOptional()
+  @ApiProperty({ example: 450 })
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  parcelWeightGrams?: number;
+  weightGrams!: number;
 
-  @ApiPropertyOptional({ example: 20 })
-  @IsOptional()
+  @ApiProperty({ example: 25 })
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  parcelLengthCm?: number;
+  lengthCm!: number;
 
-  @ApiPropertyOptional({ example: 12 })
-  @IsOptional()
+  @ApiProperty({ example: 10 })
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  parcelWidthCm?: number;
+  widthCm!: number;
 
-  @ApiPropertyOptional({ example: 8 })
-  @IsOptional()
+  @ApiProperty({ example: 8 })
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  parcelHeightCm?: number;
+  heightCm!: number;
 }
 
 export class UpdateOfferDto {

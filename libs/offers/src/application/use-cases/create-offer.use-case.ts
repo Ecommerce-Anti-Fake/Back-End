@@ -3,23 +3,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { MediaService } from '@media';
 import { OffersRepository } from '../../infrastructure/persistence/offers.repository';
 import { toOfferResponse } from './offers.mapper';
 
 const MAX_PRODUCT_IMAGES = 10;
-const MAX_PRODUCT_IMAGE_BYTES = 5 * 1024 * 1024;
-const ALLOWED_PRODUCT_IMAGE_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-]);
 
 @Injectable()
 export class CreateOfferUseCase {
   constructor(
     private readonly productRepository: OffersRepository,
-    private readonly mediaService: MediaService,
   ) {}
 
   async execute(input: {
@@ -27,6 +19,8 @@ export class CreateOfferUseCase {
     shopId?: string | null;
     categoryId: string;
     brandId?: string | null;
+    modelName?: string | null;
+    gtin?: string | null;
     distributionNodeId?: string | null;
     title: string;
     description: string;
@@ -40,12 +34,7 @@ export class CreateOfferUseCase {
     parcelLengthCm?: number | null;
     parcelWidthCm?: number | null;
     parcelHeightCm?: number | null;
-    productImages?: Array<{
-      buffer: Buffer | { data?: number[] };
-      mimetype: string;
-      originalname?: string;
-      size: number;
-    }>;
+    productImages?: string[];
   }) {
     const productImages = this.validateProductImages(input.productImages ?? []);
     const requestedShopId = input.shopId?.trim();
@@ -156,44 +145,14 @@ export class CreateOfferUseCase {
       ...this.resolveParcelSnapshot(input),
     });
 
-    const uploadedImages: Array<{ publicId: string; assetType: 'IMAGE' }> = [];
-    try {
-      for (const [index, image] of productImages.entries()) {
-        const uploaded = await this.mediaService.uploadCloudinaryBuffer({
-          buffer: image.buffer,
-          folder: `offers/${offer.id}/media`,
-          requesterUserId: input.sellerUserId,
-          assetType: 'IMAGE',
-          mimeType: image.mimetype,
-          sequence: index + 1,
-        });
-        uploadedImages.push({ publicId: uploaded.publicId, assetType: 'IMAGE' });
-
-        const mediaAsset = await this.mediaService.createCloudinaryAsset({
-          ownerUserId: input.sellerUserId,
-          assetType: 'IMAGE',
-          resourceType: 'PRODUCT_IMAGE',
-          publicId: uploaded.publicId,
-          secureUrl: uploaded.secureUrl,
-          mimeType: image.mimetype,
-          folder: `offers/${offer.id}/media`,
-        });
-
-        await this.productRepository.createOfferMedia({
-          offerId: offer.id,
-          mediaAssetId: mediaAsset.id,
-          mediaType: index === 0 ? 'thumbnail' : 'gallery',
-          fileUrl: uploaded.secureUrl,
-          phash: null,
-        });
-      }
-    } catch (error) {
-      await Promise.allSettled(
-        uploadedImages.map((image) =>
-          this.mediaService.deleteCloudinaryAsset(image),
-        ),
-      );
-      throw error;
+    for (const [index, imageUrl] of productImages.entries()) {
+      await this.productRepository.createOfferMedia({
+        offerId: offer.id,
+        mediaAssetId: null,
+        mediaType: index === 0 ? 'thumbnail' : 'gallery',
+        fileUrl: imageUrl,
+        phash: null,
+      });
     }
 
     return toOfferResponse(offer);
@@ -203,6 +162,8 @@ export class CreateOfferUseCase {
     input: {
       categoryId: string;
       brandId?: string | null;
+      modelName?: string | null;
+      gtin?: string | null;
     },
     title: string,
   ) {
@@ -218,8 +179,8 @@ export class CreateOfferUseCase {
 
     return {
       brandId,
-      modelName: title,
-      gtin: null,
+      modelName: input.modelName?.trim() || title,
+      gtin: input.gtin?.trim() || null,
       verificationPolicy: 'manual_review',
     };
   }
@@ -241,62 +202,24 @@ export class CreateOfferUseCase {
   }
 
   private validateProductImages(
-    files: Array<{
-      buffer: Buffer | { data?: number[] };
-      mimetype: string;
-      originalname?: string;
-      size: number;
-    }>,
+    imageUrls: string[],
   ) {
-    if (files.length === 0) {
+    if (imageUrls.length === 0) {
       throw new BadRequestException('At least one product image is required');
     }
 
-    if (files.length > MAX_PRODUCT_IMAGES) {
+    if (imageUrls.length > MAX_PRODUCT_IMAGES) {
       throw new BadRequestException(
         `Offer creation supports up to ${MAX_PRODUCT_IMAGES} product images`,
       );
     }
 
-    return files.map((file) => {
-      const buffer = normalizeBuffer(file.buffer);
-      const mimetype = file.mimetype.trim().toLowerCase();
-
-      if (!ALLOWED_PRODUCT_IMAGE_TYPES.has(mimetype)) {
-        throw new BadRequestException('Product images must be JPG, PNG or WEBP');
+    return imageUrls.map((imageUrl) => {
+      const normalizedUrl = imageUrl.trim();
+      if (!normalizedUrl) {
+        throw new BadRequestException('Product image reference is required');
       }
-
-      if (!buffer.length || file.size <= 0) {
-        throw new BadRequestException('Uploaded product image is empty');
-      }
-
-      if (
-        file.size > MAX_PRODUCT_IMAGE_BYTES ||
-        buffer.length > MAX_PRODUCT_IMAGE_BYTES
-      ) {
-        throw new BadRequestException(
-          'Product image file size must be at most 5MB',
-        );
-      }
-
-      return {
-        buffer,
-        mimetype,
-        originalname: file.originalname,
-        size: file.size,
-      };
+      return normalizedUrl;
     });
   }
-}
-
-function normalizeBuffer(buffer: Buffer | { data?: number[] }) {
-  if (Buffer.isBuffer(buffer)) {
-    return buffer;
-  }
-
-  if (Array.isArray(buffer?.data)) {
-    return Buffer.from(buffer.data);
-  }
-
-  throw new BadRequestException('Uploaded product image is invalid');
 }

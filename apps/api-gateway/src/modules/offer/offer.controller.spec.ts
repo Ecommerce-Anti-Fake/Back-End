@@ -140,32 +140,31 @@ describe('OfferController', () => {
       brandId: 'brand-1',
       title: 'Kem chong nang SPF50',
       description: 'Mo ta san pham',
+      productImages: ['image-1', 'image-2'],
       price: 150000,
       currency: 'VND',
       availableQuantity: 12,
       itemCondition: 'new',
-    }, [
-      {
-        buffer: Buffer.from('image-bytes'),
-        mimetype: 'image/jpeg',
-        originalname: 'product.jpg',
-        size: 11,
-      },
-    ]);
+      gtin: '8930000000141',
+      model: 'Kem chong nang SPF50',
+      weightGrams: 450,
+      lengthCm: 25,
+      widthCm: 10,
+      heightCm: 8,
+    });
 
     expect(catalogRpcService.createOffer).toHaveBeenCalledWith(
       expect.objectContaining({
         sellerUserId: 'seller-1',
         categoryId: 'category-1',
         brandId: 'brand-1',
-        productImages: [
-          {
-            buffer: Buffer.from('image-bytes'),
-            mimetype: 'image/jpeg',
-            originalname: 'product.jpg',
-            size: 11,
-          },
-        ],
+        productImages: ['image-1', 'image-2'],
+        gtin: '8930000000141',
+        modelName: 'Kem chong nang SPF50',
+        parcelWeightGrams: 450,
+        parcelLengthCm: 25,
+        parcelWidthCm: 10,
+        parcelHeightCm: 8,
       }),
     );
     expect(dashboardSseBrokerService.notifyShop).toHaveBeenCalledWith('shop-1');

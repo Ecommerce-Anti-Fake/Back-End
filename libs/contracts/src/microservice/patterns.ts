@@ -779,6 +779,8 @@ export type CreateOfferMessage = {
   shopId?: string | null;
   categoryId: string;
   brandId?: string | null;
+  modelName?: string | null;
+  gtin?: string | null;
   distributionNodeId?: string | null;
   title: string;
   description: string;
@@ -792,12 +794,7 @@ export type CreateOfferMessage = {
   parcelLengthCm?: number | null;
   parcelWidthCm?: number | null;
   parcelHeightCm?: number | null;
-  productImages?: Array<{
-    buffer: Buffer;
-    mimetype: string;
-    originalname?: string;
-    size: number;
-  }>;
+  productImages?: string[];
 };
 
 export type UpdateOfferMessage = {
