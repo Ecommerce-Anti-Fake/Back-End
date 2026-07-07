@@ -1,5 +1,6 @@
 import { PATH_METADATA } from '@nestjs/common/constants';
 import { DECORATORS } from '@nestjs/swagger/dist/constants';
+import { ReviewShopDocumentDto } from '@shops';
 import { AdminShopVerificationController } from './admin-shop-verification.controller';
 import { AdminController } from './admin.controller';
 
@@ -10,6 +11,16 @@ describe('AdminController routes', () => {
     expect(Reflect.getMetadata(PATH_METADATA, AdminController.prototype.getUserById)).toBe('users/:id');
     expect(Reflect.getMetadata(PATH_METADATA, AdminController.prototype.updateUser)).toBe('users/:id');
     expect(Reflect.getMetadata(PATH_METADATA, AdminController.prototype.removeUser)).toBe('users/:id');
+  });
+
+  it('documents shop registration review status as a Swagger enum', () => {
+    const reviewStatusMetadata = Reflect.getMetadata(
+      DECORATORS.API_MODEL_PROPERTIES,
+      ReviewShopDocumentDto.prototype,
+      'reviewStatus',
+    );
+
+    expect(reviewStatusMetadata.enum).toEqual(['approved', 'rejected']);
   });
 });
 
