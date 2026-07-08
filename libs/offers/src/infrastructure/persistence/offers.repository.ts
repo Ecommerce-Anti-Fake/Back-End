@@ -298,6 +298,8 @@ export class OffersRepository {
       shopId?: string;
       sellerUserId?: string;
       includeInactive?: boolean;
+      offerStatus?: 'active' | 'inactive' | 'draft';
+      moderationStatus?: 'pending' | 'approved' | 'rejected' | 'banned';
       q?: string;
       categoryId?: string;
       brandId?: string;
@@ -319,9 +321,16 @@ export class OffersRepository {
     const where: Prisma.OfferWhereInput = {
       ...(input.shopId ? { shopId: input.shopId } : {}),
       ...(Object.keys(shopWhere).length ? { shop: { is: shopWhere } } : {}),
-      ...(!input.includeInactive
-        ? { offerStatus: 'active', moderationStatus: 'approved' }
-        : {}),
+      ...(input.offerStatus
+        ? { offerStatus: input.offerStatus }
+        : !input.includeInactive
+          ? { offerStatus: 'active' }
+          : {}),
+      ...(input.moderationStatus
+        ? { moderationStatus: input.moderationStatus }
+        : !input.includeInactive
+          ? { moderationStatus: 'approved' }
+          : {}),
       ...(input.categoryId ? { categoryId: input.categoryId } : {}),
       ...(input.brandId ? { brandId: input.brandId } : {}),
       ...(input.minPrice !== undefined || input.maxPrice !== undefined

@@ -622,6 +622,8 @@ export type ListOffersMessage = {
   shopId?: string;
   sellerUserId?: string;
   includeInactive?: boolean;
+  offerStatus?: 'active' | 'inactive' | 'draft';
+  moderationStatus?: 'pending' | 'approved' | 'rejected' | 'banned';
   q?: string;
   categoryId?: string;
   brandId?: string;

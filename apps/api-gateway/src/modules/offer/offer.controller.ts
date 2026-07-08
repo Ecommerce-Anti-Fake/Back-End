@@ -194,6 +194,8 @@ export class OfferController {
   ) {
     const result = await this.catalogRpcService.findOffers({
       shopId,
+      offerStatus: query.offerStatus,
+      moderationStatus: query.moderationStatus,
       page: query.page ?? 1,
       pageSize: query.pageSize ?? 20,
     });

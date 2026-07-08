@@ -86,6 +86,8 @@ describe('OfferController', () => {
     );
 
     const result = await controller.findShopOffers('shop-1', {
+      offerStatus: 'inactive',
+      moderationStatus: 'pending',
       page: 2,
       pageSize: 10,
     });
@@ -98,6 +100,8 @@ describe('OfferController', () => {
     ).toBeUndefined();
     expect(catalogRpcService.findOffers).toHaveBeenCalledWith({
       shopId: 'shop-1',
+      offerStatus: 'inactive',
+      moderationStatus: 'pending',
       page: 2,
       pageSize: 10,
     });

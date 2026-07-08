@@ -453,6 +453,16 @@ export class PaginatedOfferListResponseDto {
 }
 
 export class ListShopOffersQueryDto {
+  @ApiPropertyOptional({ enum: OFFER_STATUSES })
+  @IsOptional()
+  @IsIn(OFFER_STATUSES)
+  offerStatus?: (typeof OFFER_STATUSES)[number];
+
+  @ApiPropertyOptional({ enum: MODERATION_STATUSES })
+  @IsOptional()
+  @IsIn(MODERATION_STATUSES)
+  moderationStatus?: (typeof MODERATION_STATUSES)[number];
+
   @ApiPropertyOptional({
     description: '1-based page number.',
     example: 1,
