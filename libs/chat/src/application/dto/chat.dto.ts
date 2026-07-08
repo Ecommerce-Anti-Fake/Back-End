@@ -191,10 +191,10 @@ export class ChatThreadDetailResponseDto {
 export class ChatThreadResponseDto {
   @ApiProperty({ example: 'thread-id' })
   id!: string;
-  @ApiProperty({ example: 'shop-id' })
-  shopId!: string;
-  @ApiProperty({ example: 'Shop AntiFake' })
-  shopName!: string;
+  @ApiPropertyOptional({ example: 'shop-id', nullable: true })
+  shopId!: string | null;
+  @ApiPropertyOptional({ example: 'Shop AntiFake', nullable: true })
+  shopName!: string | null;
   @ApiProperty({ example: 'buyer-user-id' })
   buyerUserId!: string;
   @ApiProperty({ example: 'Nguyen Van A' })

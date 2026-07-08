@@ -478,11 +478,12 @@ model ChatMessageAttachment {
 
 model ChatThread {
   id           String        @id @default(uuid())
-  shopId       String        @map("shop_id")
+  shopId       String?       @map("shop_id")
+  directParticipantKey String? @unique @map("direct_participant_key")
   buyerUserId  String        @map("buyer_user_id")
   sellerUserId String        @map("seller_user_id")
   createdAt    DateTime      @default(now()) @map("created_at")
-  shop         Shop          @relation(fields: [shopId], references: [id])
+  shop         Shop?         @relation(fields: [shopId], references: [id])
   buyer        User          @relation("ChatThreadBuyer", fields: [buyerUserId], references: [id])
   seller       User          @relation("ChatThreadSeller", fields: [sellerUserId], references: [id])
   messages     ChatMessage[]

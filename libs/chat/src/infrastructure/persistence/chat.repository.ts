@@ -24,6 +24,13 @@ export class ChatRepository {
     return this.prisma.chatThread.findFirst({ where: { shopId, buyerUserId }, include: this.chatThreadInclude() });
   }
 
+  findDirectChatThread(directParticipantKey: string) {
+    return this.prisma.chatThread.findUnique({
+      where: { directParticipantKey },
+      include: this.chatThreadInclude(),
+    });
+  }
+
   findChatThreadById(threadId: string) {
     return this.prisma.chatThread.findUnique({ where: { id: threadId }, include: this.chatThreadInclude() });
   }
@@ -121,15 +128,18 @@ export class ChatRepository {
 
   findChatThreadsForUser(input: { requesterUserId: string; requesterRole?: string | null }) {
     return this.prisma.chatThread.findMany({
-      where: input.requesterRole === 'admin'
-        ? {}
-        : { OR: [{ buyerUserId: input.requesterUserId }, { sellerUserId: input.requesterUserId }] },
+      where: { OR: [{ buyerUserId: input.requesterUserId }, { sellerUserId: input.requesterUserId }] },
       include: this.chatThreadInclude(1),
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  createChatThread(input: { shopId: string; buyerUserId: string; sellerUserId: string }) {
+  createChatThread(input: {
+    shopId: string | null;
+    buyerUserId: string;
+    sellerUserId: string;
+    directParticipantKey?: string | null;
+  }) {
     return this.prisma.chatThread.create({ data: input, include: this.chatThreadInclude() });
   }
 

@@ -68,7 +68,7 @@ export class ChatController {
     });
   }
 
-  @ApiOperation({ summary: 'Bat dau chat theo offer' })
+  @ApiOperation({ summary: 'Bat dau chat tu user hoac admin den shop' })
   @ApiBearerAuth('access-token')
   @ApiCreatedResponse({
     description: 'Chat thread da san sang.',
@@ -79,14 +79,16 @@ export class ChatController {
   startChatThread(
     @Param('shopId') shopId: string,
     @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester?: AuthenticatedUser,
   ) {
     return this.catalogRpcService.startChatThread({
       shopId,
-      requesterUserId
+      requesterUserId,
+      requesterRole: requester?.role,
     });
   }
 
-  @ApiOperation({ summary: 'Bat dau chat tu shop den user' })
+  @ApiOperation({ summary: 'Bat dau chat tu shop hoac admin den user' })
   @ApiBearerAuth('access-token')
   @ApiCreatedResponse({
     description: 'Chat thread da san sang.',
@@ -97,10 +99,12 @@ export class ChatController {
   startChatThreadWithUser(
     @Param('userId') userId: string,
     @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester?: AuthenticatedUser,
   ) {
     return this.catalogRpcService.startShopChatThread({
       userId,
       requesterUserId,
+      requesterRole: requester?.role,
     });
   }
 

@@ -29,6 +29,20 @@ describe('StartChatThreadUseCase in ChatModule', () => {
     expect(result).toEqual({ success: true, threadId: 'thread-1' });
   });
 
+  it('allows an admin to start a thread with a shop', async () => {
+    repository.findShopForChat.mockResolvedValue(shop());
+    repository.findChatThreadByShopAndBuyer.mockResolvedValue(null);
+    repository.createChatThread.mockResolvedValue({ ...thread(), buyerUserId: 'admin-1' });
+
+    await useCase.execute({ requesterUserId: 'admin-1', requesterRole: 'admin', shopId: 'shop-1' });
+
+    expect(repository.createChatThread).toHaveBeenCalledWith({
+      shopId: 'shop-1',
+      buyerUserId: 'admin-1',
+      sellerUserId: 'seller-1',
+    });
+  });
+
   it('reuses an existing thread', async () => {
     repository.findShopForChat.mockResolvedValue(shop());
     repository.findChatThreadByShopAndBuyer.mockResolvedValue(thread());

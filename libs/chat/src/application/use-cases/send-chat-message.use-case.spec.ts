@@ -26,26 +26,14 @@ describe('SendChatMessageUseCase in ChatModule', () => {
     expect(repository.createChatMessage).not.toHaveBeenCalled();
   });
 
-  it('allows an admin participant override', async () => {
+  it('rejects an admin who is not a thread participant', async () => {
     repository.findChatThreadById.mockResolvedValue(chatThread());
-    repository.createChatMessage.mockResolvedValue(chatThread({ body: 'Can ho tro dispute' }));
 
-    const result = await useCase.execute({
-      threadId: 'thread-1',
-      requesterUserId: 'admin-1',
-      requesterRole: 'admin',
-      body: ' Can ho tro dispute ',
-    });
+    await expect(useCase.execute({
+      threadId: 'thread-1', requesterUserId: 'admin-1', requesterRole: 'admin', body: 'Xin chao',
+    })).rejects.toBeInstanceOf(ForbiddenException);
 
-    expect(repository.createChatMessage).toHaveBeenCalledWith({
-      threadId: 'thread-1',
-      senderUserId: 'admin-1',
-      clientMessageId: null,
-      body: 'Can ho tro dispute',
-      attachments: [],
-      messageType: 'TEXT',
-    });
-    expect(result.lastMessage?.body).toBe('Can ho tro dispute');
+    expect(repository.createChatMessage).not.toHaveBeenCalled();
   });
 
   it('passes client message id for idempotent retries', async () => {

@@ -41,6 +41,27 @@ describe('chat thread mapper', () => {
       chatUserAvatar: 'https://cdn.test/buyer.jpg',
     });
   });
+
+  it('maps the other user for a direct admin-user thread', () => {
+    const directThread = {
+      ...thread,
+      shopId: null,
+      shop: null,
+      sellerUserId: 'admin-1',
+      seller: { displayName: 'Admin A', email: null, phone: null, avatarMedia: null },
+    };
+
+    expect(toChatThreadListItemResponse(directThread, 'admin-1')).toMatchObject({
+      chatUserID: 'buyer-1',
+      chatUserName: 'Buyer A',
+      chatUserAvatar: 'https://cdn.test/buyer.jpg',
+    });
+    expect(toChatThreadListItemResponse(directThread, 'buyer-1')).toMatchObject({
+      chatUserID: 'admin-1',
+      chatUserName: 'Admin A',
+      chatUserAvatar: null,
+    });
+  });
 });
 
 const emptyMessagesPage = {

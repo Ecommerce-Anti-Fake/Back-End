@@ -5,7 +5,7 @@ import { ChatRepository } from '../../infrastructure/persistence/chat.repository
 export class StartChatThreadUseCase {
   constructor(private readonly chatRepository: ChatRepository) {}
 
-  async execute(input: { requesterUserId: string; shopId: string }) {
+  async execute(input: { requesterUserId: string; requesterRole?: string | null; shopId: string }) {
     const shop = await this.chatRepository.findShopForChat(input.shopId);
     if (!shop) {
       throw new NotFoundException('Shop not found');

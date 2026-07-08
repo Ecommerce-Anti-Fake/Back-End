@@ -36,7 +36,7 @@ export class GetChatThreadUseCase {
 export function canAccessThread(
   thread: { buyerUserId: string; sellerUserId: string },
   requesterUserId: string,
-  requesterRole?: string | null,
+  _requesterRole?: string | null,
 ) {
-  return requesterRole === 'admin' || thread.buyerUserId === requesterUserId || thread.sellerUserId === requesterUserId;
+  return thread.buyerUserId === requesterUserId || thread.sellerUserId === requesterUserId;
 }

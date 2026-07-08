@@ -28,11 +28,11 @@ type ChatMessageAttachmentRecord = {
 
 type ChatThreadWithRelations = {
   id: string;
-  shopId: string;
+  shopId: string | null;
   buyerUserId: string;
   sellerUserId: string;
   createdAt: Date;
-  shop: { shopName: string; avatarMedia?: { secureUrl: string } | null };
+  shop: { shopName: string; avatarMedia?: { secureUrl: string } | null } | null;
   buyer: ChatUserRecord;
   seller: ChatUserRecord;
   messages?: ChatMessageWithSender[];
@@ -58,7 +58,7 @@ export function toChatThreadResponse(thread: ChatThreadWithRelations) {
   return {
     id: thread.id,
     shopId: thread.shopId,
-    shopName: thread.shop.shopName,
+    shopName: thread.shop?.shopName ?? null,
     buyerUserId: thread.buyerUserId,
     buyerName: chatDisplayName(thread.buyer),
     sellerUserId: thread.sellerUserId,
@@ -81,15 +81,13 @@ export function toChatThreadDetailResponse(
   },
   requesterUserId: string,
 ) {
-  const isBuyer = thread.buyerUserId === requesterUserId;
+  const counterpart = chatCounterpart(thread, requesterUserId);
 
   return {
     id: thread.id,
-    chatUserID: isBuyer ? thread.shopId : thread.buyerUserId,
-    chatUserName: isBuyer ? thread.shop.shopName : chatDisplayName(thread.buyer),
-    chatUserAvatar: isBuyer
-      ? thread.shop.avatarMedia?.secureUrl ?? null
-      : thread.buyer.avatarMedia?.secureUrl ?? null,
+    chatUserID: counterpart.id,
+    chatUserName: counterpart.name,
+    chatUserAvatar: counterpart.avatar,
     messages: messagesPage.messages.map((message) => ({
       id: message.id,
       senderUserId: message.senderUserId,
@@ -106,14 +104,12 @@ export function toChatThreadDetailResponse(
 
 export function toChatThreadListItemResponse(thread: ChatThreadWithRelations, requesterUserId: string) {
   const lastMessage = (thread.messages ?? [])[0];
-  const isBuyer = thread.buyerUserId === requesterUserId;
+  const counterpart = chatCounterpart(thread, requesterUserId);
   return {
     id: thread.id,
-    chatUserID: isBuyer ? thread.shopId : thread.buyerUserId,
-    chatUserName: isBuyer ? thread.shop.shopName : chatDisplayName(thread.buyer),
-    chatUserAvatar: isBuyer
-      ? thread.shop.avatarMedia?.secureUrl ?? null
-      : thread.buyer.avatarMedia?.secureUrl ?? null,
+    chatUserID: counterpart.id,
+    chatUserName: counterpart.name,
+    chatUserAvatar: counterpart.avatar,
     lastMessage: lastMessage
       ? [{
           id: lastMessage.id,
@@ -125,6 +121,30 @@ export function toChatThreadListItemResponse(thread: ChatThreadWithRelations, re
         }]
       : [],
     createdAt: thread.createdAt,
+  };
+}
+
+function chatCounterpart(thread: ChatThreadWithRelations, requesterUserId: string) {
+  if (thread.buyerUserId !== requesterUserId) {
+    return {
+      id: thread.buyerUserId,
+      name: chatDisplayName(thread.buyer),
+      avatar: thread.buyer.avatarMedia?.secureUrl ?? null,
+    };
+  }
+
+  if (thread.shop) {
+    return {
+      id: thread.shopId as string,
+      name: thread.shop.shopName,
+      avatar: thread.shop.avatarMedia?.secureUrl ?? null,
+    };
+  }
+
+  return {
+    id: thread.sellerUserId,
+    name: chatDisplayName(thread.seller),
+    avatar: thread.seller.avatarMedia?.secureUrl ?? null,
   };
 }
 

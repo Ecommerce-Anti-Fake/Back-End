@@ -5,6 +5,7 @@ describe('StartShopChatThreadUseCase', () => {
   const repository = {
     findShopByOwnerUserId: jest.fn(),
     findChatThreadByShopAndBuyer: jest.fn(),
+    findDirectChatThread: jest.fn(),
     createChatThread: jest.fn(),
   };
   const useCase = new StartShopChatThreadUseCase(repository as never);
@@ -45,5 +46,36 @@ describe('StartShopChatThreadUseCase', () => {
 
     await expect(useCase.execute({ requesterUserId: 'user-1', userId: 'buyer-1' }))
       .rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('creates a direct thread from an admin to the target user', async () => {
+    repository.findDirectChatThread.mockResolvedValue(null);
+    repository.createChatThread.mockResolvedValue({ id: 'thread-admin-user' });
+
+    await expect(useCase.execute({
+      requesterUserId: 'admin-1',
+      requesterRole: 'admin',
+      userId: 'user-1',
+    })).resolves.toEqual({ success: true, threadId: 'thread-admin-user' });
+
+    expect(repository.findShopByOwnerUserId).not.toHaveBeenCalled();
+    expect(repository.createChatThread).toHaveBeenCalledWith({
+      shopId: null,
+      buyerUserId: 'user-1',
+      sellerUserId: 'admin-1',
+      directParticipantKey: 'admin-1:user-1',
+    });
+  });
+
+  it('reuses an existing direct admin-user thread', async () => {
+    repository.findDirectChatThread.mockResolvedValue({ id: 'thread-admin-user' });
+
+    await expect(useCase.execute({
+      requesterUserId: 'admin-1',
+      requesterRole: 'admin',
+      userId: 'user-1',
+    })).resolves.toEqual({ success: true, threadId: 'thread-admin-user' });
+
+    expect(repository.createChatThread).not.toHaveBeenCalled();
   });
 });
