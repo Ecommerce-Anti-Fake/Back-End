@@ -1,8 +1,17 @@
 import { BadRequestException, Body, Controller, Get, Param, Patch, Post, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
-import { ApiBadRequestResponse, ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
+  ShopDocumentResponseDto,
   SubmitShopDocumentsMultipartDto,
   UpdateShopRegistrationTypeDto,
 } from '@shops';
@@ -13,7 +22,12 @@ import { ShopsRpcService } from '../shop/shops-rpc.service';
 export class ShopDocumentController {
   constructor(private readonly shopsRpcService: ShopsRpcService) {}
 
-  @ApiOperation({ summary: 'Lay danh sach ho so phap ly da nop cua shop hien tai' })
+  @ApiOperation({ summary: 'Lay cac ho so phap ly moi nhat theo yeu cau cua shop hien tai' })
+  @ApiOkResponse({
+    type: ShopDocumentResponseDto,
+    isArray: true,
+    description: 'Ban nop moi nhat cua tung ho so phap ly duoc yeu cau, kem cac file thuoc ban nop do.',
+  })
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Get(':shopId/documents')
