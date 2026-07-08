@@ -10,7 +10,6 @@ describe('toOfferResponse option groups', () => {
       currency: 'VND',
       itemCondition: 'new',
       availableQuantity: 1,
-      verificationLevel: 'standard',
       offerStatus: 'active',
       moderationStatus: 'approved',
       moderationReason: null,

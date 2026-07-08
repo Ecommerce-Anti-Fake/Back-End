@@ -116,7 +116,6 @@ describe('OffersRepository', () => {
       minPrice: 100000,
       maxPrice: 500000,
       location: 'VN',
-      verificationStatus: 'standard',
       shopType: 'MANUFACTURER',
       sort: 'price-asc',
     });
@@ -126,7 +125,6 @@ describe('OffersRepository', () => {
         where: expect.objectContaining({
           offerStatus: 'active',
           categoryId: 'category-1',
-          verificationLevel: 'standard',
           price: {
             gte: 100000,
             lte: 500000,

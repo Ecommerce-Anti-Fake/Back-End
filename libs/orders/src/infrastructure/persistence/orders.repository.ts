@@ -379,7 +379,6 @@ export type CreateOrderRecordInput = {
     offerTitleSnapshot: string;
     unitPrice: number;
     quantity: number;
-    verificationLevelSnapshot: string;
   };
 };
 export type CreateAggregateOrderRecordInput = {
@@ -418,7 +417,6 @@ export type CreateAggregateOrderRecordInput = {
       offerTitleSnapshot: string;
       unitPrice: number;
       quantity: number;
-      verificationLevelSnapshot: string;
       batchAllocations: OrderBatchAllocation[];
     }>;
   }>;
@@ -963,7 +961,6 @@ export class OrdersRepository {
               offerTitleSnapshot: item.offerTitleSnapshot,
               unitPrice: item.unitPrice,
               quantity: item.quantity,
-              verificationLevelSnapshot: item.verificationLevelSnapshot,
               batchAllocations: item.batchAllocations.length ? { create: item.batchAllocations } : undefined,
             })),
           ),

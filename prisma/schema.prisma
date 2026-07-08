@@ -930,7 +930,6 @@ model Offer {
   currency             String
   itemCondition        String                @map("item_condition")
   availableQuantity    Int                   @map("available_quantity")
-  verificationLevel    String                @map("verification_level")
   offerStatus          String                @map("offer_status")
   moderationStatus     String                @default("pending") @map("moderation_status")
   moderationReason     String?               @map("moderation_reason")
@@ -983,7 +982,6 @@ model OrderItem {
   offerTitleSnapshot        String                     @map("offer_title_snapshot")
   unitPrice                 Decimal                    @map("unit_price") @db.Decimal(18, 2)
   quantity                  Int
-  verificationLevelSnapshot String                     @map("verification_level_snapshot")
   order                     Order                      @relation(fields: [orderId], references: [id])
   orderShopGroup            OrderShopGroup?            @relation(fields: [orderShopGroupId], references: [id])
   offer                     Offer                      @relation(fields: [offerId], references: [id])

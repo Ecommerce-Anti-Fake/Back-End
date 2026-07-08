@@ -132,7 +132,6 @@ describe('CheckoutCartUseCase', () => {
         id: offerId,
         shopId,
         title: offerId,
-        verificationLevel: 'basic',
         price: new Prisma.Decimal(price),
         shop: { id: shopId },
       },

@@ -110,7 +110,6 @@ export class CreateOrderUseCase {
           offerTitleSnapshot: offer.title,
           unitPrice: pricing.unitPrice,
           quantity: input.quantity,
-          verificationLevelSnapshot: offer.verificationLevel,
         },
       },
       affiliateAttribution: input.affiliateCode

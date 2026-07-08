@@ -34,7 +34,6 @@ export class CreateOfferUseCase {
     currency?: string;
     itemCondition?: string;
     availableQuantity: number;
-    verificationLevel?: string;
     offerStatus?: 'active' | 'inactive' | 'draft';
     parcelWeightGrams?: number | null;
     parcelLengthCm?: number | null;
@@ -122,7 +121,6 @@ export class CreateOfferUseCase {
 
     const currency = input.currency?.trim().toUpperCase() || 'VND';
     const itemCondition = input.itemCondition?.trim() || 'new';
-    const verificationLevel = input.verificationLevel?.trim() || 'standard';
     const offerStatus = input.offerStatus === 'draft' ? 'draft' : 'inactive';
 
     if (input.price <= 0) {
@@ -178,7 +176,6 @@ export class CreateOfferUseCase {
       currency,
       itemCondition,
       availableQuantity: input.availableQuantity,
-      verificationLevel,
       offerStatus,
       ...this.resolveParcelSnapshot(input),
     };

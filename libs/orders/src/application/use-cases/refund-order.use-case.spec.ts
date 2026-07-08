@@ -95,7 +95,6 @@ function createOrderRecord(overrides?: { orderStatus?: string; paymentStatus?: s
         offerTitleSnapshot: 'Offer 1',
         unitPrice: new Prisma.Decimal(90),
         quantity: 10,
-        verificationLevelSnapshot: 'SERIALIZED',
         batchAllocations: [],
         reviews: [],
         offer: {

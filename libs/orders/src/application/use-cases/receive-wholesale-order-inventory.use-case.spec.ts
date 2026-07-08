@@ -132,7 +132,6 @@ function createWholesaleOrder(overrides?: { fulfillmentStatus?: string }) {
         offerTitleSnapshot: 'Wholesale offer',
         unitPrice: new Prisma.Decimal(90),
         quantity: 10,
-        verificationLevelSnapshot: 'standard',
         batchAllocations: [],
         reviews: [],
         offer: {

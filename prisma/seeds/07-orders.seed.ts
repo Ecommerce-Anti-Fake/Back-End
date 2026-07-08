@@ -124,7 +124,6 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
           offerTitleSnapshot: itemOffer.title,
           unitPrice: itemOffer.price,
           quantity,
-          verificationLevelSnapshot: itemOffer.verificationLevel,
         },
       });
       ctx.orderItems.push(orderItem);

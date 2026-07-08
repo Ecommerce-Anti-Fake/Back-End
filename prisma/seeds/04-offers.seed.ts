@@ -46,7 +46,6 @@ export async function seedOffers(prisma: PrismaClient, ctx: SeedContext) {
         currency: 'VND',
         itemCondition: 'new',
         availableQuantity: 50 + (i * 7) % 450,
-        verificationLevel: i % 8 === 0 ? 'standard' : 'verified',
         offerStatus: i % 17 === 0 ? 'draft' : 'active',
         parcelWeightGrams: 300 + (i % 10) * 150,
         parcelLengthCm: 10 + (i % 6) * 3,

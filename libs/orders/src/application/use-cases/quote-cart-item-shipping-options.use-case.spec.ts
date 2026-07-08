@@ -101,7 +101,6 @@ function createOffer(overrides: Record<string, unknown> = {}) {
     price: new Prisma.Decimal(200000),
     shopId: 'shop-1',
     availableQuantity: 10,
-    verificationLevel: 'standard',
     productModelId: 'model-1',
     productModel: { brandId: 'brand-1' },
     parcelWeightGrams: 500,

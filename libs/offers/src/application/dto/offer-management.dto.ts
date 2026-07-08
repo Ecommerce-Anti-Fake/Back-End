@@ -148,9 +148,6 @@ export class OfferResponseDto {
   @ApiProperty({ example: 120 })
   soldQuantity!: number;
 
-  @ApiProperty({ example: 'standard' })
-  verificationLevel!: string;
-
   @ApiProperty({ example: 'active' })
   offerStatus!: string;
 
@@ -296,7 +293,6 @@ export class AdminOfferListItemResponseDto {
   shop!: AdminOfferRelationResponseDto;
   @ApiProperty({ type: AdminOfferRelationResponseDto })
   category!: AdminOfferRelationResponseDto;
-  @ApiProperty({ example: 'standard' }) verificationLevel!: string;
   @ApiProperty({ example: 'inactive' }) offerStatus!: string;
   @ApiProperty({ example: 'pending' }) moderationStatus!: string;
   @ApiProperty({ example: '2026-07-03T08:30:00.000Z' }) createdAt!: Date;
@@ -357,9 +353,6 @@ export class PublicOfferDetailResponseDto {
 
   @ApiProperty({ example: 120 })
   soldQuantity!: number;
-
-  @ApiProperty({ example: 'standard' })
-  verificationLevel!: string;
 
   @ApiProperty({ example: 'active' })
   offerStatus!: string;
@@ -425,9 +418,6 @@ export class OfferListItemResponseDto {
 
   @ApiProperty({ example: 120 })
   soldQuantity!: number;
-
-  @ApiProperty({ example: 'standard' })
-  verificationLevel!: string;
 
   @ApiProperty({ example: 'active' })
   offerStatus!: string;
@@ -767,15 +757,6 @@ export class ListOffersQueryDto {
   @IsOptional()
   @IsString()
   location?: string;
-
-  @ApiPropertyOptional({
-    description:
-      'Optional verification level filter. Leave empty to include all levels.',
-    example: 'standard',
-  })
-  @IsOptional()
-  @IsString()
-  verificationStatus?: string;
 
   @ApiPropertyOptional({
     description:

@@ -119,7 +119,6 @@ function createOrderItem(input: { id: string; offerId: string; shopId: string; s
     offerTitleSnapshot: `Offer ${input.offerId}`,
     unitPrice: new Prisma.Decimal(150000),
     quantity: 1,
-    verificationLevelSnapshot: 'standard',
     reviews: [],
     batchAllocations: [],
     offer: {

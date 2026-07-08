@@ -163,7 +163,6 @@ function createItem(input: { offerId: string; title: string; quantity: number; u
     offerTitleSnapshot: input.title,
     unitPrice: input.unitPrice,
     quantity: input.quantity,
-    verificationLevelSnapshot: 'standard',
     reviews: [],
     batchAllocations: [],
     offer: { media: [] },

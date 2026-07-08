@@ -205,7 +205,6 @@ function createOffer(overrides?: Partial<any>) {
     title: 'Offer 1',
     price: new Prisma.Decimal(overrides?.price ?? 100),
     availableQuantity: 500,
-    verificationLevel: 'SERIALIZED',
     productModelId: 'product-model-1',
     categoryId: 'category-1',
     shopId: 'seller-shop-1',

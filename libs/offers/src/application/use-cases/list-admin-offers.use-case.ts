@@ -42,7 +42,6 @@ export class ListAdminOffersUseCase {
           currency: offer.currency,
           shop: { id: offer.shop.id, name: offer.shop.shopName },
           category: { id: offer.category.id, name: offer.category.name },
-          verificationLevel: offer.verificationLevel,
           offerStatus: offer.offerStatus,
           moderationStatus: offer.moderationStatus,
           createdAt: offer.createdAt,

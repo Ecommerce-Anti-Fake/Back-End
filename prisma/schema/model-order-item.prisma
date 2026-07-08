@@ -7,7 +7,6 @@ model OrderItem {
   offerTitleSnapshot        String                     @map("offer_title_snapshot")
   unitPrice                 Decimal                    @map("unit_price") @db.Decimal(18, 2)
   quantity                  Int
-  verificationLevelSnapshot String                     @map("verification_level_snapshot")
   order                     Order                      @relation(fields: [orderId], references: [id])
   orderShopGroup            OrderShopGroup?            @relation(fields: [orderShopGroupId], references: [id])
   offer                     Offer                      @relation(fields: [offerId], references: [id])

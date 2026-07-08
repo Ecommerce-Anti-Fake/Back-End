@@ -198,7 +198,6 @@ function createOrderRecord(overrides?: { orderStatus?: string; fulfillmentStatus
         offerTitleSnapshot: 'Offer 1',
         unitPrice: new Prisma.Decimal(100),
         quantity: 1,
-        verificationLevelSnapshot: 'SERIALIZED',
         batchAllocations: [],
         reviews: [],
         offer: {

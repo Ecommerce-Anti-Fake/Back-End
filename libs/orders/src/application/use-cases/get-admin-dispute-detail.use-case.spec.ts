@@ -61,7 +61,6 @@ describe('GetAdminDisputeDetailUseCase', () => {
             offerTitleSnapshot: 'Kem chong nang',
             unitPrice: { toString: () => '100000' },
             quantity: 1,
-            verificationLevelSnapshot: 'standard',
           },
         ],
       },

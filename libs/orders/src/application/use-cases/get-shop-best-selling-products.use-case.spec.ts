@@ -11,7 +11,6 @@ describe('GetShopBestSellingProductsUseCase', () => {
           price: 150000,
           currency: 'VND',
           availableQuantity: 500,
-          verificationLevel: 'standard',
           offerStatus: 'active',
           createdAt: new Date('2026-04-14T10:00:00.000Z'),
           media: [
@@ -31,7 +30,6 @@ describe('GetShopBestSellingProductsUseCase', () => {
           price: 150000,
           currency: 'VND',
           availableQuantity: 500,
-          verificationLevel: 'standard',
           offerStatus: 'active',
           createdAt: new Date('2026-04-14T10:00:00.000Z'),
           media: [],
@@ -66,7 +64,6 @@ describe('GetShopBestSellingProductsUseCase', () => {
       price: 100000,
       currency: 'VND',
       availableQuantity: 10,
-      verificationLevel: 'standard',
       offerStatus: 'active',
       createdAt: new Date('2026-04-14T10:00:00.000Z'),
       media: [],

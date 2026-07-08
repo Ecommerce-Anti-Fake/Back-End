@@ -14,7 +14,6 @@ model Offer {
   currency             String
   itemCondition        String                @map("item_condition")
   availableQuantity    Int                   @map("available_quantity")
-  verificationLevel    String                @map("verification_level")
   offerStatus          String                @map("offer_status")
   moderationStatus     String                @default("pending") @map("moderation_status")
   moderationReason     String?               @map("moderation_reason")

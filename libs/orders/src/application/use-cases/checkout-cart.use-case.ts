@@ -155,7 +155,6 @@ export class CheckoutCartUseCase {
           offerTitleSnapshot: item.offerTitleSnapshot,
           unitPrice: Number(item.unitPriceSnapshot.toString()),
           quantity: item.quantity,
-          verificationLevelSnapshot: item.offer.verificationLevel,
         })),
       };
     });

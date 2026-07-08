@@ -17,7 +17,6 @@ type OfferCreateData = {
   currency: string;
   itemCondition: string;
   availableQuantity: number;
-  verificationLevel: string;
   offerStatus: string;
   parcelWeightGrams?: number | null;
   parcelLengthCm?: number | null;
@@ -66,7 +65,6 @@ export class OffersRepository {
           title: true,
           price: true,
           currency: true,
-          verificationLevel: true,
           offerStatus: true,
           moderationStatus: true,
           createdAt: true,
@@ -306,7 +304,6 @@ export class OffersRepository {
       minPrice?: number;
       maxPrice?: number;
       location?: string;
-      verificationStatus?: string;
       shopType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
       sort?: 'featured' | 'newest' | 'price-asc' | 'price-desc';
       page?: number;
@@ -327,9 +324,6 @@ export class OffersRepository {
         : {}),
       ...(input.categoryId ? { categoryId: input.categoryId } : {}),
       ...(input.brandId ? { brandId: input.brandId } : {}),
-      ...(input.verificationStatus
-        ? { verificationLevel: input.verificationStatus }
-        : {}),
       ...(input.minPrice !== undefined || input.maxPrice !== undefined
         ? {
             price: {

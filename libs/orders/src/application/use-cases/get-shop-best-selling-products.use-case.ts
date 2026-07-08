@@ -33,7 +33,6 @@ export class GetShopBestSellingProductsUseCase {
         currency: string;
         availableQuantity: number;
         soldQuantity: number;
-        verificationLevel: string;
         offerStatus: string;
         thumbnailUrl: string | null;
         createdAt: Date;
@@ -57,7 +56,6 @@ export class GetShopBestSellingProductsUseCase {
         price: Number(offer.price),
         currency: offer.currency,
         availableQuantity: offer.availableQuantity,
-        verificationLevel: offer.verificationLevel,
         offerStatus: offer.offerStatus,
         thumbnailUrl:
           thumbnailMedia?.mediaAsset?.secureUrl ??

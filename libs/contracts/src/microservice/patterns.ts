@@ -628,7 +628,6 @@ export type ListOffersMessage = {
   minPrice?: number;
   maxPrice?: number;
   location?: string;
-  verificationStatus?: string;
   shopType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
   salesChannel?: 'retail' | 'wholesale' | 'all';
   sort?: 'featured' | 'newest' | 'price-asc' | 'price-desc';
@@ -804,7 +803,6 @@ export type CreateOfferMessage = {
   currency?: string;
   itemCondition?: string;
   availableQuantity: number;
-  verificationLevel?: string;
   offerStatus?: 'active' | 'inactive' | 'draft';
   parcelWeightGrams?: number | null;
   parcelLengthCm?: number | null;

@@ -47,7 +47,6 @@ describe('CreateOrderUseCase', () => {
       offerStatus: 'active',
       price: new Prisma.Decimal(100000),
       availableQuantity: 100,
-      verificationLevel: 'standard',
       shopId: 'shop-1',
       brandId: 'brand-1',
       shop: { registrationType: 'NORMAL' },

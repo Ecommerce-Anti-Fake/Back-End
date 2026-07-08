@@ -196,9 +196,6 @@ export class OrderItemResponseDto {
   @ApiProperty({ example: 10 })
   quantity!: number;
 
-  @ApiProperty({ example: 'standard' })
-  verificationLevelSnapshot!: string;
-
   @ApiPropertyOptional({ example: 'review-id', nullable: true })
   reviewId!: string | null;
 
@@ -2022,9 +2019,6 @@ export class ShopBestSellingProductDto {
 
   @ApiProperty({ example: 120 })
   soldQuantity!: number;
-
-  @ApiProperty({ example: 'standard' })
-  verificationLevel!: string;
 
   @ApiProperty({ example: 'active' })
   offerStatus!: string;

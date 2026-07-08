@@ -342,7 +342,6 @@ describe('Distributor onboarding (e2e)', () => {
         currency: 'VND',
         itemCondition: 'new',
         availableQuantity: input.quantity,
-        verificationLevel: 'verified',
         offerStatus: 'active',
       },
     });
@@ -514,7 +513,6 @@ describe('Distributor onboarding (e2e)', () => {
         currency: 'VND',
         itemCondition: 'new',
         availableQuantity: 500,
-        verificationLevel: 'verified',
         offerStatus: 'active',
       },
     });

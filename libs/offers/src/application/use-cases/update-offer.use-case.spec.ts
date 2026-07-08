@@ -129,7 +129,6 @@ function createOwnedOffer(overrides: Record<string, unknown> = {}) {
     currency: 'VND',
     itemCondition: 'new',
     availableQuantity: 5,
-    verificationLevel: 'standard',
     offerStatus: 'draft',
     shopId: 'shop-1',
     categoryId: 'category-1',

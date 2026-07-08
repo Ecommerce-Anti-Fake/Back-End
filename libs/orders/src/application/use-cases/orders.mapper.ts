@@ -328,7 +328,6 @@ function toOrderItemResponse(order: OrderWithRelations, item: OrderWithRelations
     thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
     unitPrice: decimalToNumber(item.unitPrice),
     quantity: item.quantity,
-    verificationLevelSnapshot: item.verificationLevelSnapshot,
     reviewId: item.reviews?.[0]?.id ?? null,
     reviewRating: item.reviews?.[0]?.rating ?? null,
     reviewComment: item.reviews?.[0]?.comment ?? null,

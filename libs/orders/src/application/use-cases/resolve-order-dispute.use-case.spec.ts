@@ -151,7 +151,6 @@ function createDisputeRecord(overrides?: { orderStatus?: string; paymentStatus?:
           offerTitleSnapshot: 'Offer 1',
           unitPrice: new Prisma.Decimal(100),
           quantity: 1,
-          verificationLevelSnapshot: 'STANDARD',
         },
       ],
     },

@@ -10,7 +10,6 @@ describe('ModerateOfferUseCase', () => {
     currency: 'VND',
     itemCondition: 'new',
     availableQuantity: 5,
-    verificationLevel: 'standard',
     offerStatus: 'inactive',
     moderationStatus: 'rejected',
     moderationReason: 'Invalid claims',
