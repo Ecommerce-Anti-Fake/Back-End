@@ -14,6 +14,9 @@ describe('ChatController routes', () => {
       Reflect.getMetadata(PATH_METADATA, ChatController.prototype.startChatThread),
     ).toBe('shops/:shopId/chat-thread');
     expect(
+      Reflect.getMetadata(PATH_METADATA, ChatController.prototype.startChatThreadWithUser),
+    ).toBe('users/:userId/chat-thread');
+    expect(
       Reflect.getMetadata(PATH_METADATA, ChatController.prototype.sendChatMessage),
     ).toBe('chat/threads/:threadId/messages');
   });

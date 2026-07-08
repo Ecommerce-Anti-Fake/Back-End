@@ -44,6 +44,7 @@ import {
   SocialCommentLikeMessage,
   SocialPostLookupMessage,
   StartChatThreadMessage,
+  StartShopChatThreadMessage,
   LiveSessionLookupMessage,
   UpdateLiveCommentVisibilityMessage,
   UpdateSocialPostVisibilityMessage,
@@ -187,6 +188,10 @@ export class CatalogRpcService {
 
   startChatThread(payload: StartChatThreadMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.startChatThread, payload);
+  }
+
+  startShopChatThread(payload: StartShopChatThreadMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.startShopChatThread, payload);
   }
 
   sendChatMessage(payload: SendChatMessageMessage) {

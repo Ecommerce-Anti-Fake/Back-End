@@ -13,6 +13,13 @@ export class ChatRepository {
     });
   }
 
+  findShopByOwnerUserId(ownerUserId: string) {
+    return this.prisma.shop.findFirst({
+      where: { ownerUserId },
+      select: { id: true, ownerUserId: true },
+    });
+  }
+
   findChatThreadByShopAndBuyer(shopId: string, buyerUserId: string) {
     return this.prisma.chatThread.findFirst({ where: { shopId, buyerUserId }, include: this.chatThreadInclude() });
   }

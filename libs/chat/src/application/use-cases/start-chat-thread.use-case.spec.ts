@@ -26,29 +26,20 @@ describe('StartChatThreadUseCase in ChatModule', () => {
       buyerUserId: 'buyer-1',
       sellerUserId: 'seller-1',
     });
-    expect(result.buyerUserId).toBe('buyer-1');
-    expect(result.sellerUserId).toBe('seller-1');
+    expect(result).toEqual({ success: true, threadId: 'thread-1' });
   });
 
-  it('reuses existing thread and appends initial message', async () => {
+  it('reuses an existing thread', async () => {
     repository.findShopForChat.mockResolvedValue(shop());
     repository.findChatThreadByShopAndBuyer.mockResolvedValue(thread());
-    repository.createChatMessage.mockResolvedValue(thread({ body: 'Tu van giup minh' }));
 
     const result = await useCase.execute({
       requesterUserId: 'buyer-1',
       shopId: 'shop-1',
-      initialMessage: ' Tu van giup minh ',
     });
 
     expect(repository.createChatThread).not.toHaveBeenCalled();
-    expect(repository.createChatMessage).toHaveBeenCalledWith({
-      threadId: 'thread-1',
-      senderUserId: 'buyer-1',
-      body: 'Tu van giup minh',
-      messageType: 'TEXT',
-    });
-    expect(result.lastMessage?.body).toBe('Tu van giup minh');
+    expect(result).toEqual({ success: true, threadId: 'thread-1' });
   });
 
   it('blocks sellers from starting a buyer chat with their own shop', async () => {

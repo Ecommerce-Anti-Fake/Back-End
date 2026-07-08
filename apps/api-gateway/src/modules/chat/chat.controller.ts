@@ -86,6 +86,24 @@ export class ChatController {
     });
   }
 
+  @ApiOperation({ summary: 'Bat dau chat tu shop den user' })
+  @ApiBearerAuth('access-token')
+  @ApiCreatedResponse({
+    description: 'Chat thread da san sang.',
+    type: StartChatThreadResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('users/:userId/chat-thread')
+  startChatThreadWithUser(
+    @Param('userId') userId: string,
+    @CurrentUserId() requesterUserId: string,
+  ) {
+    return this.catalogRpcService.startShopChatThread({
+      userId,
+      requesterUserId,
+    });
+  }
+
   @ApiOperation({ summary: 'Gui tin nhan vao chat thread' })
   @ApiBearerAuth('access-token')
   @ApiCreatedResponse({

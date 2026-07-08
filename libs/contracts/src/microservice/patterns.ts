@@ -93,6 +93,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   findChatThreads: 'products.find-chat-threads',
   getChatThread: 'products.get-chat-thread',
   startChatThread: 'products.start-chat-thread',
+  startShopChatThread: 'products.start-shop-chat-thread',
   sendChatMessage: 'products.send-chat-message',
   listSocialPosts: 'products.list-social-posts',
   getSocialPost: 'products.get-social-post',
@@ -632,6 +633,10 @@ export type ChatRequesterMessage = {
 export type StartChatThreadMessage = ChatRequesterMessage & {
   shopId: string;
   initialMessage?: string | null;
+};
+
+export type StartShopChatThreadMessage = ChatRequesterMessage & {
+  userId: string;
 };
 
 export type ChatThreadLookupMessage = ChatRequesterMessage & {

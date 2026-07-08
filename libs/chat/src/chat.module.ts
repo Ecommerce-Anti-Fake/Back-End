@@ -5,6 +5,7 @@ import {
   ListChatThreadsUseCase,
   SendChatMessageUseCase,
   StartChatThreadUseCase,
+  StartShopChatThreadUseCase,
 } from './application/use-cases';
 import { ChatRepository } from './infrastructure/persistence/chat.repository';
 import { ChatRpcController } from './presentation/rpc/chat.rpc-controller';
@@ -17,9 +18,9 @@ import { ChatRpcController } from './presentation/rpc/chat.rpc-controller';
     ListChatThreadsUseCase,
     GetChatThreadUseCase,
     StartChatThreadUseCase,
+    StartShopChatThreadUseCase,
     SendChatMessageUseCase,
   ],
   exports: [ChatRepository],
 })
 export class ChatModule {}
-

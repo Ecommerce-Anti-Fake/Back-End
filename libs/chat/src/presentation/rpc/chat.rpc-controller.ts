@@ -7,12 +7,14 @@ import type {
   ChatThreadLookupMessage,
   SendChatMessageMessage,
   StartChatThreadMessage,
+  StartShopChatThreadMessage,
 } from '@contracts';
 import {
   GetChatThreadUseCase,
   ListChatThreadsUseCase,
   SendChatMessageUseCase,
   StartChatThreadUseCase,
+  StartShopChatThreadUseCase,
 } from '../../application/use-cases';
 
 @Controller()
@@ -21,6 +23,7 @@ export class ChatRpcController {
     private readonly listChatThreadsUseCase: ListChatThreadsUseCase,
     private readonly getChatThreadUseCase: GetChatThreadUseCase,
     private readonly startChatThreadUseCase: StartChatThreadUseCase,
+    private readonly startShopChatThreadUseCase: StartShopChatThreadUseCase,
     private readonly sendChatMessageUseCase: SendChatMessageUseCase,
   ) {}
 
@@ -51,6 +54,15 @@ export class ChatRpcController {
     }
   }
 
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.startShopChatThread)
+  async startShopChatThread(@Payload() payload: StartShopChatThreadMessage) {
+    try {
+      return await this.startShopChatThreadUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
   @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.sendChatMessage)
   async sendChatMessage(@Payload() payload: SendChatMessageMessage) {
     try {
@@ -60,4 +72,3 @@ export class ChatRpcController {
     }
   }
 }
-
