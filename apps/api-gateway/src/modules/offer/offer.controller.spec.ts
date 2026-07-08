@@ -49,6 +49,42 @@ describe('OfferController', () => {
         OfferController.prototype.findOfferBatchLinks,
       ),
     ).toBe('offers/:offerId/batch-links');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        OfferController.prototype.createOfferVariant,
+      ),
+    ).toBe('offers/:offerId/variants');
+  });
+
+  it('creates a variant for the authenticated seller offer', async () => {
+    const catalogRpcService = {
+      createOfferVariant: jest.fn().mockResolvedValue({ id: 'variant-1' }),
+    };
+    const controller = new OfferController(
+      catalogRpcService as never,
+      { notifyShop: jest.fn() } as never,
+    );
+
+    await controller.createOfferVariant('offer-1', 'seller-1', {
+      sku: 'RED-M',
+      priceOverride: 120000,
+      availableQuantity: 5,
+      mediaAssetId: 'media-1',
+      isActive: true,
+      optionValueIds: ['red-id', 'm-id'],
+    });
+
+    expect(catalogRpcService.createOfferVariant).toHaveBeenCalledWith({
+      offerId: 'offer-1',
+      sellerUserId: 'seller-1',
+      sku: 'RED-M',
+      priceOverride: 120000,
+      availableQuantity: 5,
+      mediaAssetId: 'media-1',
+      isActive: true,
+      optionValueIds: ['red-id', 'm-id'],
+    });
   });
 
   it('returns compact public offer list items for shop offers', async () => {
@@ -377,6 +413,8 @@ describe('OfferController', () => {
         'https://res.cloudinary.com/demo/image/upload/product.jpg',
         'https://res.cloudinary.com/demo/image/upload/gallery-1.jpg',
       ],
+      optionGroups: [],
+      variants: [],
       createdAt: new Date('2026-04-14T10:00:00.000Z'),
     });
     expect(result).not.toHaveProperty('shopId');

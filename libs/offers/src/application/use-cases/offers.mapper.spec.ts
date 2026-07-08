@@ -48,6 +48,35 @@ describe('toOfferResponse option groups', () => {
           ],
         },
       ],
+      variants: [
+        {
+          id: 'variant-1',
+          offerId: 'offer-1',
+          sku: 'RED-M',
+          price: 120000,
+          availableQuantity: 5,
+          isActive: true,
+          createdAt: new Date('2026-07-08T01:00:00.000Z'),
+          updatedAt: new Date('2026-07-08T01:00:00.000Z'),
+          mediaAsset: {
+            id: 'media-2',
+            secureUrl: 'https://cdn.test/red-m.jpg',
+          },
+          values: [
+            {
+              optionValue: {
+                id: 'value-1',
+                text: 'Do',
+                optionGroup: {
+                  id: 'group-1',
+                  name: 'color',
+                  displayName: 'Mau sac',
+                },
+              },
+            },
+          ],
+        },
+      ],
     } as never);
 
     expect(response.optionGroups).toEqual([
@@ -67,6 +96,30 @@ describe('toOfferResponse option groups', () => {
             },
           },
         ],
+      },
+    ]);
+    expect(response.variants).toEqual([
+      {
+        id: 'variant-1',
+        offerId: 'offer-1',
+        sku: 'RED-M',
+        priceOverride: 120000,
+        availableQuantity: 5,
+        isActive: true,
+        mediaAsset: { id: 'media-2', secureUrl: 'https://cdn.test/red-m.jpg' },
+        optionValues: [
+          {
+            id: 'value-1',
+            text: 'Do',
+            optionGroup: {
+              id: 'group-1',
+              name: 'color',
+              displayName: 'Mau sac',
+            },
+          },
+        ],
+        createdAt: new Date('2026-07-08T01:00:00.000Z'),
+        updatedAt: new Date('2026-07-08T01:00:00.000Z'),
       },
     ]);
   });

@@ -83,6 +83,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   findCategories: 'products.find-categories',
   createCategory: 'products.create-category',
   createOffer: 'products.create-offer',
+  createOfferVariant: 'products.create-offer-variant',
   updateOffer: 'products.update-offer',
   moderateOffer: 'products.moderate-offer',
   findShippingCarriers: 'products.find-shipping-carriers',
@@ -821,6 +822,17 @@ export type CreateOfferMessage = {
       sortOrder?: number;
     }>;
   }>;
+};
+
+export type CreateOfferVariantMessage = {
+  offerId: string;
+  sellerUserId: string;
+  sku?: string | null;
+  priceOverride?: number | null;
+  availableQuantity: number;
+  mediaAssetId?: string | null;
+  isActive?: boolean;
+  optionValueIds: string[];
 };
 
 export type UpdateOfferMessage = {

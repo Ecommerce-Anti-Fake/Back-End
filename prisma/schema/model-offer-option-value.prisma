@@ -8,6 +8,7 @@ model OfferOptionValue {
   updatedAt     DateTime         @updatedAt @map("updated_at")
   optionGroup   OfferOptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
   mediaAsset    MediaAsset?      @relation(fields: [mediaAssetId], references: [id], onDelete: SetNull)
+  variantValues OfferVariantValue[]
 
   @@unique([optionGroupId, text])
   @@index([optionGroupId, sortOrder, createdAt])

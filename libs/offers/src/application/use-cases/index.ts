@@ -1,4 +1,5 @@
 export * from './create-offer.use-case';
+export * from './create-offer-variant.use-case';
 export * from './update-offer.use-case';
 export * from './allocate-offer-batches.use-case';
 export * from './list-offer-batch-links.use-case';

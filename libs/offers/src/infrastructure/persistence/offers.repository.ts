@@ -176,6 +176,71 @@ export class OffersRepository {
     });
   }
 
+  findMediaAssetById(id: string) {
+    return this.prisma.mediaAsset.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+  }
+
+  findOwnedOfferOptionValues(
+    offerId: string,
+    sellerUserId: string,
+    optionValueIds: string[],
+  ) {
+    return this.prisma.offer.findFirst({
+      where: { id: offerId, sellerUserId },
+      select: {
+        id: true,
+        optionGroups: {
+          select: {
+            id: true,
+            values: {
+              where: { id: { in: optionValueIds } },
+              select: { id: true },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  findOfferVariantByCombinationKey(offerId: string, combinationKey: string) {
+    return this.prisma.offerVariant.findUnique({
+      where: { offerId_combinationKey: { offerId, combinationKey } },
+      select: { id: true },
+    });
+  }
+
+  createOfferVariant(input: {
+    offerId: string;
+    sku: string | null;
+    price: number | null;
+    availableQuantity: number;
+    mediaAssetId: string | null;
+    isActive: boolean;
+    combinationKey: string;
+    optionValueIds: string[];
+  }) {
+    return this.prisma.offerVariant.create({
+      data: {
+        offerId: input.offerId,
+        sku: input.sku,
+        price: input.price,
+        availableQuantity: input.availableQuantity,
+        mediaAssetId: input.mediaAssetId,
+        isActive: input.isActive,
+        combinationKey: input.combinationKey,
+        values: {
+          create: input.optionValueIds.map((optionValueId) => ({
+            optionValueId,
+          })),
+        },
+      },
+      include: this.offerVariantResponseInclude(),
+    });
+  }
+
   createOfferWithSalesOptions(input: {
     offer: OfferCreateData;
     productImages: OfferImageCreateData[];
@@ -269,6 +334,35 @@ export class OffersRepository {
               text: true,
               sortOrder: true,
               mediaAsset: { select: { id: true, secureUrl: true } },
+            },
+          },
+        },
+      },
+      variants: {
+        orderBy: { createdAt: 'asc' as const },
+        include: this.offerVariantResponseInclude(),
+      },
+    };
+  }
+
+  private offerVariantResponseInclude() {
+    return {
+      mediaAsset: { select: { id: true, secureUrl: true } },
+      values: {
+        select: {
+          optionValue: {
+            select: {
+              id: true,
+              text: true,
+              sortOrder: true,
+              optionGroup: {
+                select: {
+                  id: true,
+                  name: true,
+                  displayName: true,
+                  sortOrder: true,
+                },
+              },
             },
           },
         },
@@ -487,6 +581,10 @@ export class OffersRepository {
               },
             },
           },
+        },
+        variants: {
+          orderBy: { createdAt: 'asc' },
+          include: this.offerVariantResponseInclude(),
         },
       },
     });

@@ -38,6 +38,7 @@ model Offer {
   socialPosts          SocialPost[]
   liveSessionOffers    LiveSessionOffer[]
   optionGroups         OfferOptionGroup[]
+  variants             OfferVariant[]
 
   @@index([brandId])
   @@index([distributionNodeId])

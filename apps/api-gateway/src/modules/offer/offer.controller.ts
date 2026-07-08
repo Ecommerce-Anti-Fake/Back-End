@@ -40,6 +40,8 @@ import {
   PublicOfferDetailResponseDto,
   CreateOfferDto,
   CreateOfferResponseDto,
+  CreateOfferVariantDto,
+  OfferVariantResponseDto,
   UpdateOfferDto,
   ModerateOfferDto,
 } from '@offers';
@@ -143,6 +145,35 @@ export class OfferController {
       success: true,
       message: 'Offer created successfully and is pending moderation.',
     };
+  }
+
+  @ApiOperation({ summary: 'Tao variant cho offer cua seller hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiCreatedResponse({
+    description: 'Variant da duoc tao.',
+    type: OfferVariantResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description:
+      'Option values, media asset hoac du lieu variant khong hop le.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('offers/:offerId/variants')
+  createOfferVariant(
+    @Param('offerId') offerId: string,
+    @CurrentUserId() sellerUserId: string,
+    @Body() dto: CreateOfferVariantDto,
+  ) {
+    return this.catalogRpcService.createOfferVariant({
+      offerId,
+      sellerUserId,
+      sku: dto.sku,
+      priceOverride: dto.priceOverride,
+      availableQuantity: dto.availableQuantity,
+      mediaAssetId: dto.mediaAssetId,
+      isActive: dto.isActive,
+      optionValueIds: dto.optionValueIds,
+    });
   }
 
   @ApiOperation({ summary: 'Cap nhat thong tin ban hang cua offer' })
@@ -353,6 +384,12 @@ function toPublicOfferDetail(offer: unknown): PublicOfferDetailResponseDto {
     productModelName: stringValue(record.productModelName),
     thumbnailUrl: nullableStringValue(record.thumbnailUrl),
     imageUrls: stringArrayValue(record.imageUrls),
+    optionGroups: Array.isArray(record.optionGroups)
+      ? (record.optionGroups as PublicOfferDetailResponseDto['optionGroups'])
+      : [],
+    variants: Array.isArray(record.variants)
+      ? (record.variants as PublicOfferDetailResponseDto['variants'])
+      : [],
     createdAt:
       record.createdAt instanceof Date
         ? record.createdAt

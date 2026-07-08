@@ -3,6 +3,8 @@ import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
+  ArrayUnique,
+  IsBoolean,
   IsArray,
   IsIn,
   IsInt,
@@ -111,6 +113,75 @@ export class OfferOptionGroupResponseDto {
   values!: OfferOptionValueResponseDto[];
 }
 
+export class OfferVariantOptionGroupResponseDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty() displayName!: string;
+}
+
+export class OfferVariantOptionValueResponseDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() text!: string;
+  @ApiProperty({ type: OfferVariantOptionGroupResponseDto })
+  optionGroup!: OfferVariantOptionGroupResponseDto;
+}
+
+export class OfferVariantResponseDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() offerId!: string;
+  @ApiPropertyOptional({ nullable: true }) sku!: string | null;
+  @ApiPropertyOptional({ nullable: true }) priceOverride!: number | null;
+  @ApiProperty() availableQuantity!: number;
+  @ApiPropertyOptional({
+    type: OfferOptionMediaAssetResponseDto,
+    nullable: true,
+  })
+  mediaAsset!: OfferOptionMediaAssetResponseDto | null;
+  @ApiProperty() isActive!: boolean;
+  @ApiProperty({ type: [OfferVariantOptionValueResponseDto] })
+  optionValues!: OfferVariantOptionValueResponseDto[];
+  @ApiProperty() createdAt!: Date;
+  @ApiProperty() updatedAt!: Date;
+}
+
+export class CreateOfferVariantDto {
+  @ApiPropertyOptional({ example: 'RED-M', nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  sku?: string | null;
+
+  @ApiPropertyOptional({ example: 120000, nullable: true })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @IsPositive()
+  priceOverride?: number | null;
+
+  @ApiProperty({ example: 5 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  availableQuantity!: number;
+
+  @ApiPropertyOptional({ example: 'media-asset-id', nullable: true })
+  @IsOptional()
+  @IsString()
+  mediaAssetId?: string | null;
+
+  @ApiPropertyOptional({ example: true, default: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @ApiProperty({ example: ['red-option-value-id', 'medium-option-value-id'] })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayUnique()
+  @IsString({ each: true })
+  optionValueIds!: string[];
+}
+
 export class OfferResponseDto {
   @ApiProperty({ example: '06b5f15b-4c48-4f57-a2d6-0f2eb45fd001' })
   id!: string;
@@ -156,6 +227,9 @@ export class OfferResponseDto {
 
   @ApiProperty({ type: [OfferOptionGroupResponseDto] })
   optionGroups!: OfferOptionGroupResponseDto[];
+
+  @ApiProperty({ type: [OfferVariantResponseDto] })
+  variants!: OfferVariantResponseDto[];
 
   @ApiPropertyOptional({
     example: 'Thong tin san pham khong hop le',
@@ -395,6 +469,12 @@ export class PublicOfferDetailResponseDto {
     isArray: true,
   })
   imageUrls!: string[];
+
+  @ApiProperty({ type: [OfferOptionGroupResponseDto] })
+  optionGroups!: OfferOptionGroupResponseDto[];
+
+  @ApiProperty({ type: [OfferVariantResponseDto] })
+  variants!: OfferVariantResponseDto[];
 
   @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
   createdAt!: Date;

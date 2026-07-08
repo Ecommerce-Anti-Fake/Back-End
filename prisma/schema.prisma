@@ -761,6 +761,7 @@ model MediaAsset {
   shopBanner                Shop[]                     @relation("ShopBanner")
   socialPostMedia           SocialPostMedia[]
   offerOptionValues         OfferOptionValue[]
+  offerVariants             OfferVariant[]
 
   @@index([ownerUserId])
   @@index([resourceType])
@@ -907,11 +908,46 @@ model OfferOptionValue {
   updatedAt     DateTime         @updatedAt @map("updated_at")
   optionGroup   OfferOptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
   mediaAsset    MediaAsset?      @relation(fields: [mediaAssetId], references: [id], onDelete: SetNull)
+  variantValues OfferVariantValue[]
 
   @@unique([optionGroupId, text])
   @@index([optionGroupId, sortOrder, createdAt])
   @@index([mediaAssetId])
   @@map("offer_option_value")
+}
+
+model OfferVariantValue {
+  id            String           @id @default(uuid())
+  variantId     String           @map("variant_id")
+  optionValueId String           @map("option_value_id")
+  variant       OfferVariant     @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  optionValue   OfferOptionValue @relation(fields: [optionValueId], references: [id], onDelete: Restrict)
+
+  @@unique([variantId, optionValueId])
+  @@index([optionValueId])
+  @@map("offer_variant_value")
+}
+
+model OfferVariant {
+  id                String              @id @default(uuid())
+  offerId           String              @map("offer_id")
+  sku               String?
+  price             Decimal?            @db.Decimal(18, 2)
+  availableQuantity Int                 @map("available_quantity")
+  mediaAssetId      String?             @map("media_asset_id")
+  isActive          Boolean             @default(true) @map("is_active")
+  combinationKey    String              @map("combination_key")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  offer             Offer               @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  mediaAsset        MediaAsset?         @relation(fields: [mediaAssetId], references: [id], onDelete: SetNull)
+  values            OfferVariantValue[]
+
+  @@unique([offerId, sku])
+  @@unique([offerId, combinationKey])
+  @@index([offerId, isActive, createdAt])
+  @@index([mediaAssetId])
+  @@map("offer_variant")
 }
 
 model Offer {
@@ -954,6 +990,7 @@ model Offer {
   socialPosts          SocialPost[]
   liveSessionOffers    LiveSessionOffer[]
   optionGroups         OfferOptionGroup[]
+  variants             OfferVariant[]
 
   @@index([brandId])
   @@index([distributionNodeId])

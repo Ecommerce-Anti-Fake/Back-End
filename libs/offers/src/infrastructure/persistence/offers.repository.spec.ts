@@ -20,6 +20,39 @@ describe('OffersRepository', () => {
     expect(
       query.include.optionGroups.select.values.select.mediaAsset.select,
     ).toEqual({ id: true, secureUrl: true });
+    expect(query.include.variants.orderBy).toEqual({ createdAt: 'asc' });
+  });
+
+  it('creates variant option links through nested persistence', async () => {
+    const prisma = {
+      offerVariant: {
+        create: jest.fn().mockResolvedValue({ id: 'variant-1' }),
+      },
+    };
+    const repository = new OffersRepository(prisma as never);
+
+    await repository.createOfferVariant({
+      offerId: 'offer-1',
+      sku: 'RED-M',
+      price: 120000,
+      availableQuantity: 5,
+      mediaAssetId: null,
+      isActive: true,
+      combinationKey: 'red-id:m-id',
+      optionValueIds: ['m-id', 'red-id'],
+    });
+
+    expect(prisma.offerVariant.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          offerId: 'offer-1',
+          combinationKey: 'red-id:m-id',
+          values: {
+            create: [{ optionValueId: 'm-id' }, { optionValueId: 'red-id' }],
+          },
+        }),
+      }),
+    );
   });
 
   it('updates only moderation fields', async () => {

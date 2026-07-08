@@ -37,6 +37,32 @@ type OfferWithRelations = Offer & {
       mediaAsset: { id: string; secureUrl: string } | null;
     }>;
   }>;
+  variants?: OfferVariantWithRelations[];
+};
+
+type OfferVariantWithRelations = {
+  id: string;
+  offerId: string;
+  sku: string | null;
+  price: Prisma.Decimal | number | string | null;
+  availableQuantity: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  mediaAsset: { id: string; secureUrl: string } | null;
+  values: Array<{
+    optionValue: {
+      id: string;
+      text: string;
+      sortOrder?: number;
+      optionGroup: {
+        id: string;
+        name: string;
+        displayName: string;
+        sortOrder?: number;
+      };
+    };
+  }>;
 };
 
 type OfferBatchLinkWithBatch = {
@@ -115,7 +141,44 @@ export function toOfferResponse(offer: OfferWithRelations) {
           : null,
       })),
     })),
+    variants: (offer.variants ?? []).map(toOfferVariantResponse),
     createdAt: offer.createdAt,
+  };
+}
+
+export function toOfferVariantResponse(variant: OfferVariantWithRelations) {
+  return {
+    id: variant.id,
+    offerId: variant.offerId,
+    sku: variant.sku,
+    priceOverride:
+      variant.price === null ? null : decimalToNumber(variant.price),
+    availableQuantity: variant.availableQuantity,
+    mediaAsset: variant.mediaAsset
+      ? { id: variant.mediaAsset.id, secureUrl: variant.mediaAsset.secureUrl }
+      : null,
+    isActive: variant.isActive,
+    optionValues: [...variant.values]
+      .sort((left, right) => {
+        const groupOrder =
+          (left.optionValue.optionGroup.sortOrder ?? 0) -
+          (right.optionValue.optionGroup.sortOrder ?? 0);
+        return (
+          groupOrder ||
+          (left.optionValue.sortOrder ?? 0) - (right.optionValue.sortOrder ?? 0)
+        );
+      })
+      .map(({ optionValue }) => ({
+        id: optionValue.id,
+        text: optionValue.text,
+        optionGroup: {
+          id: optionValue.optionGroup.id,
+          name: optionValue.optionGroup.name,
+          displayName: optionValue.optionGroup.displayName,
+        },
+      })),
+    createdAt: variant.createdAt,
+    updatedAt: variant.updatedAt,
   };
 }
 

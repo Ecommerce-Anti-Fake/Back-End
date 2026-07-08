@@ -10,6 +10,7 @@ import {
   CreateBrandMessage,
   CreateCategoryMessage,
   CreateOfferMessage,
+  CreateOfferVariantMessage,
   CreateLiveCommentMessage,
   CreateLiveSessionMessage,
   CreateSocialCommentMessage,
@@ -85,6 +86,10 @@ export class CatalogRpcService {
 
   createOffer(payload: CreateOfferMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.createOffer, payload);
+  }
+
+  createOfferVariant(payload: CreateOfferVariantMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.createOfferVariant, payload);
   }
 
   updateOffer(payload: UpdateOfferMessage) {

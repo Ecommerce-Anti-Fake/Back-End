@@ -24,6 +24,7 @@ model MediaAsset {
   shopBanner                Shop[]                     @relation("ShopBanner")
   socialPostMedia           SocialPostMedia[]
   offerOptionValues         OfferOptionValue[]
+  offerVariants             OfferVariant[]
 
   @@index([ownerUserId])
   @@index([resourceType])

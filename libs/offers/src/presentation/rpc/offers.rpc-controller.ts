@@ -4,6 +4,7 @@ import { PRODUCTS_MESSAGE_PATTERNS } from '@contracts';
 import type {
   AllocateOfferBatchesMessage,
   CreateOfferMessage,
+  CreateOfferVariantMessage,
   ListOffersMessage,
   AdminOffersLookupMessage,
   OfferBatchLinksLookupMessage,
@@ -15,6 +16,7 @@ import { throwRpcException } from '@common';
 import {
   AllocateOfferBatchesUseCase,
   CreateOfferUseCase,
+  CreateOfferVariantUseCase,
   GetOfferByIdUseCase,
   ListOfferBatchLinksUseCase,
   ListOffersUseCase,
@@ -27,6 +29,7 @@ import {
 export class OffersRpcController {
   constructor(
     private readonly createOfferUseCase: CreateOfferUseCase,
+    private readonly createOfferVariantUseCase: CreateOfferVariantUseCase,
     private readonly updateOfferUseCase: UpdateOfferUseCase,
     private readonly moderateOfferUseCase: ModerateOfferUseCase,
     private readonly allocateOfferBatchesUseCase: AllocateOfferBatchesUseCase,
@@ -40,6 +43,15 @@ export class OffersRpcController {
   async createOffer(@Payload() payload: CreateOfferMessage) {
     try {
       return await this.createOfferUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.createOfferVariant)
+  async createOfferVariant(@Payload() payload: CreateOfferVariantMessage) {
+    try {
+      return await this.createOfferVariantUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

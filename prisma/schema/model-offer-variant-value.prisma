@@ -1,0 +1,11 @@
+model OfferVariantValue {
+  id            String           @id @default(uuid())
+  variantId     String           @map("variant_id")
+  optionValueId String           @map("option_value_id")
+  variant       OfferVariant     @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  optionValue   OfferOptionValue @relation(fields: [optionValueId], references: [id], onDelete: Restrict)
+
+  @@unique([variantId, optionValueId])
+  @@index([optionValueId])
+  @@map("offer_variant_value")
+}
