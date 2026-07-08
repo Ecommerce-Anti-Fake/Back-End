@@ -132,6 +132,7 @@ export class OfferController {
       parcelWidthCm: dto.widthCm,
       parcelHeightCm: dto.heightCm,
       productImages: dto.productImages,
+      optionGroups: dto.optionGroups,
     });
     const createdShopId = shopIdFromResult(result);
     if (createdShopId) {

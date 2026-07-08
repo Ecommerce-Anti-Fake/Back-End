@@ -2,6 +2,40 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@database/prisma/prisma.service';
 
+type OfferCreateData = {
+  sellerUserId: string;
+  shopId: string;
+  categoryId: string;
+  brandId: string;
+  distributionNodeId: string | null;
+  modelName: string;
+  gtin: string | null;
+  verificationPolicy: string;
+  title: string;
+  description: string;
+  price: number;
+  currency: string;
+  itemCondition: string;
+  availableQuantity: number;
+  verificationLevel: string;
+  offerStatus: string;
+  parcelWeightGrams?: number | null;
+  parcelLengthCm?: number | null;
+  parcelWidthCm?: number | null;
+  parcelHeightCm?: number | null;
+};
+
+type OfferOptionGroupCreateData = {
+  name: string;
+  displayName: string;
+  sortOrder: number;
+  values: Array<{
+    text: string;
+    mediaAssetId: string | null;
+    sortOrder: number;
+  }>;
+};
+
 @Injectable()
 export class OffersRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -125,31 +159,56 @@ export class OffersRepository {
     });
   }
 
-  createOffer(data: {
-    sellerUserId: string;
-    shopId: string;
-    categoryId: string;
-    brandId: string;
-    distributionNodeId: string | null;
-    modelName: string;
-    gtin: string | null;
-    verificationPolicy: string;
-    title: string;
-    description: string;
-    price: number;
-    currency: string;
-    itemCondition: string;
-    availableQuantity: number;
-    verificationLevel: string;
-    offerStatus: string;
-    parcelWeightGrams?: number | null;
-    parcelLengthCm?: number | null;
-    parcelWidthCm?: number | null;
-    parcelHeightCm?: number | null;
-  }) {
+  createOffer(data: OfferCreateData) {
     return this.prisma.offer.create({
       data,
       include: this.offerResponseInclude(),
+    });
+  }
+
+  findOwnedMediaAssets(ids: string[], ownerUserId: string) {
+    return this.prisma.mediaAsset.findMany({
+      where: { id: { in: ids }, ownerUserId },
+      select: { id: true },
+    });
+  }
+
+  createOfferWithSalesOptions(input: {
+    offer: OfferCreateData;
+    productImages: string[];
+    optionGroups: OfferOptionGroupCreateData[];
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      const offer = await tx.offer.create({ data: input.offer });
+
+      for (const [index, fileUrl] of input.productImages.entries()) {
+        await tx.offerMedia.create({
+          data: {
+            offerId: offer.id,
+            mediaAssetId: null,
+            mediaType: index === 0 ? 'thumbnail' : 'gallery',
+            fileUrl,
+            phash: null,
+          },
+        });
+      }
+
+      for (const group of input.optionGroups) {
+        await tx.offerOptionGroup.create({
+          data: {
+            offerId: offer.id,
+            name: group.name,
+            displayName: group.displayName,
+            sortOrder: group.sortOrder,
+            values: { create: group.values },
+          },
+        });
+      }
+
+      return tx.offer.findUniqueOrThrow({
+        where: { id: offer.id },
+        include: this.offerResponseInclude(),
+      });
     });
   }
 
@@ -187,6 +246,27 @@ export class OffersRepository {
           fileUrl: true,
           mediaAsset: {
             select: { secureUrl: true },
+          },
+        },
+      },
+      optionGroups: {
+        orderBy: [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }],
+        select: {
+          id: true,
+          name: true,
+          displayName: true,
+          sortOrder: true,
+          values: {
+            orderBy: [
+              { sortOrder: 'asc' as const },
+              { createdAt: 'asc' as const },
+            ],
+            select: {
+              id: true,
+              text: true,
+              sortOrder: true,
+              mediaAsset: { select: { id: true, secureUrl: true } },
+            },
           },
         },
       },
@@ -379,6 +459,24 @@ export class OffersRepository {
             fileUrl: true,
             mediaAsset: {
               select: { secureUrl: true },
+            },
+          },
+        },
+        optionGroups: {
+          orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+          select: {
+            id: true,
+            name: true,
+            displayName: true,
+            sortOrder: true,
+            values: {
+              orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+              select: {
+                id: true,
+                text: true,
+                sortOrder: true,
+                mediaAsset: { select: { id: true, secureUrl: true } },
+              },
             },
           },
         },

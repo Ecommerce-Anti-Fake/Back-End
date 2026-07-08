@@ -1,0 +1,16 @@
+model OfferOptionValue {
+  id            String           @id @default(uuid())
+  optionGroupId String           @map("option_group_id")
+  text          String
+  mediaAssetId  String?          @map("media_asset_id")
+  sortOrder     Int              @default(0) @map("sort_order")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+  optionGroup   OfferOptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+  mediaAsset    MediaAsset?      @relation(fields: [mediaAssetId], references: [id], onDelete: SetNull)
+
+  @@unique([optionGroupId, text])
+  @@index([optionGroupId, sortOrder, createdAt])
+  @@index([mediaAssetId])
+  @@map("offer_option_value")
+}

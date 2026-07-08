@@ -760,6 +760,7 @@ model MediaAsset {
   shopAvatar                Shop[]                     @relation("ShopAvatar")
   shopBanner                Shop[]                     @relation("ShopBanner")
   socialPostMedia           SocialPostMedia[]
+  offerOptionValues         OfferOptionValue[]
 
   @@index([ownerUserId])
   @@index([resourceType])
@@ -880,6 +881,39 @@ model OfferMedia {
   @@map("offer_media")
 }
 
+model OfferOptionGroup {
+  id          String             @id @default(uuid())
+  offerId     String             @map("offer_id")
+  name        String
+  displayName String             @map("display_name")
+  sortOrder   Int                @default(0) @map("sort_order")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  offer       Offer              @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  values      OfferOptionValue[]
+
+  @@unique([offerId, name])
+  @@index([offerId, sortOrder, createdAt])
+  @@map("offer_option_group")
+}
+
+model OfferOptionValue {
+  id            String           @id @default(uuid())
+  optionGroupId String           @map("option_group_id")
+  text          String
+  mediaAssetId  String?          @map("media_asset_id")
+  sortOrder     Int              @default(0) @map("sort_order")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+  optionGroup   OfferOptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+  mediaAsset    MediaAsset?      @relation(fields: [mediaAssetId], references: [id], onDelete: SetNull)
+
+  @@unique([optionGroupId, text])
+  @@index([optionGroupId, sortOrder, createdAt])
+  @@index([mediaAssetId])
+  @@map("offer_option_value")
+}
+
 model Offer {
   id                   String                @id @default(uuid())
   sellerUserId         String                @map("seller_user_id")
@@ -920,6 +954,7 @@ model Offer {
   favoritedBy          UserFavoriteOffer[]
   socialPosts          SocialPost[]
   liveSessionOffers    LiveSessionOffer[]
+  optionGroups         OfferOptionGroup[]
 
   @@index([brandId])
   @@index([distributionNodeId])

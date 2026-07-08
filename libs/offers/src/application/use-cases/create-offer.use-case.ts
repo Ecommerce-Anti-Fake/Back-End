@@ -10,9 +10,7 @@ const MAX_PRODUCT_IMAGES = 10;
 
 @Injectable()
 export class CreateOfferUseCase {
-  constructor(
-    private readonly productRepository: OffersRepository,
-  ) {}
+  constructor(private readonly productRepository: OffersRepository) {}
 
   async execute(input: {
     sellerUserId: string;
@@ -35,8 +33,19 @@ export class CreateOfferUseCase {
     parcelWidthCm?: number | null;
     parcelHeightCm?: number | null;
     productImages?: string[];
+    optionGroups?: Array<{
+      name: string;
+      displayName: string;
+      sortOrder?: number;
+      values: Array<{
+        text: string;
+        mediaAssetId?: string | null;
+        sortOrder?: number;
+      }>;
+    }>;
   }) {
     const productImages = this.validateProductImages(input.productImages ?? []);
+    const optionGroups = this.validateOptionGroups(input.optionGroups ?? []);
     const requestedShopId = input.shopId?.trim();
     const ownedShop = requestedShopId
       ? await this.productRepository.findOwnedShop(
@@ -125,7 +134,28 @@ export class CreateOfferUseCase {
       );
     }
 
-    const offer = await this.productRepository.createOffer({
+    const mediaAssetIds = [
+      ...new Set(
+        optionGroups.flatMap((group) =>
+          group.values.flatMap((value) =>
+            value.mediaAssetId ? [value.mediaAssetId] : [],
+          ),
+        ),
+      ),
+    ];
+    if (mediaAssetIds.length > 0) {
+      const ownedAssets = await this.productRepository.findOwnedMediaAssets(
+        mediaAssetIds,
+        input.sellerUserId,
+      );
+      if (ownedAssets.length !== mediaAssetIds.length) {
+        throw new BadRequestException(
+          'Option media asset is invalid or does not belong to current user',
+        );
+      }
+    }
+
+    const offerData = {
       sellerUserId: input.sellerUserId,
       shopId: ownedShop.id,
       categoryId: input.categoryId,
@@ -143,7 +173,18 @@ export class CreateOfferUseCase {
       verificationLevel,
       offerStatus,
       ...this.resolveParcelSnapshot(input),
-    });
+    };
+
+    if (optionGroups.length > 0) {
+      const offer = await this.productRepository.createOfferWithSalesOptions({
+        offer: offerData,
+        productImages,
+        optionGroups,
+      });
+      return toOfferResponse(offer);
+    }
+
+    const offer = await this.productRepository.createOffer(offerData);
 
     for (const [index, imageUrl] of productImages.entries()) {
       await this.productRepository.createOfferMedia({
@@ -185,14 +226,12 @@ export class CreateOfferUseCase {
     };
   }
 
-  private resolveParcelSnapshot(
-    input: {
-      parcelWeightGrams?: number | null;
-      parcelLengthCm?: number | null;
-      parcelWidthCm?: number | null;
-      parcelHeightCm?: number | null;
-    },
-  ) {
+  private resolveParcelSnapshot(input: {
+    parcelWeightGrams?: number | null;
+    parcelLengthCm?: number | null;
+    parcelWidthCm?: number | null;
+    parcelHeightCm?: number | null;
+  }) {
     return {
       parcelWeightGrams: input.parcelWeightGrams ?? null,
       parcelLengthCm: input.parcelLengthCm ?? null,
@@ -201,9 +240,7 @@ export class CreateOfferUseCase {
     };
   }
 
-  private validateProductImages(
-    imageUrls: string[],
-  ) {
+  private validateProductImages(imageUrls: string[]) {
     if (imageUrls.length === 0) {
       throw new BadRequestException('At least one product image is required');
     }
@@ -221,5 +258,65 @@ export class CreateOfferUseCase {
       }
       return normalizedUrl;
     });
+  }
+
+  private validateOptionGroups(
+    groups: Array<{
+      name: string;
+      displayName: string;
+      sortOrder?: number;
+      values: Array<{
+        text: string;
+        mediaAssetId?: string | null;
+        sortOrder?: number;
+      }>;
+    }>,
+  ) {
+    const normalizedGroups = groups.map((group, groupIndex) => {
+      const name = group.name.trim();
+      const displayName = group.displayName.trim();
+      if (!name || !displayName) {
+        throw new BadRequestException(
+          'Option group name and display name are required',
+        );
+      }
+      if (!group.values?.length) {
+        throw new BadRequestException(
+          'Each option group must contain at least one value',
+        );
+      }
+
+      const values = group.values.map((value, valueIndex) => {
+        const text = value.text.trim();
+        if (!text) {
+          throw new BadRequestException('Option value text is required');
+        }
+        return {
+          text,
+          mediaAssetId: value.mediaAssetId?.trim() || null,
+          sortOrder: value.sortOrder ?? valueIndex,
+        };
+      });
+      if (new Set(values.map((value) => value.text)).size !== values.length) {
+        throw new BadRequestException(
+          'Option value texts must be unique within a group',
+        );
+      }
+
+      return {
+        name,
+        displayName,
+        sortOrder: group.sortOrder ?? groupIndex,
+        values,
+      };
+    });
+
+    if (
+      new Set(normalizedGroups.map((group) => group.name)).size !==
+      normalizedGroups.length
+    ) {
+      throw new BadRequestException('Option group names must be unique');
+    }
+    return normalizedGroups;
   }
 }

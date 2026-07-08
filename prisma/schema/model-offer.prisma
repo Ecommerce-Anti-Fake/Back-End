@@ -38,6 +38,7 @@ model Offer {
   favoritedBy          UserFavoriteOffer[]
   socialPosts          SocialPost[]
   liveSessionOffers    LiveSessionOffer[]
+  optionGroups         OfferOptionGroup[]
 
   @@index([brandId])
   @@index([distributionNodeId])

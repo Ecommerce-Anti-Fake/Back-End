@@ -33,6 +33,84 @@ const SHOP_TYPES = [
 ] as const;
 const OFFER_SORTS = ['featured', 'newest', 'price-asc', 'price-desc'] as const;
 
+export class CreateOfferOptionValueDto {
+  @ApiProperty({ example: 'Do' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(255)
+  text!: string;
+
+  @ApiPropertyOptional({ example: 'media-asset-id', nullable: true })
+  @IsOptional()
+  @IsString()
+  mediaAssetId?: string | null;
+
+  @ApiPropertyOptional({ example: 0, default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  sortOrder?: number;
+}
+
+export class CreateOfferOptionGroupDto {
+  @ApiProperty({ example: 'color' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  name!: string;
+
+  @ApiProperty({ example: 'Mau sac' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(255)
+  displayName!: string;
+
+  @ApiPropertyOptional({ example: 0, default: 0 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  sortOrder?: number;
+
+  @ApiProperty({ type: () => [CreateOfferOptionValueDto] })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => CreateOfferOptionValueDto)
+  values!: CreateOfferOptionValueDto[];
+}
+
+export class OfferOptionMediaAssetResponseDto {
+  @ApiProperty({ example: 'media-asset-id' })
+  id!: string;
+
+  @ApiProperty({
+    example: 'https://res.cloudinary.com/demo/image/upload/red.jpg',
+  })
+  secureUrl!: string;
+}
+
+export class OfferOptionValueResponseDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() text!: string;
+  @ApiProperty() sortOrder!: number;
+  @ApiPropertyOptional({
+    type: OfferOptionMediaAssetResponseDto,
+    nullable: true,
+  })
+  mediaAsset!: OfferOptionMediaAssetResponseDto | null;
+}
+
+export class OfferOptionGroupResponseDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty() displayName!: string;
+  @ApiProperty() sortOrder!: number;
+  @ApiProperty({ type: [OfferOptionValueResponseDto] })
+  values!: OfferOptionValueResponseDto[];
+}
+
 export class OfferResponseDto {
   @ApiProperty({ example: '06b5f15b-4c48-4f57-a2d6-0f2eb45fd001' })
   id!: string;
@@ -78,6 +156,9 @@ export class OfferResponseDto {
 
   @ApiProperty({ enum: MODERATION_STATUSES, example: 'approved' })
   moderationStatus!: (typeof MODERATION_STATUSES)[number];
+
+  @ApiProperty({ type: [OfferOptionGroupResponseDto] })
+  optionGroups!: OfferOptionGroupResponseDto[];
 
   @ApiPropertyOptional({
     example: 'Thong tin san pham khong hop le',
@@ -552,6 +633,13 @@ export class CreateOfferDto {
   @IsInt()
   @Min(1)
   heightCm!: number;
+
+  @ApiPropertyOptional({ type: () => [CreateOfferOptionGroupDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateOfferOptionGroupDto)
+  optionGroups?: CreateOfferOptionGroupDto[];
 }
 
 export class UpdateOfferDto {

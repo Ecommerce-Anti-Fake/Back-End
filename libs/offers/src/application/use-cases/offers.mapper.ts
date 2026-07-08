@@ -25,6 +25,18 @@ type OfferWithRelations = Offer & {
   parcelLengthCm?: number | null;
   parcelWidthCm?: number | null;
   parcelHeightCm?: number | null;
+  optionGroups?: Array<{
+    id: string;
+    name: string;
+    displayName: string;
+    sortOrder: number;
+    values: Array<{
+      id: string;
+      text: string;
+      sortOrder: number;
+      mediaAsset: { id: string; secureUrl: string } | null;
+    }>;
+  }>;
 };
 
 type OfferBatchLinkWithBatch = {
@@ -90,6 +102,20 @@ export function toOfferResponse(offer: OfferWithRelations) {
     thumbnailUrl:
       thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
     imageUrls,
+    optionGroups: (offer.optionGroups ?? []).map((group) => ({
+      id: group.id,
+      name: group.name,
+      displayName: group.displayName,
+      sortOrder: group.sortOrder,
+      values: group.values.map((value) => ({
+        id: value.id,
+        text: value.text,
+        sortOrder: value.sortOrder,
+        mediaAsset: value.mediaAsset
+          ? { id: value.mediaAsset.id, secureUrl: value.mediaAsset.secureUrl }
+          : null,
+      })),
+    })),
     createdAt: offer.createdAt,
   };
 }

@@ -17,6 +17,8 @@ describe('CreateOfferUseCase', () => {
     createProductModel: jest.fn(),
     createOffer: jest.fn(),
     createOfferMedia: jest.fn(),
+    findOwnedMediaAssets: jest.fn(),
+    createOfferWithSalesOptions: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -378,5 +380,146 @@ describe('CreateOfferUseCase', () => {
         availableQuantity: 10,
       }),
     ).rejects.toThrow('At least one product image is required');
+  });
+
+  it('rejects duplicate option group names', async () => {
+    await expect(
+      useCase.execute({
+        sellerUserId: 'user-1',
+        categoryId: 'category-1',
+        brandId: 'brand-1',
+        title: 'Offer',
+        description: 'Desc',
+        price: 100,
+        availableQuantity: 1,
+        productImages: productImages(),
+        optionGroups: [
+          { name: 'size', displayName: 'Size', values: [{ text: 'S' }] },
+          { name: 'size', displayName: 'Kich thuoc', values: [{ text: 'M' }] },
+        ],
+      }),
+    ).rejects.toThrow('Option group names must be unique');
+  });
+
+  it('rejects duplicate option values in a group', async () => {
+    await expect(
+      useCase.execute({
+        sellerUserId: 'user-1',
+        categoryId: 'category-1',
+        brandId: 'brand-1',
+        title: 'Offer',
+        description: 'Desc',
+        price: 100,
+        availableQuantity: 1,
+        productImages: productImages(),
+        optionGroups: [
+          {
+            name: 'size',
+            displayName: 'Size',
+            values: [{ text: 'S' }, { text: 'S' }],
+          },
+        ],
+      }),
+    ).rejects.toThrow('Option value texts must be unique within a group');
+  });
+
+  it('rejects option media not owned by the seller', async () => {
+    mockActiveApprovedShop();
+    productRepositoryMock.findOwnedMediaAssets.mockResolvedValueOnce([]);
+
+    await expect(
+      useCase.execute({
+        sellerUserId: 'user-1',
+        shopId: 'shop-1',
+        categoryId: 'category-1',
+        brandId: 'brand-1',
+        title: 'Offer',
+        description: 'Desc',
+        price: 100,
+        availableQuantity: 1,
+        productImages: productImages(),
+        optionGroups: [
+          {
+            name: 'color',
+            displayName: 'Mau sac',
+            values: [{ text: 'Do', mediaAssetId: 'media-1' }],
+          },
+        ],
+      }),
+    ).rejects.toThrow(
+      'Option media asset is invalid or does not belong to current user',
+    );
+  });
+
+  it('creates the offer and sales options through the transactional repository path', async () => {
+    mockActiveApprovedShop();
+    productRepositoryMock.findOwnedMediaAssets.mockResolvedValueOnce([
+      { id: 'media-1' },
+    ]);
+    productRepositoryMock.createOfferWithSalesOptions.mockResolvedValueOnce({
+      id: 'offer-1',
+      title: 'Offer',
+      description: 'Desc',
+      price: 100,
+      currency: 'VND',
+      itemCondition: 'new',
+      availableQuantity: 1,
+      verificationLevel: 'standard',
+      offerStatus: 'inactive',
+      moderationStatus: 'pending',
+      moderationReason: null,
+      shopId: 'shop-1',
+      categoryId: 'category-1',
+      brandId: 'brand-1',
+      modelName: 'Offer',
+      gtin: null,
+      verificationPolicy: 'manual_review',
+      distributionNodeId: null,
+      createdAt: new Date('2026-07-08T00:00:00.000Z'),
+      shop: { shopName: 'Shop', registrationType: 'NORMAL' },
+      category: { name: 'Category' },
+      distributionNode: null,
+      media: [],
+      optionGroups: [],
+    });
+
+    await useCase.execute({
+      sellerUserId: 'user-1',
+      shopId: 'shop-1',
+      categoryId: 'category-1',
+      brandId: 'brand-1',
+      title: 'Offer',
+      description: 'Desc',
+      price: 100,
+      availableQuantity: 1,
+      productImages: productImages(),
+      optionGroups: [
+        {
+          name: 'color',
+          displayName: 'Mau sac',
+          values: [{ text: 'Do', mediaAssetId: 'media-1' }],
+        },
+      ],
+    });
+
+    expect(
+      productRepositoryMock.createOfferWithSalesOptions,
+    ).toHaveBeenCalledWith({
+      offer: expect.objectContaining({
+        sellerUserId: 'user-1',
+        shopId: 'shop-1',
+      }),
+      productImages: productImages(),
+      optionGroups: [
+        {
+          name: 'color',
+          displayName: 'Mau sac',
+          sortOrder: 0,
+          values: [{ text: 'Do', mediaAssetId: 'media-1', sortOrder: 0 }],
+        },
+      ],
+    });
+    expect(productRepositoryMock.createOffer).not.toHaveBeenCalled();
+    expect(productRepositoryMock.createOfferMedia).not.toHaveBeenCalled();
   });
 });

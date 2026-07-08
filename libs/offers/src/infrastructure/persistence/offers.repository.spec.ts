@@ -1,6 +1,27 @@
 import { OffersRepository } from './offers.repository';
 
 describe('OffersRepository', () => {
+  it('loads offer sales options in deterministic display order', async () => {
+    const prisma = { offer: { findUnique: jest.fn().mockResolvedValue(null) } };
+    const repository = new OffersRepository(prisma as never);
+
+    await repository.findOfferById('offer-1');
+
+    const query = prisma.offer.findUnique.mock.calls[0][0];
+    expect(query.include.optionGroups).toEqual(
+      expect.objectContaining({
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      }),
+    );
+    expect(query.include.optionGroups.select.values.orderBy).toEqual([
+      { sortOrder: 'asc' },
+      { createdAt: 'asc' },
+    ]);
+    expect(
+      query.include.optionGroups.select.values.select.mediaAsset.select,
+    ).toEqual({ id: true, secureUrl: true });
+  });
+
   it('updates only moderation fields', async () => {
     const prisma = {
       offer: {

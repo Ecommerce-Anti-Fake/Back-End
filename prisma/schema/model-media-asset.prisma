@@ -23,6 +23,7 @@ model MediaAsset {
   shopAvatar                Shop[]                     @relation("ShopAvatar")
   shopBanner                Shop[]                     @relation("ShopBanner")
   socialPostMedia           SocialPostMedia[]
+  offerOptionValues         OfferOptionValue[]
 
   @@index([ownerUserId])
   @@index([resourceType])

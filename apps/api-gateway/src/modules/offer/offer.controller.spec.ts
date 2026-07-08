@@ -160,6 +160,13 @@ describe('OfferController', () => {
       lengthCm: 25,
       widthCm: 10,
       heightCm: 8,
+      optionGroups: [
+        {
+          name: 'size',
+          displayName: 'Kich thuoc',
+          values: [{ text: 'S', sortOrder: 0 }],
+        },
+      ],
     });
 
     expect(catalogRpcService.createOffer).toHaveBeenCalledWith(
@@ -174,6 +181,13 @@ describe('OfferController', () => {
         parcelLengthCm: 25,
         parcelWidthCm: 10,
         parcelHeightCm: 8,
+        optionGroups: [
+          {
+            name: 'size',
+            displayName: 'Kich thuoc',
+            values: [{ text: 'S', sortOrder: 0 }],
+          },
+        ],
       }),
     );
     expect(dashboardSseBrokerService.notifyShop).toHaveBeenCalledWith('shop-1');
