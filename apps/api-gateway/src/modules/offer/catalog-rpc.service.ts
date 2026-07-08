@@ -50,6 +50,7 @@ import {
   UpdateSocialPostVisibilityMessage,
   UpdateLiveSessionStatusMessage,
   UpdateOfferMessage,
+  ModerateOfferMessage,
   CATALOG_SERVICE_CLIENT,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
@@ -90,6 +91,10 @@ export class CatalogRpcService {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.updateOffer, payload);
   }
 
+  moderateOffer(payload: ModerateOfferMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.moderateOffer, payload);
+  }
+
   allocateOfferBatches(payload: AllocateOfferBatchesMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.allocateOfferBatches, payload);
   }
@@ -99,7 +104,10 @@ export class CatalogRpcService {
   }
 
   getOfferMediaUploadSignatures(payload: OfferMediaUploadSignaturesMessage) {
-    return this.send(PRODUCTS_MESSAGE_PATTERNS.getOfferMediaUploadSignatures, payload);
+    return this.send(
+      PRODUCTS_MESSAGE_PATTERNS.getOfferMediaUploadSignatures,
+      payload,
+    );
   }
 
   addOfferMediaBatch(payload: AddOfferMediaBatchMessage) {
@@ -131,15 +139,23 @@ export class CatalogRpcService {
   }
 
   getReviewMediaUploadSignatures(payload: ReviewMediaUploadSignaturesMessage) {
-    return this.send(PRODUCTS_MESSAGE_PATTERNS.getReviewMediaUploadSignatures, payload);
+    return this.send(
+      PRODUCTS_MESSAGE_PATTERNS.getReviewMediaUploadSignatures,
+      payload,
+    );
   }
 
   addReviewMediaBatch(payload: AddReviewMediaBatchMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.addReviewMediaBatch, payload);
   }
 
-  getOfferDocumentUploadSignatures(payload: OfferDocumentUploadSignaturesMessage) {
-    return this.send(PRODUCTS_MESSAGE_PATTERNS.getOfferDocumentUploadSignatures, payload);
+  getOfferDocumentUploadSignatures(
+    payload: OfferDocumentUploadSignaturesMessage,
+  ) {
+    return this.send(
+      PRODUCTS_MESSAGE_PATTERNS.getOfferDocumentUploadSignatures,
+      payload,
+    );
   }
 
   addOfferDocumentsBatch(payload: AddOfferDocumentsBatchMessage) {
@@ -211,7 +227,10 @@ export class CatalogRpcService {
   }
 
   listSocialCommentReplies(payload: ListSocialCommentRepliesMessage) {
-    return this.send(PRODUCTS_MESSAGE_PATTERNS.listSocialCommentReplies, payload);
+    return this.send(
+      PRODUCTS_MESSAGE_PATTERNS.listSocialCommentReplies,
+      payload,
+    );
   }
 
   createSocialPost(payload: CreateSocialPostMessage) {
@@ -223,7 +242,10 @@ export class CatalogRpcService {
   }
 
   createSocialCommentReply(payload: CreateSocialCommentReplyMessage) {
-    return this.send(PRODUCTS_MESSAGE_PATTERNS.createSocialCommentReply, payload);
+    return this.send(
+      PRODUCTS_MESSAGE_PATTERNS.createSocialCommentReply,
+      payload,
+    );
   }
 
   setSocialReaction(payload: SetSocialReactionMessage) {
@@ -239,7 +261,10 @@ export class CatalogRpcService {
   }
 
   removeSocialCommentLike(payload: SocialCommentLikeMessage) {
-    return this.send(PRODUCTS_MESSAGE_PATTERNS.removeSocialCommentLike, payload);
+    return this.send(
+      PRODUCTS_MESSAGE_PATTERNS.removeSocialCommentLike,
+      payload,
+    );
   }
 
   shareSocialPost(payload: SocialPostLookupMessage) {
@@ -247,7 +272,10 @@ export class CatalogRpcService {
   }
 
   updateSocialPostVisibility(payload: UpdateSocialPostVisibilityMessage) {
-    return this.send(PRODUCTS_MESSAGE_PATTERNS.updateSocialPostVisibility, payload);
+    return this.send(
+      PRODUCTS_MESSAGE_PATTERNS.updateSocialPostVisibility,
+      payload,
+    );
   }
 
   listLiveSessions(payload: ListLiveSessionsMessage) {
@@ -259,7 +287,10 @@ export class CatalogRpcService {
   }
 
   updateLiveSessionStatus(payload: UpdateLiveSessionStatusMessage) {
-    return this.send(PRODUCTS_MESSAGE_PATTERNS.updateLiveSessionStatus, payload);
+    return this.send(
+      PRODUCTS_MESSAGE_PATTERNS.updateLiveSessionStatus,
+      payload,
+    );
   }
 
   remindLiveSession(payload: LiveSessionLookupMessage) {
@@ -275,16 +306,24 @@ export class CatalogRpcService {
   }
 
   updateLiveCommentVisibility(payload: UpdateLiveCommentVisibilityMessage) {
-    return this.send(PRODUCTS_MESSAGE_PATTERNS.updateLiveCommentVisibility, payload);
+    return this.send(
+      PRODUCTS_MESSAGE_PATTERNS.updateLiveCommentVisibility,
+      payload,
+    );
   }
 
   deleteLiveComment(payload: DeleteLiveCommentMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.deleteLiveComment, payload);
   }
 
-  private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {
+  private async send<TResult>(
+    pattern: string,
+    payload: unknown,
+  ): Promise<TResult> {
     try {
-      return await lastValueFrom(this.catalogClient.send<TResult, unknown>(pattern, payload));
+      return await lastValueFrom(
+        this.catalogClient.send<TResult, unknown>(pattern, payload),
+      );
     } catch (error) {
       throwHttpExceptionFromRpc(error);
     }

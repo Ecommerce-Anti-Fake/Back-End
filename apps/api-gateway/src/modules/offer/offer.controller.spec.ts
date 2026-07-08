@@ -14,8 +14,17 @@ describe('OfferController', () => {
       Reflect.getMetadata(PATH_METADATA, OfferController.prototype.findOffers),
     ).toBe('offers');
     expect(
-      Reflect.getMetadata(PATH_METADATA, OfferController.prototype.findAdminOffers),
+      Reflect.getMetadata(
+        PATH_METADATA,
+        OfferController.prototype.findAdminOffers,
+      ),
     ).toBe('offers/admin/list-offer');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        OfferController.prototype.moderateOffer,
+      ),
+    ).toBe('offers/admin/:offerId/moderation-status');
     expect(
       Reflect.getMetadata(
         PATH_METADATA,

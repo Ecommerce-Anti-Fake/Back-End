@@ -20,7 +20,13 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
+import {
+  ActiveUserGuard,
+  CurrentUserId,
+  JwtAuthGuard,
+  Roles,
+  RolesGuard,
+} from '@security';
 import {
   AllocateOfferBatchesDto,
   AdminOfferListQueryDto,
@@ -35,6 +41,7 @@ import {
   CreateOfferDto,
   CreateOfferResponseDto,
   UpdateOfferDto,
+  ModerateOfferDto,
 } from '@offers';
 import { RateLimit } from '../../observability';
 import { CatalogRpcService } from './catalog-rpc.service';
@@ -51,7 +58,8 @@ export class OfferController {
   @ApiOperation({ summary: 'Admin lay danh sach offer' })
   @ApiBearerAuth('access-token')
   @ApiOkResponse({
-    description: 'Danh sach offer theo trang thai ban va trang thai kiem duyet.',
+    description:
+      'Danh sach offer theo trang thai ban va trang thai kiem duyet.',
     type: PaginatedAdminOfferListResponseDto,
   })
   @Roles('admin')
@@ -63,6 +71,26 @@ export class OfferController {
       moderationStatus: query.moderationStatus,
       page: query.page,
       pageSize: query.pageSize,
+    });
+  }
+
+  @ApiOperation({ summary: 'Admin cap nhat trang thai kiem duyet offer' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Cap nhat kiem duyet offer thanh cong.',
+    type: OfferResponseDto,
+  })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Patch('offers/admin/:offerId/moderation-status')
+  moderateOffer(
+    @Param('offerId') offerId: string,
+    @Body() dto: ModerateOfferDto,
+  ) {
+    return this.catalogRpcService.moderateOffer({
+      offerId,
+      moderationStatus: dto.moderationStatus,
+      moderationReason: dto.moderationReason,
     });
   }
 
@@ -332,9 +360,7 @@ function toPublicOfferDetail(offer: unknown): PublicOfferDetailResponseDto {
   };
 }
 
-function isPaginatedOfferResult(
-  value: unknown,
-): value is {
+function isPaginatedOfferResult(value: unknown): value is {
   total: unknown;
   page: unknown;
   pageSize: unknown;

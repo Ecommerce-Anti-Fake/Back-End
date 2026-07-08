@@ -5,3 +5,4 @@ export * from './list-offer-batch-links.use-case';
 export * from './list-offers.use-case';
 export * from './get-offer-by-id.use-case';
 export * from './list-admin-offers.use-case';
+export * from './moderate-offer.use-case';

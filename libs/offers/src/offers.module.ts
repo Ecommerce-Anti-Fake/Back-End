@@ -9,6 +9,7 @@ import {
   ListOffersUseCase,
   ListAdminOffersUseCase,
   UpdateOfferUseCase,
+  ModerateOfferUseCase,
 } from './application/use-cases';
 import { OffersRepository } from './infrastructure/persistence/offers.repository';
 import { OffersRpcController } from './presentation/rpc/offers.rpc-controller';
@@ -20,6 +21,7 @@ import { OffersRpcController } from './presentation/rpc/offers.rpc-controller';
     OffersRepository,
     CreateOfferUseCase,
     UpdateOfferUseCase,
+    ModerateOfferUseCase,
     AllocateOfferBatchesUseCase,
     ListOfferBatchLinksUseCase,
     ListOffersUseCase,
@@ -30,6 +32,7 @@ import { OffersRpcController } from './presentation/rpc/offers.rpc-controller';
     OffersRepository,
     CreateOfferUseCase,
     UpdateOfferUseCase,
+    ModerateOfferUseCase,
     AllocateOfferBatchesUseCase,
     ListOfferBatchLinksUseCase,
     ListOffersUseCase,

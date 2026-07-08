@@ -899,6 +899,7 @@ model Offer {
   verificationLevel    String                @map("verification_level")
   offerStatus          String                @map("offer_status")
   moderationStatus     String                @default("pending") @map("moderation_status")
+  moderationReason     String?               @map("moderation_reason")
   parcelWeightGrams    Int?                  @map("parcel_weight_grams")
   parcelLengthCm       Int?                  @map("parcel_length_cm")
   parcelWidthCm        Int?                  @map("parcel_width_cm")

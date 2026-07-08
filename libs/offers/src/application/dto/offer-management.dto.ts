@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -15,10 +15,16 @@ import {
   Min,
   MinLength,
   ValidateNested,
+  ValidateIf,
 } from 'class-validator';
 
 const OFFER_STATUSES = ['active', 'inactive', 'draft'] as const;
-const MODERATION_STATUSES = ['pending', 'approved', 'rejected', 'banned'] as const;
+const MODERATION_STATUSES = [
+  'pending',
+  'approved',
+  'rejected',
+  'banned',
+] as const;
 const SHOP_TYPES = [
   'NORMAL',
   'HANDMADE',
@@ -69,6 +75,15 @@ export class OfferResponseDto {
 
   @ApiProperty({ example: 'active' })
   offerStatus!: string;
+
+  @ApiProperty({ enum: MODERATION_STATUSES, example: 'approved' })
+  moderationStatus!: (typeof MODERATION_STATUSES)[number];
+
+  @ApiPropertyOptional({
+    example: 'Thong tin san pham khong hop le',
+    nullable: true,
+  })
+  moderationReason!: string | null;
 
   @ApiProperty({ example: 'shop-id' })
   shopId!: string;
@@ -122,6 +137,23 @@ export class OfferResponseDto {
   createdAt!: Date;
 }
 
+export class ModerateOfferDto {
+  @ApiProperty({ enum: MODERATION_STATUSES, example: 'approved' })
+  @IsString()
+  @IsIn(MODERATION_STATUSES)
+  moderationStatus!: (typeof MODERATION_STATUSES)[number];
+
+  @ApiPropertyOptional({
+    example: 'Thong tin san pham khong hop le',
+    nullable: true,
+  })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @MaxLength(1000)
+  moderationReason!: string | null;
+}
+
 export class AdminOfferListQueryDto {
   @ApiPropertyOptional({
     enum: OFFER_STATUSES,
@@ -172,11 +204,17 @@ export class AdminOfferRelationResponseDto {
 export class AdminOfferListItemResponseDto {
   @ApiProperty({ example: 'offer_001' }) id!: string;
   @ApiProperty({ example: 'Kem chong nang SPF50' }) title!: string;
-  @ApiPropertyOptional({ example: 'https://example.com/image.jpg', nullable: true }) thumbnail!: string | null;
+  @ApiPropertyOptional({
+    example: 'https://example.com/image.jpg',
+    nullable: true,
+  })
+  thumbnail!: string | null;
   @ApiProperty({ example: 150000 }) price!: number;
   @ApiProperty({ example: 'VND' }) currency!: string;
-  @ApiProperty({ type: AdminOfferRelationResponseDto }) shop!: AdminOfferRelationResponseDto;
-  @ApiProperty({ type: AdminOfferRelationResponseDto }) category!: AdminOfferRelationResponseDto;
+  @ApiProperty({ type: AdminOfferRelationResponseDto })
+  shop!: AdminOfferRelationResponseDto;
+  @ApiProperty({ type: AdminOfferRelationResponseDto })
+  category!: AdminOfferRelationResponseDto;
   @ApiProperty({ example: 'standard' }) verificationLevel!: string;
   @ApiProperty({ example: 'inactive' }) offerStatus!: string;
   @ApiProperty({ example: 'pending' }) moderationStatus!: string;
@@ -188,7 +226,8 @@ export class PaginatedAdminOfferListResponseDto {
   @ApiProperty({ example: 10 }) pageSize!: number;
   @ApiProperty({ example: 2 }) totalItems!: number;
   @ApiProperty({ example: 1 }) totalPages!: number;
-  @ApiProperty({ type: AdminOfferListItemResponseDto, isArray: true }) items!: AdminOfferListItemResponseDto[];
+  @ApiProperty({ type: AdminOfferListItemResponseDto, isArray: true })
+  items!: AdminOfferListItemResponseDto[];
 }
 
 export class CreateOfferResponseDto {
@@ -576,7 +615,6 @@ export class UpdateOfferDto {
   @IsString()
   @IsIn(OFFER_STATUSES)
   offerStatus?: 'active' | 'inactive' | 'draft';
-
 }
 
 export class ListOffersQueryDto {

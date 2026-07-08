@@ -68,7 +68,8 @@ export const SHOPS_MESSAGE_PATTERNS = {
   findShopDocumentRequirements: 'shops.find-shop-document-requirements',
   getShopDocumentUploadSignatures: 'shops.get-shop-document-upload-signatures',
   submitShopDocuments: 'shops.submit-shop-documents',
-  getBrandAuthorizationUploadSignatures: 'shops.get-brand-authorization-upload-signatures',
+  getBrandAuthorizationUploadSignatures:
+    'shops.get-brand-authorization-upload-signatures',
   submitBrandAuthorization: 'shops.submit-brand-authorization',
   findBrandAuthorizations: 'shops.find-brand-authorizations',
   findAdminBrandAuthorizations: 'shops.find-admin-brand-authorizations',
@@ -83,6 +84,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   createCategory: 'products.create-category',
   createOffer: 'products.create-offer',
   updateOffer: 'products.update-offer',
+  moderateOffer: 'products.moderate-offer',
   findShippingCarriers: 'products.find-shipping-carriers',
   findOffers: 'products.find-offers',
   findAdminOffers: 'products.find-admin-offers',
@@ -128,7 +130,8 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   createOrderItemReview: 'products.create-order-item-review',
   getReviewMediaUploadSignatures: 'products.get-review-media-upload-signatures',
   addReviewMediaBatch: 'products.add-review-media-batch',
-  getOfferDocumentUploadSignatures: 'products.get-offer-document-upload-signatures',
+  getOfferDocumentUploadSignatures:
+    'products.get-offer-document-upload-signatures',
   addOfferDocumentsBatch: 'products.add-offer-documents-batch',
   findOfferDocuments: 'products.find-offer-documents',
   deleteOfferDocument: 'products.delete-offer-document',
@@ -149,7 +152,8 @@ export const ORDERS_MESSAGE_PATTERNS = {
   getSellerShopDashboardAnalytics: 'orders.get-seller-shop-dashboard-analytics',
   getSellerShopDailyMetrics: 'orders.get-seller-shop-daily-metrics',
   getSellerShopSummaryMetrics: 'orders.get-seller-shop-summary-metrics',
-  getSellerShopOrderStatusSummary: 'orders.get-seller-shop-order-status-summary',
+  getSellerShopOrderStatusSummary:
+    'orders.get-seller-shop-order-status-summary',
   getShopBestSellingProducts: 'orders.get-shop-best-selling-products',
   findAdminOrders: 'orders.find-admin-orders',
   getAdminFinanceReconciliation: 'orders.get-admin-finance-reconciliation',
@@ -184,7 +188,8 @@ export const ORDERS_MESSAGE_PATTERNS = {
   cancel: 'orders.cancel',
   openDispute: 'orders.open-dispute',
   resolveDispute: 'orders.resolve-dispute',
-  getDisputeEvidenceUploadSignatures: 'orders.get-dispute-evidence-upload-signatures',
+  getDisputeEvidenceUploadSignatures:
+    'orders.get-dispute-evidence-upload-signatures',
   addDisputeEvidenceBatch: 'orders.add-dispute-evidence-batch',
   findDisputeEvidence: 'orders.find-dispute-evidence',
   refund: 'orders.refund',
@@ -214,7 +219,8 @@ export const DISTRIBUTION_MESSAGE_PATTERNS = {
   getShipment: 'distribution.get-shipment',
   receiveShipment: 'distribution.receive-shipment',
   cancelShipment: 'distribution.cancel-shipment',
-  getBatchDocumentUploadSignatures: 'distribution.get-batch-document-upload-signatures',
+  getBatchDocumentUploadSignatures:
+    'distribution.get-batch-document-upload-signatures',
   addBatchDocumentsBatch: 'distribution.add-batch-documents-batch',
   findBatchDocuments: 'distribution.find-batch-documents',
   createPricingPolicy: 'distribution.create-pricing-policy',
@@ -481,7 +487,12 @@ export type MyShopsLookupMessage = {
 };
 
 export type PendingVerificationShopsLookupMessage = {
-  shopStatus?: 'pending_kyc' | 'pending_document' | 'pending_verification' | 'rejected' | 'verified';
+  shopStatus?:
+    | 'pending_kyc'
+    | 'pending_document'
+    | 'pending_verification'
+    | 'rejected'
+    | 'verified';
   registrationType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
   search?: string;
   page?: number;
@@ -816,6 +827,12 @@ export type UpdateOfferMessage = {
   parcelHeightCm?: number | null;
 };
 
+export type ModerateOfferMessage = {
+  offerId: string;
+  moderationStatus: 'pending' | 'approved' | 'rejected' | 'banned';
+  moderationReason: string | null;
+};
+
 export type AdminOffersLookupMessage = {
   offerStatus?: 'active' | 'inactive' | 'draft';
   moderationStatus?: 'pending' | 'approved' | 'rejected' | 'banned';
@@ -1112,7 +1129,12 @@ export type AdminDisputeDetailMessage = {
 
 export type AdminDisputeSummaryMessage = Record<string, never>;
 
-export type ReportTargetType = 'ORDER' | 'OFFER' | 'SHOP' | 'SOCIAL_POST' | 'SOCIAL_COMMENT';
+export type ReportTargetType =
+  | 'ORDER'
+  | 'OFFER'
+  | 'SHOP'
+  | 'SOCIAL_POST'
+  | 'SOCIAL_COMMENT';
 
 export type CreateReportMessage = {
   requesterUserId: string;
@@ -1159,9 +1181,20 @@ export type AdminRiskScoresLookupMessage = {
   sortOrder?: 'asc' | 'desc';
 };
 
-export type ModerationCaseTargetType = 'KYC' | 'SHOP' | 'OFFER' | 'BATCH' | 'REPORT' | 'DISPUTE';
+export type ModerationCaseTargetType =
+  | 'KYC'
+  | 'SHOP'
+  | 'OFFER'
+  | 'BATCH'
+  | 'REPORT'
+  | 'DISPUTE';
 
-export type ModerationCaseStatus = 'ASSIGNED' | 'IN_REVIEW' | 'ESCALATED' | 'RESOLVED' | 'CLOSED';
+export type ModerationCaseStatus =
+  | 'ASSIGNED'
+  | 'IN_REVIEW'
+  | 'ESCALATED'
+  | 'RESOLVED'
+  | 'CLOSED';
 
 export type AdminModerationCasesLookupMessage = {
   targetType?: ModerationCaseTargetType;

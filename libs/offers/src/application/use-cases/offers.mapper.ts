@@ -74,6 +74,8 @@ export function toOfferResponse(offer: OfferWithRelations) {
     parcelHeightCm: offer.parcelHeightCm ?? null,
     verificationLevel: offer.verificationLevel,
     offerStatus: offer.offerStatus,
+    moderationStatus: offer.moderationStatus,
+    moderationReason: offer.moderationReason ?? null,
     shopId: offer.shopId,
     categoryId: offer.categoryId,
     brandId: offer.brandId,

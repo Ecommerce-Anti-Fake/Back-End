@@ -14,7 +14,9 @@ export class OffersRepository {
   }) {
     const where: Prisma.OfferWhereInput = {
       ...(input.offerStatus ? { offerStatus: input.offerStatus } : {}),
-      ...(input.moderationStatus ? { moderationStatus: input.moderationStatus } : {}),
+      ...(input.moderationStatus
+        ? { moderationStatus: input.moderationStatus }
+        : {}),
     };
     const [total, items] = await this.prisma.$transaction([
       this.prisma.offer.count({ where }),
@@ -422,6 +424,23 @@ export class OffersRepository {
         },
       },
     });
+  }
+
+  async moderateOffer(
+    offerId: string,
+    data: {
+      moderationStatus: 'pending' | 'approved' | 'rejected' | 'banned';
+      moderationReason: string | null;
+    },
+  ) {
+    const result = await this.prisma.offer.updateMany({
+      where: { id: offerId },
+      data,
+    });
+    if (result.count === 0) {
+      return null;
+    }
+    return this.findOfferById(offerId);
   }
 
   updateOwnedOffer(
