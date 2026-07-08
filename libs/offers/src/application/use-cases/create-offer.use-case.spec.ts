@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { MediaService } from '@media';
 import { CreateOfferUseCase } from './create-offer.use-case';
 import { OffersRepository } from '../../infrastructure/persistence/offers.repository';
 
@@ -20,6 +21,10 @@ describe('CreateOfferUseCase', () => {
     findOwnedMediaAssets: jest.fn(),
     createOfferWithSalesOptions: jest.fn(),
   };
+  const mediaServiceMock = {
+    uploadCloudinaryBuffer: jest.fn(),
+    createCloudinaryAsset: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -28,6 +33,7 @@ describe('CreateOfferUseCase', () => {
       providers: [
         CreateOfferUseCase,
         { provide: OffersRepository, useValue: productRepositoryMock },
+        { provide: MediaService, useValue: mediaServiceMock },
       ],
     }).compile();
 
@@ -60,6 +66,104 @@ describe('CreateOfferUseCase', () => {
       id: 'offer-media-1',
     });
   }
+
+  it('uploads a product data URL and persists its Cloudinary asset as the thumbnail', async () => {
+    mockActiveApprovedShop();
+    productRepositoryMock.createOffer.mockResolvedValueOnce({
+      id: 'offer-1',
+      title: 'Offer 1',
+      description: 'Desc',
+      price: 100000,
+      currency: 'VND',
+      itemCondition: 'new',
+      availableQuantity: 10,
+      verificationLevel: 'standard',
+      offerStatus: 'inactive',
+      moderationStatus: 'pending',
+      sellerUserId: 'user-1',
+      shopId: 'shop-1',
+      categoryId: 'category-1',
+      brandId: 'brand-1',
+      modelName: 'Offer 1',
+      gtin: null,
+      verificationPolicy: 'manual_review',
+      distributionNodeId: null,
+      createdAt: new Date('2026-07-08T00:00:00.000Z'),
+      shop: { shopName: 'Shop' },
+      category: { name: 'Category' },
+      distributionNode: null,
+      media: [],
+    });
+    mediaServiceMock.uploadCloudinaryBuffer.mockResolvedValueOnce({
+      publicId: 'offers/user-1-1',
+      secureUrl:
+        'https://res.cloudinary.com/demo/image/upload/offers/user-1-1.png',
+    });
+    mediaServiceMock.createCloudinaryAsset.mockResolvedValueOnce({
+      id: 'asset-1',
+    });
+    mockSuccessfulImagePersistence();
+
+    await useCase.execute({
+      sellerUserId: 'user-1',
+      shopId: 'shop-1',
+      categoryId: 'category-1',
+      brandId: 'brand-1',
+      title: 'Offer 1',
+      description: 'Desc',
+      price: 100000,
+      availableQuantity: 10,
+      productImages: ['data:image/png;base64,aGVsbG8='],
+    });
+
+    expect(mediaServiceMock.uploadCloudinaryBuffer).toHaveBeenCalledWith({
+      buffer: Buffer.from('hello'),
+      folder: 'offers/media',
+      requesterUserId: 'user-1',
+      assetType: 'IMAGE',
+      mimeType: 'image/png',
+      sequence: 1,
+    });
+    expect(mediaServiceMock.createCloudinaryAsset).toHaveBeenCalledWith({
+      ownerUserId: 'user-1',
+      assetType: 'IMAGE',
+      resourceType: 'PRODUCT_IMAGE',
+      publicId: 'offers/user-1-1',
+      secureUrl:
+        'https://res.cloudinary.com/demo/image/upload/offers/user-1-1.png',
+      mimeType: 'image/png',
+      folder: 'offers/media',
+    });
+    expect(productRepositoryMock.createOfferMedia).toHaveBeenCalledWith({
+      offerId: 'offer-1',
+      mediaAssetId: 'asset-1',
+      mediaType: 'thumbnail',
+      fileUrl:
+        'https://res.cloudinary.com/demo/image/upload/offers/user-1-1.png',
+      phash: null,
+    });
+  });
+
+  it('rejects malformed product data URLs before uploading media', async () => {
+    mockActiveApprovedShop();
+
+    await expect(
+      useCase.execute({
+        sellerUserId: 'user-1',
+        shopId: 'shop-1',
+        categoryId: 'category-1',
+        brandId: 'brand-1',
+        title: 'Offer 1',
+        description: 'Desc',
+        price: 100000,
+        availableQuantity: 10,
+        productImages: ['data:image/svg+xml;base64,PHN2Zz4='],
+      }),
+    ).rejects.toThrow('Product image Data URL is invalid');
+
+    expect(mediaServiceMock.uploadCloudinaryBuffer).not.toHaveBeenCalled();
+    expect(productRepositoryMock.createOffer).not.toHaveBeenCalled();
+  });
 
   it('should reject non-positive offer price', async () => {
     mockActiveApprovedShop();
@@ -509,7 +613,12 @@ describe('CreateOfferUseCase', () => {
         sellerUserId: 'user-1',
         shopId: 'shop-1',
       }),
-      productImages: productImages(),
+      productImages: [
+        {
+          fileUrl: 'https://cdn.example.com/product.jpg',
+          mediaAssetId: null,
+        },
+      ],
       optionGroups: [
         {
           name: 'color',

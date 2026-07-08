@@ -36,6 +36,11 @@ type OfferOptionGroupCreateData = {
   }>;
 };
 
+type OfferImageCreateData = {
+  fileUrl: string;
+  mediaAssetId: string | null;
+};
+
 @Injectable()
 export class OffersRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -69,8 +74,8 @@ export class OffersRepository {
           category: { select: { id: true, name: true } },
           media: {
             orderBy: { createdAt: 'asc' },
-            take: 1,
             select: {
+              mediaType: true,
               fileUrl: true,
               mediaAsset: { select: { secureUrl: true } },
             },
@@ -175,19 +180,19 @@ export class OffersRepository {
 
   createOfferWithSalesOptions(input: {
     offer: OfferCreateData;
-    productImages: string[];
+    productImages: OfferImageCreateData[];
     optionGroups: OfferOptionGroupCreateData[];
   }) {
     return this.prisma.$transaction(async (tx) => {
       const offer = await tx.offer.create({ data: input.offer });
 
-      for (const [index, fileUrl] of input.productImages.entries()) {
+      for (const [index, image] of input.productImages.entries()) {
         await tx.offerMedia.create({
           data: {
             offerId: offer.id,
-            mediaAssetId: null,
+            mediaAssetId: image.mediaAssetId,
             mediaType: index === 0 ? 'thumbnail' : 'gallery',
-            fileUrl,
+            fileUrl: image.fileUrl,
             phash: null,
           },
         });

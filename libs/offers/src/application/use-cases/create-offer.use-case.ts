@@ -3,14 +3,22 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { MediaService } from '@media';
 import { OffersRepository } from '../../infrastructure/persistence/offers.repository';
 import { toOfferResponse } from './offers.mapper';
 
 const MAX_PRODUCT_IMAGES = 10;
+const MAX_PRODUCT_IMAGE_BYTES = 5 * 1024 * 1024;
+const PRODUCT_MEDIA_FOLDER = 'offers/media';
+const PRODUCT_IMAGE_DATA_URL =
+  /^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=]+)$/;
 
 @Injectable()
 export class CreateOfferUseCase {
-  constructor(private readonly productRepository: OffersRepository) {}
+  constructor(
+    private readonly productRepository: OffersRepository,
+    private readonly mediaService: MediaService,
+  ) {}
 
   async execute(input: {
     sellerUserId: string;
@@ -174,11 +182,15 @@ export class CreateOfferUseCase {
       offerStatus,
       ...this.resolveParcelSnapshot(input),
     };
+    const persistedProductImages = await this.persistProductImages(
+      productImages,
+      input.sellerUserId,
+    );
 
     if (optionGroups.length > 0) {
       const offer = await this.productRepository.createOfferWithSalesOptions({
         offer: offerData,
-        productImages,
+        productImages: persistedProductImages,
         optionGroups,
       });
       return toOfferResponse(offer);
@@ -186,17 +198,74 @@ export class CreateOfferUseCase {
 
     const offer = await this.productRepository.createOffer(offerData);
 
-    for (const [index, imageUrl] of productImages.entries()) {
+    for (const [index, image] of persistedProductImages.entries()) {
       await this.productRepository.createOfferMedia({
         offerId: offer.id,
-        mediaAssetId: null,
+        mediaAssetId: image.mediaAssetId,
         mediaType: index === 0 ? 'thumbnail' : 'gallery',
-        fileUrl: imageUrl,
+        fileUrl: image.fileUrl,
         phash: null,
       });
     }
 
     return toOfferResponse(offer);
+  }
+
+  private async persistProductImages(imageUrls: string[], ownerUserId: string) {
+    const images = imageUrls.map((fileUrl) => {
+      if (!fileUrl.startsWith('data:')) {
+        return { fileUrl, data: null };
+      }
+
+      const dataUrl = PRODUCT_IMAGE_DATA_URL.exec(fileUrl);
+      if (!dataUrl) {
+        throw new BadRequestException('Product image Data URL is invalid');
+      }
+
+      const buffer = Buffer.from(dataUrl[2], 'base64');
+      if (!buffer.length) {
+        throw new BadRequestException('Product image is empty');
+      }
+      if (buffer.length > MAX_PRODUCT_IMAGE_BYTES) {
+        throw new BadRequestException('Product image must not exceed 5 MB');
+      }
+
+      return {
+        fileUrl,
+        data: { mimeType: dataUrl[1], buffer },
+      };
+    });
+
+    return Promise.all(
+      images.map(async (image, index) => {
+        if (!image.data) {
+          return { fileUrl: image.fileUrl, mediaAssetId: null };
+        }
+
+        const uploaded = await this.mediaService.uploadCloudinaryBuffer({
+          buffer: image.data.buffer,
+          folder: PRODUCT_MEDIA_FOLDER,
+          requesterUserId: ownerUserId,
+          assetType: 'IMAGE',
+          mimeType: image.data.mimeType,
+          sequence: index + 1,
+        });
+        const mediaAsset = await this.mediaService.createCloudinaryAsset({
+          ownerUserId,
+          assetType: 'IMAGE',
+          resourceType: 'PRODUCT_IMAGE',
+          publicId: uploaded.publicId,
+          secureUrl: uploaded.secureUrl,
+          mimeType: image.data.mimeType,
+          folder: PRODUCT_MEDIA_FOLDER,
+        });
+
+        return {
+          fileUrl: uploaded.secureUrl,
+          mediaAssetId: mediaAsset.id,
+        };
+      }),
+    );
   }
 
   private async resolveProductIdentity(

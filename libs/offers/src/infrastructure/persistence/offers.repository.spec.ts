@@ -72,6 +72,14 @@ describe('OffersRepository', () => {
         take: 10,
       }),
     );
+    const query = prisma.offer.findMany.mock.calls[0][0];
+    expect(query.select.media).toEqual(
+      expect.objectContaining({
+        orderBy: { createdAt: 'asc' },
+        select: expect.objectContaining({ mediaType: true }),
+      }),
+    );
+    expect(query.select.media.take).toBeUndefined();
   });
 
   it('lists all offers when admin status filters are omitted', async () => {
