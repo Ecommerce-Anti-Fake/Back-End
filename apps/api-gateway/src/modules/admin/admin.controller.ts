@@ -51,6 +51,7 @@ class AdminShopVerificationSummaryDto {
     pending_kyc: number;
     pending_document: number;
     pending_verification: number;
+    rejected: number;
     verified: number;
   };
   byRegistrationType!: {

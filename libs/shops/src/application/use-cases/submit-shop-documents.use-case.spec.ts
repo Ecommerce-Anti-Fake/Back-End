@@ -90,6 +90,9 @@ describe('SubmitShopDocumentsUseCase', () => {
         },
       ],
     });
+    expect(shopsRepositoryMock.recomputeShopStatus).toHaveBeenCalledWith('shop-1', {
+      resetRejected: true,
+    });
   });
 
   it('rejects non-image shop document files', async () => {

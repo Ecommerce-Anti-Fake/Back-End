@@ -278,7 +278,7 @@ describe('ShopsRepository', () => {
     );
   });
 
-  it('recomputes submitted KYC normal shop as pending verification until admin review', async () => {
+  it('keeps shop pending document until every required legal document is submitted', async () => {
     const prisma = {
       shop: {
         findUnique: jest.fn().mockResolvedValue({
@@ -291,6 +291,59 @@ describe('ShopsRepository', () => {
             },
           },
           documents: [{ reviewStatus: 'pending' }],
+          shopType: {
+            requirements: [
+              { required: true, requirement: { id: 'requirement-1' } },
+              { required: true, requirement: { id: 'requirement-2' } },
+              { required: true, requirement: { id: 'requirement-3' } },
+            ],
+          },
+          registeredCategories: [],
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'shop-1',
+          shopStatus: 'pending_document',
+          registeredCategories: [],
+        }),
+      },
+    };
+    const repository = new ShopsRepository(prisma as never);
+
+    await expect(repository.recomputeShopStatus('shop-1')).resolves.toMatchObject({
+      id: 'shop-1',
+      shopStatus: 'pending_document',
+    });
+
+    expect(prisma.shop.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'shop-1' },
+        data: { shopStatus: 'pending_document' },
+      }),
+    );
+  });
+
+  it('recomputes a complete submitted profile as pending verification', async () => {
+    const prisma = {
+      shop: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'shop-1',
+          shopStatus: 'rejected',
+          owner: {
+            kyc: {
+              verificationStatus: 'rejected',
+              documents: [{ side: 'FRONT' }, { side: 'BACK' }],
+            },
+          },
+          documents: [
+            { requirementId: 'requirement-1', reviewStatus: 'rejected' },
+            { requirementId: 'requirement-2', reviewStatus: 'pending' },
+          ],
+          shopType: {
+            requirements: [
+              { required: true, requirement: { id: 'requirement-1' } },
+              { required: true, requirement: { id: 'requirement-2' } },
+            ],
+          },
           registeredCategories: [],
         }),
         update: jest.fn().mockResolvedValue({
@@ -302,16 +355,12 @@ describe('ShopsRepository', () => {
     };
     const repository = new ShopsRepository(prisma as never);
 
-    await expect(repository.recomputeShopStatus('shop-1')).resolves.toMatchObject({
-      id: 'shop-1',
-      shopStatus: 'pending_verification',
-    });
+    await expect(
+      repository.recomputeShopStatus('shop-1', { resetRejected: true }),
+    ).resolves.toMatchObject({ shopStatus: 'pending_verification' });
 
     expect(prisma.shop.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'shop-1' },
-        data: { shopStatus: 'pending_verification' },
-      }),
+      expect.objectContaining({ data: { shopStatus: 'pending_verification' } }),
     );
   });
 
@@ -364,7 +413,12 @@ describe('ShopsRepository', () => {
               documents: [{ side: 'FRONT' }, { side: 'BACK' }],
             },
           },
-          documents: [{ reviewStatus: 'approved' }],
+          documents: [{ requirementId: 'requirement-1', reviewStatus: 'approved' }],
+          shopType: {
+            requirements: [
+              { required: true, requirement: { id: 'requirement-1' } },
+            ],
+          },
           registeredCategories: [
             {
               registrationStatus: 'approved',

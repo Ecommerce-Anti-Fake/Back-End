@@ -10,6 +10,7 @@ describe('ReviewShopDocumentUseCase', () => {
     findAdminShopVerificationDetailById: jest.fn(),
     reviewShopDocumentsAndOwnerKyc: jest.fn(),
     recomputeShopStatus: jest.fn(),
+    updateShopStatus: jest.fn(),
     createAuditLog: jest.fn(),
   };
 
@@ -37,9 +38,15 @@ describe('ReviewShopDocumentUseCase', () => {
           documents: [{ side: 'FRONT' }, { side: 'BACK' }],
         },
       },
+      shopType: {
+        requirements: [
+          { required: true, requirement: { id: 'requirement-1' } },
+          { required: true, requirement: { id: 'requirement-2' } },
+        ],
+      },
       documents: [
-        { id: 'doc-1', reviewStatus: 'pending', docType: 'BUSINESS_LICENSE' },
-        { id: 'doc-2', reviewStatus: 'pending', docType: 'TAX_REGISTRATION' },
+        { id: 'doc-1', requirementId: 'requirement-1', reviewStatus: 'pending', docType: 'BUSINESS_LICENSE' },
+        { id: 'doc-2', requirementId: 'requirement-2', reviewStatus: 'pending', docType: 'TAX_REGISTRATION' },
       ],
     });
     shopsRepositoryMock.reviewShopDocumentsAndOwnerKyc.mockResolvedValueOnce({
@@ -106,6 +113,38 @@ describe('ReviewShopDocumentUseCase', () => {
         reviewStatus: 'approved',
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('sets shop status to rejected when admin rejects the registration', async () => {
+    shopsRepositoryMock.findAdminShopVerificationDetailById.mockResolvedValueOnce({
+      id: 'shop-1',
+      ownerUserId: 'owner-1',
+      shopStatus: 'pending_verification',
+      owner: { kyc: { documents: [{ side: 'FRONT' }, { side: 'BACK' }] } },
+      shopType: {
+        requirements: [{ required: true, requirement: { id: 'requirement-1' } }],
+      },
+      documents: [{ id: 'doc-1', requirementId: 'requirement-1', reviewStatus: 'pending' }],
+    });
+    shopsRepositoryMock.reviewShopDocumentsAndOwnerKyc.mockResolvedValueOnce({
+      reviewedShopDocumentIds: ['doc-1'],
+      reviewedKyc: true,
+    });
+    shopsRepositoryMock.updateShopStatus.mockResolvedValueOnce({
+      id: 'shop-1',
+      ownerUserId: 'owner-1',
+      shopStatus: 'rejected',
+    });
+
+    await useCase.execute({
+      shopId: 'shop-1',
+      reviewerUserId: 'admin-1',
+      reviewStatus: 'rejected',
+      reviewNote: 'Document is unreadable',
+    });
+
+    expect(shopsRepositoryMock.updateShopStatus).toHaveBeenCalledWith('shop-1', 'rejected');
+    expect(shopsRepositoryMock.recomputeShopStatus).not.toHaveBeenCalled();
   });
 
   it('throws NotFoundException when shop does not exist', async () => {

@@ -26,6 +26,18 @@ export class ReviewShopDocumentUseCase {
       throw new BadRequestException('Owner KYC must include front and back ID documents before shop review');
     }
 
+    const requiredRequirementIds = new Set(
+      shop.shopType?.requirements
+        .filter((item) => item.required)
+        .map((item) => item.requirement.id) ?? [],
+    );
+    const hasAllRequiredDocuments = [...requiredRequirementIds].every((requirementId) =>
+      shop.documents.some((document) => document.requirementId === requirementId),
+    );
+    if (requiredRequirementIds.size === 0 || !hasAllRequiredDocuments) {
+      throw new BadRequestException('All required shop legal documents must be submitted before review');
+    }
+
     const reviewResult = await this.shopsRepository.reviewShopDocumentsAndOwnerKyc({
       shopId: shop.id,
       ownerUserId: shop.ownerUserId,
@@ -33,7 +45,10 @@ export class ReviewShopDocumentUseCase {
       reviewNote: input.reviewNote?.trim() || null,
     });
 
-    const updatedShop = await this.shopsRepository.recomputeShopStatus(input.shopId);
+    const updatedShop =
+      input.reviewStatus === 'rejected'
+        ? await this.shopsRepository.updateShopStatus(input.shopId, 'rejected')
+        : await this.shopsRepository.recomputeShopStatus(input.shopId);
     if (!updatedShop) {
       throw new NotFoundException('Shop not found');
     }

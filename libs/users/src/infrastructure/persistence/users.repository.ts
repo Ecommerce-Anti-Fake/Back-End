@@ -966,19 +966,19 @@ export class UsersRepository {
       this.prisma.shop.updateMany({
         where: {
           ownerUserId: userId,
-          shopStatus: 'pending_kyc',
+          shopStatus: { in: ['pending_kyc', 'rejected'] },
           documents: {
             some: {},
           },
         },
         data: {
-          shopStatus: 'pending_verification',
+          shopStatus: 'pending_document',
         },
       }),
       this.prisma.shop.updateMany({
         where: {
           ownerUserId: userId,
-          shopStatus: 'pending_kyc',
+          shopStatus: { in: ['pending_kyc', 'rejected'] },
           documents: {
             none: {},
           },

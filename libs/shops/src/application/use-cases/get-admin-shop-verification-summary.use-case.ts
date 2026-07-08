@@ -14,6 +14,7 @@ export class GetAdminShopVerificationSummaryUseCase {
         pending_kyc: counts.byShopStatus.pending_kyc ?? 0,
         pending_document: counts.byShopStatus.pending_document ?? 0,
         pending_verification: counts.byShopStatus.pending_verification ?? 0,
+        rejected: counts.byShopStatus.rejected ?? 0,
         verified: counts.byShopStatus.verified ?? 0,
       },
       byRegistrationType: {

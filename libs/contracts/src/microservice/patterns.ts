@@ -480,7 +480,7 @@ export type MyShopsLookupMessage = {
 };
 
 export type PendingVerificationShopsLookupMessage = {
-  shopStatus?: 'pending_kyc' | 'pending_document' | 'pending_verification' | 'verified';
+  shopStatus?: 'pending_kyc' | 'pending_document' | 'pending_verification' | 'rejected' | 'verified';
   registrationType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
   search?: string;
   page?: number;

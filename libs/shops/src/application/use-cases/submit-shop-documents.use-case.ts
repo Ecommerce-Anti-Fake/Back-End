@@ -113,7 +113,7 @@ export class SubmitShopDocumentsUseCase {
       },
     });
 
-    return this.shopsRepository.recomputeShopStatus(shop.id);
+    return this.shopsRepository.recomputeShopStatus(shop.id, { resetRejected: true });
   }
 
   private validateDocumentImage(file?: {

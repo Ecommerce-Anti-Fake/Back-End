@@ -20,6 +20,18 @@ type AuditLogRecord = {
 
 const shopWithRelationsArgs = Prisma.validator<Prisma.ShopDefaultArgs>()({
   include: {
+    shopType: {
+      include: {
+        requirements: {
+          where: {
+            isActive: true,
+            required: true,
+            requirement: { isActive: true },
+          },
+          include: { requirement: true },
+        },
+      },
+    },
     registeredCategories: {
       include: {
         category: {
@@ -608,7 +620,7 @@ export class ShopsRepository {
   }
 
   async findPendingVerificationShops(filters?: {
-    shopStatus?: 'pending_kyc' | 'pending_document' | 'pending_verification' | 'verified';
+    shopStatus?: 'pending_kyc' | 'pending_document' | 'pending_verification' | 'rejected' | 'verified';
     registrationType?: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
     search?: string;
     page?: number;
@@ -702,7 +714,8 @@ export class ShopsRepository {
     const [
       pendingKyc,
       pendingDocument,
-      pendingVerification,
+      pendingApprove,
+      rejected,
       verified,
       normal,
       handmade,
@@ -712,6 +725,7 @@ export class ShopsRepository {
       this.prisma.shop.count({ where: { shopStatus: 'pending_kyc' } }),
       this.prisma.shop.count({ where: { shopStatus: 'pending_document' } }),
       this.prisma.shop.count({ where: { shopStatus: 'pending_verification' } }),
+      this.prisma.shop.count({ where: { shopStatus: 'rejected' } }),
       this.prisma.shop.count({ where: { shopStatus: 'verified' } }),
       this.prisma.shop.count({ where: { registrationType: ShopRegistrationType.NORMAL } }),
       this.prisma.shop.count({ where: { registrationType: ShopRegistrationType.HANDMADE } }),
@@ -723,7 +737,8 @@ export class ShopsRepository {
       byShopStatus: {
         pending_kyc: pendingKyc,
         pending_document: pendingDocument,
-        pending_verification: pendingVerification,
+        pending_verification: pendingApprove,
+        rejected,
         verified,
       },
       byRegistrationType: {
@@ -1073,16 +1088,25 @@ export class ShopsRepository {
   }) {
     return this.prisma.$transaction(async (tx) => {
       const now = new Date();
-      const pendingDocuments = await tx.shopDocument.findMany({
+      const submittedDocuments = await tx.shopDocument.findMany({
         where: {
           shopId: input.shopId,
-          reviewStatus: 'pending',
         },
         select: {
           id: true,
+          requirementId: true,
+          docType: true,
         },
+        orderBy: { uploadedAt: 'desc' },
       });
-      const reviewedShopDocumentIds = pendingDocuments.map((document) => document.id);
+      const latestDocumentIdsByType = new Map<string, string>();
+      for (const document of submittedDocuments) {
+        const key = document.requirementId ?? document.docType;
+        if (!latestDocumentIdsByType.has(key)) {
+          latestDocumentIdsByType.set(key, document.id);
+        }
+      }
+      const reviewedShopDocumentIds = [...latestDocumentIdsByType.values()];
 
       if (reviewedShopDocumentIds.length > 0) {
         await tx.shopDocument.updateMany({
@@ -1208,7 +1232,14 @@ export class ShopsRepository {
     });
   }
 
-  async recomputeShopStatus(shopId: string) {
+  updateShopStatus(shopId: string, shopStatus: string) {
+    return this.prisma.shop.update({
+      where: { id: shopId },
+      data: { shopStatus },
+    });
+  }
+
+  async recomputeShopStatus(shopId: string, options?: { resetRejected?: boolean }) {
     const shop = await this.prisma.shop.findUnique({
       where: { id: shopId },
       ...shopWithRelationsArgs,
@@ -1223,13 +1254,28 @@ export class ShopsRepository {
       shop.owner.kyc?.documents.some((document) => document.side === 'BACK') === true;
     const hasApprovedKyc = shop.owner.kyc?.verificationStatus === 'approved' && hasRequiredKycDocuments;
 
-    const hasShopDocument = shop.documents.length > 0;
+    const requiredRequirementIds = new Set(
+      shop.shopType?.requirements.map((item) => item.requirement.id) ?? [],
+    );
+    const submittedRequirementIds = new Set(
+      shop.documents
+        .map((document) => document.requirementId)
+        .filter((requirementId): requirementId is string => requirementId !== null),
+    );
+    const hasAllRequiredShopDocuments =
+      requiredRequirementIds.size > 0 &&
+      [...requiredRequirementIds].every((requirementId) => submittedRequirementIds.has(requirementId));
 
-    let nextStatus = 'pending_kyc';
-    if (hasRequiredKycDocuments) {
-      const hasApprovedShopDocument = shop.documents.some((document) => document.reviewStatus === 'approved');
-      nextStatus = hasShopDocument
-        ? hasApprovedKyc && hasApprovedShopDocument
+    let nextStatus = shop.shopStatus === 'rejected' && !options?.resetRejected ? 'rejected' : 'pending_kyc';
+    if (nextStatus !== 'rejected' && hasRequiredKycDocuments) {
+      const hasApprovedRequiredDocuments = [...requiredRequirementIds].every((requirementId) =>
+        shop.documents.some(
+          (document) =>
+            document.requirementId === requirementId && document.reviewStatus === 'approved',
+        ),
+      );
+      nextStatus = hasAllRequiredShopDocuments
+        ? hasApprovedKyc && hasApprovedRequiredDocuments
           ? 'verified'
           : 'pending_verification'
         : 'pending_document';
