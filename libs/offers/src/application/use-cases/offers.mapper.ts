@@ -35,6 +35,17 @@ type OfferWithRelations = Offer & {
       mediaAsset: { id: string; secureUrl: string } | null;
     }>;
   }>;
+  variants?: OfferDetailVariantWithRelations[];
+};
+
+type OfferDetailVariantWithRelations = {
+  id: string;
+  sku: string | null;
+  price: Prisma.Decimal | number | string | null;
+  availableQuantity: number;
+  isActive: boolean;
+  mediaAsset: { id: string; secureUrl: string } | null;
+  values: Array<{ optionValueId: string }>;
 };
 
 type OfferVariantWithRelations = {
@@ -132,6 +143,20 @@ export function toOfferResponse(offer: OfferWithRelations) {
           ? { id: value.mediaAsset.id, secureUrl: value.mediaAsset.secureUrl }
           : null,
       })),
+    })),
+    variants: (offer.variants ?? []).map((variant) => ({
+      id: variant.id,
+      sku: variant.sku,
+      price: variant.price === null ? null : decimalToNumber(variant.price),
+      availableQuantity: variant.availableQuantity,
+      isActive: variant.isActive,
+      optionValueIds: variant.values.map((value) => value.optionValueId),
+      mediaAsset: variant.mediaAsset
+        ? {
+            id: variant.mediaAsset.id,
+            secureUrl: variant.mediaAsset.secureUrl,
+          }
+        : null,
     })),
     createdAt: offer.createdAt,
   };

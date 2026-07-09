@@ -97,6 +97,20 @@ export class OfferOptionGroupResponseDto {
   values!: OfferOptionValueResponseDto[];
 }
 
+export class OfferDetailVariantResponseDto {
+  @ApiProperty() id!: string;
+  @ApiPropertyOptional({ nullable: true }) sku!: string | null;
+  @ApiPropertyOptional({ nullable: true }) price!: number | null;
+  @ApiProperty() availableQuantity!: number;
+  @ApiProperty() isActive!: boolean;
+  @ApiProperty({ type: [String] }) optionValueIds!: string[];
+  @ApiPropertyOptional({
+    type: OfferOptionMediaAssetResponseDto,
+    nullable: true,
+  })
+  mediaAsset!: OfferOptionMediaAssetResponseDto | null;
+}
+
 export class OfferVariantOptionGroupResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() displayName!: string;
@@ -210,6 +224,9 @@ export class OfferResponseDto {
 
   @ApiProperty({ type: [OfferOptionGroupResponseDto] })
   optionGroups!: OfferOptionGroupResponseDto[];
+
+  @ApiProperty({ type: [OfferDetailVariantResponseDto] })
+  variants!: OfferDetailVariantResponseDto[];
 
   @ApiPropertyOptional({
     example: 'Thong tin san pham khong hop le',
@@ -452,6 +469,9 @@ export class PublicOfferDetailResponseDto {
 
   @ApiProperty({ type: [OfferOptionGroupResponseDto] })
   optionGroups!: OfferOptionGroupResponseDto[];
+
+  @ApiProperty({ type: [OfferDetailVariantResponseDto] })
+  variants!: OfferDetailVariantResponseDto[];
 
   @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
   createdAt!: Date;

@@ -365,6 +365,27 @@ export class OffersRepository {
           },
         },
       },
+      variants: {
+        orderBy: { createdAt: 'asc' as const },
+        select: this.offerDetailVariantSelect(),
+      },
+    };
+  }
+
+  private offerDetailVariantSelect() {
+    return {
+      id: true,
+      sku: true,
+      price: true,
+      availableQuantity: true,
+      isActive: true,
+      values: {
+        orderBy: { id: 'asc' as const },
+        select: { optionValueId: true },
+      },
+      mediaAsset: {
+        select: { id: true, secureUrl: true },
+      },
     };
   }
 
@@ -600,6 +621,10 @@ export class OffersRepository {
               },
             },
           },
+        },
+        variants: {
+          orderBy: { createdAt: 'asc' },
+          select: this.offerDetailVariantSelect(),
         },
       },
     });

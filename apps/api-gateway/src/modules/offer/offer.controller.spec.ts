@@ -431,7 +431,17 @@ describe('OfferController', () => {
             ],
           },
         ],
-        variants: [{ id: 'variant-1' }],
+        variants: [
+          {
+            id: 'variant-1',
+            sku: 'AO-DO-M',
+            price: 130000,
+            availableQuantity: 10,
+            isActive: true,
+            optionValueIds: ['red-id', 'm-id'],
+            mediaAsset: null,
+          },
+        ],
         createdAt: new Date('2026-04-14T10:00:00.000Z'),
       }),
     };
@@ -485,12 +495,22 @@ describe('OfferController', () => {
           ],
         },
       ],
+      variants: [
+        {
+          id: 'variant-1',
+          sku: 'AO-DO-M',
+          price: 130000,
+          availableQuantity: 10,
+          isActive: true,
+          optionValueIds: ['red-id', 'm-id'],
+          mediaAsset: null,
+        },
+      ],
       createdAt: new Date('2026-04-14T10:00:00.000Z'),
     });
     expect(result).not.toHaveProperty('shopId');
     expect(result).not.toHaveProperty('shopName');
     expect(result).not.toHaveProperty('shopType');
     expect(result).not.toHaveProperty('shippingMethods');
-    expect(result).not.toHaveProperty('variants');
   });
 });

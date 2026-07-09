@@ -51,7 +51,18 @@ describe('OffersRepository', () => {
     expect(
       query.include.optionGroups.select.values.select.mediaAsset.select,
     ).toEqual({ id: true, secureUrl: true });
-    expect(query.include).not.toHaveProperty('variants');
+    expect(query.include.variants).toEqual(
+      expect.objectContaining({
+        orderBy: { createdAt: 'asc' },
+        select: expect.objectContaining({
+          id: true,
+          sku: true,
+          price: true,
+          availableQuantity: true,
+          isActive: true,
+        }),
+      }),
+    );
   });
 
   it('creates variant option links through nested persistence', async () => {
