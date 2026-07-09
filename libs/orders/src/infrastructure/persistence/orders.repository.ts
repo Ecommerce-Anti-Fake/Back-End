@@ -224,6 +224,18 @@ const openDisputesForAdminArgs = Prisma.validator<Prisma.DisputeDefaultArgs>()({
             shopName: true,
           },
         },
+        shopGroups: {
+          include: {
+            shop: {
+              select: {
+                shopName: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
       },
     },
   },
@@ -286,6 +298,16 @@ type FinanceOrderRecord = Prisma.OrderGetPayload<{
       select: {
         id: true;
         shopName: true;
+      };
+    };
+    shopGroups: {
+      include: {
+        shop: {
+          select: {
+            id: true;
+            shopName: true;
+          };
+        };
       };
     };
     paymentIntent: true;
@@ -1360,7 +1382,7 @@ export class OrdersRepository {
               distributionNodeId: buyerDistributionNodeId,
               batchNumber,
               quantity: item.quantity,
-              sourceName: order.shop.shopName,
+              sourceName: item.offer.shop.shopName,
               countryOfOrigin: 'UNKNOWN',
               sourceType: 'WHOLESALE_ORDER',
               sourceOrderId: order.id,
@@ -1634,7 +1656,18 @@ export class OrdersRepository {
     };
     const where: Prisma.OrderWhereInput = {
       ...(Object.keys(createdAt).length ? { createdAt } : {}),
-      ...(input?.shopId ? { shopId: input.shopId } : {}),
+      ...(input?.shopId
+        ? {
+            OR: [
+              { shopGroups: { some: { shopId: input.shopId } } },
+              // LEGACY_SAFE: finance filtering still supports orders created before OrderShopGroup.
+              {
+                shopId: input.shopId,
+                shopGroups: { none: {} },
+              },
+            ],
+          }
+        : {}),
       ...(input?.orderId ? { id: { contains: input.orderId, mode: 'insensitive' } } : {}),
       ...(input?.paymentStatus
         ? {
@@ -1661,6 +1694,16 @@ export class OrdersRepository {
         select: {
           id: true,
           shopName: true,
+        },
+      },
+      shopGroups: {
+        include: {
+          shop: {
+            select: {
+              id: true,
+              shopName: true,
+            },
+          },
         },
       },
       paymentIntent: true,
@@ -1693,15 +1736,15 @@ export class OrdersRepository {
       total,
       page,
       pageSize,
-      summary: this.buildFinanceSummary(summaryOrders),
-      items: pageOrders.map((order) => this.toFinanceReconciliationRecord(order)),
+      summary: this.buildFinanceSummary(summaryOrders, input?.shopId),
+      items: pageOrders.map((order) => this.toFinanceReconciliationRecord(order, input?.shopId)),
     };
   }
 
-  private buildFinanceSummary(orders: FinanceOrderRecord[]): AdminFinanceReconciliationResult['summary'] {
+  private buildFinanceSummary(orders: FinanceOrderRecord[], shopId?: string): AdminFinanceReconciliationResult['summary'] {
     return orders.reduce(
       (summary, order) => {
-        const record = this.toFinanceReconciliationRecord(order);
+        const record = this.toFinanceReconciliationRecord(order, shopId);
 
         summary.buyerPayableTotal += record.buyerPayableAmount;
         summary.platformFeeTotal += record.platformFeeAmount;
@@ -1730,10 +1773,21 @@ export class OrdersRepository {
     );
   }
 
-  private toFinanceReconciliationRecord(order: FinanceOrderRecord): AdminFinanceReconciliationResult['items'][number] {
+  private toFinanceReconciliationRecord(
+    order: FinanceOrderRecord,
+    requestedShopId?: string,
+  ): AdminFinanceReconciliationResult['items'][number] {
     const paymentStatus = order.paymentIntent?.paymentStatus ?? null;
     const escrowStatus = order.escrow?.escrowStatus ?? null;
-    const sellerReceivableAmount = decimalToNumber(order.sellerReceivableAmount);
+    const shopGroup =
+      order.shopGroups?.find((group) => group.shopId === requestedShopId) ?? order.shopGroups?.[0] ?? null;
+    const sellerReceivableAmount = decimalToNumber(shopGroup?.sellerReceivableAmount ?? order.sellerReceivableAmount);
+    const buyerPayableAmount = shopGroup
+      ? decimalToNumber(shopGroup.baseAmount) -
+        decimalToNumber(shopGroup.discountAmount) +
+        decimalToNumber(shopGroup.shippingFeeAmount)
+      : decimalToNumber(order.buyerPayableAmount);
+    const platformFeeAmount = decimalToNumber(shopGroup?.platformFeeAmount ?? order.platformFeeAmount);
     const payoutStatus = this.resolveSellerPayoutStatus(paymentStatus, escrowStatus);
     const commissionEntries = order.affiliateConversion?.commissionEntries ?? [];
     const affiliatePendingLiabilityAmount = commissionEntries
@@ -1745,16 +1799,17 @@ export class OrdersRepository {
 
     return {
       orderId: order.id,
-      shopId: order.shopId,
-      shopName: order.shop.shopName,
+      // LEGACY_SAFE: old orders can predate OrderShopGroup records.
+      shopId: shopGroup?.shopId ?? order.shopId,
+      shopName: shopGroup?.shop.shopName ?? order.shop.shopName,
       paymentStatus,
       escrowStatus,
       payoutStatus,
-      buyerPayableAmount: decimalToNumber(order.buyerPayableAmount),
-      platformFeeAmount: decimalToNumber(order.platformFeeAmount),
+      buyerPayableAmount,
+      platformFeeAmount,
       sellerReceivableAmount,
       sellerPayoutReadyAmount: payoutStatus === 'READY_FOR_PAYOUT' ? sellerReceivableAmount : 0,
-      refundAmount: paymentStatus === 'REFUNDED' || escrowStatus === 'REFUNDED' ? decimalToNumber(order.buyerPayableAmount) : 0,
+      refundAmount: paymentStatus === 'REFUNDED' || escrowStatus === 'REFUNDED' ? buyerPayableAmount : 0,
       affiliatePendingLiabilityAmount,
       affiliatePaidAmount,
       createdAt: order.createdAt,
@@ -2240,6 +2295,7 @@ export class OrdersRepository {
               targetType: 'SHOP' as const,
               targetId: group.shopId,
             }))
+          // LEGACY_SAFE: risk targets for orders created before OrderShopGroup existed.
           : [{ targetType: 'SHOP' as const, targetId: order.shopId }];
       return this.dedupeRiskTargets([
         ...shopTargets,

@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { toCartResponse, toOrderResponse } from './orders.mapper';
+import { toCartResponse, toMyOrdersSimplifiedResponse, toOrderResponse } from './orders.mapper';
 
 describe('orders mapper shop grouping', () => {
   it('groups active cart items by shop with shop id and name', () => {
@@ -87,7 +87,74 @@ describe('orders mapper shop grouping', () => {
       },
     ]);
   });
+
+  it('uses multi-shop relations instead of the legacy order shop in order responses', () => {
+    const order = createOrder({
+      legacyShopId: 'legacy-shop',
+      legacyShopName: 'Legacy Shop',
+      items: [
+        createOrderItem({ id: 'item-2', offerId: 'offer-2', shopId: 'shop-2', shopName: 'Shop Two' }),
+        createOrderItem({ id: 'item-1', offerId: 'offer-1', shopId: 'shop-1', shopName: 'Shop One' }),
+      ],
+      shopGroups: [
+        createShopGroup('group-1', 'shop-1', 'Shop One'),
+        createShopGroup('group-2', 'shop-2', 'Shop Two'),
+      ],
+    });
+
+    const response = toOrderResponse(order as any);
+    const simplified = toMyOrdersSimplifiedResponse(order as any);
+
+    expect(response.sellerShopId).toBe('shop-1');
+    expect(response.sellerShopName).toBe('Shop One');
+    expect(response.shops.map((shop) => shop.shopId)).toEqual(['shop-2', 'shop-1']);
+    expect(simplified.shopId).toBe('shop-2');
+    expect(simplified.shopName).toBe('Shop Two');
+  });
 });
+
+function createOrder(input: {
+  legacyShopId: string;
+  legacyShopName: string;
+  items: ReturnType<typeof createOrderItem>[];
+  shopGroups: ReturnType<typeof createShopGroup>[];
+}) {
+  return {
+    id: 'order-multi',
+    orderStatus: 'paid',
+    fulfillmentStatus: 'PENDING',
+    paymentIntent: null,
+    escrow: null,
+    disputes: [],
+    shopId: input.legacyShopId,
+    shop: { shopName: input.legacyShopName, ownerUserId: 'legacy-seller' },
+    shopGroups: input.shopGroups,
+    buyerUserId: 'buyer-1',
+    buyerShopId: null,
+    buyerDistributionNodeId: null,
+    baseAmount: new Prisma.Decimal(300000),
+    discountAmount: new Prisma.Decimal(0),
+    platformFeeAmount: new Prisma.Decimal(0),
+    buyerPayableAmount: new Prisma.Decimal(300000),
+    sellerReceivableAmount: new Prisma.Decimal(300000),
+    totalAmount: new Prisma.Decimal(300000),
+    shippingFeeAmount: new Prisma.Decimal(0),
+    items: input.items,
+    createdAt: new Date('2026-06-01T10:00:00.000Z'),
+  };
+}
+
+function createShopGroup(id: string, shopId: string, shopName: string) {
+  return {
+    id,
+    shopId,
+    fulfillmentStatus: 'PENDING',
+    shippingFeeAmount: new Prisma.Decimal(0),
+    shippingProviderCode: null,
+    shippingTrackingCode: null,
+    shop: { id: shopId, shopName, ownerUserId: `owner-${shopId}` },
+  };
+}
 
 function createCartItem(input: { id: string; offerId: string; shopId: string; shopName: string }) {
   return {

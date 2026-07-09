@@ -1432,6 +1432,14 @@ export class DisputeEvidenceResponseDto {
   uploadedAt!: Date;
 }
 
+export class AdminDisputeShopDto {
+  @ApiProperty({ example: 'shop-id' })
+  shopId!: string;
+
+  @ApiProperty({ example: 'Cong ty TNHH San Xuat ABC' })
+  shopName!: string;
+}
+
 export class AdminOpenDisputeResponseDto {
   @ApiProperty({ example: 'dispute-id' })
   id!: string;
@@ -1453,6 +1461,9 @@ export class AdminOpenDisputeResponseDto {
 
   @ApiProperty({ example: 'Cong ty TNHH San Xuat ABC' })
   sellerShopName!: string;
+
+  @ApiProperty({ type: AdminDisputeShopDto, isArray: true })
+  shops!: AdminDisputeShopDto[];
 
   @ApiPropertyOptional({ example: 'buyer-user-id', nullable: true })
   buyerUserId!: string | null;

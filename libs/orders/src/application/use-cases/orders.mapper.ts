@@ -58,13 +58,69 @@ export interface OrderDetailResponse {
   }[];
 }
 
+type OrderShopProjectionSource = {
+  shopId: string;
+  shop: { shopName: string };
+  shopGroups?: Array<{
+    id?: string;
+    shopId: string;
+    shop: { shopName: string };
+  }>;
+  items?: Array<{
+    orderShopGroupId?: string | null;
+    offer?: {
+      shopId: string;
+      shop?: { shopName: string } | null;
+    } | null;
+  }>;
+};
+
+export function resolveOrderShopSummaries(order: OrderShopProjectionSource) {
+  if (order.shopGroups?.length) {
+    return order.shopGroups.map((group) => ({
+      shopId: group.shopId,
+      shopName: group.shop.shopName,
+    }));
+  }
+
+  const offerShops = new Map<string, string>();
+  for (const item of order.items ?? []) {
+    if (item.offer?.shopId && item.offer.shop?.shopName) {
+      offerShops.set(item.offer.shopId, item.offer.shop.shopName);
+    }
+  }
+  if (offerShops.size > 0) {
+    return Array.from(offerShops, ([shopId, shopName]) => ({ shopId, shopName }));
+  }
+
+  // LEGACY_SAFE: pre-multi-shop orders may have neither shop groups nor loaded offer-shop relations.
+  return [{ shopId: order.shopId, shopName: order.shop.shopName }];
+}
+
+function resolveOrderItemShop(order: OrderShopProjectionSource, item: NonNullable<OrderShopProjectionSource['items']>[number]) {
+  if (item.offer?.shopId && item.offer.shop?.shopName) {
+    return { shopId: item.offer.shopId, shopName: item.offer.shop.shopName };
+  }
+
+  const group = item.orderShopGroupId
+    ? order.shopGroups?.find((candidate) => candidate.id === item.orderShopGroupId)
+    : order.shopGroups?.length === 1
+      ? order.shopGroups[0]
+      : null;
+  if (group) {
+    return { shopId: group.shopId, shopName: group.shop.shopName };
+  }
+
+  // LEGACY_SAFE: only old order rows without group/item shop relations reach this fallback.
+  return { shopId: order.shopId, shopName: order.shop.shopName };
+}
+
 export function toOrderResponse(order: OrderWithRelations) {
   const openDispute = order.disputes?.[0] ?? null;
   const items = order.items.map((item) => toOrderItemResponse(order, item));
   const shops = groupItemsByShop(
     items.map((item, index) => ({
-      shopId: order.items[index].offer?.shopId ?? order.shopId,
-      shopName: order.items[index].offer?.shop?.shopName ?? order.shop.shopName,
+      ...resolveOrderItemShop(order, order.items[index]),
       item,
     })),
   ).map((shop) => {
@@ -78,6 +134,7 @@ export function toOrderResponse(order: OrderWithRelations) {
       shippingTrackingCode: group?.shippingTrackingCode ?? order.shippingTrackingCode,
     };
   });
+  const [primaryShop] = resolveOrderShopSummaries(order);
 
   return {
     id: order.id,
@@ -100,8 +157,8 @@ export function toOrderResponse(order: OrderWithRelations) {
         }
       : null,
     openDisputeId: openDispute?.id ?? null,
-    sellerShopId: order.shopId,
-    sellerShopName: order.shop.shopName,
+    sellerShopId: primaryShop.shopId,
+    sellerShopName: primaryShop.shopName,
     buyerUserId: order.buyerUserId,
     buyerShopId: order.buyerShopId,
     buyerDistributionNodeId: order.buyerDistributionNodeId,
@@ -136,6 +193,9 @@ export function toOrderResponse(order: OrderWithRelations) {
 
 export function toMyOrdersSimplifiedResponse(order: OrderWithRelations): MyOrdersSimplifiedResponse {
   const firstItem = order.items[0];
+  const representativeShop = firstItem
+    ? resolveOrderItemShop(order, firstItem)
+    : resolveOrderShopSummaries(order)[0];
   const offerMedia = firstItem?.offer?.media ?? [];
   const thumbnailMedia =
     offerMedia.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
@@ -148,8 +208,8 @@ export function toMyOrdersSimplifiedResponse(order: OrderWithRelations): MyOrder
     id: order.id,
     orderCode,
     status: order.orderStatus,
-    shopId: order.shopId,
-    shopName: order.shop.shopName,
+    shopId: representativeShop.shopId,
+    shopName: representativeShop.shopName,
     totalAmount: decimalToNumber(order.totalAmount),
     paymentMethod: order.paymentIntent?.paymentMethod ?? '',
     firstProduct: firstItem
@@ -262,8 +322,7 @@ function buildOrderDetailShops(order: OrderWithRelations): OrderDetailResponse['
   const shopMap = new Map<string, ShopDetail>();
 
   for (const item of order.items) {
-    const shopId = item.offer?.shopId ?? order.shopId;
-    const shopName = item.offer?.shop?.shopName ?? order.shop.shopName;
+    const { shopId, shopName } = resolveOrderItemShop(order, item);
     const shopGroup = order.shopGroups?.find((group) => group.shopId === shopId);
     const fulfillmentStatus = shopGroup?.fulfillmentStatus ?? order.fulfillmentStatus;
 

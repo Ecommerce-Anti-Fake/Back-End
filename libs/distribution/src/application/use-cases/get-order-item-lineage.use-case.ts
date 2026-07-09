@@ -32,7 +32,7 @@ export class GetOrderItemLineageUseCase {
   private canAccessRoot(item: LineageOrderItem, requesterUserId: string) {
     return (
       item.order.buyerUserId === requesterUserId ||
-      item.order.shop.ownerUserId === requesterUserId ||
+      item.offer.shop.ownerUserId === requesterUserId ||
       item.order.buyerShop?.ownerUserId === requesterUserId
     );
   }
@@ -80,9 +80,9 @@ function toLineageHop(item: LineageOrderItem) {
     offerId: item.offerId,
     offerTitle: item.offerTitleSnapshot,
     quantity: item.quantity,
-    sellerShopId: item.order.shop.id,
-    sellerShopName: item.order.shop.shopName,
-    sellerRegistrationType: item.order.shop.registrationType,
+    sellerShopId: item.offer.shop.id,
+    sellerShopName: item.offer.shop.shopName,
+    sellerRegistrationType: item.offer.shop.registrationType,
     buyerUserId: item.order.buyerUserId,
     buyerShopId: item.order.buyerShop?.id ?? null,
     buyerShopName: item.order.buyerShop?.shopName ?? null,

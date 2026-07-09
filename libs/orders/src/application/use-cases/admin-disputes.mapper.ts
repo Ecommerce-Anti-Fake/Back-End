@@ -5,17 +5,20 @@ import {
   OrderAuditLogRecord,
 } from '../../infrastructure/persistence/orders.repository';
 import { toDisputeEvidenceResponse } from './dispute-evidence.mapper';
-import { toOrderResponse } from './orders.mapper';
+import { resolveOrderShopSummaries, toOrderResponse } from './orders.mapper';
 
 export function toAdminOpenDisputeResponse(dispute: AdminOpenDisputeRecord) {
+  const shops = resolveOrderShopSummaries(dispute.order);
+  const [primaryShop] = shops;
   return {
     id: dispute.id,
     orderId: dispute.orderId,
     disputeStatus: dispute.disputeStatus,
     reason: dispute.reason,
     openedByUserId: dispute.openedByUserId,
-    sellerShopId: dispute.order.shopId,
-    sellerShopName: dispute.order.shop.shopName,
+    sellerShopId: primaryShop.shopId,
+    sellerShopName: primaryShop.shopName,
+    shops,
     buyerUserId: dispute.order.buyerUserId,
     buyerShopId: dispute.order.buyerShopId,
     orderStatus: dispute.order.orderStatus,
@@ -36,6 +39,8 @@ export function toAdminDisputeDetailResponse(
   } | null,
   timeline: OrderAuditLogRecord[],
 ) {
+  const shops = resolveOrderShopSummaries(dispute.order);
+  const [primaryShop] = shops;
   return {
     dispute: {
       id: dispute.id,
@@ -43,8 +48,11 @@ export function toAdminDisputeDetailResponse(
       disputeStatus: dispute.disputeStatus,
       reason: dispute.reason,
       openedByUserId: dispute.openedByUserId,
-      sellerShopId: dispute.order.shopId,
-      sellerShopName: dispute.order.shop.shopName,
+      // TODO: Dispute has no orderShopGroupId, so the first canonical shop remains
+      // the compatibility value while shops[] exposes every affected seller.
+      sellerShopId: primaryShop.shopId,
+      sellerShopName: primaryShop.shopName,
+      shops,
       buyerUserId: dispute.order.buyerUserId,
       buyerShopId: dispute.order.buyerShopId,
       orderStatus: dispute.order.orderStatus,

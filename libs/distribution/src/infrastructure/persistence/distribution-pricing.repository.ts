@@ -715,6 +715,18 @@ export class DistributionPricingRepository {
         offerId: true,
         offerTitleSnapshot: true,
         quantity: true,
+        offer: {
+          select: {
+            shop: {
+              select: {
+                id: true,
+                shopName: true,
+                ownerUserId: true,
+                registrationType: true,
+              },
+            },
+          },
+        },
         order: {
           select: {
             id: true,
@@ -725,14 +737,6 @@ export class DistributionPricingRepository {
                 id: true,
                 shopName: true,
                 ownerUserId: true,
-              },
-            },
-            shop: {
-              select: {
-                id: true,
-                shopName: true,
-                ownerUserId: true,
-                registrationType: true,
               },
             },
           },

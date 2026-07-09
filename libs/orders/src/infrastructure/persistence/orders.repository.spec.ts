@@ -315,7 +315,21 @@ describe('OrdersRepository', () => {
 
     expect(prisma.order.count).toHaveBeenCalledWith({
       where: {
-        shopId: 'shop-1',
+        OR: [
+          {
+            shopGroups: {
+              some: {
+                shopId: 'shop-1',
+              },
+            },
+          },
+          {
+            shopId: 'shop-1',
+            shopGroups: {
+              none: {},
+            },
+          },
+        ],
         paymentIntent: {
           is: {
             paymentStatus: 'PAID',
@@ -340,6 +354,47 @@ describe('OrdersRepository', () => {
         sellerPayoutReadyAmount: 80,
       },
     ]);
+  });
+
+  it('maps finance shop identity from the matching shop group instead of the legacy order shop', async () => {
+    const order = {
+      id: 'order-1',
+      shopId: 'legacy-shop',
+      shop: { id: 'legacy-shop', shopName: 'Legacy Shop' },
+      shopGroups: [
+        {
+          shopId: 'shop-2',
+          shop: { id: 'shop-2', shopName: 'Shop Two' },
+          baseAmount: { toString: () => '80' },
+          discountAmount: { toString: () => '0' },
+          shippingFeeAmount: { toString: () => '20' },
+          platformFeeAmount: { toString: () => '10' },
+          sellerReceivableAmount: { toString: () => '70' },
+        },
+      ],
+      paymentIntent: { paymentStatus: 'PAID' },
+      escrow: null,
+      buyerPayableAmount: { toString: () => '100' },
+      platformFeeAmount: { toString: () => '10' },
+      sellerReceivableAmount: { toString: () => '70' },
+      affiliateConversion: null,
+      createdAt: new Date('2026-07-09T00:00:00.000Z'),
+    };
+    const prisma = {
+      $transaction: jest.fn().mockResolvedValue([1, [order], [order]]),
+      order: { count: jest.fn(), findMany: jest.fn() },
+    };
+    const repository = new OrdersRepository(prisma as never);
+
+    const result = await repository.findAdminFinanceReconciliation({ shopId: 'shop-2' });
+
+    expect(result.items[0]).toMatchObject({
+      shopId: 'shop-2',
+      shopName: 'Shop Two',
+      buyerPayableAmount: 100,
+      platformFeeAmount: 10,
+      sellerReceivableAmount: 70,
+    });
   });
 
   it('should consume the resale offer attached batch during fulfillment allocation', async () => {

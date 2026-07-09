@@ -108,6 +108,37 @@ describe('GetOrderItemLineageUseCase', () => {
 
     await expect(useCase.execute({ requesterUserId: 'buyer-user', orderItemId: 'item-l3' })).rejects.toBeInstanceOf(NotFoundException);
   });
+
+  it('uses the order item offer shop for multi-shop lineage ownership and output', async () => {
+    const item = lineageItem({
+      id: 'item-shop-2',
+      orderId: 'order-multi',
+      sellerShopId: 'shop-2',
+      sellerShopName: 'Shop Two',
+      buyerShopId: null,
+      buyerShopName: null,
+      allocationBatchId: 'batch-2',
+      allocationBatchNumber: 'BATCH-2',
+      allocationSourceOrderItemId: null,
+      allocationShopName: 'Shop Two',
+      buyerUserId: 'other-buyer',
+      sellerOwnerUserId: 'seller-2',
+    });
+    item.order.shop = {
+      id: 'legacy-shop',
+      shopName: 'Legacy Shop',
+      ownerUserId: 'legacy-owner',
+      registrationType: 'RETAILER',
+    };
+    repositoryMock.findLineageOrderItem.mockResolvedValueOnce(item);
+
+    const result = await useCase.execute({ requesterUserId: 'seller-2', orderItemId: 'item-shop-2' });
+
+    expect(result.hops[0]).toMatchObject({
+      sellerShopId: 'shop-2',
+      sellerShopName: 'Shop Two',
+    });
+  });
 });
 
 function lineageItem(input: {
@@ -141,6 +172,14 @@ function lineageItem(input: {
             ownerUserId: 'buyer-user',
           }
         : null,
+      shop: {
+        id: input.sellerShopId,
+        shopName: input.sellerShopName,
+        ownerUserId: input.sellerOwnerUserId ?? 'seller-user',
+        registrationType: input.sellerShopId === 'shop-manufacturer' ? 'MANUFACTURER' : 'DISTRIBUTOR',
+      },
+    },
+    offer: {
       shop: {
         id: input.sellerShopId,
         shopName: input.sellerShopName,

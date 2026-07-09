@@ -91,6 +91,7 @@ export class CreateReportUseCase {
       if (!isRetailBuyer && !isWholesaleBuyerOwner) {
         throw new ForbiddenException('Only the buyer can report this order');
       }
+      // LEGACY_SAFE: shop name is only a label fallback for old empty-item orders.
       return order.items[0]?.offerTitleSnapshot ?? order.shop.shopName ?? null;
     }
 
