@@ -16,6 +16,7 @@ describe('OrderReversalService', () => {
     cancelPendingAffiliateArtifacts: jest.fn(),
     cancelRefundableAffiliateArtifacts: jest.fn(),
     updateOrderStatus: jest.fn(),
+    cancelShopGroupFulfillment: jest.fn(),
     findDisputeForResolution: jest.fn(),
     updateDisputeStatus: jest.fn(),
   };
@@ -101,6 +102,30 @@ describe('OrderReversalService', () => {
     ordersRepositoryMock.findOrderForReversal.mockResolvedValueOnce(null);
 
     await expect(service.refundPaidOrder('missing-order', 'seller-1')).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('restores only the inventory belonging to the cancelled shop group', async () => {
+    const order = {
+      ...createOrderRecord('paid'),
+      items: [
+        { id: 'item-1', orderShopGroupId: 'group-1', offerId: 'offer-1', quantity: 1, batchAllocations: [] },
+        { id: 'item-2', orderShopGroupId: 'group-2', offerId: 'offer-2', quantity: 2, batchAllocations: [] },
+      ],
+    };
+    ordersRepositoryMock.findOrderForReversal.mockResolvedValueOnce(order);
+    ordersRepositoryMock.cancelShopGroupFulfillment.mockResolvedValueOnce(order);
+
+    await service.cancelOrderShopGroup('order-1', 'group-2');
+
+    expect(orderInventoryServiceMock.restoreOrderInventory).toHaveBeenCalledWith(tx, {
+      items: [order.items[1]],
+    });
+    expect(ordersRepositoryMock.cancelShopGroupFulfillment).toHaveBeenCalledWith(tx, {
+      orderId: 'order-1',
+      groupId: 'group-2',
+    });
+    expect(ordersRepositoryMock.updatePaymentStatusWithAudit).not.toHaveBeenCalled();
+    expect(ordersRepositoryMock.updateOrderStatus).not.toHaveBeenCalled();
   });
 });
 

@@ -18,6 +18,7 @@ describe('UpdateOrderFulfillmentUseCase', () => {
   };
   const orderReversalServiceMock = {
     cancelOrder: jest.fn(),
+    cancelOrderShopGroup: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -157,7 +158,98 @@ describe('UpdateOrderFulfillmentUseCase', () => {
 
     expect(orderReversalServiceMock.cancelOrder).toHaveBeenCalledWith('order-1', 'seller-user-1');
   });
+
+  it('cancels only the seller shop group in a multi-shop order', async () => {
+    const order = createMultiShopOrder();
+    orderReversalServiceMock.cancelOrderShopGroup.mockResolvedValueOnce({
+      ...order,
+      shopGroups: [
+        order.shopGroups[0],
+        { ...order.shopGroups[1], fulfillmentStatus: 'CANCELLED' },
+      ],
+    });
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(order);
+
+    await useCase.execute({
+      id: 'order-1',
+      requesterUserId: 'seller-user-2',
+      fulfillmentStatus: 'CANCELLED',
+    });
+
+    expect(orderReversalServiceMock.cancelOrderShopGroup).toHaveBeenCalledWith(
+      'order-1',
+      'group-2',
+    );
+    expect(orderReversalServiceMock.cancelOrder).not.toHaveBeenCalled();
+    expect(ordersRepositoryMock.createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetId: 'order-1',
+        actorUserId: 'seller-user-2',
+        fromStatus: 'PENDING',
+        toStatus: 'CANCELLED',
+        metadata: {
+          domain: 'FULFILLMENT',
+          orderShopGroupId: 'group-2',
+        },
+      }),
+    );
+    expect(ordersRepositoryMock.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dedupeKey: 'ORDER_FULFILLMENT:order-1:group-2:CANCELLED:buyer-user-1',
+      }),
+    );
+  });
+
+  it('rejects cancellation when the seller does not own an order shop group', async () => {
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createMultiShopOrder());
+
+    await expect(
+      useCase.execute({
+        id: 'order-1',
+        requesterUserId: 'other-seller',
+        fulfillmentStatus: 'CANCELLED',
+      }),
+    ).rejects.toThrow('Only the seller can update fulfillment');
+
+    expect(orderReversalServiceMock.cancelOrderShopGroup).not.toHaveBeenCalled();
+  });
+
+  it('rejects cancellation when the seller shop group is no longer pending', async () => {
+    const order = createMultiShopOrder();
+    order.shopGroups[1].fulfillmentStatus = 'PROCESSING';
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(order);
+
+    await expect(
+      useCase.execute({
+        id: 'order-1',
+        requesterUserId: 'seller-user-2',
+        fulfillmentStatus: 'CANCELLED',
+      }),
+    ).rejects.toThrow('Only pending shop groups can be cancelled by fulfillment');
+
+    expect(orderReversalServiceMock.cancelOrderShopGroup).not.toHaveBeenCalled();
+  });
 });
+
+function createMultiShopOrder() {
+  return {
+    ...createOrderRecord(),
+    shopGroups: [
+      {
+        id: 'group-1',
+        shopId: 'seller-shop-1',
+        fulfillmentStatus: 'PENDING',
+        shop: { ownerUserId: 'seller-user-1' },
+      },
+      {
+        id: 'group-2',
+        shopId: 'seller-shop-2',
+        fulfillmentStatus: 'PENDING',
+        shop: { ownerUserId: 'seller-user-2' },
+      },
+    ],
+  };
+}
 
 function createOrderRecord(overrides?: { orderStatus?: string; fulfillmentStatus?: string; paymentStatus?: string }) {
   return {

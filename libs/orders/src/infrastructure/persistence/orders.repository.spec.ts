@@ -145,6 +145,7 @@ describe('OrdersRepository', () => {
               offerId: 'offer-1',
               quantity: 2,
               batchAllocations: [],
+              offer: { shopId: 'shop-1' },
             },
           ],
         }),
@@ -357,6 +358,7 @@ describe('OrdersRepository', () => {
               offerId: 'resale-offer-1',
               quantity: 3,
               batchAllocations: [],
+              offer: { shopId: 'l1-shop' },
             },
           ],
         }),
@@ -434,6 +436,70 @@ describe('OrdersRepository', () => {
     });
   });
 
+  it('allocates a shop group from batches owned by that group shop instead of the legacy order shop', async () => {
+    const updatedOrder = { id: 'order-1', fulfillmentStatus: 'PROCESSING' };
+    const tx = {
+      orderShopGroup: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'group-2', orderId: 'order-1', shopId: 'shop-2' }),
+        update: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([
+          { fulfillmentStatus: 'PENDING' },
+          { fulfillmentStatus: 'PROCESSING' },
+        ]),
+      },
+      $queryRaw: jest.fn().mockResolvedValue([]),
+      offerBatchLink: {
+        findMany: jest.fn().mockResolvedValue([
+          { offerId: 'offer-2', batchId: 'batch-2', allocatedQuantity: 1, createdAt: new Date() },
+        ]),
+        update: jest.fn(),
+      },
+      supplyBatch: { update: jest.fn() },
+      orderItemBatchAllocation: { createMany: jest.fn() },
+      order: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'order-1',
+            items: [
+              {
+                id: 'item-2',
+                offerId: 'offer-2',
+                quantity: 1,
+                batchAllocations: [],
+                offer: { shopId: 'shop-2' },
+              },
+            ],
+          }),
+        findUniqueOrThrow: jest.fn().mockResolvedValue(updatedOrder),
+        update: jest.fn(),
+      },
+    };
+    const repository = new OrdersRepository({ $transaction: jest.fn((callback) => callback(tx)) } as never);
+
+    await repository.allocateOrderBatchesAndUpdateFulfillment('order-1', 'PROCESSING', 'group-2');
+
+    expect(tx.offerBatchLink.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          offerId: 'offer-2',
+          batch: { shopId: 'shop-2' },
+        }),
+      }),
+    );
+  });
+
+  it('rejects fulfillment allocation when the requested shop group does not exist', async () => {
+    const tx = {
+      orderShopGroup: { findUnique: jest.fn().mockResolvedValue(null) },
+    };
+    const repository = new OrdersRepository({ $transaction: jest.fn((callback) => callback(tx)) } as never);
+
+    await expect(
+      repository.allocateOrderBatchesAndUpdateFulfillment('order-1', 'PROCESSING', 'missing-group'),
+    ).rejects.toThrow('Order shop group not found');
+  });
+
   it('should create payment audit row when cancelling or refunding payment status', async () => {
     const tx = {
       paymentIntent: {
@@ -474,5 +540,24 @@ describe('OrdersRepository', () => {
         },
       },
     });
+  });
+
+  it('resolves every shop group as an order risk target instead of the legacy order shop', async () => {
+    const prisma = {
+      order: {
+        findUnique: jest.fn().mockResolvedValue({
+          shopGroups: [{ shopId: 'shop-1' }, { shopId: 'shop-2' }],
+          items: [],
+        }),
+      },
+    };
+    const repository = new OrdersRepository(prisma as never);
+
+    await expect(
+      repository.resolveRiskTargetsForReport({ targetType: 'ORDER', targetId: 'order-1' }),
+    ).resolves.toEqual([
+      { targetType: 'SHOP', targetId: 'shop-1' },
+      { targetType: 'SHOP', targetId: 'shop-2' },
+    ]);
   });
 });

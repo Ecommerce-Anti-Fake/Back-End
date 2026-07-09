@@ -20,7 +20,8 @@ export class UpdateOrderFulfillmentUseCase {
     }
 
     const shopGroup = order.shopGroups?.find((group) => group.shop.ownerUserId === input.requesterUserId);
-    const isLegacySeller = order.shop.ownerUserId === input.requesterUserId;
+    const isLegacySeller =
+      (!order.shopGroups || order.shopGroups.length <= 1) && order.shop.ownerUserId === input.requesterUserId;
     if (!shopGroup && !isLegacySeller) {
       throw new ForbiddenException('Only the seller can update fulfillment');
     }
@@ -43,8 +44,14 @@ export class UpdateOrderFulfillmentUseCase {
       const updatedOrder = shopGroup
         ? await this.ordersRepository.allocateOrderBatchesAndUpdateFulfillment(order.id, 'PROCESSING', shopGroup.id)
         : await this.ordersRepository.allocateOrderBatchesAndUpdateFulfillment(order.id, 'PROCESSING');
-      await this.createFulfillmentAudit(order.id, input.requesterUserId, currentFulfillmentStatus, 'PROCESSING');
-      await this.createFulfillmentNotification(updatedOrder, 'PROCESSING');
+      await this.createFulfillmentAudit(
+        order.id,
+        input.requesterUserId,
+        currentFulfillmentStatus,
+        'PROCESSING',
+        shopGroup?.id,
+      );
+      await this.createFulfillmentNotification(updatedOrder, 'PROCESSING', shopGroup?.id);
       return toOrderResponse(updatedOrder);
     }
 
@@ -59,8 +66,14 @@ export class UpdateOrderFulfillmentUseCase {
             fulfillmentStatus: 'SHIPPING',
           })
         : await this.ordersRepository.updateFulfillmentStatus(order.id, 'SHIPPING');
-      await this.createFulfillmentAudit(order.id, input.requesterUserId, currentFulfillmentStatus, 'SHIPPING');
-      await this.createFulfillmentNotification(updatedOrder, 'SHIPPING');
+      await this.createFulfillmentAudit(
+        order.id,
+        input.requesterUserId,
+        currentFulfillmentStatus,
+        'SHIPPING',
+        shopGroup?.id,
+      );
+      await this.createFulfillmentNotification(updatedOrder, 'SHIPPING', shopGroup?.id);
       return toOrderResponse(updatedOrder);
     }
 
@@ -91,14 +104,32 @@ export class UpdateOrderFulfillmentUseCase {
             fulfillmentStatus: 'DELIVERED',
           })
         : await this.ordersRepository.updateFulfillmentStatus(order.id, 'DELIVERED');
-      await this.createFulfillmentAudit(order.id, input.requesterUserId, currentFulfillmentStatus, 'DELIVERED');
-      await this.createFulfillmentNotification(updatedOrder, 'DELIVERED');
+      await this.createFulfillmentAudit(
+        order.id,
+        input.requesterUserId,
+        currentFulfillmentStatus,
+        'DELIVERED',
+        shopGroup?.id,
+      );
+      await this.createFulfillmentNotification(updatedOrder, 'DELIVERED', shopGroup?.id);
       return toOrderResponse(updatedOrder);
     }
 
     if (input.fulfillmentStatus === 'CANCELLED') {
-      if (order.shopGroups && order.shopGroups.length > 1) {
-        throw new BadRequestException('Multi-shop cancellation must be handled per shop group');
+      if (shopGroup && order.shopGroups.length > 1) {
+        if (currentFulfillmentStatus !== 'PENDING') {
+          throw new BadRequestException('Only pending shop groups can be cancelled by fulfillment');
+        }
+        const cancelledOrder = await this.orderReversalService.cancelOrderShopGroup(order.id, shopGroup.id);
+        await this.createFulfillmentAudit(
+          order.id,
+          input.requesterUserId,
+          currentFulfillmentStatus,
+          'CANCELLED',
+          shopGroup.id,
+        );
+        await this.createFulfillmentNotification(cancelledOrder, 'CANCELLED', shopGroup.id);
+        return toOrderResponse(cancelledOrder);
       }
       if (order.orderStatus !== 'pending') {
         throw new BadRequestException('Only pending orders can be cancelled by fulfillment');
@@ -111,7 +142,13 @@ export class UpdateOrderFulfillmentUseCase {
     throw new BadRequestException('Unsupported fulfillment status');
   }
 
-  private createFulfillmentAudit(orderId: string, actorUserId: string, fromStatus: string, toStatus: string) {
+  private createFulfillmentAudit(
+    orderId: string,
+    actorUserId: string,
+    fromStatus: string,
+    toStatus: string,
+    orderShopGroupId?: string,
+  ) {
     return this.ordersRepository.createAuditLog({
       targetType: 'ORDER',
       targetId: orderId,
@@ -122,11 +159,16 @@ export class UpdateOrderFulfillmentUseCase {
       note: `Fulfillment moved from ${fromStatus} to ${toStatus}`,
       metadata: {
         domain: 'FULFILLMENT',
+        ...(orderShopGroupId ? { orderShopGroupId } : {}),
       },
     });
   }
 
-  private createFulfillmentNotification(order: { id: string; buyerUserId: string | null }, toStatus: string) {
+  private createFulfillmentNotification(
+    order: { id: string; buyerUserId: string | null },
+    toStatus: string,
+    orderShopGroupId?: string,
+  ) {
     if (!order.buyerUserId) {
       return null;
     }
@@ -138,7 +180,7 @@ export class UpdateOrderFulfillmentUseCase {
       body: `Don hang ${order.id.slice(0, 8)} da chuyen sang ${toStatus}.`,
       targetType: 'ORDER',
       targetId: order.id,
-      dedupeKey: `ORDER_FULFILLMENT:${order.id}:${toStatus}:${order.buyerUserId}`,
+      dedupeKey: `ORDER_FULFILLMENT:${order.id}:${orderShopGroupId ? `${orderShopGroupId}:` : ''}${toStatus}:${order.buyerUserId}`,
     });
   }
 }

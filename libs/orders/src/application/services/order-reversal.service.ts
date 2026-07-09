@@ -39,6 +39,23 @@ export class OrderReversalService {
     });
   }
 
+  cancelOrderShopGroup(orderId: string, groupId: string): Promise<OrderWithRelations> {
+    return this.ordersRepository.withTransaction(async (tx) => {
+      const order = await this.ordersRepository.findOrderForReversal(tx, orderId);
+      if (!order) {
+        throw new BadRequestException('Order not found');
+      }
+
+      const groupItems = order.items.filter((item) => item.orderShopGroupId === groupId);
+      await this.orderInventoryService.restoreOrderInventory(tx, { items: groupItems });
+
+      return this.ordersRepository.cancelShopGroupFulfillment(tx, {
+        orderId,
+        groupId,
+      });
+    });
+  }
+
   refundPaidOrder(orderId: string, actorUserId: string): Promise<OrderWithRelations> {
     return this.ordersRepository.withTransaction(async (tx) => {
       const order = await this.ordersRepository.findOrderForReversal(tx, orderId);

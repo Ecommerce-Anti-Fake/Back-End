@@ -1197,6 +1197,29 @@ export class OrdersRepository {
     });
   }
 
+  async cancelShopGroupFulfillment(
+    tx: Prisma.TransactionClient,
+    input: { orderId: string; groupId: string },
+  ): Promise<OrderWithRelations> {
+    const result = await tx.orderShopGroup.updateMany({
+      where: {
+        id: input.groupId,
+        orderId: input.orderId,
+        fulfillmentStatus: 'PENDING',
+      },
+      data: { fulfillmentStatus: 'CANCELLED' },
+    });
+    if (result.count === 0) {
+      throw new BadRequestException('Only pending shop groups can be cancelled by fulfillment');
+    }
+
+    await this.syncAggregateFulfillmentStatus(tx, input.orderId);
+    return tx.order.findUniqueOrThrow({
+      where: { id: input.orderId },
+      ...orderWithRelationsArgs,
+    });
+  }
+
   updateDisputeStatus(tx: Prisma.TransactionClient, disputeId: string, disputeStatus: 'RESOLVED' | 'REFUNDED'): Promise<DisputeWithOrder> {
     return tx.dispute.update({
       where: { id: disputeId },
@@ -2198,6 +2221,9 @@ export class OrdersRepository {
       const order = await this.prisma.order.findUnique({
         where: { id: input.targetId },
         include: {
+          shopGroups: {
+            select: { shopId: true },
+          },
           items: {
             include: {
               batchAllocations: {
@@ -2208,8 +2234,15 @@ export class OrdersRepository {
         },
       });
       if (!order) return [];
+      const shopTargets =
+        order.shopGroups.length > 0
+          ? order.shopGroups.map((group) => ({
+              targetType: 'SHOP' as const,
+              targetId: group.shopId,
+            }))
+          : [{ targetType: 'SHOP' as const, targetId: order.shopId }];
       return this.dedupeRiskTargets([
-        { targetType: 'SHOP', targetId: order.shopId },
+        ...shopTargets,
         ...order.items.map((item) => ({
           targetType: 'OFFER' as const,
           targetId: item.offerId,
@@ -3328,11 +3361,20 @@ export class OrdersRepository {
   }
 
   private async allocateOrderBatchesForFulfillment(tx: Prisma.TransactionClient, orderId: string, groupId?: string) {
+    const shopGroup = groupId
+      ? await tx.orderShopGroup.findUnique({
+          where: { id: groupId },
+          select: { orderId: true, shopId: true },
+        })
+      : null;
+    if (groupId && (!shopGroup || shopGroup.orderId !== orderId)) {
+      throw new BadRequestException('Order shop group not found');
+    }
+
     const order = await tx.order.findUnique({
       where: { id: orderId },
       select: {
         id: true,
-        shopId: true,
         items: {
           where: groupId ? { orderShopGroupId: groupId } : undefined,
           select: {
@@ -3342,6 +3384,11 @@ export class OrdersRepository {
             batchAllocations: {
               select: {
                 quantity: true,
+              },
+            },
+            offer: {
+              select: {
+                shopId: true,
               },
             },
           },
@@ -3363,7 +3410,12 @@ export class OrdersRepository {
       }
 
       await this.lockOfferInventoryRowsInternal(tx, item.offerId);
-      const allocations = await this.consumeOfferBatchAllocationsInternal(tx, item.offerId, item.quantity, order.shopId);
+      const allocations = await this.consumeOfferBatchAllocationsInternal(
+        tx,
+        item.offerId,
+        item.quantity,
+        shopGroup?.shopId ?? item.offer.shopId,
+      );
       const totalAllocatedQuantity = allocations.reduce((sum, allocation) => sum + allocation.quantity, 0);
       if (totalAllocatedQuantity < item.quantity) {
         throw new BadRequestException('Order item does not have enough batch stock');
