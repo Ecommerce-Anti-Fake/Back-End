@@ -243,6 +243,7 @@ describe('OfferController', () => {
         sellerUserId: 'seller-1',
         categoryId: 'category-1',
         brandId: 'brand-1',
+        brandName: undefined,
         productImages: ['image-1', 'image-2'],
         gtin: '8930000000141',
         modelName: 'Kem chong nang SPF50',
@@ -258,6 +259,9 @@ describe('OfferController', () => {
           },
         ],
       }),
+    );
+    expect(catalogRpcService.createOffer.mock.calls[0][0]).not.toHaveProperty(
+      'distributionNodeId',
     );
     expect(dashboardSseBrokerService.notifyShop).toHaveBeenCalledWith('shop-1');
     expect(result).toEqual({

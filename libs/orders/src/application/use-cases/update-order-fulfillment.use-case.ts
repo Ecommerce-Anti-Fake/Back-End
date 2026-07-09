@@ -13,7 +13,11 @@ export class UpdateOrderFulfillmentUseCase {
     private readonly orderReversalService: OrderReversalService,
   ) {}
 
-  async execute(input: { id: string; requesterUserId: string; fulfillmentStatus: (typeof FULFILLMENT_STATUSES)[number] }) {
+  async execute(input: {
+    id: string;
+    requesterUserId: string;
+    fulfillmentStatus: (typeof FULFILLMENT_STATUSES)[number];
+  }) {
     const order = await this.ordersRepository.findOrderById(input.id);
     if (!order) {
       throw new NotFoundException('Order not found');
@@ -32,7 +36,9 @@ export class UpdateOrderFulfillmentUseCase {
 
     const currentFulfillmentStatus = shopGroup?.fulfillmentStatus || order.fulfillmentStatus || 'PENDING';
     const isPaymentReady =
-      order.orderStatus === 'paid' || order.paymentIntent?.paymentStatus === 'PAID' || order.paymentIntent?.paymentMethod === 'COD';
+      order.orderStatus === 'paid' ||
+      order.paymentIntent?.paymentStatus === 'PAID' ||
+      order.paymentIntent?.paymentMethod === 'COD';
 
     if (input.fulfillmentStatus === 'PROCESSING') {
       if (currentFulfillmentStatus !== 'PENDING') {
@@ -42,8 +48,12 @@ export class UpdateOrderFulfillmentUseCase {
         throw new BadRequestException('Only paid orders or COD orders can be processed');
       }
       const updatedOrder = shopGroup
-        ? await this.ordersRepository.allocateOrderBatchesAndUpdateFulfillment(order.id, 'PROCESSING', shopGroup.id)
-        : await this.ordersRepository.allocateOrderBatchesAndUpdateFulfillment(order.id, 'PROCESSING');
+        ? await this.ordersRepository.updateShopGroupFulfillmentStatus({
+            orderId: order.id,
+            groupId: shopGroup.id,
+            fulfillmentStatus: 'PROCESSING',
+          })
+        : await this.ordersRepository.updateFulfillmentStatus(order.id, 'PROCESSING');
       await this.createFulfillmentAudit(
         order.id,
         input.requesterUserId,

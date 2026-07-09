@@ -641,9 +641,28 @@ export class CreateOfferDto {
   @IsString()
   categoryId!: string;
 
-  @ApiProperty({ example: 'brand-id' })
+  @ApiPropertyOptional({
+    example: 'brand-id',
+    description:
+      'Existing brand ID selected by the seller. Takes precedence over brandName.',
+  })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
-  brandId!: string;
+  @MinLength(1)
+  brandId?: string;
+
+  @ApiPropertyOptional({
+    example: 'Nike',
+    description:
+      'Seller-entered brand name used only when brandId is not provided.',
+  })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  @MinLength(1)
+  @MaxLength(255)
+  brandName?: string;
 
   @ApiProperty({ example: 'Kem chong nang SPF50 - lo 2026' })
   @IsString()

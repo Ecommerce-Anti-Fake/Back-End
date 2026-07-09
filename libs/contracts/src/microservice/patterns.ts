@@ -796,6 +796,7 @@ export type CreateOfferMessage = {
   sellerUserId: string;
   shopId?: string | null;
   categoryId: string;
+  brandName?: string | null;
   brandId?: string | null;
   modelName?: string | null;
   gtin?: string | null;

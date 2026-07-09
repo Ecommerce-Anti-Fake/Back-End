@@ -97,6 +97,25 @@ export class OffersRepository {
     });
   }
 
+  findBrandByName(name: string) {
+    return this.prisma.brand.findFirst({
+      where: {
+        name: {
+          equals: name,
+          mode: 'insensitive',
+        },
+      },
+      select: { id: true },
+    });
+  }
+
+  createBrand(input: { name: string; registryStatus: string }) {
+    return this.prisma.brand.create({
+      data: input,
+      select: { id: true },
+    });
+  }
+
   findCategoryById(id: string) {
     return this.prisma.category.findUnique({
       where: { id },

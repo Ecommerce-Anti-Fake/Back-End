@@ -24,6 +24,7 @@ export class CreateOfferUseCase {
     sellerUserId: string;
     shopId?: string | null;
     categoryId: string;
+    brandName?: string | null;
     brandId?: string | null;
     modelName?: string | null;
     gtin?: string | null;
@@ -268,6 +269,7 @@ export class CreateOfferUseCase {
   private async resolveProductIdentity(
     input: {
       categoryId: string;
+      brandName?: string | null;
       brandId?: string | null;
       modelName?: string | null;
       gtin?: string | null;
@@ -275,17 +277,35 @@ export class CreateOfferUseCase {
     title: string,
   ) {
     const brandId = input.brandId?.trim();
-    if (!brandId) {
-      throw new BadRequestException('Brand is required');
+    if (brandId) {
+      const brand = await this.productRepository.findBrandById(brandId);
+      if (!brand) {
+        throw new NotFoundException('Brand not found');
+      }
+
+      return {
+        brandId,
+        modelName: input.modelName?.trim() || title,
+        gtin: input.gtin?.trim() || null,
+        verificationPolicy: 'manual_review',
+      };
     }
 
-    const brand = await this.productRepository.findBrandById(brandId);
-    if (!brand) {
-      throw new NotFoundException('Brand not found');
+    const brandName = input.brandName?.trim();
+    if (!brandName) {
+      throw new BadRequestException('Brand ID or brand name is required');
     }
+    const existingBrand =
+      await this.productRepository.findBrandByName(brandName);
+    const brand =
+      existingBrand ??
+      (await this.productRepository.createBrand({
+        name: brandName,
+        registryStatus: 'seller_declared',
+      }));
 
     return {
-      brandId,
+      brandId: brand.id,
       modelName: input.modelName?.trim() || title,
       gtin: input.gtin?.trim() || null,
       verificationPolicy: 'manual_review',

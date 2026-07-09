@@ -1,6 +1,37 @@
 import { OffersRepository } from './offers.repository';
 
 describe('OffersRepository', () => {
+  it('finds a brand by case-insensitive exact name', async () => {
+    const prisma = {
+      brand: { findFirst: jest.fn().mockResolvedValue({ id: 'brand-1' }) },
+    };
+    const repository = new OffersRepository(prisma as never);
+
+    await repository.findBrandByName('Nike');
+
+    expect(prisma.brand.findFirst).toHaveBeenCalledWith({
+      where: { name: { equals: 'Nike', mode: 'insensitive' } },
+      select: { id: true },
+    });
+  });
+
+  it('creates a brand with the supplied registry status', async () => {
+    const prisma = {
+      brand: { create: jest.fn().mockResolvedValue({ id: 'brand-1' }) },
+    };
+    const repository = new OffersRepository(prisma as never);
+
+    await repository.createBrand({
+      name: 'No brand',
+      registryStatus: 'seller_declared',
+    });
+
+    expect(prisma.brand.create).toHaveBeenCalledWith({
+      data: { name: 'No brand', registryStatus: 'seller_declared' },
+      select: { id: true },
+    });
+  });
+
   it('loads offer sales options in deterministic display order', async () => {
     const prisma = { offer: { findUnique: jest.fn().mockResolvedValue(null) } };
     const repository = new OffersRepository(prisma as never);

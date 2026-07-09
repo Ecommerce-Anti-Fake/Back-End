@@ -37,7 +37,7 @@ describe('UpdateOrderFulfillmentUseCase', () => {
 
   it('starts processing only after payment is ready', async () => {
     ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord());
-    ordersRepositoryMock.allocateOrderBatchesAndUpdateFulfillment.mockResolvedValueOnce(
+    ordersRepositoryMock.updateFulfillmentStatus.mockResolvedValueOnce(
       createOrderRecord({ fulfillmentStatus: 'PROCESSING' }),
     );
 
@@ -47,7 +47,8 @@ describe('UpdateOrderFulfillmentUseCase', () => {
       fulfillmentStatus: 'PROCESSING',
     });
 
-    expect(ordersRepositoryMock.allocateOrderBatchesAndUpdateFulfillment).toHaveBeenCalledWith('order-1', 'PROCESSING');
+    expect(ordersRepositoryMock.updateFulfillmentStatus).toHaveBeenCalledWith('order-1', 'PROCESSING');
+    expect(ordersRepositoryMock.allocateOrderBatchesAndUpdateFulfillment).not.toHaveBeenCalled();
     expect(ordersRepositoryMock.createAuditLog).toHaveBeenCalledWith({
       targetType: 'ORDER',
       targetId: 'order-1',
@@ -103,7 +104,7 @@ describe('UpdateOrderFulfillmentUseCase', () => {
       ],
     };
     ordersRepositoryMock.findOrderById.mockResolvedValueOnce(order);
-    ordersRepositoryMock.allocateOrderBatchesAndUpdateFulfillment.mockResolvedValueOnce(order);
+    ordersRepositoryMock.updateShopGroupFulfillmentStatus.mockResolvedValueOnce(order);
 
     await useCase.execute({
       id: 'order-1',
@@ -111,12 +112,19 @@ describe('UpdateOrderFulfillmentUseCase', () => {
       fulfillmentStatus: 'PROCESSING',
     });
 
-    expect(ordersRepositoryMock.allocateOrderBatchesAndUpdateFulfillment).toHaveBeenCalledWith('order-1', 'PROCESSING', 'group-2');
+    expect(ordersRepositoryMock.updateShopGroupFulfillmentStatus).toHaveBeenCalledWith({
+      orderId: 'order-1',
+      groupId: 'group-2',
+      fulfillmentStatus: 'PROCESSING',
+    });
+    expect(ordersRepositoryMock.allocateOrderBatchesAndUpdateFulfillment).not.toHaveBeenCalled();
   });
 
   it('marks delivered without completing the order', async () => {
     ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord({ fulfillmentStatus: 'SHIPPING' }));
-    ordersRepositoryMock.updateFulfillmentStatus.mockResolvedValueOnce(createOrderRecord({ fulfillmentStatus: 'DELIVERED' }));
+    ordersRepositoryMock.updateFulfillmentStatus.mockResolvedValueOnce(
+      createOrderRecord({ fulfillmentStatus: 'DELIVERED' }),
+    );
 
     const result = await useCase.execute({
       id: 'order-1',
@@ -141,7 +149,9 @@ describe('UpdateOrderFulfillmentUseCase', () => {
   });
 
   it('passes seller actor when cancelling through fulfillment', async () => {
-    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord({ orderStatus: 'pending', paymentStatus: 'PENDING' }));
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(
+      createOrderRecord({ orderStatus: 'pending', paymentStatus: 'PENDING' }),
+    );
     orderReversalServiceMock.cancelOrder.mockResolvedValueOnce(
       createOrderRecord({
         orderStatus: 'cancelled',
@@ -163,10 +173,7 @@ describe('UpdateOrderFulfillmentUseCase', () => {
     const order = createMultiShopOrder();
     orderReversalServiceMock.cancelOrderShopGroup.mockResolvedValueOnce({
       ...order,
-      shopGroups: [
-        order.shopGroups[0],
-        { ...order.shopGroups[1], fulfillmentStatus: 'CANCELLED' },
-      ],
+      shopGroups: [order.shopGroups[0], { ...order.shopGroups[1], fulfillmentStatus: 'CANCELLED' }],
     });
     ordersRepositoryMock.findOrderById.mockResolvedValueOnce(order);
 
@@ -176,10 +183,7 @@ describe('UpdateOrderFulfillmentUseCase', () => {
       fulfillmentStatus: 'CANCELLED',
     });
 
-    expect(orderReversalServiceMock.cancelOrderShopGroup).toHaveBeenCalledWith(
-      'order-1',
-      'group-2',
-    );
+    expect(orderReversalServiceMock.cancelOrderShopGroup).toHaveBeenCalledWith('order-1', 'group-2');
     expect(orderReversalServiceMock.cancelOrder).not.toHaveBeenCalled();
     expect(ordersRepositoryMock.createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({

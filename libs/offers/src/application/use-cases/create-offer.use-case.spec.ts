@@ -12,6 +12,8 @@ describe('CreateOfferUseCase', () => {
     // findModelById removed as ProductModel deprecated
     findModelById: jest.fn(),
     findBrandById: jest.fn(),
+    findBrandByName: jest.fn(),
+    createBrand: jest.fn(),
     findCategoryById: jest.fn(),
     findApprovedShopCategoryRegistration: jest.fn(),
     findOwnedDistributionNode: jest.fn(),
@@ -61,11 +63,149 @@ describe('CreateOfferUseCase', () => {
     return ['https://cdn.example.com/product.jpg'];
   }
 
+  function mockOfferCreateResult(brandId: string) {
+    return {
+      id: 'offer-1',
+      title: 'Offer 1',
+      description: 'Desc',
+      price: 100000,
+      currency: 'VND',
+      itemCondition: 'new',
+      availableQuantity: 10,
+      offerStatus: 'active',
+      moderationStatus: 'pending',
+      sellerUserId: 'user-1',
+      shopId: 'shop-1',
+      categoryId: 'category-1',
+      brandId,
+      modelName: 'Offer 1',
+      gtin: null,
+      verificationPolicy: 'manual_review',
+      distributionNodeId: null,
+      createdAt: new Date('2026-07-09T00:00:00.000Z'),
+      shop: { shopName: 'Shop' },
+      category: { name: 'Category' },
+      distributionNode: null,
+      media: [],
+    };
+  }
+
   function mockSuccessfulImagePersistence() {
     productRepositoryMock.createOfferMedia.mockResolvedValueOnce({
       id: 'offer-media-1',
     });
   }
+
+  it('prioritizes brandId when both brand inputs are provided', async () => {
+    mockActiveApprovedShop();
+    productRepositoryMock.createOffer.mockResolvedValueOnce(
+      mockOfferCreateResult('brand-1'),
+    );
+    mockSuccessfulImagePersistence();
+
+    await useCase.execute({
+      sellerUserId: 'user-1',
+      shopId: 'shop-1',
+      categoryId: 'category-1',
+      brandId: 'brand-1',
+      brandName: 'Seller-entered fallback',
+      title: 'Offer 1',
+      description: 'Desc',
+      price: 100000,
+      availableQuantity: 10,
+      productImages: productImages(),
+    });
+
+    expect(productRepositoryMock.findBrandById).toHaveBeenCalledWith('brand-1');
+    expect(productRepositoryMock.findBrandByName).not.toHaveBeenCalled();
+    expect(productRepositoryMock.createBrand).not.toHaveBeenCalled();
+  });
+
+  it('reuses an existing brand by case-insensitive name when creating an offer', async () => {
+    mockActiveApprovedShop();
+    productRepositoryMock.findBrandByName.mockResolvedValueOnce({
+      id: 'brand-existing',
+    });
+    productRepositoryMock.createOffer.mockResolvedValueOnce(
+      mockOfferCreateResult('brand-existing'),
+    );
+    mockSuccessfulImagePersistence();
+
+    await useCase.execute({
+      sellerUserId: 'user-1',
+      shopId: 'shop-1',
+      categoryId: 'category-1',
+      brandName: '  Nike  ',
+      title: 'Offer 1',
+      description: 'Desc',
+      price: 100000,
+      availableQuantity: 10,
+      productImages: productImages(),
+    });
+
+    expect(productRepositoryMock.findBrandByName).toHaveBeenCalledWith('Nike');
+    expect(productRepositoryMock.createBrand).not.toHaveBeenCalled();
+    expect(productRepositoryMock.createOffer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        brandId: 'brand-existing',
+        availableQuantity: 10,
+        distributionNodeId: null,
+      }),
+    );
+  });
+
+  it('creates a seller-declared brand when the name does not exist', async () => {
+    mockActiveApprovedShop();
+    productRepositoryMock.findBrandByName.mockResolvedValueOnce(null);
+    productRepositoryMock.createBrand.mockResolvedValueOnce({
+      id: 'brand-new',
+    });
+    productRepositoryMock.createOffer.mockResolvedValueOnce(
+      mockOfferCreateResult('brand-new'),
+    );
+    mockSuccessfulImagePersistence();
+
+    await useCase.execute({
+      sellerUserId: 'user-1',
+      shopId: 'shop-1',
+      categoryId: 'category-1',
+      brandName: 'No brand',
+      title: 'Offer 1',
+      description: 'Desc',
+      price: 100000,
+      availableQuantity: 10,
+      productImages: productImages(),
+    });
+
+    expect(productRepositoryMock.createBrand).toHaveBeenCalledWith({
+      name: 'No brand',
+      registryStatus: 'seller_declared',
+    });
+    expect(productRepositoryMock.createOffer).toHaveBeenCalledWith(
+      expect.objectContaining({ brandId: 'brand-new' }),
+    );
+  });
+
+  it('rejects a blank brand name', async () => {
+    mockActiveApprovedShop();
+
+    await expect(
+      useCase.execute({
+        sellerUserId: 'user-1',
+        shopId: 'shop-1',
+        categoryId: 'category-1',
+        brandName: '   ',
+        title: 'Offer 1',
+        description: 'Desc',
+        price: 100000,
+        availableQuantity: 10,
+        productImages: productImages(),
+      }),
+    ).rejects.toThrow('Brand ID or brand name is required');
+
+    expect(productRepositoryMock.findBrandByName).not.toHaveBeenCalled();
+    expect(productRepositoryMock.createOffer).not.toHaveBeenCalled();
+  });
 
   it('uploads a product data URL and persists its Cloudinary asset as the thumbnail', async () => {
     mockActiveApprovedShop();

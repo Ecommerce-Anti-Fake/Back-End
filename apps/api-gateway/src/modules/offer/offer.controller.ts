@@ -120,7 +120,8 @@ export class OfferController {
     const result = await this.catalogRpcService.createOffer({
       sellerUserId,
       categoryId: dto.categoryId,
-      brandId: dto.brandId ?? null,
+      brandId: dto.brandId,
+      brandName: dto.brandName,
       title: dto.title,
       description: dto.description,
       price: dto.price,
