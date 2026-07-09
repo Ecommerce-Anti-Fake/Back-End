@@ -1,15 +1,13 @@
 model OfferOptionGroup {
   id          String             @id @default(uuid())
   offerId     String             @map("offer_id")
-  name        String
   displayName String             @map("display_name")
-  sortOrder   Int                @default(0) @map("sort_order")
   createdAt   DateTime           @default(now()) @map("created_at")
   updatedAt   DateTime           @updatedAt @map("updated_at")
   offer       Offer              @relation(fields: [offerId], references: [id], onDelete: Cascade)
   values      OfferOptionValue[]
 
-  @@unique([offerId, name])
-  @@index([offerId, sortOrder, createdAt])
+  @@unique([offerId, displayName])
+  @@index([offerId, createdAt])
   @@map("offer_option_group")
 }

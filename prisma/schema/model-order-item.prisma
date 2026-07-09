@@ -4,12 +4,15 @@ model OrderItem {
   orderShopGroupId          String?                    @map("order_shop_group_id")
   sourceCartItemId          String?                    @map("source_cart_item_id")
   offerId                   String                     @map("offer_id")
+  variantId                 String?                    @map("variant_id")
   offerTitleSnapshot        String                     @map("offer_title_snapshot")
   unitPrice                 Decimal                    @map("unit_price") @db.Decimal(18, 2)
   quantity                  Int
   order                     Order                      @relation(fields: [orderId], references: [id])
   orderShopGroup            OrderShopGroup?            @relation(fields: [orderShopGroupId], references: [id])
   offer                     Offer                      @relation(fields: [offerId], references: [id])
+  variant                   OfferVariant?              @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  selectedOptions           OrderItemOptionValue[]
   batchAllocations          OrderItemBatchAllocation[]
   reviews                   Review[]
   sourceSupplyBatches       SupplyBatch[]                @relation("SupplyBatchSourceOrderItem")
@@ -18,5 +21,6 @@ model OrderItem {
   @@index([orderShopGroupId])
   @@index([sourceCartItemId])
   @@index([offerId])
+  @@index([variantId])
   @@map("order_item")
 }

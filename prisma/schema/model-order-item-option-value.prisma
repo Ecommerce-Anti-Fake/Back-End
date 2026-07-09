@@ -1,0 +1,14 @@
+model OrderItemOptionValue {
+  id                     String    @id @default(uuid())
+  orderItemId            String    @map("order_item_id")
+  optionGroupId          String?   @map("option_group_id")
+  optionValueId          String?   @map("option_value_id")
+  optionGroupDisplayName String    @map("option_group_display_name")
+  optionValueText        String    @map("option_value_text")
+  mediaAssetId           String?   @map("media_asset_id")
+  mediaUrl               String?   @map("media_url")
+  orderItem              OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  @@index([orderItemId])
+  @@map("order_item_option_value")
+}
