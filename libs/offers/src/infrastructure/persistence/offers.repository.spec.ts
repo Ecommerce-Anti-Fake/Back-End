@@ -248,4 +248,31 @@ describe('OffersRepository', () => {
       }),
     });
   });
+
+  it('lists every shop offer when includeInactive is true and status filters are omitted', async () => {
+    const prisma = {
+      offer: {
+        count: jest.fn().mockResolvedValue(0),
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      $transaction: jest.fn((queries) => Promise.all(queries)),
+    };
+    const repository = new OffersRepository(prisma as never);
+
+    await repository.findAllOffers({
+      shopId: 'shop-1',
+      includeInactive: true,
+      page: 1,
+      pageSize: 20,
+    });
+
+    expect(prisma.offer.count).toHaveBeenCalledWith({
+      where: { shopId: 'shop-1' },
+    });
+    expect(prisma.offer.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { shopId: 'shop-1' },
+      }),
+    );
+  });
 });

@@ -215,7 +215,8 @@ export class OfferController {
 
   @ApiOperation({ summary: 'Lay danh sach offer cua shop' })
   @ApiOkResponse({
-    description: 'Danh sach offer active cua shop co phan trang.',
+    description:
+      'Danh sach offer cua shop co phan trang. Bo trong status filters de lay tat ca offer cua shop.',
     type: PaginatedOfferListResponseDto,
   })
   @Get('shops/:shopId/offers')
@@ -227,6 +228,7 @@ export class OfferController {
       shopId,
       offerStatus: query.offerStatus,
       moderationStatus: query.moderationStatus,
+      includeInactive: true,
       page: query.page ?? 1,
       pageSize: query.pageSize ?? 20,
     });
@@ -344,6 +346,8 @@ function toOfferListItem(offer: unknown): OfferListItemResponseDto {
     availableQuantity: numberValue(record.availableQuantity),
     soldQuantity: numberValue(record.soldQuantity),
     offerStatus: stringValue(record.offerStatus),
+    moderationStatus: stringValue(record.moderationStatus),
+    moderationReason: nullableStringValue(record.moderationReason),
     categoryId: nullableStringValue(record.categoryId),
     brandId: nullableStringValue(record.brandId),
     thumbnailUrl: nullableStringValue(record.thumbnailUrl),

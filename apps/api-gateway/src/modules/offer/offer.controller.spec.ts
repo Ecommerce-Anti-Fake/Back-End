@@ -104,6 +104,8 @@ describe('OfferController', () => {
             availableQuantity: 12,
             soldQuantity: 3,
             offerStatus: 'active',
+            moderationStatus: 'pending',
+            moderationReason: 'Missing invoice',
             shopId: 'shop-1',
             shopName: 'Shop ABC',
             categoryId: 'category-1',
@@ -138,6 +140,7 @@ describe('OfferController', () => {
       shopId: 'shop-1',
       offerStatus: 'inactive',
       moderationStatus: 'pending',
+      includeInactive: true,
       page: 2,
       pageSize: 10,
     });
@@ -154,6 +157,8 @@ describe('OfferController', () => {
           availableQuantity: 12,
           soldQuantity: 3,
           offerStatus: 'active',
+          moderationStatus: 'pending',
+          moderationReason: 'Missing invoice',
           categoryId: 'category-1',
           brandId: 'brand-1',
           thumbnailUrl:
@@ -165,6 +170,32 @@ describe('OfferController', () => {
     expect(result.items[0]).not.toHaveProperty('description');
     expect(result.items[0]).not.toHaveProperty('shopName');
     expect(result.items[0]).not.toHaveProperty('shippingMethods');
+  });
+
+  it('requests every shop offer when shop offer status filters are omitted', async () => {
+    const catalogRpcService = {
+      findOffers: jest.fn().mockResolvedValue({
+        total: 0,
+        page: 1,
+        pageSize: 20,
+        items: [],
+      }),
+    };
+    const controller = new OfferController(
+      catalogRpcService as never,
+      { notifyShop: jest.fn() } as never,
+    );
+
+    await controller.findShopOffers('shop-1', {});
+
+    expect(catalogRpcService.findOffers).toHaveBeenCalledWith({
+      shopId: 'shop-1',
+      offerStatus: undefined,
+      moderationStatus: undefined,
+      includeInactive: true,
+      page: 1,
+      pageSize: 20,
+    });
   });
 
   it('returns only a success acknowledgement when creating an offer', async () => {
@@ -257,6 +288,8 @@ describe('OfferController', () => {
             soldQuantity: 3,
             parcelWeightGrams: 500,
             offerStatus: 'active',
+            moderationStatus: 'approved',
+            moderationReason: null,
             shopId: 'shop-1',
             shopName: 'Shop ABC',
             shopType: 'MANUFACTURER',
@@ -296,6 +329,8 @@ describe('OfferController', () => {
           availableQuantity: 12,
           soldQuantity: 3,
           offerStatus: 'active',
+          moderationStatus: 'approved',
+          moderationReason: null,
           categoryId: 'category-1',
           brandId: 'brand-1',
           thumbnailUrl:

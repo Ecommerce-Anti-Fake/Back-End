@@ -502,6 +502,15 @@ export class OfferListItemResponseDto {
   @ApiProperty({ example: 'active' })
   offerStatus!: string;
 
+  @ApiProperty({ enum: MODERATION_STATUSES, example: 'approved' })
+  moderationStatus!: string;
+
+  @ApiPropertyOptional({
+    example: 'Thong tin san pham khong hop le',
+    nullable: true,
+  })
+  moderationReason!: string | null;
+
   @ApiProperty({ example: 'category-id', nullable: true })
   categoryId!: string | null;
 
