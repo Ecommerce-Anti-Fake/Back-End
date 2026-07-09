@@ -112,6 +112,46 @@ describe('GetSellerShopDashboardAnalyticsUseCase', () => {
     expect(result.series).toHaveLength(2);
     expect(result.revenueOrders.map((order) => order.orderId)).toEqual(['inside-range']);
   });
+
+  it('scopes revenue and product metrics to the requested shop group', async () => {
+    ordersRepositoryMock.findOrdersForSellerShop.mockResolvedValueOnce([
+      createOrder({
+        id: 'multi-shop-order',
+        createdAt: new Date('2026-05-10T10:00:00.000Z'),
+        buyerPayableAmount: 4200,
+        sellerReceivableAmount: 3500,
+        totalAmount: 4200,
+        shippingFeeAmount: 700,
+        shopGroups: [
+          createShopGroup({ id: 'group-shop-1', shopId: 'shop-1', sellerReceivableAmount: 1000, platformFeeAmount: 50, shippingFeeAmount: 200 }),
+          createShopGroup({ id: 'group-shop-2', shopId: 'shop-2', sellerReceivableAmount: 2500, platformFeeAmount: 125, shippingFeeAmount: 500 }),
+        ],
+        items: [
+          createItem({ offerId: 'offer-shop-1', title: 'Shop 1 Product', quantity: 2, unitPrice: 500, orderShopGroupId: 'group-shop-1', shopId: 'shop-1' }),
+          createItem({ offerId: 'offer-shop-2', title: 'Shop 2 Product', quantity: 5, unitPrice: 500, orderShopGroupId: 'group-shop-2', shopId: 'shop-2' }),
+        ],
+      }),
+    ]);
+
+    const result = await useCase.execute({
+      requesterUserId: 'seller-1',
+      shopId: 'shop-1',
+      fromDate: '2026-05-10',
+      toDate: '2026-05-10',
+    });
+
+    expect(result.stats.revenue.value).toBe(1000);
+    expect(result.series[0]).toMatchObject({ revenue: 1000, orders: 1 });
+    expect(result.topProducts).toEqual([
+      expect.objectContaining({ offerId: 'offer-shop-1', soldQuantity: 2, revenue: 1000 }),
+    ]);
+    expect(result.revenueOrders[0]).toMatchObject({
+      orderId: 'multi-shop-order',
+      platformFeeAmount: 50,
+      sellerReceivableAmount: 1000,
+      itemCount: 2,
+    });
+  });
 });
 
 function createOrder(overrides: Record<string, unknown>) {
@@ -150,22 +190,41 @@ function createOrder(overrides: Record<string, unknown>) {
     paymentIntent: null,
     escrow: null,
     disputes: [],
+    shopGroups: [],
     items: [],
     createdAt: new Date(),
     ...overrides,
   };
 }
 
-function createItem(input: { offerId: string; title: string; quantity: number; unitPrice: number }) {
+function createItem(input: { offerId: string; title: string; quantity: number; unitPrice: number; orderShopGroupId?: string; shopId?: string }) {
   return {
     id: `${input.offerId}-item`,
     offerId: input.offerId,
+    orderShopGroupId: input.orderShopGroupId ?? null,
     offerTitleSnapshot: input.title,
     unitPrice: input.unitPrice,
     quantity: input.quantity,
     reviews: [],
     batchAllocations: [],
-    offer: { media: [] },
+    offer: { shop: input.shopId ? { id: input.shopId } : undefined, media: [] },
+  };
+}
+
+function createShopGroup(overrides: Record<string, unknown>) {
+  return {
+    id: 'group-id',
+    shopId: 'shop-1',
+    shop: { id: 'shop-1', shopName: 'Seller Shop', ownerUserId: 'seller-1' },
+    fulfillmentStatus: 'PENDING',
+    baseAmount: 0,
+    discountAmount: 0,
+    platformFeeAmount: 0,
+    sellerReceivableAmount: 0,
+    shippingFeeAmount: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ...overrides,
   };
 }
 

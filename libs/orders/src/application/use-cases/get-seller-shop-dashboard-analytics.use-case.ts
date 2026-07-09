@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { OrdersRepository, OrderWithRelations } from '../../infrastructure/persistence/orders.repository';
 import { toOrderResponse } from './orders.mapper';
+import {
+  getShopFulfillmentStatus,
+  getShopItems,
+  getShopPlatformFee,
+  getShopRevenue,
+} from './seller-shop-metrics.helpers';
 
 type DashboardInput = {
   requesterUserId: string;
@@ -44,26 +50,26 @@ export class GetSellerShopDashboardAnalyticsUseCase {
       },
       stats: {
         revenue: {
-          value: sumRevenue(currentOrders),
-          growthPercent: growthPercent(sumRevenue(currentOrders), sumRevenue(previousOrders)),
+          value: sumRevenue(currentOrders, input.shopId),
+          growthPercent: growthPercent(sumRevenue(currentOrders, input.shopId), sumRevenue(previousOrders, input.shopId)),
         },
         orders: {
           value: currentOrders.length,
           growthPercent: growthPercent(currentOrders.length, previousOrders.length),
         },
         products: {
-          value: uniqueProductCount(orders),
-          growthPercent: growthPercent(uniqueProductCount(currentOrders), uniqueProductCount(previousOrders)),
+          value: uniqueProductCount(orders, input.shopId),
+          growthPercent: growthPercent(uniqueProductCount(currentOrders, input.shopId), uniqueProductCount(previousOrders, input.shopId)),
         },
         newCustomers: {
           value: currentCustomers,
           growthPercent: growthPercent(currentCustomers, previousCustomers),
         },
       },
-      series: buildRevenueSeries(currentOrders, currentStart, rangeDays),
+      series: buildRevenueSeries(currentOrders, currentStart, rangeDays, input.shopId),
       recentOrders: currentOrders.slice(0, 5).map(toOrderResponse),
-      topProducts: buildTopProducts(currentOrders),
-      revenueOrders: currentOrders.map(toRevenueOrder),
+      topProducts: buildTopProducts(currentOrders, input.shopId),
+      revenueOrders: currentOrders.map((order) => toRevenueOrder(order, input.shopId)),
     };
   }
 }
@@ -74,8 +80,8 @@ function clampDays(value?: number) {
   return Math.min(MAX_DAYS, Math.max(MIN_DAYS, Math.trunc(days)));
 }
 
-function sumRevenue(orders: OrderWithRelations[]) {
-  return orders.reduce((total, order) => total + Number(order.sellerReceivableAmount || order.buyerPayableAmount || order.totalAmount || 0), 0);
+function sumRevenue(orders: OrderWithRelations[], shopId: string) {
+  return orders.reduce((total, order) => total + getShopRevenue(order, shopId), 0);
 }
 
 function growthPercent(current: number, previous: number) {
@@ -83,13 +89,13 @@ function growthPercent(current: number, previous: number) {
   return Number((((current - previous) / previous) * 100).toFixed(1));
 }
 
-function buildRevenueSeries(orders: OrderWithRelations[], start: Date, days: number) {
+function buildRevenueSeries(orders: OrderWithRelations[], start: Date, days: number, shopId: string) {
   return Array.from({ length: days }, (_, index) => {
     const date = addDays(start, index);
     const label = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
     const revenue = orders
       .filter((order) => isSameDay(order.createdAt, date))
-      .reduce((total, order) => total + Number(order.sellerReceivableAmount || order.buyerPayableAmount || order.totalAmount || 0), 0);
+      .reduce((total, order) => total + getShopRevenue(order, shopId), 0);
 
     return {
       date: date.toISOString().slice(0, 10),
@@ -100,11 +106,11 @@ function buildRevenueSeries(orders: OrderWithRelations[], start: Date, days: num
   });
 }
 
-function buildTopProducts(orders: OrderWithRelations[]) {
+function buildTopProducts(orders: OrderWithRelations[], shopId: string) {
   const byOffer = new Map<string, { offerId: string; title: string; thumbnailUrl: string | null; soldQuantity: number; revenue: number }>();
 
   for (const order of orders) {
-    for (const item of order.items ?? []) {
+    for (const item of getShopItems(order, shopId)) {
       const offerMedia = item.offer?.media ?? [];
       const thumbnailMedia =
         offerMedia.find((media) => media.mediaType === 'thumbnail' && (media.mediaAsset?.secureUrl || media.fileUrl)) ??
@@ -127,22 +133,26 @@ function buildTopProducts(orders: OrderWithRelations[]) {
   return [...byOffer.values()].sort((a, b) => b.soldQuantity - a.soldQuantity || b.revenue - a.revenue).slice(0, 5);
 }
 
-function toRevenueOrder(order: OrderWithRelations) {
+function toRevenueOrder(order: OrderWithRelations, shopId: string) {
+  const shopItems = getShopItems(order, shopId);
+
   return {
     orderId: order.id,
     createdAt: order.createdAt,
     customerName: order.shippingName || order.buyerUserId || order.buyerShopId || null,
     paymentStatus: order.paymentIntent?.paymentStatus ?? null,
-    fulfillmentStatus: order.fulfillmentStatus,
+    fulfillmentStatus: getShopFulfillmentStatus(order, shopId),
     buyerPayableAmount: Number(order.buyerPayableAmount || 0),
-    platformFeeAmount: Number(order.platformFeeAmount || 0),
-    sellerReceivableAmount: Number(order.sellerReceivableAmount || order.buyerPayableAmount || order.totalAmount || 0),
-    itemCount: (order.items ?? []).reduce((total, item) => total + Number(item.quantity || 0), 0),
+    platformFeeAmount: getShopPlatformFee(order, shopId),
+    sellerReceivableAmount: getShopRevenue(order, shopId),
+    itemCount: shopItems.reduce((total, item) => total + Number(item.quantity || 0), 0),
   };
 }
 
-function uniqueProductCount(orders: OrderWithRelations[]) {
-  return new Set(orders.flatMap((order) => (order.items ?? []).map((item) => item.offerId))).size;
+function uniqueProductCount(orders: OrderWithRelations[], shopId?: string) {
+  return new Set(
+    orders.flatMap((order) => (shopId ? getShopItems(order, shopId) : order.items ?? []).map((item) => item.offerId)),
+  ).size;
 }
 
 function uniqueCustomerCount(orders: OrderWithRelations[]) {

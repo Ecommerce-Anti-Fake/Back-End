@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { OrdersRepository, OrderWithRelations } from '../../infrastructure/persistence/orders.repository';
+import { getShopItems, getShopRevenue } from './seller-shop-metrics.helpers';
 
 type SummaryMetricsInput = {
   requesterUserId: string;
@@ -35,9 +36,9 @@ export class GetSellerShopSummaryMetricsUseCase {
         to: endOfDay(range.to).toISOString(),
         days: range.days,
       },
-      revenue: metric(sumRevenue(currentOrders), sumRevenue(previousOrders)),
+      revenue: metric(sumRevenue(currentOrders, input.shopId), sumRevenue(previousOrders, input.shopId)),
       orders: metric(currentOrders.length, previousOrders.length),
-      offers: metric(soldOfferItemQuantity(currentOrders), soldOfferItemQuantity(previousOrders)),
+      offers: metric(soldOfferItemQuantity(currentOrders, input.shopId), soldOfferItemQuantity(previousOrders, input.shopId)),
     };
   }
 }
@@ -49,13 +50,13 @@ function metric(current: number, previous: number) {
   };
 }
 
-function sumRevenue(orders: OrderWithRelations[]) {
-  return orders.reduce((total, order) => total + Number(order.sellerReceivableAmount || order.buyerPayableAmount || order.totalAmount || 0), 0);
+function sumRevenue(orders: OrderWithRelations[], shopId: string) {
+  return orders.reduce((total, order) => total + getShopRevenue(order, shopId), 0);
 }
 
-function soldOfferItemQuantity(orders: OrderWithRelations[]) {
+function soldOfferItemQuantity(orders: OrderWithRelations[], shopId: string) {
   return orders.reduce(
-    (total, order) => total + (order.items ?? []).reduce((itemTotal, item) => itemTotal + Number(item.quantity || 0), 0),
+    (total, order) => total + getShopItems(order, shopId).reduce((itemTotal, item) => itemTotal + Number(item.quantity || 0), 0),
     0,
   );
 }

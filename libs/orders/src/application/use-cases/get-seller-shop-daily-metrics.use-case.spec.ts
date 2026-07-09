@@ -39,7 +39,7 @@ describe('GetSellerShopDailyMetricsUseCase', () => {
       createOrder({
         id: 'order-3',
         createdAt: new Date('2026-06-11T10:00:00.000Z'),
-        buyerPayableAmount: 600,
+        sellerReceivableAmount: 600,
       }),
       createOrder({
         id: 'outside-order',
@@ -104,6 +104,34 @@ describe('GetSellerShopDailyMetricsUseCase', () => {
       { date: '2026-06-12', label: '12/06', revenue: 500, orders: 1 },
     ]);
   });
+
+  it('uses the matching shop group receivable instead of aggregate order totals', async () => {
+    ordersRepositoryMock.findOrdersForSellerShop.mockResolvedValueOnce([
+      createOrder({
+        id: 'multi-shop-order',
+        createdAt: new Date('2026-06-10T10:00:00.000Z'),
+        buyerPayableAmount: 3700,
+        sellerReceivableAmount: 3000,
+        totalAmount: 3700,
+        shippingFeeAmount: 700,
+        shopGroups: [
+          createShopGroup({ id: 'group-shop-1', shopId: 'shop-1', sellerReceivableAmount: 900, shippingFeeAmount: 200 }),
+          createShopGroup({ id: 'group-shop-2', shopId: 'shop-2', sellerReceivableAmount: 2100, shippingFeeAmount: 500 }),
+        ],
+      }),
+    ]);
+
+    const result = await useCase.execute({
+      requesterUserId: 'seller-1',
+      shopId: 'shop-1',
+      fromDate: '2026-06-10',
+      toDate: '2026-06-10',
+    });
+
+    expect(result.series).toEqual([
+      { date: '2026-06-10', label: '10/06', revenue: 900, orders: 1 },
+    ]);
+  });
 });
 
 function createOrder(overrides: Record<string, unknown>) {
@@ -116,8 +144,29 @@ function createOrder(overrides: Record<string, unknown>) {
     sellerReceivableAmount: 0,
     buyerPayableAmount: 0,
     totalAmount: 0,
+    shippingFeeAmount: 0,
+    shopId: 'shop-1',
+    shop: { shopName: 'Seller Shop', ownerUserId: 'seller-1' },
+    shopGroups: [],
     items: [],
     createdAt: new Date(),
+    ...overrides,
+  };
+}
+
+function createShopGroup(overrides: Record<string, unknown>) {
+  return {
+    id: 'group-id',
+    shopId: 'shop-1',
+    shop: { id: 'shop-1', shopName: 'Seller Shop', ownerUserId: 'seller-1' },
+    fulfillmentStatus: 'PENDING',
+    baseAmount: 0,
+    discountAmount: 0,
+    platformFeeAmount: 0,
+    sellerReceivableAmount: 0,
+    shippingFeeAmount: 0,
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...overrides,
   };
 }

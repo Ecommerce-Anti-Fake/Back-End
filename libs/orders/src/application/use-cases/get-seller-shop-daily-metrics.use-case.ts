@@ -3,6 +3,7 @@ import {
   OrdersRepository,
   OrderWithRelations,
 } from '../../infrastructure/persistence/orders.repository';
+import { getShopRevenue } from './seller-shop-metrics.helpers';
 
 type DailyMetricsInput = {
   requesterUserId: string;
@@ -36,7 +37,7 @@ export class GetSellerShopDailyMetricsUseCase {
         from: range.from.toISOString(),
         to: endOfDay(range.to).toISOString(),
       },
-      series: buildDailySeries(currentOrders, range.from, range.days),
+      series: buildDailySeries(currentOrders, range.from, range.days, input.shopId),
     };
   }
 }
@@ -45,6 +46,7 @@ function buildDailySeries(
   orders: OrderWithRelations[],
   start: Date,
   days: number,
+  shopId: string,
 ) {
   return Array.from({ length: days }, (_, index) => {
     const date = addDays(start, index);
@@ -57,22 +59,15 @@ function buildDailySeries(
       label: `${String(date.getUTCDate()).padStart(2, '0')}/${String(
         date.getUTCMonth() + 1,
       ).padStart(2, '0')}`,
-      revenue: sumRevenue(dailyOrders),
+      revenue: sumRevenue(dailyOrders, shopId),
       orders: dailyOrders.length,
     };
   });
 }
 
-function sumRevenue(orders: OrderWithRelations[]) {
+function sumRevenue(orders: OrderWithRelations[], shopId: string) {
   return orders.reduce(
-    (total, order) =>
-      total +
-      Number(
-        order.sellerReceivableAmount ||
-          order.buyerPayableAmount ||
-          order.totalAmount ||
-          0,
-      ),
+    (total, order) => total + getShopRevenue(order, shopId),
     0,
   );
 }
