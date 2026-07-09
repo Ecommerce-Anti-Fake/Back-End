@@ -621,7 +621,7 @@ describe('CreateOfferUseCase', () => {
     ).rejects.toThrow('At least one product image is required');
   });
 
-  it('rejects duplicate option group names', async () => {
+  it('rejects duplicate option group display names', async () => {
     await expect(
       useCase.execute({
         sellerUserId: 'user-1',
@@ -633,11 +633,11 @@ describe('CreateOfferUseCase', () => {
         availableQuantity: 1,
         productImages: productImages(),
         optionGroups: [
-          { name: 'size', displayName: 'Size', values: [{ text: 'S' }] },
-          { name: 'size', displayName: 'Kich thuoc', values: [{ text: 'M' }] },
+          { displayName: 'Size', values: [{ text: 'S' }] },
+          { displayName: 'Size', values: [{ text: 'M' }] },
         ],
       }),
-    ).rejects.toThrow('Option group names must be unique');
+    ).rejects.toThrow('Option group display names must be unique');
   });
 
   it('rejects duplicate option values in a group', async () => {
@@ -653,7 +653,6 @@ describe('CreateOfferUseCase', () => {
         productImages: productImages(),
         optionGroups: [
           {
-            name: 'size',
             displayName: 'Size',
             values: [{ text: 'S' }, { text: 'S' }],
           },
@@ -679,7 +678,6 @@ describe('CreateOfferUseCase', () => {
         productImages: productImages(),
         optionGroups: [
           {
-            name: 'color',
             displayName: 'Mau sac',
             values: [{ text: 'Do', mediaAssetId: 'media-1' }],
           },
@@ -733,7 +731,6 @@ describe('CreateOfferUseCase', () => {
       productImages: productImages(),
       optionGroups: [
         {
-          name: 'color',
           displayName: 'Mau sac',
           values: [{ text: 'Do', mediaAssetId: 'media-1' }],
         },
@@ -756,9 +753,7 @@ describe('CreateOfferUseCase', () => {
       ],
       optionGroups: [
         {
-          name: 'color',
           displayName: 'Mau sac',
-          sortOrder: 0,
           values: [{ text: 'Do', mediaAssetId: 'media-1', sortOrder: 0 }],
         },
       ],

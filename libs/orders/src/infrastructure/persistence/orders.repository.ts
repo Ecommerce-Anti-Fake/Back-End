@@ -623,32 +623,36 @@ export class OrdersRepository {
   }): Promise<CartWithItems> {
     const cart = await this.getOrCreateActiveCart(input.buyerUserId);
 
-    await this.prisma.cartItem.upsert({
-      where: {
-        cartId_offerId: {
+    const existingItem = await this.prisma.cartItem.findFirst({
+      where: { cartId: cart.id, offerId: input.offerId, variantId: null },
+      select: { id: true },
+    });
+    if (existingItem) {
+      await this.prisma.cartItem.update({
+        where: { id: existingItem.id },
+        data: {
+          quantity: {
+            increment: input.quantity,
+          },
+          offerTitleSnapshot: input.offerTitleSnapshot,
+          unitPriceSnapshot: input.unitPriceSnapshot,
+          currencySnapshot: input.currencySnapshot,
+          shopNameSnapshot: input.shopNameSnapshot,
+        },
+      });
+    } else {
+      await this.prisma.cartItem.create({
+        data: {
           cartId: cart.id,
           offerId: input.offerId,
+          quantity: input.quantity,
+          offerTitleSnapshot: input.offerTitleSnapshot,
+          unitPriceSnapshot: input.unitPriceSnapshot,
+          currencySnapshot: input.currencySnapshot,
+          shopNameSnapshot: input.shopNameSnapshot,
         },
-      },
-      update: {
-        quantity: {
-          increment: input.quantity,
-        },
-        offerTitleSnapshot: input.offerTitleSnapshot,
-        unitPriceSnapshot: input.unitPriceSnapshot,
-        currencySnapshot: input.currencySnapshot,
-        shopNameSnapshot: input.shopNameSnapshot,
-      },
-      create: {
-        cartId: cart.id,
-        offerId: input.offerId,
-        quantity: input.quantity,
-        offerTitleSnapshot: input.offerTitleSnapshot,
-        unitPriceSnapshot: input.unitPriceSnapshot,
-        currencySnapshot: input.currencySnapshot,
-        shopNameSnapshot: input.shopNameSnapshot,
-      },
-    });
+      });
+    }
 
     return this.getOrCreateActiveCart(input.buyerUserId);
   }

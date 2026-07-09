@@ -6,7 +6,7 @@ describe('CreateOfferVariantUseCase', () => {
   const repository = {
     findOwnedOfferOptionValues: jest.fn(),
     findMediaAssetById: jest.fn(),
-    findOfferVariantByCombinationKey: jest.fn(),
+    findOfferVariantByOptionValueIds: jest.fn(),
     createOfferVariant: jest.fn(),
   };
   let useCase: CreateOfferVariantUseCase;
@@ -51,7 +51,7 @@ describe('CreateOfferVariantUseCase', () => {
 
   it('rejects an existing option value combination', async () => {
     repository.findOwnedOfferOptionValues.mockResolvedValueOnce(validOffer());
-    repository.findOfferVariantByCombinationKey.mockResolvedValueOnce({
+    repository.findOfferVariantByOptionValueIds.mockResolvedValueOnce({
       id: 'variant-1',
     });
 
@@ -62,7 +62,7 @@ describe('CreateOfferVariantUseCase', () => {
 
   it('creates a normalized variant combination', async () => {
     repository.findOwnedOfferOptionValues.mockResolvedValueOnce(validOffer());
-    repository.findOfferVariantByCombinationKey.mockResolvedValueOnce(null);
+    repository.findOfferVariantByOptionValueIds.mockResolvedValueOnce(null);
     repository.findMediaAssetById.mockResolvedValueOnce({ id: 'media-1' });
     repository.createOfferVariant.mockResolvedValueOnce({
       id: 'variant-1',
@@ -81,7 +81,6 @@ describe('CreateOfferVariantUseCase', () => {
             text: 'Do',
             optionGroup: {
               id: 'group-1',
-              name: 'color',
               displayName: 'Mau sac',
             },
           },
@@ -92,7 +91,6 @@ describe('CreateOfferVariantUseCase', () => {
             text: 'M',
             optionGroup: {
               id: 'group-2',
-              name: 'size',
               displayName: 'Kich thuoc',
             },
           },
@@ -112,7 +110,6 @@ describe('CreateOfferVariantUseCase', () => {
       availableQuantity: 5,
       mediaAssetId: 'media-1',
       isActive: true,
-      combinationKey: 'value-1:value-2',
       optionValueIds: ['value-1', 'value-2'],
     });
     expect(result).toEqual(

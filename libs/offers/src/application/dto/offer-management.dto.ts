@@ -56,24 +56,11 @@ export class CreateOfferOptionValueDto {
 }
 
 export class CreateOfferOptionGroupDto {
-  @ApiProperty({ example: 'color' })
-  @IsString()
-  @MinLength(1)
-  @MaxLength(100)
-  name!: string;
-
   @ApiProperty({ example: 'Mau sac' })
   @IsString()
   @MinLength(1)
   @MaxLength(255)
   displayName!: string;
-
-  @ApiPropertyOptional({ example: 0, default: 0 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  sortOrder?: number;
 
   @ApiProperty({ type: () => [CreateOfferOptionValueDto] })
   @IsArray()
@@ -96,7 +83,6 @@ export class OfferOptionMediaAssetResponseDto {
 export class OfferOptionValueResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() text!: string;
-  @ApiProperty() sortOrder!: number;
   @ApiPropertyOptional({
     type: OfferOptionMediaAssetResponseDto,
     nullable: true,
@@ -106,16 +92,13 @@ export class OfferOptionValueResponseDto {
 
 export class OfferOptionGroupResponseDto {
   @ApiProperty() id!: string;
-  @ApiProperty() name!: string;
   @ApiProperty() displayName!: string;
-  @ApiProperty() sortOrder!: number;
   @ApiProperty({ type: [OfferOptionValueResponseDto] })
   values!: OfferOptionValueResponseDto[];
 }
 
 export class OfferVariantOptionGroupResponseDto {
   @ApiProperty() id!: string;
-  @ApiProperty() name!: string;
   @ApiProperty() displayName!: string;
 }
 
@@ -227,9 +210,6 @@ export class OfferResponseDto {
 
   @ApiProperty({ type: [OfferOptionGroupResponseDto] })
   optionGroups!: OfferOptionGroupResponseDto[];
-
-  @ApiProperty({ type: [OfferVariantResponseDto] })
-  variants!: OfferVariantResponseDto[];
 
   @ApiPropertyOptional({
     example: 'Thong tin san pham khong hop le',
@@ -472,9 +452,6 @@ export class PublicOfferDetailResponseDto {
 
   @ApiProperty({ type: [OfferOptionGroupResponseDto] })
   optionGroups!: OfferOptionGroupResponseDto[];
-
-  @ApiProperty({ type: [OfferVariantResponseDto] })
-  variants!: OfferVariantResponseDto[];
 
   @ApiProperty({ example: '2026-04-14T10:00:00.000Z' })
   createdAt!: Date;

@@ -415,6 +415,23 @@ describe('OfferController', () => {
           'https://res.cloudinary.com/demo/image/upload/gallery-1.jpg',
         ],
         shippingMethods: [{ providerCode: 'GHN' }],
+        optionGroups: [
+          {
+            id: 'group-1',
+            displayName: 'Mau sac',
+            values: [
+              {
+                id: 'value-1',
+                text: 'Do',
+                mediaAsset: {
+                  id: 'media-1',
+                  secureUrl: 'https://cdn.test/red.jpg',
+                },
+              },
+            ],
+          },
+        ],
+        variants: [{ id: 'variant-1' }],
         createdAt: new Date('2026-04-14T10:00:00.000Z'),
       }),
     };
@@ -452,13 +469,28 @@ describe('OfferController', () => {
         'https://res.cloudinary.com/demo/image/upload/product.jpg',
         'https://res.cloudinary.com/demo/image/upload/gallery-1.jpg',
       ],
-      optionGroups: [],
-      variants: [],
+      optionGroups: [
+        {
+          id: 'group-1',
+          displayName: 'Mau sac',
+          values: [
+            {
+              id: 'value-1',
+              text: 'Do',
+              mediaAsset: {
+                id: 'media-1',
+                secureUrl: 'https://cdn.test/red.jpg',
+              },
+            },
+          ],
+        },
+      ],
       createdAt: new Date('2026-04-14T10:00:00.000Z'),
     });
     expect(result).not.toHaveProperty('shopId');
     expect(result).not.toHaveProperty('shopName');
     expect(result).not.toHaveProperty('shopType');
     expect(result).not.toHaveProperty('shippingMethods');
+    expect(result).not.toHaveProperty('variants');
   });
 });

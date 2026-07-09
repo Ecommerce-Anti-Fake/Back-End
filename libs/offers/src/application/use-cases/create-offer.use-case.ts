@@ -42,9 +42,7 @@ export class CreateOfferUseCase {
     parcelHeightCm?: number | null;
     productImages?: string[];
     optionGroups?: Array<{
-      name: string;
       displayName: string;
-      sortOrder?: number;
       values: Array<{
         text: string;
         mediaAssetId?: string | null;
@@ -348,9 +346,7 @@ export class CreateOfferUseCase {
 
   private validateOptionGroups(
     groups: Array<{
-      name: string;
       displayName: string;
-      sortOrder?: number;
       values: Array<{
         text: string;
         mediaAssetId?: string | null;
@@ -358,13 +354,10 @@ export class CreateOfferUseCase {
       }>;
     }>,
   ) {
-    const normalizedGroups = groups.map((group, groupIndex) => {
-      const name = group.name.trim();
+    const normalizedGroups = groups.map((group) => {
       const displayName = group.displayName.trim();
-      if (!name || !displayName) {
-        throw new BadRequestException(
-          'Option group name and display name are required',
-        );
+      if (!displayName) {
+        throw new BadRequestException('Option group display name is required');
       }
       if (!group.values?.length) {
         throw new BadRequestException(
@@ -390,18 +383,16 @@ export class CreateOfferUseCase {
       }
 
       return {
-        name,
         displayName,
-        sortOrder: group.sortOrder ?? groupIndex,
         values,
       };
     });
 
     if (
-      new Set(normalizedGroups.map((group) => group.name)).size !==
+      new Set(normalizedGroups.map((group) => group.displayName)).size !==
       normalizedGroups.length
     ) {
-      throw new BadRequestException('Option group names must be unique');
+      throw new BadRequestException('Option group display names must be unique');
     }
     return normalizedGroups;
   }

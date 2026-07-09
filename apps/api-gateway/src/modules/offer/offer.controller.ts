@@ -392,9 +392,6 @@ function toPublicOfferDetail(offer: unknown): PublicOfferDetailResponseDto {
     optionGroups: Array.isArray(record.optionGroups)
       ? (record.optionGroups as PublicOfferDetailResponseDto['optionGroups'])
       : [],
-    variants: Array.isArray(record.variants)
-      ? (record.variants as PublicOfferDetailResponseDto['variants'])
-      : [],
     createdAt:
       record.createdAt instanceof Date
         ? record.createdAt

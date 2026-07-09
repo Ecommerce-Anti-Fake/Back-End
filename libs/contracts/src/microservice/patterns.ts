@@ -814,9 +814,7 @@ export type CreateOfferMessage = {
   parcelHeightCm?: number | null;
   productImages?: string[];
   optionGroups?: Array<{
-    name: string;
     displayName: string;
-    sortOrder?: number;
     values: Array<{
       text: string;
       mediaAssetId?: string | null;

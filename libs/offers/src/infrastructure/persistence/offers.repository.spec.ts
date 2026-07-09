@@ -41,7 +41,7 @@ describe('OffersRepository', () => {
     const query = prisma.offer.findUnique.mock.calls[0][0];
     expect(query.include.optionGroups).toEqual(
       expect.objectContaining({
-        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+        orderBy: { createdAt: 'asc' },
       }),
     );
     expect(query.include.optionGroups.select.values.orderBy).toEqual([
@@ -51,7 +51,7 @@ describe('OffersRepository', () => {
     expect(
       query.include.optionGroups.select.values.select.mediaAsset.select,
     ).toEqual({ id: true, secureUrl: true });
-    expect(query.include.variants.orderBy).toEqual({ createdAt: 'asc' });
+    expect(query.include).not.toHaveProperty('variants');
   });
 
   it('creates variant option links through nested persistence', async () => {
@@ -69,7 +69,6 @@ describe('OffersRepository', () => {
       availableQuantity: 5,
       mediaAssetId: null,
       isActive: true,
-      combinationKey: 'red-id:m-id',
       optionValueIds: ['m-id', 'red-id'],
     });
 
@@ -77,7 +76,6 @@ describe('OffersRepository', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           offerId: 'offer-1',
-          combinationKey: 'red-id:m-id',
           values: {
             create: [{ optionValueId: 'm-id' }, { optionValueId: 'red-id' }],
           },

@@ -32,9 +32,7 @@ describe('toOfferResponse option groups', () => {
       optionGroups: [
         {
           id: 'group-1',
-          name: 'color',
           displayName: 'Mau sac',
-          sortOrder: 0,
           values: [
             {
               id: 'value-1',
@@ -69,7 +67,6 @@ describe('toOfferResponse option groups', () => {
                 text: 'Do',
                 optionGroup: {
                   id: 'group-1',
-                  name: 'color',
                   displayName: 'Mau sac',
                 },
               },
@@ -82,14 +79,11 @@ describe('toOfferResponse option groups', () => {
     expect(response.optionGroups).toEqual([
       {
         id: 'group-1',
-        name: 'color',
         displayName: 'Mau sac',
-        sortOrder: 0,
         values: [
           {
             id: 'value-1',
             text: 'Do',
-            sortOrder: 0,
             mediaAsset: {
               id: 'media-1',
               secureUrl: 'https://cdn.test/red.jpg',
@@ -98,29 +92,6 @@ describe('toOfferResponse option groups', () => {
         ],
       },
     ]);
-    expect(response.variants).toEqual([
-      {
-        id: 'variant-1',
-        offerId: 'offer-1',
-        sku: 'RED-M',
-        priceOverride: 120000,
-        availableQuantity: 5,
-        isActive: true,
-        mediaAsset: { id: 'media-2', secureUrl: 'https://cdn.test/red-m.jpg' },
-        optionValues: [
-          {
-            id: 'value-1',
-            text: 'Do',
-            optionGroup: {
-              id: 'group-1',
-              name: 'color',
-              displayName: 'Mau sac',
-            },
-          },
-        ],
-        createdAt: new Date('2026-07-08T01:00:00.000Z'),
-        updatedAt: new Date('2026-07-08T01:00:00.000Z'),
-      },
-    ]);
+    expect(response).not.toHaveProperty('variants');
   });
 });

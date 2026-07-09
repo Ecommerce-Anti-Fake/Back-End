@@ -25,9 +25,7 @@ type OfferCreateData = {
 };
 
 type OfferOptionGroupCreateData = {
-  name: string;
   displayName: string;
-  sortOrder: number;
   values: Array<{
     text: string;
     mediaAssetId: string | null;
@@ -224,11 +222,27 @@ export class OffersRepository {
     });
   }
 
-  findOfferVariantByCombinationKey(offerId: string, combinationKey: string) {
-    return this.prisma.offerVariant.findUnique({
-      where: { offerId_combinationKey: { offerId, combinationKey } },
-      select: { id: true },
+  async findOfferVariantByOptionValueIds(
+    offerId: string,
+    optionValueIds: string[],
+  ) {
+    const variants = await this.prisma.offerVariant.findMany({
+      where: {
+        offerId,
+        values: {
+          every: { optionValueId: { in: optionValueIds } },
+        },
+      },
+      select: {
+        id: true,
+        values: { select: { optionValueId: true } },
+      },
     });
+    return (
+      variants.find(
+        (variant) => variant.values.length === optionValueIds.length,
+      ) ?? null
+    );
   }
 
   createOfferVariant(input: {
@@ -238,7 +252,6 @@ export class OffersRepository {
     availableQuantity: number;
     mediaAssetId: string | null;
     isActive: boolean;
-    combinationKey: string;
     optionValueIds: string[];
   }) {
     return this.prisma.offerVariant.create({
@@ -249,7 +262,6 @@ export class OffersRepository {
         availableQuantity: input.availableQuantity,
         mediaAssetId: input.mediaAssetId,
         isActive: input.isActive,
-        combinationKey: input.combinationKey,
         values: {
           create: input.optionValueIds.map((optionValueId) => ({
             optionValueId,
@@ -284,9 +296,7 @@ export class OffersRepository {
         await tx.offerOptionGroup.create({
           data: {
             offerId: offer.id,
-            name: group.name,
             displayName: group.displayName,
-            sortOrder: group.sortOrder,
             values: { create: group.values },
           },
         });
@@ -337,12 +347,10 @@ export class OffersRepository {
         },
       },
       optionGroups: {
-        orderBy: [{ sortOrder: 'asc' as const }, { createdAt: 'asc' as const }],
+        orderBy: { createdAt: 'asc' as const },
         select: {
           id: true,
-          name: true,
           displayName: true,
-          sortOrder: true,
           values: {
             orderBy: [
               { sortOrder: 'asc' as const },
@@ -356,10 +364,6 @@ export class OffersRepository {
             },
           },
         },
-      },
-      variants: {
-        orderBy: { createdAt: 'asc' as const },
-        include: this.offerVariantResponseInclude(),
       },
     };
   }
@@ -377,9 +381,7 @@ export class OffersRepository {
               optionGroup: {
                 select: {
                   id: true,
-                  name: true,
                   displayName: true,
-                  sortOrder: true,
                 },
               },
             },
@@ -584,12 +586,10 @@ export class OffersRepository {
           },
         },
         optionGroups: {
-          orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+          orderBy: { createdAt: 'asc' },
           select: {
             id: true,
-            name: true,
             displayName: true,
-            sortOrder: true,
             values: {
               orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
               select: {
@@ -600,10 +600,6 @@ export class OffersRepository {
               },
             },
           },
-        },
-        variants: {
-          orderBy: { createdAt: 'asc' },
-          include: this.offerVariantResponseInclude(),
         },
       },
     });

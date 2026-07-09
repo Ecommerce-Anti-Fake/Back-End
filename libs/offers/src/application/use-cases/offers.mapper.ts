@@ -27,9 +27,7 @@ type OfferWithRelations = Offer & {
   parcelHeightCm?: number | null;
   optionGroups?: Array<{
     id: string;
-    name: string;
     displayName: string;
-    sortOrder: number;
     values: Array<{
       id: string;
       text: string;
@@ -37,7 +35,6 @@ type OfferWithRelations = Offer & {
       mediaAsset: { id: string; secureUrl: string } | null;
     }>;
   }>;
-  variants?: OfferVariantWithRelations[];
 };
 
 type OfferVariantWithRelations = {
@@ -57,9 +54,7 @@ type OfferVariantWithRelations = {
       sortOrder?: number;
       optionGroup: {
         id: string;
-        name: string;
         displayName: string;
-        sortOrder?: number;
       };
     };
   }>;
@@ -129,19 +124,15 @@ export function toOfferResponse(offer: OfferWithRelations) {
     imageUrls,
     optionGroups: (offer.optionGroups ?? []).map((group) => ({
       id: group.id,
-      name: group.name,
       displayName: group.displayName,
-      sortOrder: group.sortOrder,
       values: group.values.map((value) => ({
         id: value.id,
         text: value.text,
-        sortOrder: value.sortOrder,
         mediaAsset: value.mediaAsset
           ? { id: value.mediaAsset.id, secureUrl: value.mediaAsset.secureUrl }
           : null,
       })),
     })),
-    variants: (offer.variants ?? []).map(toOfferVariantResponse),
     createdAt: offer.createdAt,
   };
 }
@@ -161,8 +152,9 @@ export function toOfferVariantResponse(variant: OfferVariantWithRelations) {
     optionValues: [...variant.values]
       .sort((left, right) => {
         const groupOrder =
-          (left.optionValue.optionGroup.sortOrder ?? 0) -
-          (right.optionValue.optionGroup.sortOrder ?? 0);
+          left.optionValue.optionGroup.displayName.localeCompare(
+            right.optionValue.optionGroup.displayName,
+          );
         return (
           groupOrder ||
           (left.optionValue.sortOrder ?? 0) - (right.optionValue.sortOrder ?? 0)
@@ -173,7 +165,6 @@ export function toOfferVariantResponse(variant: OfferVariantWithRelations) {
         text: optionValue.text,
         optionGroup: {
           id: optionValue.optionGroup.id,
-          name: optionValue.optionGroup.name,
           displayName: optionValue.optionGroup.displayName,
         },
       })),

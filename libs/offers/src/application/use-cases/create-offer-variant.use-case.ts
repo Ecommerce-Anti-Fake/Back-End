@@ -71,11 +71,10 @@ export class CreateOfferVariantUseCase {
       );
     }
 
-    const combinationKey = optionValueIds.join(':');
     if (
-      await this.offersRepository.findOfferVariantByCombinationKey(
+      await this.offersRepository.findOfferVariantByOptionValueIds(
         input.offerId,
-        combinationKey,
+        optionValueIds,
       )
     ) {
       throw new ConflictException('Variant option combination already exists');
@@ -96,7 +95,6 @@ export class CreateOfferVariantUseCase {
       availableQuantity: input.availableQuantity,
       mediaAssetId,
       isActive: input.isActive ?? true,
-      combinationKey,
       optionValueIds,
     });
     return toOfferVariantResponse(variant);
