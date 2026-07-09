@@ -77,7 +77,7 @@ describe('CreateOfferUseCase', () => {
       currency: 'VND',
       itemCondition: 'new',
       availableQuantity: 10,
-      offerStatus: 'inactive',
+      offerStatus: 'active',
       moderationStatus: 'pending',
       sellerUserId: 'user-1',
       shopId: 'shop-1',
@@ -321,7 +321,6 @@ describe('CreateOfferUseCase', () => {
         modelName: 'Resale draft',
         gtin: null,
         verificationPolicy: 'manual_review',
-        offerStatus: 'inactive',
         offerStatus: 'draft',
       }),
     );
@@ -564,7 +563,7 @@ describe('CreateOfferUseCase', () => {
       currency: 'VND',
       itemCondition: 'new',
       availableQuantity: 1,
-      offerStatus: 'inactive',
+      offerStatus: 'active',
       moderationStatus: 'pending',
       moderationReason: null,
       shopId: 'shop-1',
@@ -607,6 +606,7 @@ describe('CreateOfferUseCase', () => {
       offer: expect.objectContaining({
         sellerUserId: 'user-1',
         shopId: 'shop-1',
+        offerStatus: 'active',
       }),
       productImages: [
         {

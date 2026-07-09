@@ -121,7 +121,7 @@ export class CreateOfferUseCase {
 
     const currency = input.currency?.trim().toUpperCase() || 'VND';
     const itemCondition = input.itemCondition?.trim() || 'new';
-    const offerStatus = input.offerStatus === 'draft' ? 'draft' : 'inactive';
+    const offerStatus = input.offerStatus === 'draft' ? 'draft' : 'active';
 
     if (input.price <= 0) {
       throw new BadRequestException('Price must be greater than 0');
