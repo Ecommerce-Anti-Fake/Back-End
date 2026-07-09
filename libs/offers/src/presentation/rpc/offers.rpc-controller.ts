@@ -5,22 +5,28 @@ import type {
   AllocateOfferBatchesMessage,
   CreateOfferMessage,
   CreateOfferVariantMessage,
+  DeleteOfferVariantMessage,
+  FindOfferVariantsMessage,
   ListOffersMessage,
   AdminOffersLookupMessage,
   OfferBatchLinksLookupMessage,
   OfferLookupMessage,
   UpdateOfferMessage,
   ModerateOfferMessage,
+  UpdateOfferVariantMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
 import {
   AllocateOfferBatchesUseCase,
   CreateOfferUseCase,
   CreateOfferVariantUseCase,
+  DeleteOfferVariantUseCase,
   GetOfferByIdUseCase,
   ListOfferBatchLinksUseCase,
   ListOffersUseCase,
   ListAdminOffersUseCase,
+  ListOfferVariantsUseCase,
+  UpdateOfferVariantUseCase,
   UpdateOfferUseCase,
   ModerateOfferUseCase,
 } from '../../application/use-cases';
@@ -30,6 +36,9 @@ export class OffersRpcController {
   constructor(
     private readonly createOfferUseCase: CreateOfferUseCase,
     private readonly createOfferVariantUseCase: CreateOfferVariantUseCase,
+    private readonly listOfferVariantsUseCase: ListOfferVariantsUseCase,
+    private readonly updateOfferVariantUseCase: UpdateOfferVariantUseCase,
+    private readonly deleteOfferVariantUseCase: DeleteOfferVariantUseCase,
     private readonly updateOfferUseCase: UpdateOfferUseCase,
     private readonly moderateOfferUseCase: ModerateOfferUseCase,
     private readonly allocateOfferBatchesUseCase: AllocateOfferBatchesUseCase,
@@ -43,6 +52,33 @@ export class OffersRpcController {
   async createOffer(@Payload() payload: CreateOfferMessage) {
     try {
       return await this.createOfferUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findOfferVariants)
+  async findOfferVariants(@Payload() payload: FindOfferVariantsMessage) {
+    try {
+      return await this.listOfferVariantsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.updateOfferVariant)
+  async updateOfferVariant(@Payload() payload: UpdateOfferVariantMessage) {
+    try {
+      return await this.updateOfferVariantUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.deleteOfferVariant)
+  async deleteOfferVariant(@Payload() payload: DeleteOfferVariantMessage) {
+    try {
+      return await this.deleteOfferVariantUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

@@ -10,6 +10,7 @@ import { toOfferResponse } from './offers.mapper';
 const MAX_PRODUCT_IMAGES = 10;
 const MAX_PRODUCT_IMAGE_BYTES = 5 * 1024 * 1024;
 const PRODUCT_MEDIA_FOLDER = 'offers/media';
+const OPTION_VALUE_MEDIA_FOLDER = 'offers/options';
 const PRODUCT_IMAGE_DATA_URL =
   /^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=]+)$/;
 
@@ -31,10 +32,10 @@ export class CreateOfferUseCase {
     distributionNodeId?: string | null;
     title: string;
     description: string;
-    price: number;
+    price?: number;
     currency?: string;
     itemCondition?: string;
-    availableQuantity: number;
+    availableQuantity?: number;
     offerStatus?: 'active' | 'inactive' | 'draft';
     parcelWeightGrams?: number | null;
     parcelLengthCm?: number | null;
@@ -46,6 +47,7 @@ export class CreateOfferUseCase {
       values: Array<{
         text: string;
         mediaAssetId?: string | null;
+        image?: string | null;
         sortOrder?: number;
       }>;
     }>;
@@ -122,15 +124,22 @@ export class CreateOfferUseCase {
     const itemCondition = input.itemCondition?.trim() || 'new';
     const offerStatus = input.offerStatus === 'draft' ? 'draft' : 'active';
 
-    if (input.price <= 0) {
+    const price = input.price ?? 0;
+    const availableQuantity = input.availableQuantity ?? 0;
+    if (optionGroups.length === 0 && price <= 0) {
       throw new BadRequestException('Price must be greater than 0');
     }
-
     if (
-      !Number.isInteger(input.availableQuantity) ||
-      input.availableQuantity < 1
+      !Number.isInteger(availableQuantity) ||
+      (optionGroups.length === 0
+        ? availableQuantity < 1
+        : availableQuantity < 0)
     ) {
-      throw new BadRequestException('Available quantity must be at least 1');
+      throw new BadRequestException(
+        optionGroups.length === 0
+          ? 'Available quantity must be at least 1'
+          : 'Available quantity must be at least 0',
+      );
     }
 
     if (!['active', 'inactive', 'draft'].includes(offerStatus)) {
@@ -171,10 +180,10 @@ export class CreateOfferUseCase {
       distributionNodeId,
       title,
       description,
-      price: input.price,
+      price,
       currency,
       itemCondition,
-      availableQuantity: input.availableQuantity,
+      availableQuantity,
       offerStatus,
       ...this.resolveParcelSnapshot(input),
     };
@@ -182,12 +191,16 @@ export class CreateOfferUseCase {
       productImages,
       input.sellerUserId,
     );
+    const persistedOptionGroups = await this.persistOptionValueImages(
+      optionGroups,
+      input.sellerUserId,
+    );
 
-    if (optionGroups.length > 0) {
+    if (persistedOptionGroups.length > 0) {
       const offer = await this.productRepository.createOfferWithSalesOptions({
         offer: offerData,
         productImages: persistedProductImages,
-        optionGroups,
+        optionGroups: persistedOptionGroups,
       });
       return toOfferResponse(offer);
     }
@@ -205,6 +218,73 @@ export class CreateOfferUseCase {
     }
 
     return toOfferResponse(offer);
+  }
+
+  private async persistOptionValueImages(
+    groups: Array<{
+      displayName: string;
+      values: Array<{
+        text: string;
+        mediaAssetId: string | null;
+        image: string | null;
+        sortOrder: number;
+      }>;
+    }>,
+    ownerUserId: string,
+  ) {
+    return Promise.all(
+      groups.map(async (group) => ({
+        displayName: group.displayName,
+        values: await Promise.all(
+          group.values.map(async (value, index) => {
+            if (!value.image) {
+              return {
+                text: value.text,
+                mediaAssetId: value.mediaAssetId,
+                sortOrder: value.sortOrder,
+              };
+            }
+            const dataUrl = PRODUCT_IMAGE_DATA_URL.exec(value.image);
+            if (!dataUrl) {
+              throw new BadRequestException(
+                'Option value image Data URL is invalid',
+              );
+            }
+            const buffer = Buffer.from(dataUrl[2], 'base64');
+            if (!buffer.length) {
+              throw new BadRequestException('Option value image is empty');
+            }
+            if (buffer.length > MAX_PRODUCT_IMAGE_BYTES) {
+              throw new BadRequestException(
+                'Option value image must not exceed 5 MB',
+              );
+            }
+            const uploaded = await this.mediaService.uploadCloudinaryBuffer({
+              buffer,
+              folder: OPTION_VALUE_MEDIA_FOLDER,
+              requesterUserId: ownerUserId,
+              assetType: 'IMAGE',
+              mimeType: dataUrl[1],
+              sequence: index + 1,
+            });
+            const asset = await this.mediaService.createCloudinaryAsset({
+              ownerUserId,
+              assetType: 'IMAGE',
+              resourceType: 'PRODUCT_IMAGE',
+              publicId: uploaded.publicId,
+              secureUrl: uploaded.secureUrl,
+              mimeType: dataUrl[1],
+              folder: OPTION_VALUE_MEDIA_FOLDER,
+            });
+            return {
+              text: value.text,
+              mediaAssetId: asset.id,
+              sortOrder: value.sortOrder,
+            };
+          }),
+        ),
+      })),
+    );
   }
 
   private async persistProductImages(imageUrls: string[], ownerUserId: string) {
@@ -350,6 +430,7 @@ export class CreateOfferUseCase {
       values: Array<{
         text: string;
         mediaAssetId?: string | null;
+        image?: string | null;
         sortOrder?: number;
       }>;
     }>,
@@ -370,9 +451,33 @@ export class CreateOfferUseCase {
         if (!text) {
           throw new BadRequestException('Option value text is required');
         }
+        if (value.mediaAssetId && value.image) {
+          throw new BadRequestException(
+            'Option value cannot include both mediaAssetId and image',
+          );
+        }
+        const image = value.image?.trim() || null;
+        if (image) {
+          const dataUrl = PRODUCT_IMAGE_DATA_URL.exec(image);
+          if (!dataUrl) {
+            throw new BadRequestException(
+              'Option value image Data URL is invalid',
+            );
+          }
+          const imageBytes = Buffer.from(dataUrl[2], 'base64');
+          if (
+            !imageBytes.length ||
+            imageBytes.length > MAX_PRODUCT_IMAGE_BYTES
+          ) {
+            throw new BadRequestException(
+              'Option value image must be non-empty and not exceed 5 MB',
+            );
+          }
+        }
         return {
           text,
           mediaAssetId: value.mediaAssetId?.trim() || null,
+          image,
           sortOrder: value.sortOrder ?? valueIndex,
         };
       });
@@ -392,7 +497,9 @@ export class CreateOfferUseCase {
       new Set(normalizedGroups.map((group) => group.displayName)).size !==
       normalizedGroups.length
     ) {
-      throw new BadRequestException('Option group display names must be unique');
+      throw new BadRequestException(
+        'Option group display names must be unique',
+      );
     }
     return normalizedGroups;
   }

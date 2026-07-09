@@ -761,4 +761,95 @@ describe('CreateOfferUseCase', () => {
     expect(productRepositoryMock.createOffer).not.toHaveBeenCalled();
     expect(productRepositoryMock.createOfferMedia).not.toHaveBeenCalled();
   });
+
+  it('uploads an option value image and accepts zero offer price and stock', async () => {
+    mockActiveApprovedShop();
+    mediaServiceMock.uploadCloudinaryBuffer.mockResolvedValueOnce({
+      publicId: 'option-black',
+      secureUrl: 'https://cdn.example.com/black.png',
+    });
+    mediaServiceMock.createCloudinaryAsset.mockResolvedValueOnce({
+      id: 'option-media-1',
+    });
+    productRepositoryMock.createOfferWithSalesOptions.mockResolvedValueOnce({
+      ...mockOfferCreateResult('brand-1'),
+      price: 0,
+      availableQuantity: 0,
+      optionGroups: [],
+    });
+
+    await useCase.execute({
+      sellerUserId: 'user-1',
+      shopId: 'shop-1',
+      categoryId: 'category-1',
+      brandId: 'brand-1',
+      title: 'Offer',
+      description: 'Desc',
+      price: 0,
+      availableQuantity: 0,
+      productImages: productImages(),
+      optionGroups: [
+        {
+          displayName: 'Mau sac',
+          values: [
+            { text: 'Den', image: 'data:image/png;base64,YmxhY2s=' },
+          ],
+        },
+      ],
+    });
+
+    expect(mediaServiceMock.uploadCloudinaryBuffer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        folder: 'offers/options',
+        requesterUserId: 'user-1',
+        mimeType: 'image/png',
+      }),
+    );
+    expect(
+      productRepositoryMock.createOfferWithSalesOptions,
+    ).toHaveBeenCalledWith(
+      expect.objectContaining({
+        offer: expect.objectContaining({ price: 0, availableQuantity: 0 }),
+        optionGroups: [
+          {
+            displayName: 'Mau sac',
+            values: [
+              {
+                text: 'Den',
+                mediaAssetId: 'option-media-1',
+                sortOrder: 0,
+              },
+            ],
+          },
+        ],
+      }),
+    );
+  });
+
+  it('rejects an option value with both image sources', async () => {
+    await expect(
+      useCase.execute({
+        sellerUserId: 'user-1',
+        categoryId: 'category-1',
+        brandId: 'brand-1',
+        title: 'Offer',
+        description: 'Desc',
+        productImages: productImages(),
+        optionGroups: [
+          {
+            displayName: 'Mau sac',
+            values: [
+              {
+                text: 'Den',
+                mediaAssetId: 'media-1',
+                image: 'data:image/png;base64,YmxhY2s=',
+              },
+            ],
+          },
+        ],
+      }),
+    ).rejects.toThrow(
+      'Option value cannot include both mediaAssetId and image',
+    );
+  });
 });

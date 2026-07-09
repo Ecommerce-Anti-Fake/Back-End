@@ -28,6 +28,28 @@ export class ModerateOfferUseCase {
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
+    if (input.moderationStatus === 'approved') {
+      const groups = await this.offersRepository.findOfferOptionGroups(
+        input.offerId,
+      );
+      if (groups.length > 0) {
+        const combinations = groups.reduce<string[][]>(
+          (result, group) =>
+            result.flatMap((combination) =>
+              group.values.map((value) => [...combination, value.id]),
+            ),
+          [[]],
+        );
+        await this.offersRepository.createMissingOfferVariants(
+          input.offerId,
+          combinations,
+        );
+        const refreshed = await this.offersRepository.findOfferById(
+          input.offerId,
+        );
+        return toOfferResponse(refreshed!);
+      }
+    }
     return toOfferResponse(offer);
   }
 }

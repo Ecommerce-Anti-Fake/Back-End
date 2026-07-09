@@ -12,6 +12,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -46,6 +47,17 @@ export class CreateOfferOptionValueDto {
   @IsOptional()
   @IsString()
   mediaAssetId?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'data:image/png;base64,iVBORw0KGgo...',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/, {
+    message: 'image must be a jpeg, png, webp, or gif base64 Data URL',
+  })
+  image?: string | null;
 
   @ApiPropertyOptional({ example: 0, default: 0 })
   @IsOptional()
@@ -177,6 +189,48 @@ export class CreateOfferVariantDto {
   @ArrayUnique()
   @IsString({ each: true })
   optionValueIds!: string[];
+}
+
+export class ListOfferVariantsQueryDto {
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @Transform(({ value }) =>
+    value === 'true' ? true : value === 'false' ? false : value,
+  )
+  @IsBoolean()
+  isActive?: boolean;
+}
+
+export class UpdateOfferVariantDto {
+  @ApiPropertyOptional({ example: 'AO-DEN-M', nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  sku?: string | null;
+
+  @ApiPropertyOptional({ example: 120000, nullable: true })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  priceOverride?: number | null;
+
+  @ApiPropertyOptional({ example: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  availableQuantity?: number;
+
+  @ApiPropertyOptional({ example: 'media-id', nullable: true })
+  @IsOptional()
+  @IsString()
+  mediaAssetId?: string | null;
+
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 }
 
 export class OfferResponseDto {
@@ -682,11 +736,12 @@ export class CreateOfferDto {
   @IsString({ each: true })
   productImages!: string[];
 
-  @ApiProperty({ example: 150000 })
+  @ApiPropertyOptional({ example: 150000, default: 0 })
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
-  @IsPositive()
-  price!: number;
+  @Min(0)
+  price?: number;
 
   @ApiProperty({ enum: ['VND'], example: 'VND' })
   @IsString()
@@ -699,11 +754,12 @@ export class CreateOfferDto {
   @IsIn(['new', 'used'])
   itemCondition!: 'new' | 'used';
 
-  @ApiProperty({ example: 500 })
+  @ApiPropertyOptional({ example: 500, default: 0 })
+  @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(1)
-  availableQuantity!: number;
+  @Min(0)
+  availableQuantity?: number;
 
   @ApiProperty({ example: '8930000000141' })
   @IsString()

@@ -55,6 +55,24 @@ describe('OfferController', () => {
         OfferController.prototype.createOfferVariant,
       ),
     ).toBe('offers/:offerId/variants');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        OfferController.prototype.findOfferVariants,
+      ),
+    ).toBe('offers/:offerId/variants');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        OfferController.prototype.updateOfferVariant,
+      ),
+    ).toBe('offers/:offerId/variants/:variantId');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        OfferController.prototype.deleteOfferVariant,
+      ),
+    ).toBe('offers/:offerId/variants/:variantId');
   });
 
   it('creates a variant for the authenticated seller offer', async () => {

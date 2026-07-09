@@ -84,6 +84,9 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   createCategory: 'products.create-category',
   createOffer: 'products.create-offer',
   createOfferVariant: 'products.create-offer-variant',
+  findOfferVariants: 'products.find-offer-variants',
+  updateOfferVariant: 'products.update-offer-variant',
+  deleteOfferVariant: 'products.delete-offer-variant',
   updateOffer: 'products.update-offer',
   moderateOffer: 'products.moderate-offer',
   findShippingCarriers: 'products.find-shipping-carriers',
@@ -803,10 +806,10 @@ export type CreateOfferMessage = {
   distributionNodeId?: string | null;
   title: string;
   description: string;
-  price: number;
+  price?: number;
   currency?: string;
   itemCondition?: string;
-  availableQuantity: number;
+  availableQuantity?: number;
   offerStatus?: 'active' | 'inactive' | 'draft';
   parcelWeightGrams?: number | null;
   parcelLengthCm?: number | null;
@@ -818,6 +821,7 @@ export type CreateOfferMessage = {
     values: Array<{
       text: string;
       mediaAssetId?: string | null;
+      image?: string | null;
       sortOrder?: number;
     }>;
   }>;
@@ -832,6 +836,29 @@ export type CreateOfferVariantMessage = {
   mediaAssetId?: string | null;
   isActive?: boolean;
   optionValueIds: string[];
+};
+
+export type FindOfferVariantsMessage = {
+  offerId: string;
+  sellerUserId: string;
+  isActive?: boolean;
+};
+
+export type UpdateOfferVariantMessage = {
+  offerId: string;
+  variantId: string;
+  sellerUserId: string;
+  sku?: string | null;
+  priceOverride?: number | null;
+  availableQuantity?: number;
+  mediaAssetId?: string | null;
+  isActive?: boolean;
+};
+
+export type DeleteOfferVariantMessage = {
+  offerId: string;
+  variantId: string;
+  sellerUserId: string;
 };
 
 export type UpdateOfferMessage = {
