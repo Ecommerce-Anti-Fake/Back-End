@@ -13,6 +13,7 @@ export class GetShopBestSellingProductsUseCase {
     const items = await this.prisma.orderItem.findMany({
       where: {
         orderShopGroup: { is: { shopId, fulfillmentStatus: 'DELIVERED' } },
+        offer: { shopId },
         order: { orderStatus: 'completed' },
       },
       include: {
@@ -41,6 +42,9 @@ export class GetShopBestSellingProductsUseCase {
 
     for (const item of items) {
       const offer = item.offer;
+      if (offer.shopId !== shopId) {
+        continue;
+      }
       const thumbnailMedia =
         offer.media.find(
           (media) =>
