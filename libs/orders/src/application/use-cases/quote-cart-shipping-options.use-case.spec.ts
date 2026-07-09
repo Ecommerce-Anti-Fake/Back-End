@@ -236,8 +236,110 @@ describe('QuoteCartShippingOptionsUseCase', () => {
 
     expect(result.options).toEqual([
       expect.objectContaining({ methodName: 'Nhanh', shippingFee: 31000, estimatedDelivery: '2-3 ngày' }),
-      expect.objectContaining({ methodName: 'Chuan', shippingFee: 24000, estimatedDelivery: '3-4 ngày' }),
-      expect.objectContaining({ methodName: 'Tiet kiem', shippingFee: 19000, estimatedDelivery: '3-4 ngày' }),
+      expect.objectContaining({ methodName: 'Chuẩn', shippingFee: 24000, estimatedDelivery: '3-4 ngày' }),
+      expect.objectContaining({ methodName: 'Tiết kiệm', shippingFee: 19000, estimatedDelivery: '3-4 ngày' }),
+    ]);
+  });
+
+  it('does not return GHN Hang nang for a 1000g shoe shipment', async () => {
+    ordersRepositoryMock.getOrCreateActiveCart.mockResolvedValueOnce({
+      id: 'cart-1',
+      buyerUserId: 'buyer-1',
+      cartStatus: 'ACTIVE',
+      items: [
+        createCartItem({
+          id: 'item-1',
+          title: 'Giay the thao nam basic',
+          price: 2990000,
+          parcelWeightGrams: 1000,
+          parcelLengthCm: 35,
+          parcelWidthCm: 25,
+          parcelHeightCm: 15,
+        }),
+      ],
+    });
+    mockDefaultAddress(ordersRepositoryMock);
+    shippingCarrierAdapterMock.listGhnServices.mockResolvedValueOnce([
+      { serviceId: 53320, serviceTypeId: 2, shortName: 'Hang nhe' },
+      { serviceId: 53321, serviceTypeId: 5, shortName: 'Hang nang' },
+    ]);
+    shippingCarrierAdapterMock.quoteShipment.mockResolvedValueOnce({
+      shippingFeeAmount: 31000,
+      serviceId: 53320,
+      serviceTypeId: 2,
+    });
+
+    const result = await useCase.execute({ buyerUserId: 'buyer-1', cartItemIds: ['item-1'] });
+
+    expect(shippingCarrierAdapterMock.quoteShipment).toHaveBeenCalledTimes(1);
+    expect(shippingCarrierAdapterMock.quoteShipment).toHaveBeenCalledWith(
+      expect.objectContaining({ shippingServiceId: 53320 }),
+    );
+    expect(result.options).toEqual([
+      expect.objectContaining({ methodName: 'Chuẩn', shippingFee: 31000 }),
+    ]);
+    expect(result.options).not.toEqual([expect.objectContaining({ methodName: expect.stringContaining('nang') })]);
+  });
+
+  it('does not return unintegrated active carriers with zero shipping fee', async () => {
+    ordersRepositoryMock.findActiveShippingCarriers.mockResolvedValueOnce([
+      { code: 'GHN', name: 'Giao Hang Nhanh', description: null },
+      { code: 'GHTK', name: 'Giao Hang Tiet Kiem', description: null },
+      { code: 'VIETTEL_POST', name: 'Viettel Post', description: null },
+      { code: 'JNT', name: 'J&T Express', description: null },
+    ]);
+    ordersRepositoryMock.getOrCreateActiveCart.mockResolvedValueOnce({
+      id: 'cart-1',
+      buyerUserId: 'buyer-1',
+      cartStatus: 'ACTIVE',
+      items: [createCartItem({ id: 'item-1' })],
+    });
+    mockDefaultAddress(ordersRepositoryMock);
+    shippingCarrierAdapterMock.listGhnServices.mockResolvedValueOnce([
+      { serviceId: 53320, serviceTypeId: 2, shortName: 'Nhanh' },
+    ]);
+    shippingCarrierAdapterMock.quoteShipment.mockResolvedValueOnce({
+      shippingFeeAmount: 30000,
+      serviceId: 53320,
+      serviceTypeId: 2,
+    });
+
+    const result = await useCase.execute({ buyerUserId: 'buyer-1', cartItemIds: ['item-1'] });
+
+    expect(result.options).toEqual([
+      expect.objectContaining({ providerCode: 'GHN', shippingFee: 30000 }),
+    ]);
+    expect(result.options.map((option) => option.providerCode)).not.toEqual(
+      expect.arrayContaining(['GHTK', 'VIETTEL_POST', 'JNT']),
+    );
+  });
+
+  it('returns active self delivery as zero fee when configured', async () => {
+    ordersRepositoryMock.findActiveShippingCarriers.mockResolvedValueOnce([
+      { code: 'SELF_DELIVERY', name: 'Tu van chuyen', description: null },
+      { code: 'GHN', name: 'Giao Hang Nhanh', description: null },
+    ]);
+    ordersRepositoryMock.getOrCreateActiveCart.mockResolvedValueOnce({
+      id: 'cart-1',
+      buyerUserId: 'buyer-1',
+      cartStatus: 'ACTIVE',
+      items: [createCartItem({ id: 'item-1' })],
+    });
+    mockDefaultAddress(ordersRepositoryMock);
+    shippingCarrierAdapterMock.listGhnServices.mockResolvedValueOnce([
+      { serviceId: 53320, serviceTypeId: 2, shortName: 'Hang nhe' },
+    ]);
+    shippingCarrierAdapterMock.quoteShipment.mockResolvedValueOnce({
+      shippingFeeAmount: 30000,
+      serviceId: 53320,
+      serviceTypeId: 2,
+    });
+
+    const result = await useCase.execute({ buyerUserId: 'buyer-1', cartItemIds: ['item-1'] });
+
+    expect(result.options).toEqual([
+      expect.objectContaining({ providerCode: 'SELF_DELIVERY', shippingFee: 0 }),
+      expect.objectContaining({ providerCode: 'GHN', methodName: 'Chuẩn', shippingFee: 30000 }),
     ]);
   });
 

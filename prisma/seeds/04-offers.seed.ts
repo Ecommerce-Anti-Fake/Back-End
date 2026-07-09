@@ -25,10 +25,12 @@ export async function seedOffers(prisma: PrismaClient, ctx: SeedContext) {
     const category = pick(ctx.categories, i);
     const shop = i % 4 === 0 ? pick(ctx.distributorShops, i) : pick(ctx.manufacturerShops.length ? ctx.manufacturerShops : ctx.shops, i);
     const seller = ctx.users.find((user) => user.id === shop.ownerUserId) ?? pick(ctx.users, i);
-    const template = productTemplates[i % productTemplates.length];
+    const templateIndex = i % productTemplates.length;
+    const template = productTemplates[templateIndex];
     const isWholesale = i % 4 === 1;
+    const isRetailShoe = templateIndex === 9 && !isWholesale;
     const title = isWholesale ? template[1] : template[0];
-    const price = isWholesale ? 900000 + i * 35000 : 25000 + i * 7000;
+    const price = isRetailShoe ? 2990000 : isWholesale ? 900000 + i * 35000 : 25000 + i * 7000;
 
     const offer = await prisma.offer.create({
       data: {
@@ -47,10 +49,10 @@ export async function seedOffers(prisma: PrismaClient, ctx: SeedContext) {
         itemCondition: 'new',
         availableQuantity: 50 + (i * 7) % 450,
         offerStatus: i % 17 === 0 ? 'draft' : 'active',
-        parcelWeightGrams: 300 + (i % 10) * 150,
-        parcelLengthCm: 10 + (i % 6) * 3,
-        parcelWidthCm: 8 + (i % 5) * 2,
-        parcelHeightCm: 6 + (i % 4) * 2,
+        parcelWeightGrams: isRetailShoe ? 1000 : 300 + (i % 10) * 150,
+        parcelLengthCm: isRetailShoe ? 35 : 10 + (i % 6) * 3,
+        parcelWidthCm: isRetailShoe ? 25 : 8 + (i % 5) * 2,
+        parcelHeightCm: isRetailShoe ? 15 : 6 + (i % 4) * 2,
         createdAt: recentDate(60 - (i % 50)),
       },
     });

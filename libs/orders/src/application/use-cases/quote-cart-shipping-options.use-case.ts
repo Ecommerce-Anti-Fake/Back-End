@@ -90,14 +90,16 @@ export class QuoteCartShippingOptionsUseCase {
         continue;
       }
 
-      options.push({
-        optionCode: carrier.code,
-        providerCode: carrier.code,
-        providerName: carrier.name,
-        methodName: carrier.name,
-        shippingFee: 0,
-        estimatedDelivery: null,
-      });
+      if (carrier.code === 'SELF_DELIVERY') {
+        options.push({
+          optionCode: carrier.code,
+          providerCode: carrier.code,
+          providerName: carrier.name,
+          methodName: carrier.name,
+          shippingFee: 0,
+          estimatedDelivery: null,
+        });
+      }
     }
 
     return options;
@@ -124,8 +126,9 @@ export class QuoteCartShippingOptionsUseCase {
       destination.shippingDistrictId,
       origin.fromDistrictId,
     );
+    const quoteableServices = services.filter((service) => this.shouldQuoteGhnService(service.shortName, parcel));
     const quoted = await Promise.all(
-      services.map(async (service, index) => {
+      quoteableServices.map(async (service, index) => {
         const quote = await this.shippingCarrierAdapterService.quoteShipment({
           providerCode: 'GHN',
           fromDistrictId: origin.fromDistrictId,
@@ -142,12 +145,15 @@ export class QuoteCartShippingOptionsUseCase {
           declaredValue,
           fallbackFee: 0,
         });
+        this.logger.debug(
+          `GHN quote offerTitle="${this.resolveGroupOfferTitle(group)}", parcelWeightGrams=${parcel.parcelWeightGrams}, parcelLengthCm=${parcel.parcelLengthCm}, parcelWidthCm=${parcel.parcelWidthCm}, parcelHeightCm=${parcel.parcelHeightCm}, fromDistrictId=${origin.fromDistrictId}, toDistrictId=${destination.shippingDistrictId}, serviceShortName="${service.shortName || 'GHN'}", fee=${quote.shippingFeeAmount}`,
+        );
 
         return {
           optionCode: `GHN_${index + 1}`,
           providerCode: 'GHN',
           providerName: 'Giao Hang Nhanh',
-          methodName: service.shortName || 'GHN',
+          methodName: this.resolveGhnMethodName(service.shortName),
           shippingFee: quote.shippingFeeAmount,
           estimatedDelivery: this.estimateGhnDelivery(service.shortName),
         };
@@ -270,21 +276,64 @@ export class QuoteCartShippingOptionsUseCase {
     return Math.max(...matches.map((match) => Number(match)));
   }
 
+  private shouldQuoteGhnService(shortName: string, parcel: ResolvedShopParcel) {
+    if (parcel.parcelWeightGrams >= 20000) {
+      return true;
+    }
+
+    return !this.isGhnHeavyService(shortName);
+  }
+
+  private isGhnHeavyService(shortName: string) {
+    return this.normalizeText(shortName).includes('hang nang');
+  }
+
+  private resolveGhnMethodName(shortName: string) {
+    const normalized = this.normalizeText(shortName);
+
+    if (normalized.includes('nhanh')) {
+      return 'Nhanh';
+    }
+
+    if (normalized.includes('tiet kiem')) {
+      return 'Tiết kiệm';
+    }
+
+    if (normalized.includes('chuan') || normalized.includes('hang nhe') || normalized.includes('hang nang')) {
+      return 'Chuẩn';
+    }
+
+    return shortName || 'GHN';
+  }
+
+  private resolveGroupOfferTitle(group: ShopCartItemGroup) {
+    return group.items.length === 1 ? group.items[0].offer.title : `${group.shopName} cart shipment`;
+  }
+
   private estimateGhnDelivery(shortName: string) {
-    const normalized = shortName
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
+    const normalized = this.normalizeText(shortName);
 
     if (normalized.includes('nhanh')) {
       return '2-3 ngày';
     }
 
-    if (normalized.includes('chuan') || normalized.includes('tiet kiem')) {
+    if (
+      normalized.includes('chuan') ||
+      normalized.includes('tiet kiem') ||
+      normalized.includes('hang nhe') ||
+      normalized.includes('hang nang')
+    ) {
       return '3-4 ngày';
     }
 
     return null;
+  }
+
+  private normalizeText(value: string) {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
   }
 }
 
@@ -306,6 +355,13 @@ type ShippingQuoteDestination = {
 type ShippingQuoteOrigin = {
   fromDistrictId: number;
   fromWardCode: string;
+};
+
+type ResolvedShopParcel = {
+  parcelWeightGrams: number;
+  parcelLengthCm: number;
+  parcelWidthCm: number;
+  parcelHeightCm: number;
 };
 
 function parseInternalAddressWardCode(wardCode?: string | null) {
