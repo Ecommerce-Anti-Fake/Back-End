@@ -38,7 +38,7 @@ export class NotificationController {
   listNotifications(@CurrentUserId() userId: string, @Query() query: ListNotificationsQueryDto) {
     return this.usersRpcService.listNotifications({
       userId,
-      unreadOnly: query.unreadOnly,
+      filter: query.filter,
       page: query.page,
       pageSize: query.pageSize,
     });

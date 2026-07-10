@@ -277,7 +277,7 @@ export type CurrentUserProfileCompletionMessage = {
 
 export type ListNotificationsMessage = {
   userId: string;
-  unreadOnly?: boolean;
+  filter?: 'unread' | 'readed';
   page?: number;
   pageSize?: number;
 };

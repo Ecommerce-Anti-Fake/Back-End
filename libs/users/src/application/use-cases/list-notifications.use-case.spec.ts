@@ -22,12 +22,12 @@ describe('Notification use cases', () => {
 
     const result = await new ListNotificationsUseCase(repository as never).execute({
       userId: 'user-1',
-      unreadOnly: true,
+      filter: 'unread',
     });
 
     expect(repository.listNotifications).toHaveBeenCalledWith({
       userId: 'user-1',
-      unreadOnly: true,
+      filter: 'unread',
     });
     expect(result.unreadCount).toBe(1);
     expect(result.items[0].targetType).toBe('CHAT_THREAD');

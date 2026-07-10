@@ -6,7 +6,7 @@ import { toNotificationResponse } from './notifications.mapper';
 export class ListNotificationsUseCase {
   constructor(private readonly usersRepository: UsersRepository) {}
 
-  async execute(input: { userId: string; unreadOnly?: boolean; page?: number; pageSize?: number }) {
+  async execute(input: { userId: string; filter?: 'unread' | 'readed'; page?: number; pageSize?: number }) {
     const result = await this.usersRepository.listNotifications(input);
 
     return {
