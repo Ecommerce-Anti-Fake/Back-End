@@ -1,7 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CartWithItems, OrdersRepository } from '../../infrastructure/persistence/orders.repository';
-import { OrderNotificationService, OrderPlacementService, PayOSPaymentService } from '../services';
-import { QuoteCartShippingOptionsUseCase } from './quote-cart-shipping-options.use-case';
+import {
+  CheckoutShippingOption,
+  CheckoutShippingService,
+  OrderNotificationService,
+  OrderPlacementService,
+  PayOSPaymentService,
+} from '../services';
 
 type CheckoutCartInput = {
   buyerUserId: string;
@@ -11,21 +16,12 @@ type CheckoutCartInput = {
   affiliateCode?: string | null;
 };
 
-type CheckoutCartShippingOption = {
-  optionCode: string;
-  providerCode: string;
-  providerName: string;
-  methodName: string;
-  shippingFee: number;
-  estimatedDelivery: string | null;
-};
-
 @Injectable()
 export class CheckoutCartUseCase {
   constructor(
     private readonly ordersRepository: OrdersRepository,
     private readonly orderPlacementService: OrderPlacementService,
-    private readonly quoteCartShippingOptionsUseCase: QuoteCartShippingOptionsUseCase,
+    private readonly checkoutShippingService: CheckoutShippingService,
     private readonly payOSPaymentService: PayOSPaymentService,
     private readonly orderNotificationService: OrderNotificationService,
   ) {}
@@ -33,8 +29,8 @@ export class CheckoutCartUseCase {
   async execute(input: CheckoutCartInput) {
     const cart = await this.ordersRepository.getOrCreateActiveCart(input.buyerUserId);
     const selectedItems = this.selectCartItems(cart, input.cartItemIds);
-    const shippingOption = await this.resolveShippingOption(input);
-    const shipping = await this.resolveDefaultShipping(input.buyerUserId, shippingOption);
+    const shippingOption = await this.resolveShippingOption(input, selectedItems);
+    const shipping = await this.checkoutShippingService.resolveDefaultShipping(input.buyerUserId, shippingOption);
     const groups = this.createShopGroups(selectedItems, shippingOption.shippingFee);
     if (input.affiliateCode && selectedItems.length !== 1) {
       throw new BadRequestException('Affiliate checkout currently requires exactly one cart item');
@@ -170,40 +166,20 @@ export class CheckoutCartUseCase {
     return selectedItems;
   }
 
-  private async resolveShippingOption(input: CheckoutCartInput): Promise<CheckoutCartShippingOption> {
-    const shippingOptions = await this.quoteCartShippingOptionsUseCase.execute({
+  private async resolveShippingOption(input: CheckoutCartInput, selectedItems: CartWithItems['items']): Promise<CheckoutShippingOption> {
+    return this.checkoutShippingService.resolveSelectedOption({
       buyerUserId: input.buyerUserId,
-      cartItemIds: input.cartItemIds,
+      shippingOptionCode: input.shippingOptionCode,
+      items: selectedItems.map((item) => ({
+        offerId: item.offerId,
+        quantity: item.quantity,
+        unitPrice: Number(item.unitPriceSnapshot.toString()),
+        offer: item.offer,
+      })),
     });
-    const selected = shippingOptions.options.find((option) => option.optionCode === input.shippingOptionCode);
-    if (!selected) throw new BadRequestException('Shipping option is not available for selected cart items');
-    return selected;
-  }
-
-  private async resolveDefaultShipping(buyerUserId: string, shippingOption: CheckoutCartShippingOption) {
-    const address = await this.ordersRepository.findDefaultAddressByUserId(buyerUserId);
-    if (!address) throw new BadRequestException('Default shipping address is required before checkout');
-    const carrierLocation = parseInternalAddressWardCode(address.wardCode);
-    if (shippingOption.providerCode !== 'SELF_DELIVERY' && (!carrierLocation?.districtId || !carrierLocation.carrierWardCode)) {
-      throw new BadRequestException('Default shipping address district and ward are required for selected shipping option');
-    }
-    return {
-      name: address.recipientName,
-      phone: address.phone,
-      address: address.addressLine,
-      districtId: carrierLocation?.districtId ?? null,
-      districtName: null,
-      wardCode: carrierLocation?.carrierWardCode ?? null,
-      wardName: address.wardName ?? null,
-    };
   }
 
   private roundMoney(value: number) {
     return Math.round(value * 100) / 100;
   }
-}
-
-function parseInternalAddressWardCode(wardCode?: string | null) {
-  const match = wardCode?.trim().match(/^VN-P(\d+)-D(\d+)-W(.+)$/);
-  return match ? { districtId: Number(match[2]), carrierWardCode: match[3] } : null;
 }

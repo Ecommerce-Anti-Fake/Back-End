@@ -45,15 +45,18 @@ import {
   UpdateOfferDto,
   ModerateOfferDto,
 } from '@offers';
+import { BuyNowCheckoutDto } from '@orders';
 import { RateLimit } from '../../observability';
 import { CatalogRpcService } from './catalog-rpc.service';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
+import { OrdersRpcService } from '../order/orders-rpc.service';
 
 @ApiTags('Offer')
 @Controller()
 export class OfferController {
   constructor(
     private readonly catalogRpcService: CatalogRpcService,
+    private readonly ordersRpcService: OrdersRpcService,
     private readonly dashboardSseBrokerService: DashboardSseBrokerService,
   ) {}
 
@@ -146,6 +149,24 @@ export class OfferController {
       success: true,
       message: 'Offer created successfully and is pending moderation.',
     };
+  }
+
+  @ApiOperation({ summary: 'Buy Now checkout tu offer, khong thay doi gio hang' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('offers/buy-now/checkout')
+  async buyNowCheckout(@CurrentUserId() buyerUserId: string, @Body() dto: BuyNowCheckoutDto) {
+    const result = await this.ordersRpcService.buyNowCheckout({
+      buyerUserId,
+      offerId: dto.offerId,
+      variantId: dto.variantId ?? null,
+      quantity: dto.quantity,
+      paymentMethod: dto.paymentMethod,
+      shippingOptionCode: dto.shippingOptionCode,
+    });
+    this.dashboardSseBrokerService.notifyOrderChanged(result, buyerUserId);
+
+    return result;
   }
 
   @ApiOperation({ summary: 'Tao variant cho offer cua seller hien tai' })

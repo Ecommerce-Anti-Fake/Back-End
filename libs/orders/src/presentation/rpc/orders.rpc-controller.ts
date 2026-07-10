@@ -15,6 +15,7 @@ import type {
   AdminRiskScoresLookupMessage,
   AssignAdminDisputeMessage,
   CalculateRiskScoreMessage,
+  BuyNowCheckoutMessage,
   CheckoutCartMessage,
   CheckoutCartItemMessage,
   QuoteCartShippingOptionsMessage,
@@ -61,6 +62,7 @@ import {
   AddDisputeEvidenceBatchUseCase,
   AddCartItemUseCase,
   BookOrderShippingUseCase,
+  BuyNowCheckoutUseCase,
   SyncOrderShippingStatusUseCase,
   AssignAdminDisputeUseCase,
   CheckoutCartUseCase,
@@ -120,6 +122,7 @@ export class OrdersRpcController {
     private readonly removeCartItemUseCase: RemoveCartItemUseCase,
     private readonly checkoutCartUseCase: CheckoutCartUseCase,
     private readonly checkoutCartItemUseCase: CheckoutCartItemUseCase,
+    private readonly buyNowCheckoutUseCase: BuyNowCheckoutUseCase,
     private readonly quoteCartItemShippingOptionsUseCase: QuoteCartItemShippingOptionsUseCase,
     private readonly quoteCartShippingOptionsUseCase: QuoteCartShippingOptionsUseCase,
     private readonly createOrderUseCase: CreateOrderUseCase,
@@ -229,9 +232,9 @@ export class OrdersRpcController {
   }
 
   @MessagePattern(ORDERS_MESSAGE_PATTERNS.buyNowCheckout)
-  async buyNowCheckout(@Payload() payload: CreateOrderMessage) {
+  async buyNowCheckout(@Payload() payload: BuyNowCheckoutMessage) {
     try {
-      return await this.createOrderUseCase.execute(payload);
+      return await this.buyNowCheckoutUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

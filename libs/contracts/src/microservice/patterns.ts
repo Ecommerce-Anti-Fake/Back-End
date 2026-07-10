@@ -1049,6 +1049,15 @@ export type CheckoutCartMessage = {
   affiliateCode?: string | null;
 };
 
+export type BuyNowCheckoutMessage = {
+  buyerUserId: string;
+  offerId: string;
+  variantId?: string | null;
+  quantity: number;
+  paymentMethod: 'COD' | 'PAYOS';
+  shippingOptionCode: string;
+};
+
 export type QuoteCartItemShippingOptionsMessage = {
   buyerUserId: string;
   cartItemId: string;

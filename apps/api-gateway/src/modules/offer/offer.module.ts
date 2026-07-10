@@ -4,6 +4,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { CATALOG_SERVICE_CLIENT } from '@contracts';
 import { AuthGuardsModule } from '@security';
 import { GatewayUserModule } from '../user/user.module';
+import { GatewayOrdersRpcModule } from '../order/orders-rpc.module';
 import { CatalogRpcService } from './catalog-rpc.service';
 import { OfferController } from './offer.controller';
 
@@ -12,6 +13,7 @@ import { OfferController } from './offer.controller';
     ConfigModule,
     AuthGuardsModule,
     GatewayUserModule,
+    GatewayOrdersRpcModule,
     ClientsModule.registerAsync([
       {
         name: CATALOG_SERVICE_CLIENT,

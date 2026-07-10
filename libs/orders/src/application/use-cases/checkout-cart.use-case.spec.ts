@@ -4,13 +4,12 @@ import { CheckoutCartUseCase } from './checkout-cart.use-case';
 describe('CheckoutCartUseCase', () => {
   const ordersRepository = {
     getOrCreateActiveCart: jest.fn(),
-    findDefaultAddressByUserId: jest.fn(),
     removeCartItems: jest.fn(),
     updatePaymentProviderRef: jest.fn(),
     markOrderPaymentFailed: jest.fn(),
   };
   const orderPlacementService = { createAggregateOrder: jest.fn() };
-  const quoteCartShippingOptionsUseCase = { execute: jest.fn() };
+  const checkoutShippingService = { resolveSelectedOption: jest.fn(), resolveDefaultShipping: jest.fn() };
   const payOSPaymentService = { createPaymentLink: jest.fn() };
   const orderNotificationService = { notifyCreated: jest.fn() };
   let useCase: CheckoutCartUseCase;
@@ -20,29 +19,29 @@ describe('CheckoutCartUseCase', () => {
     useCase = new CheckoutCartUseCase(
       ordersRepository as never,
       orderPlacementService as never,
-      quoteCartShippingOptionsUseCase as never,
+      checkoutShippingService as never,
       payOSPaymentService as never,
       orderNotificationService as never,
     );
     ordersRepository.getOrCreateActiveCart.mockResolvedValue(createCart());
-    ordersRepository.findDefaultAddressByUserId.mockResolvedValue({
-      recipientName: 'Nguyen Van A',
-      phone: '0987654321',
-      addressLine: '12 Nguyen Trai',
-      wardCode: 'VN-P202-D1450-W21211',
-      wardName: 'Phuong Ben Nghe',
+    checkoutShippingService.resolveSelectedOption.mockResolvedValue({
+      optionCode: 'GHN_1',
+      providerCode: 'GHN',
+      providerName: 'GHN',
+      methodName: 'Nhanh',
+      shippingFee: 30000,
+      estimatedDelivery: null,
+      shippingServiceId: 53320,
+      shippingServiceTypeId: 2,
     });
-    quoteCartShippingOptionsUseCase.execute.mockResolvedValue({
-      options: [
-        {
-          optionCode: 'GHN_1',
-          providerCode: 'GHN',
-          providerName: 'GHN',
-          methodName: 'Nhanh',
-          shippingFee: 30000,
-          estimatedDelivery: null,
-        },
-      ],
+    checkoutShippingService.resolveDefaultShipping.mockResolvedValue({
+      name: 'Nguyen Van A',
+      phone: '0987654321',
+      address: '12 Nguyen Trai',
+      districtId: 1450,
+      districtName: null,
+      wardCode: '21211',
+      wardName: 'Phuong Ben Nghe',
     });
     orderPlacementService.createAggregateOrder.mockResolvedValue({
       id: 'order-1',
