@@ -4,6 +4,7 @@ export * from './update-offer.use-case';
 export * from './allocate-offer-batches.use-case';
 export * from './list-offer-batch-links.use-case';
 export * from './list-offers.use-case';
+export * from './get-buy-now-offer-preview.use-case';
 export * from './get-offer-by-id.use-case';
 export * from './list-admin-offers.use-case';
 export * from './moderate-offer.use-case';

@@ -90,6 +90,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   findOffers: 'products.find-offers',
   findAdminOffers: 'products.find-admin-offers',
   findOfferById: 'products.find-offer-by-id',
+  getBuyNowOfferPreview: 'products.get-buy-now-offer-preview',
   findFavoriteOffers: 'products.find-favorite-offers',
   addFavoriteOffer: 'products.add-favorite-offer',
   removeFavoriteOffer: 'products.remove-favorite-offer',
@@ -591,6 +592,12 @@ export type ReviewBrandAuthorizationMessage = {
 
 export type OfferLookupMessage = {
   id: string;
+};
+
+export type BuyNowOfferPreviewMessage = {
+  offerId: string;
+  variantId?: string | null;
+  quantity: number;
 };
 
 export type FavoriteOfferMessage = {

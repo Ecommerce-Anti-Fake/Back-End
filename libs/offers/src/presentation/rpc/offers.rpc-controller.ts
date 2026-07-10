@@ -3,6 +3,7 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { PRODUCTS_MESSAGE_PATTERNS } from '@contracts';
 import type {
   AllocateOfferBatchesMessage,
+  BuyNowOfferPreviewMessage,
   CreateOfferMessage,
   CreateOfferVariantMessage,
   ListOffersMessage,
@@ -17,6 +18,7 @@ import {
   AllocateOfferBatchesUseCase,
   CreateOfferUseCase,
   CreateOfferVariantUseCase,
+  GetBuyNowOfferPreviewUseCase,
   GetOfferByIdUseCase,
   ListOfferBatchLinksUseCase,
   ListOffersUseCase,
@@ -36,6 +38,7 @@ export class OffersRpcController {
     private readonly listOfferBatchLinksUseCase: ListOfferBatchLinksUseCase,
     private readonly listOffersUseCase: ListOffersUseCase,
     private readonly listAdminOffersUseCase: ListAdminOffersUseCase,
+    private readonly getBuyNowOfferPreviewUseCase: GetBuyNowOfferPreviewUseCase,
     private readonly getOfferByIdUseCase: GetOfferByIdUseCase,
   ) {}
 
@@ -115,6 +118,15 @@ export class OffersRpcController {
   async findOfferById(@Payload() payload: OfferLookupMessage) {
     try {
       return await this.getOfferByIdUseCase.execute(payload.id);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.getBuyNowOfferPreview)
+  async getBuyNowOfferPreview(@Payload() payload: BuyNowOfferPreviewMessage) {
+    try {
+      return await this.getBuyNowOfferPreviewUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

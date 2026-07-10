@@ -30,6 +30,8 @@ import {
 import {
   AllocateOfferBatchesDto,
   AdminOfferListQueryDto,
+  BuyNowOfferPreviewQueryDto,
+  BuyNowOfferPreviewResponseDto,
   ListOffersQueryDto,
   ListShopOffersQueryDto,
   OfferBatchLinkResponseDto,
@@ -167,6 +169,20 @@ export class OfferController {
     this.dashboardSseBrokerService.notifyOrderChanged(result, buyerUserId);
 
     return result;
+  }
+
+  @ApiOperation({ summary: 'Xem truoc Buy Now tu offer, khong thay doi gio hang' })
+  @ApiOkResponse({
+    description: 'Thong tin offer/variant dung de hien thi Buy Now preview.',
+    type: BuyNowOfferPreviewResponseDto,
+  })
+  @Get('offers/buy-now')
+  getBuyNowPreview(@Query() query: BuyNowOfferPreviewQueryDto) {
+    return this.catalogRpcService.getBuyNowOfferPreview({
+      offerId: query.offerId,
+      variantId: query.variantId ?? null,
+      quantity: query.quantity,
+    });
   }
 
   @ApiOperation({ summary: 'Tao variant cho offer cua seller hien tai' })

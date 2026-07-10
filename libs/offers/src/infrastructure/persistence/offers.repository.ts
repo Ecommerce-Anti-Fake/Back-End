@@ -630,6 +630,54 @@ export class OffersRepository {
     });
   }
 
+  findBuyNowOfferPreview(input: {
+    offerId: string;
+    variantId?: string | null;
+  }) {
+    return this.prisma.offer.findUnique({
+      where: { id: input.offerId },
+      select: {
+        id: true,
+        shopId: true,
+        modelName: true,
+        price: true,
+        availableQuantity: true,
+        offerStatus: true,
+        moderationStatus: true,
+        shop: {
+          select: {
+            id: true,
+            shopName: true,
+          },
+        },
+        media: {
+          orderBy: { createdAt: 'asc' },
+          select: {
+            mediaType: true,
+            fileUrl: true,
+            mediaAsset: {
+              select: { secureUrl: true },
+            },
+          },
+        },
+        variants: {
+          where: { id: input.variantId ?? '' },
+          take: 1,
+          select: {
+            id: true,
+            sku: true,
+            price: true,
+            availableQuantity: true,
+            isActive: true,
+            mediaAsset: {
+              select: { secureUrl: true },
+            },
+          },
+        },
+      },
+    });
+  }
+
   findOwnedOffer(offerId: string, sellerUserId: string) {
     return this.prisma.offer.findFirst({
       where: {

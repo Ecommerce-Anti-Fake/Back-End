@@ -58,6 +58,12 @@ describe('OfferController', () => {
     expect(
       Reflect.getMetadata(
         PATH_METADATA,
+        OfferController.prototype.getBuyNowPreview,
+      ),
+    ).toBe('offers/buy-now');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
         OfferController.prototype.createOfferVariant,
       ),
     ).toBe('offers/:offerId/variants');
@@ -318,6 +324,48 @@ describe('OfferController', () => {
     expect(ordersRpcService.buyNowCheckout.mock.calls[0][0]).not.toHaveProperty('shippingAddress');
     expect(ordersRpcService.buyNowCheckout.mock.calls[0][0]).not.toHaveProperty('shippingProviderCode');
     expect(dashboardSseBrokerService.notifyOrderChanged).toHaveBeenCalledWith(result, 'buyer-1');
+  });
+
+  it('requests Buy Now preview from catalog without cart or order calls', async () => {
+    const catalogRpcService = {
+      getBuyNowOfferPreview: jest.fn().mockResolvedValue({
+        shopId: 'shop-1',
+        shopName: 'Shop ABC',
+        offerId: 'offer-1',
+        modelName: 'Kem chong nang SPF50',
+        variantId: null,
+        sku: null,
+        quantity: 2,
+        price: 150000,
+        thumbnailUrl: null,
+      }),
+    };
+    const ordersRpcService = { buyNowCheckout: jest.fn() };
+    const controller = new OfferController(
+      catalogRpcService as never,
+      ordersRpcService as never,
+      { notifyOrderChanged: jest.fn(), notifyShop: jest.fn() } as never,
+    );
+
+    const result = await controller.getBuyNowPreview({
+      offerId: 'offer-1',
+      variantId: null,
+      quantity: 2,
+    });
+
+    expect(catalogRpcService.getBuyNowOfferPreview).toHaveBeenCalledWith({
+      offerId: 'offer-1',
+      variantId: null,
+      quantity: 2,
+    });
+    expect(ordersRpcService.buyNowCheckout).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({
+        offerId: 'offer-1',
+        quantity: 2,
+        price: 150000,
+      }),
+    );
   });
 
   it('returns compact public offer list items', async () => {
