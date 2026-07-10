@@ -90,8 +90,6 @@ describe('ListShopDocumentsUseCase', () => {
         id: 'document-latest',
         requirementId: 'requirement-1',
         docType: 'BUSINESS_LICENSE',
-        fileUrl: file.fileUrl,
-        mediaAssetId: file.mediaAssetId,
         files: [file],
         reviewStatus: 'pending',
         reviewNote: null,

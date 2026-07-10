@@ -335,12 +335,6 @@ export class ShopDocumentResponseDto {
   @ApiPropertyOptional({ example: 'req-business-license', nullable: true })
   requirementId!: string | null;
 
-  @ApiProperty({ example: 'https://res.cloudinary.com/example/image/upload/v1/shops/shop-1/documents/license.jpg' })
-  fileUrl!: string;
-
-  @ApiPropertyOptional({ example: 'media-asset-1', nullable: true })
-  mediaAssetId!: string | null;
-
   @ApiProperty({
     example: [
       {
