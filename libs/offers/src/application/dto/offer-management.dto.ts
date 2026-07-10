@@ -236,6 +236,18 @@ export class BuyNowOfferPreviewResponseDto {
     nullable: true,
   })
   thumbnailUrl!: string | null;
+
+  @ApiProperty({ type: () => [BuyNowShippingOptionResponseDto] })
+  shippingOptions!: BuyNowShippingOptionResponseDto[];
+}
+
+export class BuyNowShippingOptionResponseDto {
+  @ApiProperty({ example: 'GHN_1' }) optionCode!: string;
+  @ApiProperty({ example: 'GHN' }) providerCode!: string;
+  @ApiProperty({ example: 'Giao Hang Nhanh' }) providerName!: string;
+  @ApiProperty({ example: 'Giao hang tieu chuan' }) methodName!: string;
+  @ApiProperty({ example: 30000 }) shippingFee!: number;
+  @ApiPropertyOptional({ example: '2-3 days', nullable: true }) estimatedDelivery!: string | null;
 }
 
 export class OfferResponseDto {

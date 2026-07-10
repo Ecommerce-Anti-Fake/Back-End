@@ -176,13 +176,25 @@ export class OfferController {
     description: 'Thong tin offer/variant dung de hien thi Buy Now preview.',
     type: BuyNowOfferPreviewResponseDto,
   })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Get('offers/buy-now')
-  getBuyNowPreview(@Query() query: BuyNowOfferPreviewQueryDto) {
-    return this.catalogRpcService.getBuyNowOfferPreview({
+  async getBuyNowPreview(
+    @CurrentUserId() buyerUserId: string,
+    @Query() query: BuyNowOfferPreviewQueryDto,
+  ) {
+    const preview = (await this.catalogRpcService.getBuyNowOfferPreview({
+      offerId: query.offerId,
+      variantId: query.variantId ?? null,
+      quantity: query.quantity,
+    })) as Omit<BuyNowOfferPreviewResponseDto, 'shippingOptions'>;
+    const shippingOptions = await this.ordersRpcService.quoteBuyNowShippingOptions({
+      buyerUserId,
       offerId: query.offerId,
       variantId: query.variantId ?? null,
       quantity: query.quantity,
     });
+    return { ...preview, shippingOptions };
   }
 
   @ApiOperation({ summary: 'Tao variant cho offer cua seller hien tai' })

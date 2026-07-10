@@ -147,6 +147,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   checkoutCart: 'orders.checkout-cart',
   checkoutCartItem: 'orders.checkout-cart-item',
   buyNowCheckout: 'orders.buy-now-checkout',
+  quoteBuyNowShippingOptions: 'orders.quote-buy-now-shipping-options',
   quoteCartItemShippingOptions: 'orders.quote-cart-item-shipping-options',
   quoteCartShippingOptions: 'orders.quote-cart-shipping-options',
   create: 'orders.create',
@@ -598,6 +599,10 @@ export type BuyNowOfferPreviewMessage = {
   offerId: string;
   variantId?: string | null;
   quantity: number;
+};
+
+export type QuoteBuyNowShippingOptionsMessage = BuyNowOfferPreviewMessage & {
+  buyerUserId: string;
 };
 
 export type FavoriteOfferMessage = {

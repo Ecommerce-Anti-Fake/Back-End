@@ -326,7 +326,7 @@ describe('OfferController', () => {
     expect(dashboardSseBrokerService.notifyOrderChanged).toHaveBeenCalledWith(result, 'buyer-1');
   });
 
-  it('requests Buy Now preview from catalog without cart or order calls', async () => {
+  it('returns Buy Now preview with shipping options for the authenticated buyer', async () => {
     const catalogRpcService = {
       getBuyNowOfferPreview: jest.fn().mockResolvedValue({
         shopId: 'shop-1',
@@ -340,14 +340,21 @@ describe('OfferController', () => {
         thumbnailUrl: null,
       }),
     };
-    const ordersRpcService = { buyNowCheckout: jest.fn() };
+    const shippingOptions = [{
+      optionCode: 'GHN_1', providerCode: 'GHN', providerName: 'Giao Hang Nhanh',
+      methodName: 'Giao hang tieu chuan', shippingFee: 30000, estimatedDelivery: '2-3 days',
+    }];
+    const ordersRpcService = {
+      buyNowCheckout: jest.fn(),
+      quoteBuyNowShippingOptions: jest.fn().mockResolvedValue(shippingOptions),
+    };
     const controller = new OfferController(
       catalogRpcService as never,
       ordersRpcService as never,
       { notifyOrderChanged: jest.fn(), notifyShop: jest.fn() } as never,
     );
 
-    const result = await controller.getBuyNowPreview({
+    const result = await controller.getBuyNowPreview('buyer-1', {
       offerId: 'offer-1',
       variantId: null,
       quantity: 2,
@@ -359,11 +366,15 @@ describe('OfferController', () => {
       quantity: 2,
     });
     expect(ordersRpcService.buyNowCheckout).not.toHaveBeenCalled();
+    expect(ordersRpcService.quoteBuyNowShippingOptions).toHaveBeenCalledWith({
+      buyerUserId: 'buyer-1', offerId: 'offer-1', variantId: null, quantity: 2,
+    });
     expect(result).toEqual(
       expect.objectContaining({
         offerId: 'offer-1',
         quantity: 2,
         price: 150000,
+        shippingOptions,
       }),
     );
   });

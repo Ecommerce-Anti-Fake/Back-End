@@ -5,6 +5,7 @@ export * from './remove-cart-item.use-case';
 export * from './checkout-cart.use-case';
 export * from './checkout-cart-item.use-case';
 export * from './buy-now-checkout.use-case';
+export * from './quote-buy-now-shipping-options.use-case';
 export * from './quote-cart-item-shipping-options.use-case';
 export * from './quote-cart-shipping-options.use-case';
 export * from './create-order.use-case';
