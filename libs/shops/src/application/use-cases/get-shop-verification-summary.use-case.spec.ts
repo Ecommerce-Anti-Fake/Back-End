@@ -36,7 +36,13 @@ describe('GetShopVerificationSummaryUseCase', () => {
       id: 'shop-1',
       shopStatus: 'pending_verification',
       registrationType: 'NORMAL',
-      documents: [],
+      documents: [
+        {
+          reviewStatus: 'rejected',
+          reviewNote: 'Giay phep kinh doanh bi mo',
+          uploadedAt: new Date('2026-04-15T12:00:00.000Z'),
+        },
+      ],
       registeredCategories: [
         {
           categoryId: 'category-1',
@@ -53,7 +59,8 @@ describe('GetShopVerificationSummaryUseCase', () => {
       ],
       owner: {
         kyc: {
-          verificationStatus: 'approved',
+          verificationStatus: 'rejected',
+          reviewNote: 'Anh CCCD chua ro',
           documents: [{ side: 'FRONT' }, { side: 'BACK' }],
         },
       },
@@ -68,10 +75,11 @@ describe('GetShopVerificationSummaryUseCase', () => {
       shopId: 'shop-1',
       shopStatus: 'pending_verification',
       canOperate: false,
-      kycStatus: 'approved',
+      reviewNote: 'Anh CCCD chua ro',
+      kycStatus: 'rejected',
       requiresShopDocuments: true,
       hasApprovedShopDocument: false,
-      missingRequirements: ['SHOP_DOCUMENT_APPROVAL_REQUIRED'],
+      missingRequirements: ['KYC_APPROVAL_REQUIRED', 'SHOP_DOCUMENT_APPROVAL_REQUIRED'],
       categories: [
         expect.objectContaining({
           categoryId: 'category-1',
@@ -80,5 +88,47 @@ describe('GetShopVerificationSummaryUseCase', () => {
         }),
       ],
     });
+  });
+
+  it('should return latest rejected shop document review note when KYC is not rejected', async () => {
+    shopsRepositoryMock.findOwnedShop.mockResolvedValueOnce({
+      id: 'shop-1',
+      ownerUserId: 'user-1',
+      registrationType: 'NORMAL',
+      shopStatus: 'rejected',
+    });
+    shopsRepositoryMock.recomputeShopStatus.mockResolvedValueOnce(undefined);
+    shopsRepositoryMock.findShopVerificationSummaryById.mockResolvedValueOnce({
+      id: 'shop-1',
+      shopStatus: 'rejected',
+      registrationType: 'NORMAL',
+      documents: [
+        {
+          reviewStatus: 'rejected',
+          reviewNote: 'Giay phep cu',
+          uploadedAt: new Date('2026-04-15T10:00:00.000Z'),
+        },
+        {
+          reviewStatus: 'rejected',
+          reviewNote: 'Giay phep moi bi mo',
+          uploadedAt: new Date('2026-04-15T12:00:00.000Z'),
+        },
+      ],
+      registeredCategories: [],
+      owner: {
+        kyc: {
+          verificationStatus: 'approved',
+          reviewNote: null,
+          documents: [{ side: 'FRONT' }, { side: 'BACK' }],
+        },
+      },
+    });
+
+    const result = await useCase.execute({
+      shopId: 'shop-1',
+      requesterUserId: 'user-1',
+    });
+
+    expect(result.reviewNote).toBe('Giay phep moi bi mo');
   });
 });

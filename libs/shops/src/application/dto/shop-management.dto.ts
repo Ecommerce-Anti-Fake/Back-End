@@ -444,6 +444,13 @@ export class ShopVerificationSummaryResponseDto {
   })
   registrationType!: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
 
+  @ApiPropertyOptional({
+    description: 'Ghi chu review moi nhat khi ho so shop/KYC bi tu choi.',
+    example: 'Anh giay to chua ro, vui long gui lai.',
+    nullable: true,
+  })
+  reviewNote!: string | null;
+
   @ApiProperty({ example: false })
   canOperate!: boolean;
 

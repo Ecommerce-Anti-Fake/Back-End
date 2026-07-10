@@ -100,6 +100,7 @@ const shopVerificationSummaryArgs = Prisma.validator<Prisma.ShopDefaultArgs>()({
         kyc: {
           select: {
             verificationStatus: true,
+            reviewNote: true,
             documents: {
               select: {
                 side: true,

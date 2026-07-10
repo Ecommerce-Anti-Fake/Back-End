@@ -12,6 +12,7 @@ import {
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
   ShopDocumentResponseDto,
+  ShopVerificationSummaryResponseDto,
   SubmitShopDocumentsMultipartDto,
   UpdateShopRegistrationTypeDto,
 } from '@shops';
@@ -113,6 +114,7 @@ export class ShopDocumentController {
   }
 
   @ApiOperation({ summary: 'Lay tong quan trang thai verification cua shop hien tai' })
+  @ApiOkResponse({ type: ShopVerificationSummaryResponseDto })
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Get(':shopId/verification-summary')
