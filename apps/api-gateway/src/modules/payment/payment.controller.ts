@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { PayOSWebhookMessage } from '@contracts';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
@@ -6,6 +7,7 @@ import { AdminFinanceReconciliationQueryDto, MarkOrderPaidDto } from '@orders';
 import { RateLimit } from '../../observability';
 import { OrdersRpcService } from '../order/orders-rpc.service';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
+import type { Response } from 'express';
 
 @ApiTags('Payment')
 @Controller('orders')
@@ -13,7 +15,14 @@ export class PaymentController {
   constructor(
     private readonly ordersRpcService: OrdersRpcService,
     private readonly dashboardSseBrokerService: DashboardSseBrokerService,
+    private readonly configService: ConfigService,
   ) {}
+
+  @ApiOperation({ summary: 'Redirect payOS success return ve trang frontend thanh cong' })
+  @Get('payos/return')
+  handlePayOSReturn(@Res() response: Response) {
+    response.redirect(302, this.resolveFrontendPaymentSuccessUrl());
+  }
 
   @ApiOperation({ summary: 'Admin doi soat tai chinh don hang, escrow va affiliate' })
   @ApiBearerAuth('access-token')
@@ -76,5 +85,15 @@ export class PaymentController {
       id,
       requesterUserId,
     });
+  }
+
+  private resolveFrontendPaymentSuccessUrl() {
+    const configured = this.configService.get<string>('PAYOS_FINAL_SUCCESS_URL')?.trim();
+    if (configured) {
+      return configured;
+    }
+
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL')?.trim() || 'http://localhost:5173';
+    return `${frontendUrl.replace(/\/$/, '')}/payment-success`;
   }
 }

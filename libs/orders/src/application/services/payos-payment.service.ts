@@ -41,7 +41,7 @@ export class PayOSPaymentService {
     }
 
     const orderCode = this.createOrderCode();
-    const returnUrl = this.resolveUrl(input.returnUrl, 'PAYOS_RETURN_URL', '/payment-success');
+    const returnUrl = this.resolvePayOSReturnUrl(input.returnUrl);
     const cancelUrl = this.resolveUrl(input.cancelUrl, 'PAYOS_CANCEL_URL', `/checkout/cancel/${input.orderId}`);
     const description = this.normalizeDescription(input.description, input.orderId);
     const signaturePayload = {
@@ -124,6 +124,25 @@ export class PayOSPaymentService {
 
     const frontendUrl = this.configService.get<string>('FRONTEND_URL')?.trim() || 'http://localhost:5173';
     return `${frontendUrl.replace(/\/$/, '')}${fallbackPath}`;
+  }
+
+  private resolvePayOSReturnUrl(explicitUrl: string | null | undefined) {
+    const explicit = explicitUrl?.trim();
+    if (explicit) {
+      return explicit;
+    }
+
+    const configured = this.configService.get<string>('PAYOS_RETURN_URL')?.trim();
+    if (configured) {
+      return configured;
+    }
+
+    const backendUrl =
+      this.configService.get<string>('BACKEND_PUBLIC_URL')?.trim() ||
+      this.configService.get<string>('API_PUBLIC_URL')?.trim() ||
+      this.configService.get<string>('RENDER_EXTERNAL_URL')?.trim() ||
+      'https://ecommerce-anti-fake-back-end.onrender.com';
+    return `${backendUrl.replace(/\/$/, '')}/api/orders/payos/return`;
   }
 
   private normalizeDescription(description: string, orderId: string) {

@@ -28,6 +28,7 @@ describe('PayOSPaymentService', () => {
         PAYOS_CHECKSUM_KEY: 'checksum-key',
         PAYOS_API_BASE_URL: 'https://payos.test',
         FRONTEND_URL: 'https://anti-fake-alpha.vercel.app',
+        BACKEND_PUBLIC_URL: 'https://api.antifake.test',
       }),
     );
   });
@@ -38,7 +39,7 @@ describe('PayOSPaymentService', () => {
     global.fetch = originalFetch;
   });
 
-  it('uses the frontend payment success route as the default payOS return URL', async () => {
+  it('uses the backend payOS return redirect as the default return URL', async () => {
     await service.createPaymentLink({
       orderId: 'order-1',
       amount: 100000,
@@ -50,7 +51,7 @@ describe('PayOSPaymentService', () => {
     });
 
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(body.returnUrl).toBe('https://anti-fake-alpha.vercel.app/payment-success');
+    expect(body.returnUrl).toBe('https://api.antifake.test/api/orders/payos/return');
     expect(body.cancelUrl).toBe('https://anti-fake-alpha.vercel.app/checkout/cancel/order-1');
   });
 });
