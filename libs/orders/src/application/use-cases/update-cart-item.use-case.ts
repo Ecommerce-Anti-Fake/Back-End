@@ -11,6 +11,24 @@ export class UpdateCartItemUseCase {
       throw new BadRequestException('Quantity must be greater than zero');
     }
 
+    const cartItem = await this.ordersRepository.findCartItemById(input.cartItemId);
+    if (!cartItem || cartItem.cart.buyerUserId !== input.buyerUserId || cartItem.cart.cartStatus !== 'ACTIVE') {
+      throw new BadRequestException('Cart item not found');
+    }
+
+    if (cartItem.variantId) {
+      const variant = await this.ordersRepository.findOfferVariantForCart({
+        offerId: cartItem.offerId,
+        variantId: cartItem.variantId,
+      });
+      if (!variant || !variant.isActive) {
+        throw new BadRequestException('Variant is unavailable');
+      }
+      if (input.quantity > variant.availableQuantity) {
+        throw new BadRequestException('Quantity exceeds available stock');
+      }
+    }
+
     const cart = await this.ordersRepository.updateCartItemQuantity(input);
     return toCartResponse(cart);
   }

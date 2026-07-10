@@ -416,6 +416,8 @@ function toCartItemResponse(item: CartWithItems['items'][number]) {
   return {
     id: item.id,
     offerId: item.offerId,
+    variantId: item.variantId ?? null,
+    variantSku: item.variant?.sku ?? null,
     offerTitleSnapshot: item.offerTitleSnapshot,
     thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
     unitPriceSnapshot: decimalToNumber(item.unitPriceSnapshot),

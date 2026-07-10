@@ -30,6 +30,11 @@ const offerForOrderingArgs = Prisma.validator<Prisma.OfferDefaultArgs>()({
         },
       },
     },
+    variants: {
+      select: {
+        id: true,
+      },
+    },
   },
 });
 
@@ -279,6 +284,12 @@ const cartWithItemsArgs = Prisma.validator<Prisma.CartDefaultArgs>()({
                 mediaAsset: true,
               },
             },
+          },
+        },
+        variant: {
+          select: {
+            id: true,
+            sku: true,
           },
         },
       },
@@ -602,6 +613,23 @@ export class OrdersRepository {
     });
   }
 
+  findOfferVariantForCart(input: { offerId: string; variantId: string }) {
+    return this.prisma.offerVariant.findFirst({
+      where: {
+        id: input.variantId,
+        offerId: input.offerId,
+      },
+      select: {
+        id: true,
+        offerId: true,
+        sku: true,
+        price: true,
+        availableQuantity: true,
+        isActive: true,
+      },
+    });
+  }
+
   findDefaultAddressByUserId(userId: string) {
     return this.prisma.userAddress.findFirst({
       where: {
@@ -615,7 +643,9 @@ export class OrdersRepository {
   async upsertCartItem(input: {
     buyerUserId: string;
     offerId: string;
+    variantId?: string | null;
     quantity: number;
+    availableQuantityLimit?: number;
     offerTitleSnapshot: string;
     unitPriceSnapshot: number;
     currencySnapshot: string;
@@ -624,10 +654,18 @@ export class OrdersRepository {
     const cart = await this.getOrCreateActiveCart(input.buyerUserId);
 
     const existingItem = await this.prisma.cartItem.findFirst({
-      where: { cartId: cart.id, offerId: input.offerId, variantId: null },
-      select: { id: true },
+      where: {
+        cartId: cart.id,
+        offerId: input.offerId,
+        variantId: input.variantId ?? null,
+      },
+      select: { id: true, quantity: true },
     });
     if (existingItem) {
+      if (input.availableQuantityLimit !== undefined && existingItem.quantity + input.quantity > input.availableQuantityLimit) {
+        throw new BadRequestException('Quantity exceeds available stock');
+      }
+
       await this.prisma.cartItem.update({
         where: { id: existingItem.id },
         data: {
@@ -645,6 +683,7 @@ export class OrdersRepository {
         data: {
           cartId: cart.id,
           offerId: input.offerId,
+          variantId: input.variantId ?? null,
           quantity: input.quantity,
           offerTitleSnapshot: input.offerTitleSnapshot,
           unitPriceSnapshot: input.unitPriceSnapshot,

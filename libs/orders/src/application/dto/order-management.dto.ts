@@ -95,6 +95,12 @@ export class CartItemResponseDto {
   @ApiProperty({ example: 'offer-id' })
   offerId!: string;
 
+  @ApiPropertyOptional({ example: 'variant-id', nullable: true })
+  variantId!: string | null;
+
+  @ApiPropertyOptional({ example: 'AO-DEN-M', nullable: true })
+  variantSku!: string | null;
+
   @ApiProperty({ example: 'Kem chong nang SPF50 - lo 2026' })
   offerTitleSnapshot!: string;
 
@@ -1742,6 +1748,11 @@ export class AddCartItemDto {
   @ApiProperty({ example: 'offer-id' })
   @IsString()
   offerId!: string;
+
+  @ApiPropertyOptional({ example: 'variant-id', nullable: true })
+  @IsOptional()
+  @IsString()
+  variantId?: string | null;
 
   @ApiProperty({ example: 2 })
   @Type(() => Number)

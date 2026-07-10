@@ -1035,6 +1035,7 @@ export type ActiveCartMessage = {
 export type AddCartItemMessage = {
   buyerUserId: string;
   offerId: string;
+  variantId?: string | null;
   quantity: number;
 };
 
