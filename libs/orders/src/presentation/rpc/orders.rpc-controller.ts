@@ -228,6 +228,15 @@ export class OrdersRpcController {
     }
   }
 
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.buyNowCheckout)
+  async buyNowCheckout(@Payload() payload: CreateOrderMessage) {
+    try {
+      return await this.createOrderUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
   @MessagePattern(ORDERS_MESSAGE_PATTERNS.quoteCartItemShippingOptions)
   async quoteCartItemShippingOptions(@Payload() payload: QuoteCartItemShippingOptionsMessage) {
     try {

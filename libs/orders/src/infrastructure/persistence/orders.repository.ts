@@ -290,6 +290,7 @@ const cartWithItemsArgs = Prisma.validator<Prisma.CartDefaultArgs>()({
 });
 
 export type OfferForOrdering = Prisma.OfferGetPayload<typeof offerForOrderingArgs>;
+export type OfferVariantForOrdering = Prisma.OfferVariantGetPayload<Prisma.OfferVariantDefaultArgs>;
 export type OrderWithRelations = Prisma.OrderGetPayload<typeof orderWithRelationsArgs>;
 export type SellerShopOrderRecord = Prisma.OrderGetPayload<typeof sellerShopOrderListArgs>;
 type FinanceOrderRecord = Prisma.OrderGetPayload<{
@@ -398,6 +399,7 @@ export type CreateOrderRecordInput = {
   paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'manual_confirmation' | null;
   item: {
     offerId: string;
+    variantId?: string | null;
     offerTitleSnapshot: string;
     unitPrice: number;
     quantity: number;
@@ -436,6 +438,7 @@ export type CreateAggregateOrderRecordInput = {
     items: Array<{
       sourceCartItemId: string;
       offerId: string;
+      variantId?: string | null;
       offerTitleSnapshot: string;
       unitPrice: number;
       quantity: number;
@@ -543,6 +546,21 @@ export class OrdersRepository {
     return this.prisma.offer.findUnique({
       where: { id: offerId },
       ...offerForOrderingArgs,
+    });
+  }
+
+  findOfferVariantForOrdering(input: { offerId: string; variantId: string }): Promise<OfferVariantForOrdering | null> {
+    return this.prisma.offerVariant.findFirst({
+      where: {
+        id: input.variantId,
+        offerId: input.offerId,
+      },
+    });
+  }
+
+  countOfferVariants(offerId: string) {
+    return this.prisma.offerVariant.count({
+      where: { offerId },
     });
   }
 
@@ -984,6 +1002,7 @@ export class OrdersRepository {
               orderShopGroupId: group.id,
               sourceCartItemId: item.sourceCartItemId,
               offerId: item.offerId,
+              variantId: item.variantId ?? null,
               offerTitleSnapshot: item.offerTitleSnapshot,
               unitPrice: item.unitPrice,
               quantity: item.quantity,

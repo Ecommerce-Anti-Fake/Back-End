@@ -91,6 +91,10 @@ export class OrdersRpcService {
     return this.send(ORDERS_MESSAGE_PATTERNS.checkoutCart, payload);
   }
 
+  buyNowCheckout(payload: CreateOrderMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.buyNowCheckout, payload);
+  }
+
   quoteCartItemShippingOptions(payload: QuoteCartItemShippingOptionsMessage) {
     return this.send(
       ORDERS_MESSAGE_PATTERNS.quoteCartItemShippingOptions,

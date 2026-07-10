@@ -1,5 +1,5 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { OfferForOrdering, OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { OfferForOrdering, OfferVariantForOrdering, OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { WholesalePricingPort } from '../ports';
 import { OrderNotificationService, OrderPlacementService, PayOSPaymentService, ShippingCarrierAdapterService } from '../services';
 import { toOrderResponse } from './orders.mapper';
@@ -20,6 +20,7 @@ export class CreateOrderUseCase {
     buyerShopId?: string | null;
     buyerDistributionNodeId?: string | null;
     offerId: string;
+    variantId?: string | null;
     quantity: number;
     paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | null;
     affiliateCode?: string | null;
@@ -44,7 +45,9 @@ export class CreateOrderUseCase {
     if (!Number.isInteger(input.quantity) || input.quantity < 1) {
       throw new BadRequestException('Quantity must be greater than zero');
     }
-    if (input.quantity > offer.availableQuantity) {
+    const variant = await this.resolveVariant(input, offer);
+    const availableQuantity = variant ? variant.availableQuantity : offer.availableQuantity;
+    if (input.quantity > availableQuantity) {
       throw new BadRequestException('Quantity exceeds available stock');
     }
 
@@ -59,7 +62,7 @@ export class CreateOrderUseCase {
     const shipping = this.resolveShippingSnapshot(input, buyer);
     const shippingMethod = await this.resolveShippingMethod(input.shippingProviderCode);
     const parcel = this.resolveShippingParcel(offer, shippingMethod.providerCode);
-    const pricing = await this.resolvePricing(input, offer);
+    const pricing = await this.resolvePricing(input, offer, variant);
     const quote = await this.shippingCarrierAdapterService.quoteShipment({
       providerCode: shippingMethod.providerCode,
       shippingName: shipping.name,
@@ -107,6 +110,7 @@ export class CreateOrderUseCase {
         paymentMethod,
         item: {
           offerId: offer.id,
+          variantId: variant?.id ?? null,
           offerTitleSnapshot: offer.title,
           unitPrice: pricing.unitPrice,
           quantity: input.quantity,
@@ -160,7 +164,31 @@ export class CreateOrderUseCase {
     if (offer.shopId === input.buyerShopId) throw new BadRequestException('Buyer shop cannot order its own offer');
   }
 
-  private async resolvePricing(input: { buyerShopId?: string | null; buyerDistributionNodeId?: string | null; quantity: number }, offer: OfferForOrdering) {
+  private async resolveVariant(input: { variantId?: string | null }, offer: OfferForOrdering) {
+    const variantId = input.variantId?.trim() || null;
+    if (!variantId) {
+      const variantCount = await this.ordersRepository.countOfferVariants(offer.id);
+      if (variantCount > 0) {
+        throw new BadRequestException('Variant is required for this offer');
+      }
+      return null;
+    }
+
+    const variant = await this.ordersRepository.findOfferVariantForOrdering({
+      offerId: offer.id,
+      variantId,
+    });
+    if (!variant || !variant.isActive) {
+      throw new BadRequestException('Variant is not available');
+    }
+    return variant;
+  }
+
+  private async resolvePricing(
+    input: { buyerShopId?: string | null; buyerDistributionNodeId?: string | null; quantity: number },
+    offer: OfferForOrdering,
+    variant: OfferVariantForOrdering | null,
+  ) {
     if (input.buyerShopId && input.buyerDistributionNodeId) {
       const pricing = await this.wholesalePricingPort.resolve({
         buyerShopId: input.buyerShopId,
@@ -173,7 +201,7 @@ export class CreateOrderUseCase {
       }
       return pricing;
     }
-    const unitPrice = Number(offer.price.toString());
+    const unitPrice = Number((variant?.price ?? offer.price).toString());
     const baseAmount = this.roundMoney(unitPrice * input.quantity);
     const platformFeeAmount = this.roundMoney(baseAmount * 0.2);
     return {

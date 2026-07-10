@@ -1662,6 +1662,11 @@ export class CreateOrderDto {
   @IsString()
   offerId!: string;
 
+  @ApiPropertyOptional({ example: 'variant-id', nullable: true })
+  @IsOptional()
+  @IsString()
+  variantId?: string;
+
   @ApiProperty({ example: 2 })
   @Type(() => Number)
   @IsInt()

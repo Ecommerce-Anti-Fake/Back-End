@@ -153,6 +153,7 @@ export class CheckoutCartUseCase {
         items: shopItems.map((item) => ({
           sourceCartItemId: item.id,
           offerId: item.offerId,
+          variantId: item.variantId ?? null,
           offerTitleSnapshot: item.offerTitleSnapshot,
           unitPrice: Number(item.unitPriceSnapshot.toString()),
           quantity: item.quantity,

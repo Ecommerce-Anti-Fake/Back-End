@@ -29,6 +29,37 @@ export class OrderController {
       buyerShopId: dto.buyerShopId ?? null,
       buyerDistributionNodeId: dto.buyerDistributionNodeId ?? null,
       offerId: dto.offerId,
+      variantId: dto.variantId ?? null,
+      quantity: dto.quantity,
+      affiliateCode: dto.affiliateCode ?? null,
+      paymentMethod: dto.paymentMethod ?? null,
+      shippingName: dto.shippingName ?? null,
+      shippingPhone: dto.shippingPhone ?? null,
+      shippingAddress: dto.shippingAddress ?? null,
+      shippingDistrictId: dto.shippingDistrictId ?? null,
+      shippingDistrictName: dto.shippingDistrictName ?? null,
+      shippingWardCode: dto.shippingWardCode ?? null,
+      shippingWardName: dto.shippingWardName ?? null,
+      shippingProviderCode: dto.shippingProviderCode ?? null,
+      shippingServiceId: dto.shippingServiceId ?? null,
+      shippingServiceTypeId: dto.shippingServiceTypeId ?? null,
+    });
+    this.dashboardSseBrokerService.notifyOrderChanged(result, buyerUserId);
+
+    return result;
+  }
+
+  @ApiOperation({ summary: 'Buy Now checkout tu offer, khong thay doi gio hang' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('buy-now')
+  async buyNowCheckout(@CurrentUserId() buyerUserId: string, @Body() dto: CreateOrderDto) {
+    const result = await this.ordersRpcService.buyNowCheckout({
+      buyerUserId,
+      buyerShopId: dto.buyerShopId ?? null,
+      buyerDistributionNodeId: dto.buyerDistributionNodeId ?? null,
+      offerId: dto.offerId,
+      variantId: dto.variantId ?? null,
       quantity: dto.quantity,
       affiliateCode: dto.affiliateCode ?? null,
       paymentMethod: dto.paymentMethod ?? null,
