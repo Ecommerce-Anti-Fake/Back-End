@@ -148,6 +148,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   removeCartItem: 'orders.remove-cart-item',
   checkoutCart: 'orders.checkout-cart',
   checkoutCartItem: 'orders.checkout-cart-item',
+  buyNowCheckout: 'orders.buy-now-checkout',
   quoteCartItemShippingOptions: 'orders.quote-cart-item-shipping-options',
   quoteCartShippingOptions: 'orders.quote-cart-shipping-options',
   create: 'orders.create',
@@ -1013,6 +1014,7 @@ export type CreateOrderMessage = {
   buyerShopId?: string | null;
   buyerDistributionNodeId?: string | null;
   offerId: string;
+  variantId?: string | null;
   quantity: number;
   paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | null;
   affiliateCode?: string | null;
@@ -1073,6 +1075,15 @@ export type CheckoutCartMessage = {
   paymentMethod: 'COD' | 'PAYOS';
   shippingOptionCode: string;
   affiliateCode?: string | null;
+};
+
+export type BuyNowCheckoutMessage = {
+  buyerUserId: string;
+  offerId: string;
+  variantId?: string | null;
+  quantity: number;
+  paymentMethod: 'COD' | 'PAYOS';
+  shippingOptionCode: string;
 };
 
 export type QuoteCartItemShippingOptionsMessage = {

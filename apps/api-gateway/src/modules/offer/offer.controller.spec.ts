@@ -52,6 +52,12 @@ describe('OfferController', () => {
     expect(
       Reflect.getMetadata(
         PATH_METADATA,
+        OfferController.prototype.buyNowCheckout,
+      ),
+    ).toBe('offers/buy-now/checkout');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
         OfferController.prototype.createOfferVariant,
       ),
     ).toBe('offers/:offerId/variants');
@@ -81,6 +87,7 @@ describe('OfferController', () => {
     };
     const controller = new OfferController(
       catalogRpcService as never,
+      { buyNowCheckout: jest.fn() } as never,
       { notifyShop: jest.fn() } as never,
     );
 
@@ -138,6 +145,7 @@ describe('OfferController', () => {
     };
     const controller = new OfferController(
       catalogRpcService as never,
+      { buyNowCheckout: jest.fn() } as never,
       { notifyShop: jest.fn() } as never,
     );
 
@@ -201,6 +209,7 @@ describe('OfferController', () => {
     };
     const controller = new OfferController(
       catalogRpcService as never,
+      { buyNowCheckout: jest.fn() } as never,
       { notifyShop: jest.fn() } as never,
     );
 
@@ -228,6 +237,7 @@ describe('OfferController', () => {
     const dashboardSseBrokerService = { notifyShop: jest.fn() };
     const controller = new OfferController(
       catalogRpcService as never,
+      { buyNowCheckout: jest.fn() } as never,
       dashboardSseBrokerService as never,
     );
 
@@ -292,6 +302,42 @@ describe('OfferController', () => {
     expect(result).not.toHaveProperty('price');
   });
 
+  it('checks out Buy Now from offers without frontend shipping fields', async () => {
+    const ordersRpcService = {
+      buyNowCheckout: jest.fn().mockResolvedValue({
+        orderId: 'order-1',
+        checkoutUrl: 'https://pay.payos.vn/web/link-1',
+      }),
+    };
+    const dashboardSseBrokerService = { notifyOrderChanged: jest.fn(), notifyShop: jest.fn() };
+    const controller = new OfferController(
+      {} as never,
+      ordersRpcService as never,
+      dashboardSseBrokerService as never,
+    );
+
+    const result = await controller.buyNowCheckout('buyer-1', {
+      offerId: 'offer-1',
+      variantId: 'variant-1',
+      quantity: 2,
+      paymentMethod: 'PAYOS',
+      shippingOptionCode: 'GHN_1',
+    });
+
+    expect(ordersRpcService.buyNowCheckout).toHaveBeenCalledWith({
+      buyerUserId: 'buyer-1',
+      offerId: 'offer-1',
+      variantId: 'variant-1',
+      quantity: 2,
+      paymentMethod: 'PAYOS',
+      shippingOptionCode: 'GHN_1',
+    });
+    expect(ordersRpcService.buyNowCheckout.mock.calls[0][0]).not.toHaveProperty('shippingName');
+    expect(ordersRpcService.buyNowCheckout.mock.calls[0][0]).not.toHaveProperty('shippingAddress');
+    expect(ordersRpcService.buyNowCheckout.mock.calls[0][0]).not.toHaveProperty('shippingProviderCode');
+    expect(dashboardSseBrokerService.notifyOrderChanged).toHaveBeenCalledWith(result, 'buyer-1');
+  });
+
   it('returns compact public offer list items', async () => {
     const catalogRpcService = {
       findOffers: jest.fn().mockResolvedValue({
@@ -333,6 +379,7 @@ describe('OfferController', () => {
     };
     const controller = new OfferController(
       catalogRpcService as never,
+      { buyNowCheckout: jest.fn() } as never,
       { notifyShop: jest.fn() } as never,
     );
 
@@ -380,6 +427,7 @@ describe('OfferController', () => {
     };
     const controller = new OfferController(
       catalogRpcService as never,
+      { buyNowCheckout: jest.fn() } as never,
       { notifyShop: jest.fn() } as never,
     );
 
@@ -465,6 +513,7 @@ describe('OfferController', () => {
     };
     const controller = new OfferController(
       catalogRpcService as never,
+      { buyNowCheckout: jest.fn() } as never,
       { notifyShop: jest.fn() } as never,
     );
 

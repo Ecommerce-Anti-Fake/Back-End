@@ -16,6 +16,7 @@ import {
   AdminRiskScoresLookupMessage,
   AdminReportsLookupMessage,
   CalculateRiskScoreMessage,
+  BuyNowCheckoutMessage,
   CreateOrderMessage,
   CreateReportMessage,
   CheckoutCartItemMessage,
@@ -89,6 +90,10 @@ export class OrdersRpcService {
 
   checkoutCart(payload: CheckoutCartMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.checkoutCart, payload);
+  }
+
+  buyNowCheckout(payload: BuyNowCheckoutMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.buyNowCheckout, payload);
   }
 
   quoteCartItemShippingOptions(payload: QuoteCartItemShippingOptionsMessage) {

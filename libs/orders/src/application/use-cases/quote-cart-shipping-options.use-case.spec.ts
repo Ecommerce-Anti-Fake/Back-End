@@ -1,7 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
-import { ShippingCarrierAdapterService } from '../services';
+import { CheckoutShippingService, ShippingCarrierAdapterService } from '../services';
 import { QuoteCartShippingOptionsUseCase } from './quote-cart-shipping-options.use-case';
 
 describe('QuoteCartShippingOptionsUseCase', () => {
@@ -21,10 +21,11 @@ describe('QuoteCartShippingOptionsUseCase', () => {
     ordersRepositoryMock.findActiveShippingCarriers.mockResolvedValue([
       { code: 'GHN', name: 'Giao Hang Nhanh', description: null },
     ]);
-    useCase = new QuoteCartShippingOptionsUseCase(
+    const checkoutShippingService = new CheckoutShippingService(
       ordersRepositoryMock as unknown as OrdersRepository,
       shippingCarrierAdapterMock as unknown as ShippingCarrierAdapterService,
     );
+    useCase = new QuoteCartShippingOptionsUseCase(ordersRepositoryMock as unknown as OrdersRepository, checkoutShippingService);
   });
 
   it('quotes one GHN shipment per shop when cart has multiple items from the same shop', async () => {

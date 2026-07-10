@@ -57,14 +57,11 @@ type VerificationSummaryRecord = {
 
 export function toShopDocumentResponse(document: ShopDocumentRecord) {
   const files = [...(document.files ?? [])].sort((left, right) => left.sortOrder - right.sortOrder);
-  const firstFile = files[0] ?? null;
 
   return {
     id: document.id,
     requirementId: document.requirementId ?? null,
     docType: document.docType,
-    fileUrl: firstFile?.fileUrl ?? '',
-    mediaAssetId: firstFile?.mediaAssetId ?? null,
     files,
     reviewStatus: document.reviewStatus,
     reviewNote: document.reviewNote,

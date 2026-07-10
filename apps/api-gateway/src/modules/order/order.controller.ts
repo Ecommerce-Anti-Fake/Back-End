@@ -29,6 +29,7 @@ export class OrderController {
       buyerShopId: dto.buyerShopId ?? null,
       buyerDistributionNodeId: dto.buyerDistributionNodeId ?? null,
       offerId: dto.offerId,
+      variantId: dto.variantId ?? null,
       quantity: dto.quantity,
       affiliateCode: dto.affiliateCode ?? null,
       paymentMethod: dto.paymentMethod ?? null,

@@ -1668,6 +1668,11 @@ export class CreateOrderDto {
   @IsString()
   offerId!: string;
 
+  @ApiPropertyOptional({ example: 'variant-id', nullable: true })
+  @IsOptional()
+  @IsString()
+  variantId?: string;
+
   @ApiProperty({ example: 2 })
   @Type(() => Number)
   @IsInt()
@@ -1866,6 +1871,31 @@ export class CheckoutCartDto {
   affiliateCode?: string;
 }
 
+export class BuyNowCheckoutDto {
+  @ApiProperty({ example: 'offer-id' })
+  @IsString()
+  offerId!: string;
+
+  @ApiPropertyOptional({ example: 'variant-id', nullable: true })
+  @IsOptional()
+  @IsString()
+  variantId?: string;
+
+  @ApiProperty({ example: 2 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  quantity!: number;
+
+  @ApiProperty({ example: 'PAYOS', enum: ['COD', 'PAYOS'] })
+  @IsIn(['COD', 'PAYOS'])
+  paymentMethod!: 'COD' | 'PAYOS';
+
+  @ApiProperty({ example: 'GHN_1' })
+  @IsString()
+  shippingOptionCode!: string;
+}
+
 export class CheckoutCartCodResponseDto {
   @ApiProperty({ example: true })
   success!: boolean;
@@ -1880,6 +1910,9 @@ export class CheckoutCartPayOSResponseDto {
 
   @ApiProperty({ example: 1776240000123 })
   orderCode!: number;
+
+  @ApiProperty({ example: 'payment-link-id' })
+  paymentLinkId!: string;
 
   @ApiProperty({ example: 'https://pay.payos.vn/web/payment-link-id' })
   checkoutUrl!: string;
