@@ -99,6 +99,7 @@ describe('CheckoutCartUseCase', () => {
     expect(result).toEqual({
       orderId: 'order-1',
       orderCode: 1776240000123,
+      paymentLinkId: 'link-1',
       checkoutUrl: 'https://pay.payos.vn/web/link-1',
     });
     expect(orderPlacementService.createAggregateOrder).toHaveBeenCalledTimes(1);
