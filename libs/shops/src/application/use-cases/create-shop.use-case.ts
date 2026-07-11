@@ -11,7 +11,7 @@ export class CreateShopUseCase {
     shopName: string;
     registrationType: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
     businessType: string;
-    phone?: string | null;
+    phone: string;
     taxCode?: string | null;
     warehouseAddress?: string | null;
     warehouseProvinceCode?: string | null;
@@ -37,6 +37,10 @@ export class CreateShopUseCase {
 
     if (!businessType) {
       throw new BadRequestException('Business type is required');
+    }
+
+    if (!phone) {
+      throw new BadRequestException('Shop phone is required');
     }
 
     if (categoryIds.length === 0) {
