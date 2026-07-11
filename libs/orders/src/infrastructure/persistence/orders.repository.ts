@@ -659,8 +659,17 @@ export class OrdersRepository {
         price: true,
         availableQuantity: true,
         isActive: true,
+        values: {
+          select: {
+            optionValue: { select: { isVisible: true } },
+          },
+        },
       },
     });
+  }
+
+  findCurrentOfferForCart(offerId: string) {
+    return this.findOfferForOrdering(offerId);
   }
 
   findDefaultAddressByUserId(userId: string) {

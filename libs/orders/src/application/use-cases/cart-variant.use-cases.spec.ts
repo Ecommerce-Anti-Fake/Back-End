@@ -114,6 +114,13 @@ describe('cart variant use cases', () => {
     ).rejects.toThrow('Quantity exceeds available stock');
     expect(ordersRepository.updateCartItemQuantity).not.toHaveBeenCalled();
   });
+
+  it('rejects a non-integer update quantity', async () => {
+    const useCase = new UpdateCartItemUseCase(ordersRepository as never);
+    await expect(useCase.execute({
+      buyerUserId: 'buyer-1', cartItemId: 'cart-item-1', quantity: 1.5,
+    })).rejects.toThrow('Quantity must be greater than zero');
+  });
 });
 
 function createOffer(input: { hasVariants: boolean }) {

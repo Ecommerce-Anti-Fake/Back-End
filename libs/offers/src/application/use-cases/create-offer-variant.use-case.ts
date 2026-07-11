@@ -70,6 +70,11 @@ export class CreateOfferVariantUseCase {
         'A variant cannot contain multiple values from the same option group',
       );
     }
+    if (new Set(selectedValues.map((value) => value.optionGroupId)).size !== offer.optionGroups.length) {
+      throw new BadRequestException(
+        'A variant must select exactly one value from every option group',
+      );
+    }
 
     if (
       await this.offersRepository.findOfferVariantByOptionValueIds(
