@@ -114,6 +114,14 @@ export class CreateOrderUseCase {
           offerTitleSnapshot: offer.title,
           unitPrice: pricing.unitPrice,
           quantity: input.quantity,
+          selectedOptions: (variant?.values ?? []).map(({ optionValue }) => ({
+            optionGroupId: optionValue.optionGroupId,
+            optionValueId: optionValue.id,
+            optionGroupDisplayName: optionValue.optionGroup.displayName,
+            optionValueText: optionValue.text,
+            mediaAssetId: optionValue.mediaAssetId,
+            mediaUrl: optionValue.mediaAsset?.secureUrl ?? null,
+          })),
         },
       },
       affiliateAttribution: input.affiliateCode
@@ -178,7 +186,7 @@ export class CreateOrderUseCase {
       offerId: offer.id,
       variantId,
     });
-    if (!variant || !variant.isActive) {
+    if (!variant || !variant.isActive || (variant.values ?? []).some((value) => !value.optionValue.isVisible)) {
       throw new BadRequestException('Variant is not available');
     }
     return variant;

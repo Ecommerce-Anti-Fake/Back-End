@@ -193,9 +193,9 @@ export class OffersRepository {
     });
   }
 
-  findMediaAssetById(id: string) {
-    return this.prisma.mediaAsset.findUnique({
-      where: { id },
+  findMediaAssetById(id: string, ownerUserId?: string) {
+    return this.prisma.mediaAsset.findFirst({
+      where: { id, ...(ownerUserId ? { ownerUserId } : {}) },
       select: { id: true },
     });
   }
@@ -213,7 +213,7 @@ export class OffersRepository {
           select: {
             id: true,
             values: {
-              where: { id: { in: optionValueIds } },
+              where: { id: { in: optionValueIds }, isVisible: true },
               select: { id: true },
             },
           },

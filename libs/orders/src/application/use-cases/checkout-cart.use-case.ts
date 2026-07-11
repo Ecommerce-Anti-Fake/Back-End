@@ -153,6 +153,14 @@ export class CheckoutCartUseCase {
           offerTitleSnapshot: item.offerTitleSnapshot,
           unitPrice: Number(item.unitPriceSnapshot.toString()),
           quantity: item.quantity,
+          selectedOptions: item.variant?.values.map(({ optionValue }) => ({
+            optionGroupId: optionValue.optionGroupId,
+            optionValueId: optionValue.id,
+            optionGroupDisplayName: optionValue.optionGroup.displayName,
+            optionValueText: optionValue.text,
+            mediaAssetId: optionValue.mediaAssetId,
+            mediaUrl: optionValue.mediaAsset?.secureUrl ?? null,
+          })),
         })),
       };
     });

@@ -33,6 +33,10 @@ const offerForOrderingArgs = Prisma.validator<Prisma.OfferDefaultArgs>()({
     variants: {
       select: {
         id: true,
+        price: true,
+        availableQuantity: true,
+        isActive: true,
+        values: { include: { optionValue: { include: { optionGroup: true, mediaAsset: true } } } },
       },
     },
   },
@@ -70,6 +74,8 @@ const orderWithRelationsArgs = Prisma.validator<Prisma.OrderDefaultArgs>()({
     },
     items: {
       include: {
+        variant: { include: { values: { include: { optionValue: { include: { optionGroup: true, mediaAsset: true } } } } } },
+        selectedOptions: true,
         batchAllocations: {
           include: {
             batch: {
@@ -287,10 +293,7 @@ const cartWithItemsArgs = Prisma.validator<Prisma.CartDefaultArgs>()({
           },
         },
         variant: {
-          select: {
-            id: true,
-            sku: true,
-          },
+          include: { values: { include: { optionValue: { include: { optionGroup: true, mediaAsset: true } } } } },
         },
       },
       orderBy: {
@@ -301,7 +304,9 @@ const cartWithItemsArgs = Prisma.validator<Prisma.CartDefaultArgs>()({
 });
 
 export type OfferForOrdering = Prisma.OfferGetPayload<typeof offerForOrderingArgs>;
-export type OfferVariantForOrdering = Prisma.OfferVariantGetPayload<Prisma.OfferVariantDefaultArgs>;
+export type OfferVariantForOrdering = Prisma.OfferVariantGetPayload<{
+  include: { values: { include: { optionValue: { include: { optionGroup: true; mediaAsset: true } } } } };
+}>;
 export type OrderWithRelations = Prisma.OrderGetPayload<typeof orderWithRelationsArgs>;
 export type SellerShopOrderRecord = Prisma.OrderGetPayload<typeof sellerShopOrderListArgs>;
 type FinanceOrderRecord = Prisma.OrderGetPayload<{
@@ -414,6 +419,14 @@ export type CreateOrderRecordInput = {
     offerTitleSnapshot: string;
     unitPrice: number;
     quantity: number;
+    selectedOptions?: Array<{
+      optionGroupId: string;
+      optionValueId: string;
+      optionGroupDisplayName: string;
+      optionValueText: string;
+      mediaAssetId: string | null;
+      mediaUrl: string | null;
+    }>;
   };
 };
 export type CreateAggregateOrderRecordInput = {
@@ -453,6 +466,7 @@ export type CreateAggregateOrderRecordInput = {
       offerTitleSnapshot: string;
       unitPrice: number;
       quantity: number;
+      selectedOptions?: CreateOrderRecordInput['item']['selectedOptions'];
       batchAllocations: OrderBatchAllocation[];
     }>;
   }>;
@@ -566,6 +580,7 @@ export class OrdersRepository {
         id: input.variantId,
         offerId: input.offerId,
       },
+      include: { values: { include: { optionValue: { include: { optionGroup: true, mediaAsset: true } } } } },
     });
   }
 
@@ -670,6 +685,8 @@ export class OrdersRepository {
     shopNameSnapshot: string;
   }): Promise<CartWithItems> {
     const cart = await this.getOrCreateActiveCart(input.buyerUserId);
+
+    await this.prisma.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${cart.id}:${input.offerId}:${input.variantId ?? 'offer'}`}))`;
 
     const existingItem = await this.prisma.cartItem.findFirst({
       where: {
@@ -960,8 +977,13 @@ export class OrdersRepository {
         },
         items: {
           create: {
-            ...data.item,
+            offerId: data.item.offerId,
+            variantId: data.item.variantId ?? null,
+            offerTitleSnapshot: data.item.offerTitleSnapshot,
+            unitPrice: data.item.unitPrice,
+            quantity: data.item.quantity,
             orderShopGroupId,
+            selectedOptions: data.item.selectedOptions?.length ? { create: data.item.selectedOptions } : undefined,
             batchAllocations: batchAllocations.length ? { create: batchAllocations } : undefined,
           },
         },
@@ -1045,6 +1067,7 @@ export class OrdersRepository {
               offerTitleSnapshot: item.offerTitleSnapshot,
               unitPrice: item.unitPrice,
               quantity: item.quantity,
+              selectedOptions: item.selectedOptions?.length ? { create: item.selectedOptions } : undefined,
               batchAllocations: item.batchAllocations.length ? { create: item.batchAllocations } : undefined,
             })),
           ),
