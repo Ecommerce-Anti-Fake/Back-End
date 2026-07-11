@@ -5,6 +5,7 @@ type ShopWithCategories = {
   registrationType: string;
   businessType: string;
   taxCode: string | null;
+  phone?: string | null;
   warehouseAddress?: string | null;
   warehouseProvinceCode?: string | null;
   warehouseProvinceName?: string | null;
@@ -31,6 +32,7 @@ export function toShopResponse(shop: ShopWithCategories) {
     registrationType: shop.registrationType,
     businessType: shop.businessType,
     taxCode: shop.taxCode,
+    phone: shop.phone ?? null,
     warehouseAddress: shop.warehouseAddress ?? null,
     warehouseProvinceCode: shop.warehouseProvinceCode ?? null,
     warehouseProvinceName: shop.warehouseProvinceName ?? null,
@@ -56,6 +58,7 @@ export function toMyShopResponse(shop: ShopWithCategories) {
     registrationType: shop.registrationType,
     businessType: shop.businessType,
     taxCode: shop.taxCode,
+    phone: shop.phone ?? null,
     warehouseAddress: shop.warehouseAddress ?? null,
     warehouseProvinceCode: shop.warehouseProvinceCode ?? null,
     warehouseProvinceName: shop.warehouseProvinceName ?? null,

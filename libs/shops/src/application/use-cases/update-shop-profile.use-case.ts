@@ -19,6 +19,7 @@ export class UpdateShopProfileUseCase {
     requesterUserId: string;
     shopName?: string;
     businessType?: string;
+    phone?: string | null;
     taxCode?: string | null;
     warehouseAddress?: string | null;
     warehouseProvinceCode?: string | null;
@@ -36,6 +37,7 @@ export class UpdateShopProfileUseCase {
     const data: {
       shopName?: string;
       businessType?: string;
+      phone?: string | null;
       taxCode?: string | null;
       warehouseAddress?: string | null;
       warehouseProvinceCode?: string | null;
@@ -60,6 +62,10 @@ export class UpdateShopProfileUseCase {
         throw new BadRequestException('Business type is required');
       }
       data.businessType = businessType;
+    }
+
+    if (input.phone !== undefined) {
+      data.phone = input.phone?.trim() || null;
     }
 
     if (input.taxCode !== undefined) {

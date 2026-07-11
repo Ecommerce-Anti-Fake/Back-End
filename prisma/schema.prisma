@@ -1351,6 +1351,7 @@ model Shop {
   registrationType           ShopRegistrationType   @map("registration_type")
   businessType               String                 @map("business_type")
   taxCode                    String?                @map("tax_code")
+  phone                      String?
   shopStatus                 String                 @map("shop_status")
   avatarMediaId              String?                @map("avatar_media_id") @unique
   bannerMediaId              String?                @map("banner_media_id") @unique

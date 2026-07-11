@@ -73,6 +73,12 @@ export class ShopResponseDto {
   })
   businessType!: string;
 
+  @ApiPropertyOptional({ description: 'So dien thoai lien he cua shop.', example: '0901234567', nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  phone?: string | null;
+
   @ApiPropertyOptional({
     description: 'Ma so thue cua shop.',
     example: '0312345678',
@@ -1012,6 +1018,12 @@ export class UpdateShopProfileDto {
   @MinLength(2)
   @MaxLength(100)
   businessType?: string;
+
+  @ApiPropertyOptional({ description: 'So dien thoai lien he cua shop.', example: '0901234567', nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  phone?: string | null;
 
   @ApiPropertyOptional({
     description: 'Ma so thue, DKKD hoac CCCD dai dien.',

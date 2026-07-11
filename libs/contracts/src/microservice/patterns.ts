@@ -432,6 +432,7 @@ export type CreateShopMessage = {
   shopName: string;
   registrationType: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
   businessType: string;
+  phone?: string | null;
   taxCode?: string | null;
   warehouseAddress?: string | null;
   warehouseProvinceCode?: string | null;
@@ -446,6 +447,7 @@ export type UpdateShopProfileMessage = {
   requesterUserId: string;
   shopName?: string;
   businessType?: string;
+  phone?: string | null;
   taxCode?: string | null;
   warehouseAddress?: string | null;
   warehouseProvinceCode?: string | null;

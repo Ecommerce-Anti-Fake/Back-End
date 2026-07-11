@@ -60,6 +60,7 @@ describe('ShopsRepository', () => {
       pageSize: 10,
       items: [
         {
+          phone: null,
           shopId: 'shop-1',
           shopName: 'Shop ABC',
           shopAvatar: 'https://cdn.test/shop-avatar.jpg',
@@ -119,6 +120,7 @@ describe('ShopsRepository', () => {
     const repository = new ShopsRepository(prisma as never);
 
     await expect(repository.findPublicShopSummaryByOfferId('offer-1')).resolves.toEqual({
+      phone: null,
       shopId: 'shop-1',
       shopName: 'Shop ABC',
       shopAvatar: 'https://cdn.test/shop-avatar.jpg',
@@ -173,6 +175,7 @@ describe('ShopsRepository', () => {
     const repository = new ShopsRepository(prisma as never);
 
     await expect(repository.findPublicShopDetailById('shop-1')).resolves.toEqual({
+      phone: null,
       shopId: 'shop-1',
       shopName: 'Shop ABC',
       shopAvatar: 'https://cdn.test/shop-avatar.jpg',

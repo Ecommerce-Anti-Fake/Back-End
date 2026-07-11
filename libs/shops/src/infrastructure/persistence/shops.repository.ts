@@ -192,6 +192,7 @@ export class ShopsRepository {
     shopName: string;
     registrationType: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
     businessType: string;
+    phone?: string | null;
     taxCode: string | null;
     warehouseAddress?: string | null;
     warehouseProvinceCode?: string | null;
@@ -212,6 +213,7 @@ export class ShopsRepository {
         shopName: data.shopName,
         registrationType: data.registrationType,
         businessType: data.businessType,
+        phone: data.phone ?? null,
         taxCode: data.taxCode,
         warehouseAddress: data.warehouseAddress ?? null,
         warehouseProvinceCode: data.warehouseProvinceCode ?? null,
@@ -365,6 +367,7 @@ export class ShopsRepository {
       select: {
         id: true,
         shopName: true,
+        phone: true,
         shopStatus: true,
         createdAt: true,
         avatarMedia: {
@@ -410,6 +413,7 @@ export class ShopsRepository {
         select: {
           id: true,
           shopName: true,
+          phone: true,
           shopStatus: true,
           createdAt: true,
           avatarMedia: {
@@ -452,6 +456,7 @@ export class ShopsRepository {
           select: {
             id: true,
             shopName: true,
+            phone: true,
             shopStatus: true,
             createdAt: true,
             avatarMedia: {
@@ -515,6 +520,7 @@ export class ShopsRepository {
   private async toPublicShopSummary(shop: {
     id: string;
     shopName: string;
+    phone?: string | null;
     shopStatus: string;
     createdAt: Date;
     avatarMedia?: { secureUrl: string } | null;
@@ -551,6 +557,7 @@ export class ShopsRepository {
     return {
       shopId: shop.id,
       shopName: shop.shopName,
+      phone: shop.phone ?? null,
       shopAvatar: shop.avatarMedia?.secureUrl ?? '',
       shopBanner: shop.bannerMedia?.secureUrl ?? '',
       rating: Number((reviewStats._avg.rating ?? 0).toFixed(1)),
@@ -566,6 +573,7 @@ export class ShopsRepository {
     shopId: string,
     data: {
       shopName?: string;
+      phone?: string | null;
       businessType?: string;
       taxCode?: string | null;
       warehouseAddress?: string | null;
