@@ -79,7 +79,6 @@ export class CreateWalletWithdrawalDto {
 
 export class WalletWithdrawalResponseDto {
   @ApiProperty() id!: string;
-  @ApiProperty() walletId!: string;
   @ApiProperty({ type: String }) amount!: string;
   @ApiProperty() bankName!: string;
   @ApiProperty() accountNumber!: string;

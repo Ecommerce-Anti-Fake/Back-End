@@ -72,7 +72,6 @@ export class RequestWalletWithdrawalUseCase {
   private toResponse(withdrawal: { id: string; walletId: string; amount: Prisma.Decimal; bankName: string; accountNumber: string; accountHolder: string; status: string; createdAt: Date; processedAt: Date | null }) {
     return {
       id: withdrawal.id,
-      walletId: withdrawal.walletId,
       amount: withdrawal.amount.toFixed(2),
       bankName: withdrawal.bankName,
       accountNumber: withdrawal.accountNumber,
