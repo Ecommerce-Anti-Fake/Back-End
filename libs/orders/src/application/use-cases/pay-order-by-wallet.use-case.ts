@@ -11,7 +11,16 @@ export class PayOrderByWalletUseCase {
   ) {}
 
   async execute(input: { orderId: string; requesterUserId: string; amount: Prisma.Decimal | number }) {
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(
+      (tx) => this.executeInTransaction(tx, input),
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+  }
+
+  async executeInTransaction(
+    tx: Prisma.TransactionClient,
+    input: { orderId: string; requesterUserId: string; amount: Prisma.Decimal | number },
+  ) {
       const order = await tx.order.findUnique({
         where: { id: input.orderId },
         include: { paymentIntent: true, escrow: true },
@@ -83,6 +92,6 @@ export class PayOrderByWalletUseCase {
         data: { orderStatus: 'paid', fulfillmentStatus: 'PENDING' },
         include: { paymentIntent: true, escrow: true },
       });
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+
   }
 }

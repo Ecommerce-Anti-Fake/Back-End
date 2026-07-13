@@ -45,7 +45,7 @@ export class CheckoutCartUseCase {
     const sellerReceivableAmount = groups.reduce((total, group) => total + group.sellerReceivableAmount, 0);
     const buyerPayableAmount = this.roundMoney(baseAmount + shippingOption.shippingFee);
 
-    const order = await this.orderPlacementService.createAggregateOrder({
+    const orderInput = {
       buyerUserId: input.buyerUserId,
       legacyShopId: groups[0].shopId,
       paymentMethod: input.paymentMethod,
@@ -71,7 +71,29 @@ export class CheckoutCartUseCase {
             commissionBase: platformFeeAmount,
           }
         : undefined,
-    });
+    };
+
+    if (input.paymentMethod === 'WALLET') {
+      const order = await this.ordersRepository.withSerializableTransaction(async (tx) => {
+        const createdOrder = await this.orderPlacementService.createAggregateOrderInTransaction(tx, orderInput);
+        await this.payOrderByWalletUseCase.executeInTransaction(tx, {
+          orderId: createdOrder.id,
+          requesterUserId: input.buyerUserId,
+          amount: createdOrder.buyerPayableAmount,
+        });
+        await tx.cartItem.deleteMany({
+          where: {
+            id: { in: selectedItems.map((item) => item.id) },
+            cart: { buyerUserId: input.buyerUserId },
+          },
+        });
+        return createdOrder;
+      });
+      await this.orderNotificationService.notifyCreated(order);
+      return { success: true, message: 'Đặt hàng và thanh toán bằng ví thành công.' };
+    }
+
+    const order = await this.orderPlacementService.createAggregateOrder(orderInput);
     await this.orderNotificationService.notifyCreated(order);
 
     if (input.paymentMethod === 'COD') {
@@ -80,19 +102,6 @@ export class CheckoutCartUseCase {
         cartItemIds: selectedItems.map((item) => item.id),
       });
       return { success: true, orderId: order.id };
-    }
-
-    if (input.paymentMethod === 'WALLET') {
-      const paidOrder = await this.payOrderByWalletUseCase.execute({
-        orderId: order.id,
-        requesterUserId: input.buyerUserId,
-        amount: order.buyerPayableAmount,
-      });
-      await this.ordersRepository.removeCartItems({
-        buyerUserId: input.buyerUserId,
-        cartItemIds: selectedItems.map((item) => item.id),
-      });
-      return paidOrder;
     }
 
     let paymentLink: Awaited<ReturnType<PayOSPaymentService['createPaymentLink']>>;

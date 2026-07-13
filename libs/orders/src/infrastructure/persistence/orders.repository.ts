@@ -554,6 +554,12 @@ export class OrdersRepository {
     return this.prisma.$transaction((tx) => callback(tx));
   }
 
+  withSerializableTransaction<T>(callback: (tx: Prisma.TransactionClient) => Promise<T>) {
+    return this.prisma.$transaction((tx) => callback(tx), {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    });
+  }
+
   findOrderForReversal(tx: Prisma.TransactionClient, id: string) {
     return tx.order.findUnique({
       where: { id },
