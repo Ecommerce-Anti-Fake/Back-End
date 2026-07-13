@@ -67,6 +67,7 @@ export class ShopController {
       shopName: dto.shopName,
       registrationType: dto.registrationType,
       businessType: dto.businessType,
+      phone: dto.phone,
       taxCode: dto.taxCode ?? null,
       warehouseAddress: dto.warehouseAddress ?? null,
       warehouseProvinceCode: dto.warehouseProvinceCode ?? null,

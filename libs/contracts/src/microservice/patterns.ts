@@ -93,6 +93,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   findOffers: 'products.find-offers',
   findAdminOffers: 'products.find-admin-offers',
   findOfferById: 'products.find-offer-by-id',
+  getBuyNowOfferPreview: 'products.get-buy-now-offer-preview',
   findFavoriteOffers: 'products.find-favorite-offers',
   addFavoriteOffer: 'products.add-favorite-offer',
   removeFavoriteOffer: 'products.remove-favorite-offer',
@@ -149,6 +150,7 @@ export const ORDERS_MESSAGE_PATTERNS = {
   checkoutCart: 'orders.checkout-cart',
   checkoutCartItem: 'orders.checkout-cart-item',
   buyNowCheckout: 'orders.buy-now-checkout',
+  quoteBuyNowShippingOptions: 'orders.quote-buy-now-shipping-options',
   quoteCartItemShippingOptions: 'orders.quote-cart-item-shipping-options',
   quoteCartShippingOptions: 'orders.quote-cart-shipping-options',
   create: 'orders.create',
@@ -278,7 +280,7 @@ export type CurrentUserProfileCompletionMessage = {
 
 export type ListNotificationsMessage = {
   userId: string;
-  unreadOnly?: boolean;
+  filter?: 'unread' | 'readed';
   page?: number;
   pageSize?: number;
 };
@@ -433,6 +435,7 @@ export type CreateShopMessage = {
   shopName: string;
   registrationType: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
   businessType: string;
+  phone: string;
   taxCode?: string | null;
   warehouseAddress?: string | null;
   warehouseProvinceCode?: string | null;
@@ -447,6 +450,7 @@ export type UpdateShopProfileMessage = {
   requesterUserId: string;
   shopName?: string;
   businessType?: string;
+  phone?: string | null;
   taxCode?: string | null;
   warehouseAddress?: string | null;
   warehouseProvinceCode?: string | null;
@@ -594,6 +598,16 @@ export type ReviewBrandAuthorizationMessage = {
 
 export type OfferLookupMessage = {
   id: string;
+};
+
+export type BuyNowOfferPreviewMessage = {
+  offerId: string;
+  variantId?: string | null;
+  quantity: number;
+};
+
+export type QuoteBuyNowShippingOptionsMessage = BuyNowOfferPreviewMessage & {
+  buyerUserId: string;
 };
 
 export type FavoriteOfferMessage = {

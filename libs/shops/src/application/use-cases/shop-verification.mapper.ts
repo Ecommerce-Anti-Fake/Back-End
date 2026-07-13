@@ -33,7 +33,11 @@ type VerificationSummaryRecord = {
   id: string;
   shopStatus: string;
   registrationType: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
-  documents: Array<{ reviewStatus: string }>;
+  documents: Array<{
+    reviewStatus: string;
+    reviewNote: string | null;
+    uploadedAt: Date;
+  }>;
   registeredCategories: Array<{
     categoryId: string;
     registrationStatus: string;
@@ -48,6 +52,7 @@ type VerificationSummaryRecord = {
   owner: {
     kyc: {
       verificationStatus: string;
+      reviewNote: string | null;
       documents: Array<{
         side: 'FRONT' | 'BACK';
       }>;
@@ -100,6 +105,12 @@ export function toShopVerificationSummaryResponse(shop: VerificationSummaryRecor
   const requiresShopDocuments = true;
   const approvedShopDocuments = shop.documents.filter((document) => document.reviewStatus === 'approved').length;
   const hasApprovedShopDocument = approvedShopDocuments > 0;
+  const rejectedKycReviewNote =
+    shop.owner.kyc?.verificationStatus === 'rejected' ? shop.owner.kyc.reviewNote : null;
+  const rejectedShopDocumentReviewNote =
+    [...shop.documents]
+      .filter((document) => document.reviewStatus === 'rejected' && document.reviewNote)
+      .sort((left, right) => right.uploadedAt.getTime() - left.uploadedAt.getTime())[0]?.reviewNote ?? null;
 
   const categories = shop.registeredCategories.map((registration) => ({
     categoryId: registration.category.id,
@@ -123,6 +134,7 @@ export function toShopVerificationSummaryResponse(shop: VerificationSummaryRecor
     shopId: shop.id,
     shopStatus: shop.shopStatus,
     registrationType: shop.registrationType,
+    reviewNote: rejectedKycReviewNote ?? rejectedShopDocumentReviewNote ?? null,
     canOperate: shop.shopStatus === 'verified',
     kycStatus:
       kycStatus === 'approved' || kycStatus === 'pending' || kycStatus === 'rejected' ? kycStatus : 'missing',

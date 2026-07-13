@@ -73,6 +73,12 @@ export class ShopResponseDto {
   })
   businessType!: string;
 
+  @ApiProperty({ description: 'So dien thoai lien he cua shop.', example: '0901234567' })
+  @IsString()
+  @MinLength(8)
+  @MaxLength(30)
+  phone!: string;
+
   @ApiPropertyOptional({
     description: 'Ma so thue cua shop.',
     example: '0312345678',
@@ -443,6 +449,13 @@ export class ShopVerificationSummaryResponseDto {
     example: 'MANUFACTURER',
   })
   registrationType!: 'NORMAL' | 'HANDMADE' | 'MANUFACTURER' | 'DISTRIBUTOR';
+
+  @ApiPropertyOptional({
+    description: 'Ghi chu review moi nhat khi ho so shop/KYC bi tu choi.',
+    example: 'Anh giay to chua ro, vui long gui lai.',
+    nullable: true,
+  })
+  reviewNote!: string | null;
 
   @ApiProperty({ example: false })
   canOperate!: boolean;
@@ -934,6 +947,12 @@ export class CreateShopDto {
   @MaxLength(100)
   businessType!: string;
 
+  @ApiProperty({ description: 'So dien thoai lien he cua shop.', example: '0901234567' })
+  @IsString()
+  @MinLength(8)
+  @MaxLength(30)
+  phone!: string;
+
   @ApiPropertyOptional({
     description: 'Ma so thue cua shop.',
     example: '0312345678',
@@ -1005,6 +1024,12 @@ export class UpdateShopProfileDto {
   @MinLength(2)
   @MaxLength(100)
   businessType?: string;
+
+  @ApiPropertyOptional({ description: 'So dien thoai lien he cua shop.', example: '0901234567', nullable: true })
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  phone?: string | null;
 
   @ApiPropertyOptional({
     description: 'Ma so thue, DKKD hoac CCCD dai dien.',

@@ -1,5 +1,5 @@
 import { Controller, Param, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import { OrdersRpcService } from '../order/orders-rpc.service';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
@@ -15,10 +15,15 @@ export class OrderShippingController {
   @ApiOperation({ summary: 'Seller tao van don voi don vi van chuyen da chon' })
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post(':id/shipping/book')
-  async bookShipping(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
+  @ApiParam({
+    name: 'orderId',
+    description: 'ID của đơn hàng cần tạo vận đơn',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @Post(':orderId/shipping/book')
+  async bookShipping(@Param('orderId') orderId: string, @CurrentUserId() requesterUserId: string) {
     const result = await this.ordersRpcService.bookShipping({
-      id,
+      id: orderId,
       requesterUserId,
     });
     this.dashboardSseBrokerService.notifyOrderChanged(result);

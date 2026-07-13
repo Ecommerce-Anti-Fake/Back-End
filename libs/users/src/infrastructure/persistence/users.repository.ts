@@ -125,12 +125,13 @@ export class UsersRepository {
     });
   }
 
-  async listNotifications(input: { userId: string; unreadOnly?: boolean; page?: number; pageSize?: number }) {
+  async listNotifications(input: { userId: string; filter?: 'unread' | 'readed'; page?: number; pageSize?: number }) {
     const page = Math.max(1, Number(input.page || 1));
     const pageSize = Math.min(100, Math.max(1, Number(input.pageSize || 20)));
     const where: Prisma.NotificationWhereInput = {
       userId: input.userId,
-      ...(input.unreadOnly ? { readAt: null } : {}),
+      ...(input.filter === 'unread' ? { readAt: null } : {}),
+      ...(input.filter === 'readed' ? { readAt: { not: null } } : {}),
     };
 
     const [total, unreadCount, items] = await this.prisma.$transaction([

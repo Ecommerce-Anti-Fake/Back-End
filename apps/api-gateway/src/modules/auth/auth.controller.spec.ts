@@ -5,6 +5,7 @@ import { AuthRpcService } from './auth-rpc.service';
 import type { Request, Response } from 'express';
 
 describe('AuthController refresh cookie contract', () => {
+  let nodeEnv: string | undefined;
   const authRpcService = {
     login: jest.fn(),
     firebaseLogin: jest.fn(),
@@ -16,6 +17,9 @@ describe('AuthController refresh cookie contract', () => {
       if (key === 'REFRESH_TOKEN_TTL') {
         return '7d';
       }
+      if (key === 'NODE_ENV') {
+        return nodeEnv;
+      }
       return undefined;
     }),
   } as unknown as jest.Mocked<ConfigService>;
@@ -25,11 +29,39 @@ describe('AuthController refresh cookie contract', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    nodeEnv = undefined;
     controller = new AuthController(authRpcService, configService);
     response = {
       cookie: jest.fn(),
       clearCookie: jest.fn(),
     };
+  });
+
+  it('sets a cross-site refresh cookie in production', async () => {
+    nodeEnv = 'production';
+    authRpcService.login.mockResolvedValue({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      user: {
+        id: 'user-1',
+        email: 'buyer@example.com',
+        phone: null,
+        displayName: 'Buyer',
+        role: 'user',
+        accountStatus: 'active',
+      },
+    });
+
+    await controller.login(
+      { username: 'buyer@example.com', password: '12345678' },
+      response as Response,
+    );
+
+    expect(response.cookie).toHaveBeenCalledWith(
+      'eaf_refresh_token',
+      'refresh-token',
+      expect.objectContaining({ secure: true, sameSite: 'none', path: '/api/auth' }),
+    );
   });
 
   it('sets refresh token in an httpOnly cookie and omits it from login response body', async () => {
@@ -107,6 +139,7 @@ describe('AuthController refresh cookie contract', () => {
   });
 
   it('logs out using the refresh cookie and clears it', async () => {
+    nodeEnv = 'production';
     authRpcService.logout.mockResolvedValue({ loggedOut: true });
 
     await expect(
@@ -119,7 +152,7 @@ describe('AuthController refresh cookie contract', () => {
     expect(authRpcService.logout).toHaveBeenCalledWith({ refreshToken: 'refresh-token' });
     expect(response.clearCookie).toHaveBeenCalledWith(
       'eaf_refresh_token',
-      expect.objectContaining({ path: '/api/auth' }),
+      expect.objectContaining({ secure: true, sameSite: 'none', path: '/api/auth' }),
     );
   });
 });

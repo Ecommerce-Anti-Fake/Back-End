@@ -65,6 +65,43 @@ describe('OffersRepository', () => {
     );
   });
 
+  it('loads only the requested variant for Buy Now preview', async () => {
+    const prisma = { offer: { findUnique: jest.fn().mockResolvedValue(null) } };
+    const repository = new OffersRepository(prisma as never);
+
+    await repository.findBuyNowOfferPreview({
+      offerId: 'offer-1',
+      variantId: 'variant-1',
+    });
+
+    const query = prisma.offer.findUnique.mock.calls[0][0];
+    expect(query.where).toEqual({ id: 'offer-1' });
+    expect(query.select).toEqual(
+      expect.objectContaining({
+        id: true,
+        modelName: true,
+        price: true,
+        availableQuantity: true,
+        offerStatus: true,
+        moderationStatus: true,
+      }),
+    );
+    expect(query.select.shop.select).toEqual({ id: true, shopName: true });
+    expect(query.select.variants).toEqual(
+      expect.objectContaining({
+        where: { id: 'variant-1' },
+        take: 1,
+        select: expect.objectContaining({
+          id: true,
+          sku: true,
+          price: true,
+          availableQuantity: true,
+          isActive: true,
+        }),
+      }),
+    );
+  });
+
   it('creates variant option links through nested persistence', async () => {
     const prisma = {
       offerVariant: {

@@ -58,6 +58,12 @@ describe('OfferController', () => {
     expect(
       Reflect.getMetadata(
         PATH_METADATA,
+        OfferController.prototype.getBuyNowPreview,
+      ),
+    ).toBe('offers/buy-now');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
         OfferController.prototype.createOfferVariant,
       ),
     ).toBe('offers/:offerId/variants');
@@ -336,6 +342,59 @@ describe('OfferController', () => {
     expect(ordersRpcService.buyNowCheckout.mock.calls[0][0]).not.toHaveProperty('shippingAddress');
     expect(ordersRpcService.buyNowCheckout.mock.calls[0][0]).not.toHaveProperty('shippingProviderCode');
     expect(dashboardSseBrokerService.notifyOrderChanged).toHaveBeenCalledWith(result, 'buyer-1');
+  });
+
+  it('returns Buy Now preview with shipping options for the authenticated buyer', async () => {
+    const catalogRpcService = {
+      getBuyNowOfferPreview: jest.fn().mockResolvedValue({
+        shopId: 'shop-1',
+        shopName: 'Shop ABC',
+        offerId: 'offer-1',
+        modelName: 'Kem chong nang SPF50',
+        variantId: null,
+        sku: null,
+        quantity: 2,
+        price: 150000,
+        thumbnailUrl: null,
+      }),
+    };
+    const shippingOptions = [{
+      optionCode: 'GHN_1', providerCode: 'GHN', providerName: 'Giao Hang Nhanh',
+      methodName: 'Giao hang tieu chuan', shippingFee: 30000, estimatedDelivery: '2-3 days',
+    }];
+    const ordersRpcService = {
+      buyNowCheckout: jest.fn(),
+      quoteBuyNowShippingOptions: jest.fn().mockResolvedValue(shippingOptions),
+    };
+    const controller = new OfferController(
+      catalogRpcService as never,
+      ordersRpcService as never,
+      { notifyOrderChanged: jest.fn(), notifyShop: jest.fn() } as never,
+    );
+
+    const result = await controller.getBuyNowPreview('buyer-1', {
+      offerId: 'offer-1',
+      variantId: null,
+      quantity: 2,
+    });
+
+    expect(catalogRpcService.getBuyNowOfferPreview).toHaveBeenCalledWith({
+      offerId: 'offer-1',
+      variantId: null,
+      quantity: 2,
+    });
+    expect(ordersRpcService.buyNowCheckout).not.toHaveBeenCalled();
+    expect(ordersRpcService.quoteBuyNowShippingOptions).toHaveBeenCalledWith({
+      buyerUserId: 'buyer-1', offerId: 'offer-1', variantId: null, quantity: 2,
+    });
+    expect(result).toEqual(
+      expect.objectContaining({
+        offerId: 'offer-1',
+        quantity: 2,
+        price: 150000,
+        shippingOptions,
+      }),
+    );
   });
 
   it('returns compact public offer list items', async () => {

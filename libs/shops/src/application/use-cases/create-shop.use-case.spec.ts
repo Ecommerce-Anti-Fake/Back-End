@@ -37,6 +37,7 @@ describe('CreateShopUseCase', () => {
       id: 'shop-1',
       ownerUserId: 'user-1',
       shopName: 'Shop ABC',
+      phone: '0901234567',
       registrationType: 'MANUFACTURER',
       businessType: 'manufacturer',
       taxCode: null,
@@ -48,6 +49,7 @@ describe('CreateShopUseCase', () => {
     const result = await useCase.execute({
       ownerUserId: 'user-1',
       shopName: 'Shop ABC',
+      phone: '0901234567',
       registrationType: 'MANUFACTURER',
       businessType: 'manufacturer',
       taxCode: null,
@@ -77,6 +79,7 @@ describe('CreateShopUseCase', () => {
       id: 'shop-2',
       ownerUserId: 'user-1',
       shopName: 'Factory Shop',
+      phone: '0901234567',
       registrationType: 'MANUFACTURER',
       businessType: 'manufacturer',
       taxCode: '0312345678',
@@ -88,6 +91,7 @@ describe('CreateShopUseCase', () => {
     const result = await useCase.execute({
       ownerUserId: 'user-1',
       shopName: 'Factory Shop',
+      phone: '0901234567',
       registrationType: 'MANUFACTURER',
       businessType: 'manufacturer',
       taxCode: '0312345678',
@@ -115,6 +119,7 @@ describe('CreateShopUseCase', () => {
       id: 'shop-3',
       ownerUserId: 'user-1',
       shopName: 'Normal Shop',
+      phone: '0901234567',
       registrationType: 'NORMAL',
       businessType: 'retail',
       taxCode: null,
@@ -126,6 +131,7 @@ describe('CreateShopUseCase', () => {
     const result = await useCase.execute({
       ownerUserId: 'user-1',
       shopName: 'Normal Shop',
+      phone: '0901234567',
       registrationType: 'NORMAL',
       businessType: 'retail',
       taxCode: null,
@@ -157,6 +163,7 @@ describe('CreateShopUseCase', () => {
       useCase.execute({
         ownerUserId: 'user-1',
         shopName: 'Second Shop',
+        phone: '0901234567',
         registrationType: 'NORMAL',
         businessType: 'company',
         taxCode: null,

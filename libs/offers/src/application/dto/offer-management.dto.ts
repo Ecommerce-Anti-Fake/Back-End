@@ -12,6 +12,7 @@ import {
   IsOptional,
   IsPositive,
   IsString,
+  IsUUID,
   Matches,
   Max,
   MaxLength,
@@ -189,6 +190,76 @@ export class CreateOfferVariantDto {
   @ArrayUnique()
   @IsString({ each: true })
   optionValueIds!: string[];
+}
+
+export class BuyNowOfferPreviewQueryDto {
+  @ApiProperty({ example: '06b5f15b-4c48-4f57-a2d6-0f2eb45fd001' })
+  @IsUUID('4')
+  offerId!: string;
+
+  @ApiPropertyOptional({
+    example: '6faacfa4-e09f-4ed2-bd74-a05c538f988d',
+    nullable: true,
+  })
+  @Transform(({ value }) =>
+    value === undefined || value === '' || value === 'null' ? null : value,
+  )
+  @IsOptional()
+  @IsUUID('4')
+  variantId?: string | null;
+
+  @ApiProperty({ example: 1, minimum: 1 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  quantity!: number;
+}
+
+export class BuyNowOfferPreviewResponseDto {
+  @ApiProperty({ example: 'shop-id' })
+  shopId!: string;
+
+  @ApiProperty({ example: 'Shop Chinh Hang' })
+  shopName!: string;
+
+  @ApiProperty({ example: '06b5f15b-4c48-4f57-a2d6-0f2eb45fd001' })
+  offerId!: string;
+
+  @ApiProperty({ example: 'Kem chong nang SPF50' })
+  modelName!: string;
+
+  @ApiPropertyOptional({
+    example: '6faacfa4-e09f-4ed2-bd74-a05c538f988d',
+    nullable: true,
+  })
+  variantId!: string | null;
+
+  @ApiPropertyOptional({ example: 'RED-M', nullable: true })
+  sku!: string | null;
+
+  @ApiProperty({ example: 2 })
+  quantity!: number;
+
+  @ApiProperty({ example: 150000 })
+  price!: number;
+
+  @ApiPropertyOptional({
+    example: 'https://res.cloudinary.com/demo/image/upload/product.jpg',
+    nullable: true,
+  })
+  thumbnailUrl!: string | null;
+
+  @ApiProperty({ type: () => [BuyNowShippingOptionResponseDto] })
+  shippingOptions!: BuyNowShippingOptionResponseDto[];
+}
+
+export class BuyNowShippingOptionResponseDto {
+  @ApiProperty({ example: 'GHN_1' }) optionCode!: string;
+  @ApiProperty({ example: 'GHN' }) providerCode!: string;
+  @ApiProperty({ example: 'Giao Hang Nhanh' }) providerName!: string;
+  @ApiProperty({ example: 'Giao hang tieu chuan' }) methodName!: string;
+  @ApiProperty({ example: 30000 }) shippingFee!: number;
+  @ApiPropertyOptional({ example: '2-3 days', nullable: true }) estimatedDelivery!: string | null;
 }
 
 export class ListOfferVariantsQueryDto {

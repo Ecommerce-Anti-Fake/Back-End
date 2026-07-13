@@ -31,7 +31,7 @@ import {
 } from '@auth';
 import { RateLimit } from '../../observability';
 import { AuthRpcService } from './auth-rpc.service';
-import type { Request, Response } from 'express';
+import type { CookieOptions, Request, Response } from 'express';
 
 type InternalTokenResponse = {
   accessToken: string;
@@ -239,21 +239,23 @@ export class AuthController {
 
   private setRefreshTokenCookie(response: Response, refreshToken: string) {
     response.cookie(REFRESH_TOKEN_COOKIE, refreshToken, {
-      httpOnly: true,
-      secure: this.isSecureCookieEnabled(),
-      sameSite: 'lax',
-      path: REFRESH_TOKEN_COOKIE_PATH,
+      ...this.getRefreshTokenCookieOptions(),
       maxAge: this.getRefreshTokenMaxAgeMs(),
     });
   }
 
   private clearRefreshTokenCookie(response: Response) {
-    response.clearCookie(REFRESH_TOKEN_COOKIE, {
+    response.clearCookie(REFRESH_TOKEN_COOKIE, this.getRefreshTokenCookieOptions());
+  }
+
+  private getRefreshTokenCookieOptions(): CookieOptions {
+    const isProduction = this.isSecureCookieEnabled();
+    return {
       httpOnly: true,
-      secure: this.isSecureCookieEnabled(),
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       path: REFRESH_TOKEN_COOKIE_PATH,
-    });
+    };
   }
 
   private parseCookieHeader(header?: string): Record<string, string> {

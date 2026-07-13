@@ -318,11 +318,14 @@ export class RevokeNotificationFcmTokenResponseDto {
 }
 
 export class ListNotificationsQueryDto {
-  @ApiPropertyOptional({ example: true })
+  @ApiPropertyOptional({
+    enum: ['unread', 'readed'],
+    description: 'Loc thong bao: unread = chua doc (readAt = null), readed = da doc (readAt khac null). Bo trong de lay tat ca.',
+    example: 'unread',
+  })
   @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => value === true || value === 'true')
-  unreadOnly?: boolean;
+  @IsIn(['unread', 'readed'])
+  filter?: 'unread' | 'readed';
 
   @ApiPropertyOptional({ example: 1, minimum: 1 })
   @IsOptional()

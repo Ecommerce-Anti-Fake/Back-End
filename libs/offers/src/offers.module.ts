@@ -5,6 +5,7 @@ import {
   AllocateOfferBatchesUseCase,
   CreateOfferUseCase,
   CreateOfferVariantUseCase,
+  GetBuyNowOfferPreviewUseCase,
   DeleteOfferVariantUseCase,
   GetOfferByIdUseCase,
   ListOfferBatchLinksUseCase,
@@ -34,6 +35,7 @@ import { OffersRpcController } from './presentation/rpc/offers.rpc-controller';
     ListOfferBatchLinksUseCase,
     ListOffersUseCase,
     ListAdminOffersUseCase,
+    GetBuyNowOfferPreviewUseCase,
     GetOfferByIdUseCase,
   ],
   exports: [
@@ -49,6 +51,7 @@ import { OffersRpcController } from './presentation/rpc/offers.rpc-controller';
     ListOfferBatchLinksUseCase,
     ListOffersUseCase,
     ListAdminOffersUseCase,
+    GetBuyNowOfferPreviewUseCase,
     GetOfferByIdUseCase,
   ],
 })

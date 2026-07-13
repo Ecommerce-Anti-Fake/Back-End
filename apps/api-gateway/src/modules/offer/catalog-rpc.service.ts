@@ -11,6 +11,7 @@ import {
   CreateCategoryMessage,
   CreateOfferMessage,
   CreateOfferVariantMessage,
+  BuyNowOfferPreviewMessage,
   DeleteOfferVariantMessage,
   FindOfferVariantsMessage,
   CreateLiveCommentMessage,
@@ -200,6 +201,10 @@ export class CatalogRpcService {
 
   findOfferById(payload: OfferLookupMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.findOfferById, payload);
+  }
+
+  getBuyNowOfferPreview(payload: BuyNowOfferPreviewMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.getBuyNowOfferPreview, payload);
   }
 
   findFavoriteOffers(payload: FavoriteOffersLookupMessage) {
