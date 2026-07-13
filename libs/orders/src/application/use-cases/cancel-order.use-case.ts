@@ -28,7 +28,8 @@ export class CancelOrderUseCase {
     const canCancelPaidWalletOrder =
       order.orderStatus === 'paid' &&
       order.paymentIntent?.paymentMethod === 'WALLET' &&
-      order.paymentIntent.paymentStatus === 'PAID';
+      order.paymentIntent.paymentStatus === 'PAID' &&
+      order.escrow?.escrowStatus === 'HELD';
     if (order.orderStatus !== 'pending' && !canCancelPaidWalletOrder) {
       throw new BadRequestException('Only pending orders or paid wallet orders can be cancelled');
     }

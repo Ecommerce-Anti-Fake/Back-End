@@ -570,6 +570,7 @@ export class OrdersRepository {
           },
         },
         paymentIntent: true,
+        escrow: true,
       },
     });
   }
