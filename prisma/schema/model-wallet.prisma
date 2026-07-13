@@ -1,0 +1,63 @@
+model Wallet {
+  id               String          @id @default(uuid())
+  walletCode       String          @unique @map("wallet_code")
+  ownerType        WalletOwnerType @map("owner_type")
+  userId           String?         @map("user_id")
+  shopId           String?         @map("shop_id")
+  platformCode     String?         @unique @map("platform_code")
+  currency         String          @default("VND")
+  availableBalance Decimal         @default(0) @map("available_balance") @db.Decimal(18, 2)
+  pendingBalance   Decimal         @default(0) @map("pending_balance") @db.Decimal(18, 2)
+  lockedBalance    Decimal         @default(0) @map("locked_balance") @db.Decimal(18, 2)
+  status           WalletStatus    @default(ACTIVE)
+  version          Int             @default(0)
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  user             User?           @relation(fields: [userId], references: [id])
+  shop             Shop?           @relation(fields: [shopId], references: [id])
+  ledgerEntries    WalletLedgerEntry[]
+
+  @@unique([userId, currency])
+  @@unique([shopId, currency])
+  @@map("wallet")
+}
+
+model WalletTransaction {
+  id                String                  @id @default(uuid())
+  transactionCode   String                  @unique @map("transaction_code")
+  transactionType   WalletTransactionType   @map("transaction_type")
+  status            WalletTransactionStatus @default(PENDING)
+  amount            Decimal                 @db.Decimal(18, 2)
+  currency          String                  @default("VND")
+  idempotencyKey    String                  @unique @map("idempotency_key")
+  referenceType     String?                 @map("reference_type")
+  referenceId       String?                 @map("reference_id")
+  description       String?
+  createdAt         DateTime                @default(now()) @map("created_at")
+  completedAt       DateTime?               @map("completed_at")
+
+  ledgerEntries     WalletLedgerEntry[]
+
+  @@index([referenceType, referenceId])
+  @@map("wallet_transaction")
+}
+
+model WalletLedgerEntry {
+  id              String               @id @default(uuid())
+  walletId        String               @map("wallet_id")
+  transactionId   String               @map("transaction_id")
+  direction       WalletEntryDirection
+  balanceType     WalletBalanceType    @map("balance_type")
+  amount          Decimal              @db.Decimal(18, 2)
+  balanceBefore   Decimal              @map("balance_before") @db.Decimal(18, 2)
+  balanceAfter    Decimal              @map("balance_after") @db.Decimal(18, 2)
+  createdAt       DateTime             @default(now()) @map("created_at")
+
+  wallet          Wallet               @relation(fields: [walletId], references: [id])
+  transaction     WalletTransaction    @relation(fields: [transactionId], references: [id])
+
+  @@index([walletId, createdAt])
+  @@index([transactionId])
+  @@map("wallet_ledger_entry")
+}
