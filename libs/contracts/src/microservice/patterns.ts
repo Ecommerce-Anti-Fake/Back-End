@@ -77,6 +77,13 @@ export const SHOPS_MESSAGE_PATTERNS = {
   reviewShopDocument: 'shops.review-shop-document',
 } as const;
 
+export const WALLET_MESSAGE_PATTERNS = {
+  getMyWallet: 'wallet.get-my-wallet',
+  getMyWalletTransactions: 'wallet.get-my-wallet-transactions',
+  getShopWallet: 'wallet.get-shop-wallet',
+  getShopWalletTransactions: 'wallet.get-shop-wallet-transactions',
+} as const;
+
 export const PRODUCTS_MESSAGE_PATTERNS = {
   findBrands: 'products.find-brands',
   createBrand: 'products.create-brand',

@@ -54,6 +54,19 @@ export class WalletRepository extends WalletRepositoryPort {
     });
   }
 
+  async canAccessShopWallet(
+    shopId: string,
+    requesterUserId: string,
+    requesterRole: string,
+  ) {
+    if (requesterRole === 'admin') return true;
+    const shop = await this.prisma.shop.findFirst({
+      where: { id: shopId, ownerUserId: requesterUserId },
+      select: { id: true },
+    });
+    return Boolean(shop);
+  }
+
   async listLedger(
     walletId: string,
     page = 1,
@@ -65,6 +78,7 @@ export class WalletRepository extends WalletRepositoryPort {
     const [data, totalItems] = await this.prisma.$transaction([
       this.prisma.walletLedgerEntry.findMany({
         where,
+        include: { transaction: true },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip: (safePage - 1) * safePageSize,
         take: safePageSize,
@@ -178,7 +192,7 @@ export class WalletRepository extends WalletRepositoryPort {
             },
           });
 
-          const entries = [];
+          const entries: Prisma.WalletLedgerEntryGetPayload<{}>[] = [];
           for (const entry of input.entries) {
             const wallet = walletById.get(entry.walletId)!;
             const before =

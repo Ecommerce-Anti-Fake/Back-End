@@ -7,7 +7,9 @@ import {
 import { WalletLedgerInput } from '../../domain';
 
 export interface WalletLedgerPage {
-  data: Prisma.WalletLedgerEntryGetPayload<{}>[];
+  data: Prisma.WalletLedgerEntryGetPayload<{
+    include: { transaction: true };
+  }>[];
   pagination: {
     page: number;
     pageSize: number;
@@ -44,6 +46,11 @@ export abstract class WalletRepositoryPort {
     platformCode: string,
     currency?: string,
   ): Promise<Prisma.WalletGetPayload<{}>>;
+  abstract canAccessShopWallet(
+    shopId: string,
+    requesterUserId: string,
+    requesterRole: string,
+  ): Promise<boolean>;
   abstract listLedger(
     walletId: string,
     page?: number,

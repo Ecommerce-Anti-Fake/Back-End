@@ -25,6 +25,18 @@ export class WalletService {
     );
   }
 
+  canAccessShopWallet(
+    shopId: string,
+    requesterUserId: string,
+    requesterRole: string,
+  ) {
+    return this.walletRepository.canAccessShopWallet(
+      shopId,
+      requesterUserId,
+      requesterRole,
+    );
+  }
+
   listLedger(walletId: string, page = 1, pageSize = 20) {
     return this.walletRepository.listLedger(walletId, page, pageSize);
   }
