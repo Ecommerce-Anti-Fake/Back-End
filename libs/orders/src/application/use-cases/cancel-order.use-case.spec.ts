@@ -46,12 +46,7 @@ describe('CancelOrderUseCase', () => {
       expect.objectContaining({ id: 'order-1' }),
       'seller-user-1',
     );
-    expect(result).toMatchObject({
-      id: 'order-1',
-      orderStatus: 'cancelled',
-      paymentStatus: 'CANCELLED',
-      escrowStatus: 'CANCELLED',
-    });
+    expect(result).toEqual({ success: true, message: 'Hủy đơn hàng thành công.' });
   });
 });
 

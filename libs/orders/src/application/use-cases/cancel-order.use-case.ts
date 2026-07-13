@@ -1,7 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { OrderNotificationService, OrderReversalService } from '../services';
-import { toOrderResponse } from './orders.mapper';
 
 @Injectable()
 export class CancelOrderUseCase {
@@ -34,8 +33,14 @@ export class CancelOrderUseCase {
       throw new BadRequestException('Only pending orders or paid wallet orders can be cancelled');
     }
 
+    const wasWalletPaid = canCancelPaidWalletOrder;
     const updatedOrder = await this.orderReversalService.cancelOrder(order.id, input.requesterUserId);
     await this.orderNotificationService.notifyCancelled(updatedOrder, input.requesterUserId);
-    return toOrderResponse(updatedOrder);
+    return {
+      success: true,
+      message: wasWalletPaid
+        ? 'Hủy đơn hàng và hoàn tiền vào ví thành công.'
+        : 'Hủy đơn hàng thành công.',
+    };
   }
 }

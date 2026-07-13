@@ -277,6 +277,10 @@ export class WalletRepository extends WalletRepositoryPort {
     return this.findOrCreateWallet({ ownerType: WalletOwnerType.PLATFORM, platformCode, currency }, tx);
   }
 
+  findOrCreateShopWalletInTransaction(tx: WalletClient, shopId: string, currency = 'VND') {
+    return this.findOrCreateWallet({ ownerType: WalletOwnerType.SHOP, shopId, currency }, tx);
+  }
+
   private async findOrCreateWallet(input: {
     ownerType: WalletOwnerType;
     userId?: string;

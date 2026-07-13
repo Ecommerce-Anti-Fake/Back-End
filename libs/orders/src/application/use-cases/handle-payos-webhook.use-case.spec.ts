@@ -52,10 +52,7 @@ describe('HandlePayOSWebhookUseCase', () => {
       actorUserId: 'buyer-1',
       providerRef: 'PAYOS:link-1:ref-1',
     });
-    expect(result.order).toMatchObject({
-      id: 'order-1',
-      paymentStatus: 'PAID',
-    });
+    expect(result).toEqual({ received: true });
     expect(walletRepository.executeTransactionInTransaction).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({

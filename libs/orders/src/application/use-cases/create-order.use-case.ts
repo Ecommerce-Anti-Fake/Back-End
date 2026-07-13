@@ -147,7 +147,7 @@ export class CreateOrderUseCase {
         requesterUserId: input.buyerUserId,
         amount: order.buyerPayableAmount,
       });
-      return toOrderResponse(await this.ordersRepository.findOrderById(order.id));
+      return { success: true, message: 'Thanh toán đơn hàng bằng ví thành công.' };
     }
     if (paymentMethod !== 'PAYOS' || input.skipPayOSPaymentLink) return response;
 

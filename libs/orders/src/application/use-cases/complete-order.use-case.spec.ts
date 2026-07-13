@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { CompleteOrderUseCase } from './complete-order.use-case';
+import { ReleaseEscrowUseCase } from './release-escrow.use-case';
 
 describe('CompleteOrderUseCase', () => {
   let useCase: CompleteOrderUseCase;
@@ -9,6 +10,7 @@ describe('CompleteOrderUseCase', () => {
   const ordersRepositoryMock = {
     findOrderById: jest.fn(),
     completeOrder: jest.fn(),
+    releaseEscrow: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -18,6 +20,7 @@ describe('CompleteOrderUseCase', () => {
       providers: [
         CompleteOrderUseCase,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
+        { provide: ReleaseEscrowUseCase, useValue: { execute: ordersRepositoryMock.releaseEscrow } },
       ],
     }).compile();
 
@@ -37,6 +40,10 @@ describe('CompleteOrderUseCase', () => {
 
     expect(ordersRepositoryMock.completeOrder).toHaveBeenCalledWith({
       id: 'order-1',
+      actorUserId: 'seller-user-1',
+    });
+    expect(ordersRepositoryMock.releaseEscrow).toHaveBeenCalledWith({
+      orderId: 'order-1',
       actorUserId: 'seller-user-1',
     });
     expect(result).toMatchObject({

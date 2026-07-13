@@ -52,6 +52,11 @@ export abstract class WalletRepositoryPort {
     platformCode: string,
     currency?: string,
   ): Promise<Prisma.WalletGetPayload<{}>>;
+  abstract findOrCreateShopWalletInTransaction(
+    tx: Prisma.TransactionClient,
+    shopId: string,
+    currency?: string,
+  ): Promise<Prisma.WalletGetPayload<{}>>;
   abstract canAccessShopWallet(
     shopId: string,
     requesterUserId: string,

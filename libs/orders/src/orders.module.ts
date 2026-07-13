@@ -69,6 +69,7 @@ import {
   UpdateAdminDisputeCaseUseCase,
   UpdateOrderFulfillmentUseCase,
   PayOrderByWalletUseCase,
+  ReleaseEscrowUseCase,
 } from './application/use-cases';
 import {
   CatalogWholesalePricingAdapter,
@@ -198,6 +199,7 @@ import { WalletModule } from '@wallet/wallet.module';
     UpdateAdminDisputeCaseUseCase,
     UpdateOrderFulfillmentUseCase,
     PayOrderByWalletUseCase,
+    ReleaseEscrowUseCase,
   ],
   exports: [
     OrdersRepository,
@@ -260,6 +262,7 @@ import { WalletModule } from '@wallet/wallet.module';
     UpdateAdminDisputeCaseUseCase,
     UpdateOrderFulfillmentUseCase,
     PayOrderByWalletUseCase,
+    ReleaseEscrowUseCase,
   ],
 })
 export class OrdersModule {}

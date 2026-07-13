@@ -27,7 +27,7 @@ export function throwRpcException(error: unknown): never {
           }
         : {
             statusCode: error.getStatus(),
-            message: extractMessage(response, error.message),
+            message: toVietnameseMessage(extractMessage(response, error.message)),
             error: extractErrorName(response, error.name),
           };
 
@@ -36,9 +36,26 @@ export function throwRpcException(error: unknown): never {
 
   throw new RpcException({
     statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-    message: error instanceof Error ? error.message : 'Internal server error',
+    message: toVietnameseMessage(error instanceof Error ? error.message : 'Internal server error'),
     error: 'InternalServerError',
   });
+}
+
+function toVietnameseMessage(message: string | string[]): string | string[] {
+  if (Array.isArray(message)) return message.map((item) => toVietnameseMessage(item) as string);
+  const mappings: Record<string, string> = {
+    ORDER_NOT_FOUND: 'Không tìm thấy đơn hàng.',
+    ORDER_ALREADY_PAID: 'Đơn hàng đã được thanh toán.',
+    INSUFFICIENT_BALANCE: 'Số dư ví không đủ để thanh toán đơn hàng.',
+    WALLET_FROZEN: 'Ví hiện đang bị khóa.',
+    INVALID_ORDER_STATUS: 'Trạng thái đơn hàng không cho phép thực hiện thao tác này.',
+    ORDER_NOT_OWNED: 'Bạn không có quyền thao tác với đơn hàng này.',
+    ESCROW_ALREADY_REFUNDED: 'Đơn hàng đã được hoàn tiền trước đó.',
+    ESCROW_ALREADY_RELEASED: 'Tiền của đơn hàng đã được đối soát cho shop và không thể hoàn theo luồng này.',
+    PAYMENT_FAILED: 'Thanh toán không thành công. Vui lòng thử lại.',
+    REFUND_FAILED: 'Hoàn tiền không thành công. Vui lòng thử lại.',
+  };
+  return mappings[message] ?? message;
 }
 
 export function throwHttpExceptionFromRpc(error: unknown): never {

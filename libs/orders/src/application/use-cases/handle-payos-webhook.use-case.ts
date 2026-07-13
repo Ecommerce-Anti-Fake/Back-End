@@ -1,7 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { PayOSPaymentService } from '../services';
-import { toOrderResponse } from './orders.mapper';
 import { Prisma, WalletBalanceType, WalletEntryDirection, WalletTransactionType } from '@prisma/client';
 import { WalletRepository } from '@wallet';
 import { PrismaService } from '@database/prisma/prisma.service';
@@ -43,25 +42,25 @@ export class HandlePayOSWebhookUseCase {
         order.paymentIntent?.paymentStatus === 'FAILED' ||
         order.orderStatus !== 'pending'
       ) {
-        return { received: true, order: toOrderResponse(order) };
+        return { received: true };
       }
       const reference = this.readString(input.data.reference) || paymentLinkId;
       const reason = this.readString(input.desc) || this.readString(input.data.desc) || 'payOS payment failed';
-      const updatedOrder = await this.ordersRepository.markOrderPaymentFailed({
+      await this.ordersRepository.markOrderPaymentFailed({
         id: order.id,
         actorUserId: order.buyerUserId || order.buyerShop?.ownerUserId || order.shop.ownerUserId,
         providerRef: `PAYOS:${paymentLinkId}:${reference}`,
         reason,
       });
-      return { received: true, order: toOrderResponse(updatedOrder) };
+      return { received: true };
     }
 
     if (order.paymentIntent?.paymentStatus === 'PAID' || order.orderStatus !== 'pending') {
-      return { received: true, order: toOrderResponse(order) };
+      return { received: true };
     }
     const reference = this.readString(input.data.reference) || paymentLinkId;
     const providerRef = `PAYOS:${paymentLinkId}:${reference}`;
-    const updatedOrder = await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx) => {
       const idempotencyKey = `ORDER:${order.id}:PAYOS_ESCROW_HOLD:${paymentLinkId}`;
       const existingWalletTransaction = await tx.walletTransaction.findUnique({
         where: { idempotencyKey },
@@ -120,7 +119,7 @@ export class HandlePayOSWebhookUseCase {
         providerRef,
       });
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-    return { received: true, order: toOrderResponse(updatedOrder) };
+    return { received: true };
   }
 
   private readString(value: unknown) {

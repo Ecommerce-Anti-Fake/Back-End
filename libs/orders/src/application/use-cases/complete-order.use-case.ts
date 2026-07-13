@@ -1,10 +1,14 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { toOrderResponse } from './orders.mapper';
+import { ReleaseEscrowUseCase } from './release-escrow.use-case';
 
 @Injectable()
 export class CompleteOrderUseCase {
-  constructor(private readonly ordersRepository: OrdersRepository) {}
+  constructor(
+    private readonly ordersRepository: OrdersRepository,
+    private readonly releaseEscrowUseCase: ReleaseEscrowUseCase,
+  ) {}
 
   async execute(input: { id: string; requesterUserId: string }) {
     const order = await this.ordersRepository.findOrderById(input.id);
@@ -31,6 +35,10 @@ export class CompleteOrderUseCase {
       throw new BadRequestException('Cannot complete order while an open dispute exists');
     }
 
+    await this.releaseEscrowUseCase.execute({
+      orderId: order.id,
+      actorUserId: input.requesterUserId,
+    });
     const updatedOrder = await this.ordersRepository.completeOrder({
       id: order.id,
       actorUserId: input.requesterUserId,

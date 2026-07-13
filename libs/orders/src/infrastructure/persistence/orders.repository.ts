@@ -2977,23 +2977,14 @@ export class OrdersRepository {
   }
 
   async completeOrder(input: { id: string; actorUserId: string }): Promise<OrderWithRelations> {
-    return this.prisma.$transaction(async (tx) => {
-      await this.updateEscrowStatusWithAudit(tx, {
-        orderId: input.id,
-        actorUserId: input.actorUserId,
-        escrowStatus: 'RELEASED',
-        note: 'Escrow released after seller completed delivered order',
-      });
-
-      return tx.order.update({
+    return this.prisma.$transaction(async (tx) => tx.order.update({
         where: { id: input.id },
         data: {
           orderStatus: 'completed',
           fulfillmentStatus: 'DELIVERED',
         },
         ...orderWithRelationsArgs,
-      });
-    });
+      }));
   }
 
   private async getShopRiskSignals(shopId: string): Promise<RiskSignalSnapshot | null> {
