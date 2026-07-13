@@ -2,12 +2,17 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { PayOSPaymentService } from '../services';
 import { toOrderResponse } from './orders.mapper';
+import { Prisma, WalletBalanceType, WalletEntryDirection, WalletTransactionType } from '@prisma/client';
+import { WalletRepository } from '@wallet';
+import { PrismaService } from '@database/prisma/prisma.service';
 
 @Injectable()
 export class HandlePayOSWebhookUseCase {
   constructor(
     private readonly ordersRepository: OrdersRepository,
     private readonly payOSPaymentService: PayOSPaymentService,
+    private readonly prisma: PrismaService,
+    private readonly walletRepository: WalletRepository,
   ) {}
 
   async execute(input: { code: string; desc: string; success: boolean; signature: string; data: Record<string, unknown> }) {
@@ -55,11 +60,66 @@ export class HandlePayOSWebhookUseCase {
       return { received: true, order: toOrderResponse(order) };
     }
     const reference = this.readString(input.data.reference) || paymentLinkId;
-    const updatedOrder = await this.ordersRepository.markOrderPaid({
-      id: order.id,
-      actorUserId: order.buyerUserId || order.buyerShop?.ownerUserId || order.shop.ownerUserId,
-      providerRef: `PAYOS:${paymentLinkId}:${reference}`,
-    });
+    const providerRef = `PAYOS:${paymentLinkId}:${reference}`;
+    const updatedOrder = await this.prisma.$transaction(async (tx) => {
+      const idempotencyKey = `ORDER:${order.id}:PAYOS_ESCROW_HOLD:${paymentLinkId}`;
+      const existingWalletTransaction = await tx.walletTransaction.findUnique({
+        where: { idempotencyKey },
+      });
+      if (existingWalletTransaction) {
+        return this.ordersRepository.markOrderPaidInTransaction(tx, {
+          id: order.id,
+          actorUserId: order.buyerUserId || order.buyerShop?.ownerUserId || order.shop.ownerUserId,
+          providerRef,
+        });
+      }
+      const clearingWallet = await this.walletRepository.findOrCreatePlatformWalletInTransaction(
+        tx,
+        'PLATFORM_PAYMENT_CLEARING_VND',
+      );
+      const escrowWallet = await this.walletRepository.findOrCreatePlatformWalletInTransaction(
+        tx,
+        'PLATFORM_ESCROW_VND',
+      );
+
+      await tx.wallet.update({
+        where: { id: clearingWallet.id },
+        data: {
+          availableBalance: { increment: order.buyerPayableAmount },
+          version: { increment: 1 },
+        },
+      });
+      await this.walletRepository.executeTransactionInTransaction(tx, {
+        transactionCode: `ESCROW_HOLD:${order.id}`,
+        transactionType: WalletTransactionType.ESCROW_HOLD,
+        idempotencyKey,
+        amount: order.buyerPayableAmount,
+        referenceType: 'PAYOS_PAYMENT',
+        referenceId: providerRef,
+        orderId: order.id,
+        paymentIntentId: order.paymentIntent?.id ?? null,
+        description: `PayOS escrow hold for order ${order.id}`,
+        entries: [
+          {
+            walletId: clearingWallet.id,
+            direction: WalletEntryDirection.DEBIT,
+            balanceType: WalletBalanceType.AVAILABLE,
+            amount: order.buyerPayableAmount,
+          },
+          {
+            walletId: escrowWallet.id,
+            direction: WalletEntryDirection.CREDIT,
+            balanceType: WalletBalanceType.PENDING,
+            amount: order.buyerPayableAmount,
+          },
+        ],
+      });
+      return this.ordersRepository.markOrderPaidInTransaction(tx, {
+        id: order.id,
+        actorUserId: order.buyerUserId || order.buyerShop?.ownerUserId || order.shop.ownerUserId,
+        providerRef,
+      });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
     return { received: true, order: toOrderResponse(updatedOrder) };
   }
 

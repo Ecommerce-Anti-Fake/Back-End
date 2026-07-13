@@ -2772,7 +2772,13 @@ export class OrdersRepository {
   }
 
   async markOrderPaid(input: { id: string; actorUserId: string; providerRef: string | null }): Promise<OrderWithRelations> {
-    return this.prisma.$transaction(async (tx) => {
+    return this.withTransaction((tx) => this.markOrderPaidInTransaction(tx, input));
+  }
+
+  async markOrderPaidInTransaction(
+    tx: Prisma.TransactionClient,
+    input: { id: string; actorUserId: string; providerRef: string | null },
+  ): Promise<OrderWithRelations> {
       const now = new Date();
       const heldAmount = await this.getOrderPayableAmount(tx, input.id);
       const paymentIntent = await tx.paymentIntent.findUnique({
@@ -2841,7 +2847,7 @@ export class OrdersRepository {
         },
         ...orderWithRelationsArgs,
       });
-    });
+
   }
 
   async markOrderPaymentFailed(input: {
