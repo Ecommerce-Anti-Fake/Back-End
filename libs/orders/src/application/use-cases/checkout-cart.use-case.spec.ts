@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { CheckoutCartUseCase } from './checkout-cart.use-case';
+import { PayOrderByWalletUseCase } from './pay-order-by-wallet.use-case';
 
 describe('CheckoutCartUseCase', () => {
   const ordersRepository = {
@@ -14,7 +15,7 @@ describe('CheckoutCartUseCase', () => {
   const checkoutShippingService = { resolveSelectedOption: jest.fn(), resolveDefaultShipping: jest.fn() };
   const payOSPaymentService = { createPaymentLink: jest.fn() };
   const orderNotificationService = { notifyCreated: jest.fn() };
-  const walletService = { payOrder: jest.fn() };
+  const payOrderByWalletUseCase = { execute: jest.fn() };
   let useCase: CheckoutCartUseCase;
 
   beforeEach(() => {
@@ -25,7 +26,7 @@ describe('CheckoutCartUseCase', () => {
       checkoutShippingService as never,
       payOSPaymentService as never,
       orderNotificationService as never,
-      walletService as never,
+      payOrderByWalletUseCase as never,
     );
     ordersRepository.getOrCreateActiveCart.mockResolvedValue(createCart());
     checkoutShippingService.resolveSelectedOption.mockResolvedValue({

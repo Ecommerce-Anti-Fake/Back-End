@@ -33,6 +33,10 @@ export interface WalletTransactionInput {
 }
 
 export abstract class WalletRepositoryPort {
+  abstract executeTransactionInTransaction(
+    tx: Prisma.TransactionClient,
+    input: WalletTransactionInput,
+  ): Promise<Prisma.WalletTransactionGetPayload<{ include: { ledgerEntries: true } }>>;
   abstract findById(
     walletId: string,
   ): Promise<Prisma.WalletGetPayload<{}> | null>;

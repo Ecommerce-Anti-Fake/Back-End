@@ -49,6 +49,7 @@ export * from './add-dispute-evidence-batch.use-case';
 export * from './list-dispute-evidence.use-case';
 export * from './resolve-order-dispute.use-case';
 export * from './refund-order.use-case';
+export * from './pay-order-by-wallet.use-case';
 export * from './resolve-admin-dispute.use-case';
 export * from './update-admin-dispute-case.use-case';
 export * from './update-order-fulfillment.use-case';

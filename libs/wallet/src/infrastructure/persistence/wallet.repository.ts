@@ -100,7 +100,24 @@ export class WalletRepository extends WalletRepositoryPort {
   async executeTransaction(input: WalletTransactionInput) {
     return this.prisma
       .$transaction(
-        async (tx) => {
+        (tx) => this.executeTransactionInTransaction(tx, input),
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      )
+      .catch((error) => {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new ConflictException('Wallet transaction already exists');
+        }
+        throw error;
+      });
+  }
+
+  async executeTransactionInTransaction(
+    tx: WalletClient,
+    input: WalletTransactionInput,
+  ) {
           const existing = await tx.walletTransaction.findUnique({
             where: { idempotencyKey: input.idempotencyKey },
             include: { ledgerEntries: true },
@@ -250,18 +267,14 @@ export class WalletRepository extends WalletRepositoryPort {
           }
 
           return { ...transaction, ledgerEntries: entries };
-        },
-        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-      )
-      .catch((error) => {
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === 'P2002'
-        ) {
-          throw new ConflictException('Wallet transaction already exists');
-        }
-        throw error;
-      });
+  }
+
+  findOrCreateUserWalletInTransaction(tx: WalletClient, userId: string, currency = 'VND') {
+    return this.findOrCreateWallet({ ownerType: WalletOwnerType.USER, userId, currency }, tx);
+  }
+
+  findOrCreatePlatformWalletInTransaction(tx: WalletClient, platformCode: string, currency = 'VND') {
+    return this.findOrCreateWallet({ ownerType: WalletOwnerType.PLATFORM, platformCode, currency }, tx);
   }
 
   private async findOrCreateWallet(input: {
@@ -270,7 +283,7 @@ export class WalletRepository extends WalletRepositoryPort {
     shopId?: string;
     platformCode?: string;
     currency: string;
-  }) {
+  }, client: WalletClient | PrismaService = this.prisma) {
     const where = input.userId
       ? { userId_currency: { userId: input.userId, currency: input.currency } }
       : input.shopId
@@ -278,11 +291,11 @@ export class WalletRepository extends WalletRepositoryPort {
             shopId_currency: { shopId: input.shopId, currency: input.currency },
           }
         : { platformCode: input.platformCode! };
-    const existing = await this.prisma.wallet.findUnique({ where });
+    const existing = await client.wallet.findUnique({ where });
     if (existing) return existing;
 
     try {
-      return await this.prisma.wallet.create({
+      return await client.wallet.create({
         data: {
           walletCode: `${input.ownerType.toLowerCase()}_${input.userId ?? input.shopId ?? input.platformCode}_${input.currency.toLowerCase()}`,
           ownerType: input.ownerType,
@@ -297,7 +310,7 @@ export class WalletRepository extends WalletRepositoryPort {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        const raced = await this.prisma.wallet.findUnique({ where });
+        const raced = await client.wallet.findUnique({ where });
         if (raced) return raced;
       }
       throw error;

@@ -8,7 +8,7 @@ import {
   OrderPlacementService,
   PayOSPaymentService,
 } from '../services';
-import { WalletService } from '@wallet';
+import { PayOrderByWalletUseCase } from './pay-order-by-wallet.use-case';
 
 type CheckoutCartInput = {
   buyerUserId: string;
@@ -26,7 +26,7 @@ export class CheckoutCartUseCase {
     private readonly checkoutShippingService: CheckoutShippingService,
     private readonly payOSPaymentService: PayOSPaymentService,
     private readonly orderNotificationService: OrderNotificationService,
-    private readonly walletService: WalletService,
+    private readonly payOrderByWalletUseCase: PayOrderByWalletUseCase,
   ) {}
 
   async execute(input: CheckoutCartInput) {
@@ -83,16 +83,10 @@ export class CheckoutCartUseCase {
     }
 
     if (input.paymentMethod === 'WALLET') {
-      await this.walletService.payOrder({
-        userId: input.buyerUserId,
+      const paidOrder = await this.payOrderByWalletUseCase.execute({
         orderId: order.id,
-        paymentIntentId: order.paymentIntent?.id,
+        requesterUserId: input.buyerUserId,
         amount: order.buyerPayableAmount,
-      });
-      const paidOrder = await this.ordersRepository.markOrderPaid({
-        id: order.id,
-        actorUserId: input.buyerUserId,
-        providerRef: null,
       });
       await this.ordersRepository.removeCartItems({
         buyerUserId: input.buyerUserId,

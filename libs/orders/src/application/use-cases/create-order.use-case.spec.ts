@@ -4,7 +4,7 @@ import { OrdersRepository } from '../../infrastructure/persistence/orders.reposi
 import { WholesalePricingPort } from '../ports';
 import { OrderNotificationService, OrderPlacementService, PayOSPaymentService, ShippingCarrierAdapterService } from '../services';
 import { CreateOrderUseCase } from './create-order.use-case';
-import { WalletService } from '@wallet';
+import { PayOrderByWalletUseCase } from './pay-order-by-wallet.use-case';
 
 describe('CreateOrderUseCase', () => {
   let useCase: CreateOrderUseCase;
@@ -26,7 +26,7 @@ describe('CreateOrderUseCase', () => {
   const payOSPaymentService = { createPaymentLink: jest.fn() };
   const shippingCarrierAdapter = { quoteShipment: jest.fn() };
   const orderNotificationService = { notifyCreated: jest.fn() };
-  const walletService = { payOrder: jest.fn() };
+  const payOrderByWalletUseCase = { execute: jest.fn() };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -43,7 +43,7 @@ describe('CreateOrderUseCase', () => {
         { provide: PayOSPaymentService, useValue: payOSPaymentService },
         { provide: ShippingCarrierAdapterService, useValue: shippingCarrierAdapter },
         { provide: OrderNotificationService, useValue: orderNotificationService },
-        { provide: WalletService, useValue: walletService },
+        { provide: PayOrderByWalletUseCase, useValue: payOrderByWalletUseCase },
       ],
     }).compile();
     useCase = module.get(CreateOrderUseCase);
