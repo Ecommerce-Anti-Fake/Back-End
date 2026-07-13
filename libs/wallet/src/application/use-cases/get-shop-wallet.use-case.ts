@@ -18,7 +18,7 @@ export class GetShopWalletUseCase {
         requesterRole,
       ))
     ) {
-      throw new ForbiddenException('Shop wallet access denied');
+      throw new ForbiddenException('Bạn không có quyền xem ví của shop này.');
     }
     return toWalletResponse(
       await this.walletService.findOrCreateShopWallet(shopId, 'VND'),

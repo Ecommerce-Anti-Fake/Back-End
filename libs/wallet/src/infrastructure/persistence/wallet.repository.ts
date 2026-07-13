@@ -118,7 +118,7 @@ export class WalletRepository extends WalletRepositoryPort {
           if (wallets.length !== walletIds.length) {
             throw new WalletDomainError(
               WALLET_ERROR_CODES.WALLET_NOT_FOUND,
-              'Wallet not found',
+              'Không tìm thấy ví.',
             );
           }
 
@@ -143,7 +143,7 @@ export class WalletRepository extends WalletRepositoryPort {
             ) {
               throw new WalletDomainError(
                 WALLET_ERROR_CODES.WALLET_FROZEN,
-                'Wallet is not available for transactions',
+                'Ví hiện đang bị khóa.',
               );
             }
 
@@ -167,7 +167,7 @@ export class WalletRepository extends WalletRepositoryPort {
             if (next.lt(0)) {
               throw new WalletDomainError(
                 WALLET_ERROR_CODES.INSUFFICIENT_BALANCE,
-                'Wallet balance is insufficient',
+                'Số dư ví không đủ để thực hiện giao dịch.',
               );
             }
 
@@ -242,7 +242,7 @@ export class WalletRepository extends WalletRepositoryPort {
             if (result.count !== 1) {
               throw new WalletDomainError(
                 WALLET_ERROR_CODES.WALLET_CONCURRENT_UPDATE,
-                'Wallet was updated concurrently',
+                'Ví đang được cập nhật bởi một giao dịch khác. Vui lòng thử lại.',
               );
             }
           }

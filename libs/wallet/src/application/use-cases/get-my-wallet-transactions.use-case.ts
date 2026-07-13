@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { WalletService } from './wallet.service';
+import { toWalletLedgerResponse } from '../wallet.mapper';
 
 @Injectable()
 export class GetMyWalletTransactionsUseCase {
@@ -11,20 +12,6 @@ export class GetMyWalletTransactionsUseCase {
       'VND',
     );
     const result = await this.walletService.listLedger(wallet.id, page, limit);
-    return {
-      ...result,
-      data: result.data.map((entry) => ({
-        transactionCode: entry.transaction.transactionCode,
-        transactionType: entry.transaction.transactionType,
-        status: entry.transaction.status,
-        direction: entry.direction,
-        balanceType: entry.balanceType,
-        amount: entry.amount.toFixed(2),
-        balanceBefore: entry.balanceBefore.toFixed(2),
-        balanceAfter: entry.balanceAfter.toFixed(2),
-        description: entry.transaction.description,
-        createdAt: entry.createdAt,
-      })),
-    };
+    return toWalletLedgerResponse(result);
   }
 }

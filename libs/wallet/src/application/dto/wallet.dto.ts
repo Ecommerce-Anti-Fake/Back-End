@@ -20,20 +20,11 @@ export class WalletTransactionsQueryDto {
 }
 
 export class WalletResponseDto {
-  @ApiProperty() id!: string;
-  @ApiProperty() walletCode!: string;
-  @ApiProperty({ enum: ['USER', 'SHOP', 'PLATFORM'] }) ownerType!: string;
-  @ApiPropertyOptional({ nullable: true }) userId!: string | null;
-  @ApiPropertyOptional({ nullable: true }) shopId!: string | null;
-  @ApiPropertyOptional({ nullable: true }) platformCode!: string | null;
   @ApiProperty() currency!: string;
   @ApiProperty({ example: '0.00', type: String }) availableBalance!: string;
   @ApiProperty({ example: '0.00', type: String }) pendingBalance!: string;
   @ApiProperty({ example: '0.00', type: String }) lockedBalance!: string;
   @ApiProperty() status!: string;
-  @ApiProperty() version!: number;
-  @ApiProperty() createdAt!: Date;
-  @ApiProperty() updatedAt!: Date;
 }
 
 export class WalletLedgerEntryResponseDto {
@@ -43,23 +34,21 @@ export class WalletLedgerEntryResponseDto {
   @ApiProperty() direction!: string;
   @ApiProperty() balanceType!: string;
   @ApiProperty({ type: String }) amount!: string;
-  @ApiProperty({ type: String }) balanceBefore!: string;
-  @ApiProperty({ type: String }) balanceAfter!: string;
   @ApiPropertyOptional({ nullable: true }) description!: string | null;
   @ApiProperty() createdAt!: Date;
 }
 
 export class PaginatedWalletLedgerResponseDto {
   @ApiProperty({ type: WalletLedgerEntryResponseDto, isArray: true })
-  data!: WalletLedgerEntryResponseDto[];
+  items!: WalletLedgerEntryResponseDto[];
 
   @ApiProperty({
-    example: { page: 1, pageSize: 20, totalItems: 0, totalPages: 0 },
+    example: { page: 1, limit: 20, total: 0, totalPages: 0 },
   })
   pagination!: {
     page: number;
-    pageSize: number;
-    totalItems: number;
+    limit: number;
+    total: number;
     totalPages: number;
   };
 }

@@ -20,7 +20,7 @@ export function assertBalancedLedger(entries: readonly WalletLedgerInput[]) {
   if (entries.length === 0 || !debit.equals(credit)) {
     throw new WalletDomainError(
       WALLET_ERROR_CODES.UNBALANCED_LEDGER,
-      'Wallet ledger debit and credit totals must be equal',
+      'Giao dịch không cân bằng và không thể xử lý.',
     );
   }
 
@@ -28,7 +28,7 @@ export function assertBalancedLedger(entries: readonly WalletLedgerInput[]) {
     if (entry.amount.lte(0)) {
       throw new WalletDomainError(
         WALLET_ERROR_CODES.UNBALANCED_LEDGER,
-        'Wallet ledger amounts must be greater than zero',
+        'Giao dịch không cân bằng và không thể xử lý.',
       );
     }
   }
