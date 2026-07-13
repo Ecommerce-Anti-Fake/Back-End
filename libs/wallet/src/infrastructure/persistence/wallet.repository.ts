@@ -187,6 +187,8 @@ export class WalletRepository extends WalletRepositoryPort {
               referenceType: input.referenceType ?? null,
               referenceId: input.referenceId ?? null,
               description: input.description ?? null,
+              orderId: input.orderId ?? null,
+              paymentIntentId: input.paymentIntentId ?? null,
               status: 'COMPLETED',
               completedAt: new Date(),
             },

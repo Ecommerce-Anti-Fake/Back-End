@@ -1686,11 +1686,11 @@ export class CreateOrderDto {
 
   @ApiPropertyOptional({
     example: 'PAYOS',
-    enum: ['COD', 'BANK_TRANSFER', 'PAYOS'],
+    enum: ['COD', 'BANK_TRANSFER', 'PAYOS', 'WALLET'],
   })
   @IsOptional()
-  @IsIn(['COD', 'BANK_TRANSFER', 'PAYOS'])
-  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS';
+  @IsIn(['COD', 'BANK_TRANSFER', 'PAYOS', 'WALLET'])
+  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'WALLET';
 
   @ApiPropertyOptional({ example: 'Nguyen Van A' })
   @IsOptional()
@@ -1782,11 +1782,11 @@ export class CheckoutCartItemDto {
 
   @ApiPropertyOptional({
     example: 'PAYOS',
-    enum: ['COD', 'BANK_TRANSFER', 'PAYOS'],
+    enum: ['COD', 'BANK_TRANSFER', 'PAYOS', 'WALLET'],
   })
   @IsOptional()
-  @IsIn(['COD', 'BANK_TRANSFER', 'PAYOS'])
-  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS';
+  @IsIn(['COD', 'BANK_TRANSFER', 'PAYOS', 'WALLET'])
+  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'WALLET';
 
   @ApiPropertyOptional({ example: 'Nguyen Van A' })
   @IsOptional()
@@ -1857,9 +1857,9 @@ export class CheckoutCartDto {
   @IsUUID('4', { each: true })
   cartItemIds!: string[];
 
-  @ApiProperty({ example: 'PAYOS', enum: ['COD', 'PAYOS'] })
-  @IsIn(['COD', 'PAYOS'])
-  paymentMethod!: 'COD' | 'PAYOS';
+  @ApiProperty({ example: 'PAYOS', enum: ['COD', 'PAYOS', 'WALLET'] })
+  @IsIn(['COD', 'PAYOS', 'WALLET'])
+  paymentMethod!: 'COD' | 'PAYOS' | 'WALLET';
 
   @ApiProperty({ example: 'GHN_1' })
   @IsString()
@@ -1887,9 +1887,9 @@ export class BuyNowCheckoutDto {
   @Min(1)
   quantity!: number;
 
-  @ApiProperty({ example: 'PAYOS', enum: ['COD', 'PAYOS'] })
-  @IsIn(['COD', 'PAYOS'])
-  paymentMethod!: 'COD' | 'PAYOS';
+  @ApiProperty({ example: 'PAYOS', enum: ['COD', 'PAYOS', 'WALLET'] })
+  @IsIn(['COD', 'PAYOS', 'WALLET'])
+  paymentMethod!: 'COD' | 'PAYOS' | 'WALLET';
 
   @ApiProperty({ example: 'GHN_1' })
   @IsString()

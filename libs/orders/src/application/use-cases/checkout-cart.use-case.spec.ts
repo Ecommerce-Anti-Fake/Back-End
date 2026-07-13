@@ -7,11 +7,14 @@ describe('CheckoutCartUseCase', () => {
     removeCartItems: jest.fn(),
     updatePaymentProviderRef: jest.fn(),
     markOrderPaymentFailed: jest.fn(),
+    findCurrentOfferForCart: jest.fn(),
+    findOfferVariantForCart: jest.fn(),
   };
   const orderPlacementService = { createAggregateOrder: jest.fn() };
   const checkoutShippingService = { resolveSelectedOption: jest.fn(), resolveDefaultShipping: jest.fn() };
   const payOSPaymentService = { createPaymentLink: jest.fn() };
   const orderNotificationService = { notifyCreated: jest.fn() };
+  const walletService = { payOrder: jest.fn() };
   let useCase: CheckoutCartUseCase;
 
   beforeEach(() => {
@@ -22,6 +25,7 @@ describe('CheckoutCartUseCase', () => {
       checkoutShippingService as never,
       payOSPaymentService as never,
       orderNotificationService as never,
+      walletService as never,
     );
     ordersRepository.getOrCreateActiveCart.mockResolvedValue(createCart());
     checkoutShippingService.resolveSelectedOption.mockResolvedValue({
@@ -46,6 +50,11 @@ describe('CheckoutCartUseCase', () => {
     orderPlacementService.createAggregateOrder.mockResolvedValue({
       id: 'order-1',
     });
+    ordersRepository.findCurrentOfferForCart.mockImplementation(async (offerId: string) => ({
+      id: offerId,
+      offerStatus: 'active',
+      price: new Prisma.Decimal(offerId === 'offer-1' ? 100000 : 200000),
+    }));
   });
 
   it('creates one COD order with shop groups and removes source cart items', async () => {

@@ -25,8 +25,12 @@ export class CancelOrderUseCase {
       throw new ForbiddenException('You do not have permission to cancel this order');
     }
 
-    if (order.orderStatus !== 'pending') {
-      throw new BadRequestException('Only pending orders can be cancelled');
+    const canCancelPaidWalletOrder =
+      order.orderStatus === 'paid' &&
+      order.paymentIntent?.paymentMethod === 'WALLET' &&
+      order.paymentIntent.paymentStatus === 'PAID';
+    if (order.orderStatus !== 'pending' && !canCancelPaidWalletOrder) {
+      throw new BadRequestException('Only pending orders or paid wallet orders can be cancelled');
     }
 
     const updatedOrder = await this.orderReversalService.cancelOrder(order.id, input.requesterUserId);

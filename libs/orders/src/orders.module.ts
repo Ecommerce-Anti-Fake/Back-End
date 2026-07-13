@@ -77,11 +77,13 @@ import {
 import { OrdersRepository } from './infrastructure/persistence/orders.repository';
 import { OrdersRpcController } from './presentation/rpc/orders.rpc-controller';
 import { CATALOG_SERVICE_CLIENT } from '@contracts';
+import { WalletModule } from '@wallet/wallet.module';
 
 @Module({
   imports: [
     ConfigModule,
     PrismaModule,
+    WalletModule,
     MediaModule,
     ClientsModule.registerAsync([
       {

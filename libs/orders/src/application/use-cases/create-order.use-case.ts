@@ -3,6 +3,7 @@ import { OfferForOrdering, OfferVariantForOrdering, OrdersRepository } from '../
 import { WholesalePricingPort } from '../ports';
 import { OrderNotificationService, OrderPlacementService, PayOSPaymentService, ShippingCarrierAdapterService } from '../services';
 import { toOrderResponse } from './orders.mapper';
+import { WalletService } from '@wallet';
 
 @Injectable()
 export class CreateOrderUseCase {
@@ -13,6 +14,7 @@ export class CreateOrderUseCase {
     private readonly payOSPaymentService: PayOSPaymentService,
     private readonly shippingCarrierAdapterService: ShippingCarrierAdapterService,
     private readonly orderNotificationService: OrderNotificationService,
+    private readonly walletService: WalletService,
   ) {}
 
   async execute(input: {
@@ -22,7 +24,7 @@ export class CreateOrderUseCase {
     offerId: string;
     variantId?: string | null;
     quantity: number;
-    paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | null;
+    paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'WALLET' | null;
     affiliateCode?: string | null;
     shippingName?: string | null;
     shippingPhone?: string | null;
@@ -139,6 +141,19 @@ export class CreateOrderUseCase {
     await this.orderNotificationService.notifyCreated(order);
 
     const response = toOrderResponse(order);
+    if (paymentMethod === 'WALLET') {
+      await this.walletService.payOrder({
+        userId: input.buyerUserId,
+        orderId: order.id,
+        paymentIntentId: order.paymentIntent?.id,
+        amount: order.buyerPayableAmount,
+      });
+      return toOrderResponse(await this.ordersRepository.markOrderPaid({
+        id: order.id,
+        actorUserId: input.buyerUserId,
+        providerRef: null,
+      }));
+    }
     if (paymentMethod !== 'PAYOS' || input.skipPayOSPaymentLink) return response;
 
     const paymentLink = await this.payOSPaymentService.createPaymentLink({

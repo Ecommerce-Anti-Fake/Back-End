@@ -422,10 +422,10 @@ model BrandAuthorization {
 }
 
 model Brand {
-  id                   String                @id @default(uuid())
+  id                   String                     @id @default(uuid())
   name                 String
-  registryStatus       String                @map("registry_status")
-  createdAt            DateTime              @default(now()) @map("created_at")
+  registryStatus       String                     @map("registry_status")
+  createdAt            DateTime                   @default(now()) @map("created_at")
   offers               Offer[]
   supplyBatches        SupplyBatch[]
   shipmentItems        DistributionShipmentItem[]
@@ -438,19 +438,19 @@ model Brand {
 }
 
 model CartItem {
-  id                 String   @id @default(uuid())
-  cartId             String   @map("cart_id")
-  offerId            String   @map("offer_id")
-  variantId          String?  @map("variant_id")
+  id                 String        @id @default(uuid())
+  cartId             String        @map("cart_id")
+  offerId            String        @map("offer_id")
+  variantId          String?       @map("variant_id")
   quantity           Int
-  offerTitleSnapshot String   @map("offer_title_snapshot")
-  unitPriceSnapshot  Decimal  @map("unit_price_snapshot") @db.Decimal(18, 2)
-  currencySnapshot   String   @map("currency_snapshot")
-  shopNameSnapshot   String   @map("shop_name_snapshot")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
-  cart               Cart     @relation(fields: [cartId], references: [id])
-  offer              Offer    @relation(fields: [offerId], references: [id])
+  offerTitleSnapshot String        @map("offer_title_snapshot")
+  unitPriceSnapshot  Decimal       @map("unit_price_snapshot") @db.Decimal(18, 2)
+  currencySnapshot   String        @map("currency_snapshot")
+  shopNameSnapshot   String        @map("shop_name_snapshot")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+  cart               Cart          @relation(fields: [cartId], references: [id])
+  offer              Offer         @relation(fields: [offerId], references: [id])
   variant            OfferVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([cartId])
@@ -521,16 +521,16 @@ model ChatMessageAttachment {
 }
 
 model ChatThread {
-  id           String        @id @default(uuid())
-  shopId       String?       @map("shop_id")
-  directParticipantKey String? @unique @map("direct_participant_key")
-  buyerUserId  String        @map("buyer_user_id")
-  sellerUserId String        @map("seller_user_id")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  shop         Shop?         @relation(fields: [shopId], references: [id])
-  buyer        User          @relation("ChatThreadBuyer", fields: [buyerUserId], references: [id])
-  seller       User          @relation("ChatThreadSeller", fields: [sellerUserId], references: [id])
-  messages     ChatMessage[]
+  id                   String        @id @default(uuid())
+  shopId               String?       @map("shop_id")
+  directParticipantKey String?       @unique @map("direct_participant_key")
+  buyerUserId          String        @map("buyer_user_id")
+  sellerUserId         String        @map("seller_user_id")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  shop                 Shop?         @relation(fields: [shopId], references: [id])
+  buyer                User          @relation("ChatThreadBuyer", fields: [buyerUserId], references: [id])
+  seller               User          @relation("ChatThreadSeller", fields: [sellerUserId], references: [id])
+  messages             ChatMessage[]
 
   @@unique([buyerUserId, shopId])
   @@index([shopId])
@@ -706,26 +706,26 @@ model Escrow {
 }
 
 model LiveCommerceSession {
-  id          String            @id @default(uuid())
-  shopId      String            @map("shop_id")
-  title       String
-  description String?
-  coverUrl    String?           @map("cover_url")
-  startAt     DateTime          @map("start_at")
-  status      LiveSessionStatus @default(SCHEDULED)
-  playbackUrl String?           @map("playback_url")
-  streamProvider          String? @map("stream_provider")
-  streamProviderSessionId String? @map("stream_provider_session_id")
-  streamIngestUrl         String? @map("stream_ingest_url")
-  streamLatencyTargetMs   Int?    @map("stream_latency_target_ms")
-  recordingUrl            String? @map("recording_url")
-  recordingRetentionDays  Int?    @map("recording_retention_days")
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt @map("updated_at")
-  shop        Shop              @relation(fields: [shopId], references: [id])
-  offers      LiveSessionOffer[]
-  reminders   LiveSessionReminder[]
-  comments    LiveSessionComment[]
+  id                      String                @id @default(uuid())
+  shopId                  String                @map("shop_id")
+  title                   String
+  description             String?
+  coverUrl                String?               @map("cover_url")
+  startAt                 DateTime              @map("start_at")
+  status                  LiveSessionStatus     @default(SCHEDULED)
+  playbackUrl             String?               @map("playback_url")
+  streamProvider          String?               @map("stream_provider")
+  streamProviderSessionId String?               @map("stream_provider_session_id")
+  streamIngestUrl         String?               @map("stream_ingest_url")
+  streamLatencyTargetMs   Int?                  @map("stream_latency_target_ms")
+  recordingUrl            String?               @map("recording_url")
+  recordingRetentionDays  Int?                  @map("recording_retention_days")
+  createdAt               DateTime              @default(now()) @map("created_at")
+  updatedAt               DateTime              @updatedAt @map("updated_at")
+  shop                    Shop                  @relation(fields: [shopId], references: [id])
+  offers                  LiveSessionOffer[]
+  reminders               LiveSessionReminder[]
+  comments                LiveSessionComment[]
 
   @@index([shopId, startAt])
   @@index([status, startAt])
@@ -829,16 +829,16 @@ model ModerationCase {
 }
 
 model NotificationDeliveryAttempt {
-  id             String       @id @default(uuid())
-  userId         String       @map("user_id")
-  notificationId String?      @map("notification_id")
-  eventName      String       @map("event_name")
+  id             String        @id @default(uuid())
+  userId         String        @map("user_id")
+  notificationId String?       @map("notification_id")
+  eventName      String        @map("event_name")
   provider       String
   status         String
-  errorCode      String?      @map("error_code")
-  errorMessage   String?      @map("error_message")
-  createdAt      DateTime     @default(now()) @map("created_at")
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  errorCode      String?       @map("error_code")
+  errorMessage   String?       @map("error_message")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   notification   Notification? @relation(fields: [notificationId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
@@ -848,33 +848,33 @@ model NotificationDeliveryAttempt {
 }
 
 model NotificationFcmToken {
-  id         String    @id @default(uuid())
-  userId     String    @map("user_id")
-  tokenHash  String    @unique @map("token_hash")
-  token      String
-  deviceId   String?   @map("device_id")
-  userAgent  String?   @map("user_agent")
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  token     String
+  deviceId  String?   @map("device_id")
+  userAgent String?   @map("user_agent")
   revokedAt DateTime? @map("revoked_at")
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, revokedAt])
   @@map("notification_fcm_token")
 }
 
 model Notification {
-  id               String    @id @default(uuid())
-  userId           String    @map("user_id")
-  notificationType String    @map("notification_type")
+  id               String                        @id @default(uuid())
+  userId           String                        @map("user_id")
+  notificationType String                        @map("notification_type")
   title            String
   body             String
-  targetType       String?   @map("target_type")
-  targetId         String?   @map("target_id")
-  dedupeKey        String    @unique @map("dedupe_key")
-  readAt           DateTime? @map("read_at")
-  createdAt        DateTime  @default(now()) @map("created_at")
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetType       String?                       @map("target_type")
+  targetId         String?                       @map("target_id")
+  dedupeKey        String                        @unique @map("dedupe_key")
+  readAt           DateTime?                     @map("read_at")
+  createdAt        DateTime                      @default(now()) @map("created_at")
+  user             User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
   deliveryAttempts NotificationDeliveryAttempt[]
 
   @@index([userId, readAt, createdAt])
@@ -942,16 +942,16 @@ model OfferOptionGroup {
 }
 
 model OfferOptionValue {
-  id            String           @id @default(uuid())
-  optionGroupId String           @map("option_group_id")
+  id            String              @id @default(uuid())
+  optionGroupId String              @map("option_group_id")
   text          String
-  mediaAssetId  String?          @map("media_asset_id")
-  sortOrder     Int              @default(0) @map("sort_order")
-  isVisible     Boolean          @default(true) @map("is_visible")
-  createdAt     DateTime         @default(now()) @map("created_at")
-  updatedAt     DateTime         @updatedAt @map("updated_at")
-  optionGroup   OfferOptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
-  mediaAsset    MediaAsset?      @relation(fields: [mediaAssetId], references: [id], onDelete: SetNull)
+  mediaAssetId  String?             @map("media_asset_id")
+  sortOrder     Int                 @default(0) @map("sort_order")
+  isVisible     Boolean             @default(true) @map("is_visible")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  optionGroup   OfferOptionGroup    @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+  mediaAsset    MediaAsset?         @relation(fields: [mediaAssetId], references: [id], onDelete: SetNull)
   variantValues OfferVariantValue[]
 
   @@unique([optionGroupId, text])
@@ -1070,23 +1070,23 @@ model OrderItemOptionValue {
 }
 
 model OrderItem {
-  id                        String                     @id @default(uuid())
-  orderId                   String                     @map("order_id")
-  orderShopGroupId          String?                    @map("order_shop_group_id")
-  sourceCartItemId          String?                    @map("source_cart_item_id")
-  offerId                   String                     @map("offer_id")
-  variantId                 String?                    @map("variant_id")
-  offerTitleSnapshot        String                     @map("offer_title_snapshot")
-  unitPrice                 Decimal                    @map("unit_price") @db.Decimal(18, 2)
-  quantity                  Int
-  order                     Order                      @relation(fields: [orderId], references: [id])
-  orderShopGroup            OrderShopGroup?            @relation(fields: [orderShopGroupId], references: [id])
-  offer                     Offer                      @relation(fields: [offerId], references: [id])
-  variant                   OfferVariant?              @relation(fields: [variantId], references: [id], onDelete: SetNull)
-  selectedOptions           OrderItemOptionValue[]
-  batchAllocations          OrderItemBatchAllocation[]
-  reviews                   Review[]
-  sourceSupplyBatches       SupplyBatch[]                @relation("SupplyBatchSourceOrderItem")
+  id                  String                     @id @default(uuid())
+  orderId             String                     @map("order_id")
+  orderShopGroupId    String?                    @map("order_shop_group_id")
+  sourceCartItemId    String?                    @map("source_cart_item_id")
+  offerId             String                     @map("offer_id")
+  variantId           String?                    @map("variant_id")
+  offerTitleSnapshot  String                     @map("offer_title_snapshot")
+  unitPrice           Decimal                    @map("unit_price") @db.Decimal(18, 2)
+  quantity            Int
+  order               Order                      @relation(fields: [orderId], references: [id])
+  orderShopGroup      OrderShopGroup?            @relation(fields: [orderShopGroupId], references: [id])
+  offer               Offer                      @relation(fields: [offerId], references: [id])
+  variant             OfferVariant?              @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  selectedOptions     OrderItemOptionValue[]
+  batchAllocations    OrderItemBatchAllocation[]
+  reviews             Review[]
+  sourceSupplyBatches SupplyBatch[]              @relation("SupplyBatchSourceOrderItem")
 
   @@index([orderId])
   @@index([orderShopGroupId])
@@ -1172,6 +1172,7 @@ model Order {
   items                   OrderItem[]
   shopGroups              OrderShopGroup[]
   paymentIntent           PaymentIntent?
+  walletTransactions      WalletTransaction[]
   escrow                  Escrow?
   disputes                Dispute[]
   reviews                 Review[]
@@ -1199,14 +1200,15 @@ model PasswordResetToken {
 }
 
 model PaymentIntent {
-  id            String   @id @default(uuid())
-  orderId       String   @unique @map("order_id")
-  paymentMethod String   @map("payment_method")
-  paymentStatus String   @map("payment_status")
-  amount        Decimal  @db.Decimal(18, 2)
-  providerRef   String?  @map("provider_ref")
-  createdAt     DateTime @default(now()) @map("created_at")
-  order         Order    @relation(fields: [orderId], references: [id])
+  id                 String              @id @default(uuid())
+  orderId            String              @unique @map("order_id")
+  paymentMethod      String              @map("payment_method")
+  paymentStatus      String              @map("payment_status")
+  amount             Decimal             @db.Decimal(18, 2)
+  providerRef        String?             @map("provider_ref")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  order              Order               @relation(fields: [orderId], references: [id])
+  walletTransactions WalletTransaction[]
 
   @@map("payment_intent")
 }
@@ -1291,28 +1293,29 @@ model RiskScore {
 }
 
 model ShippingCarrier {
-  id                   String                @id @default(uuid())
-  code                 String                @unique
-  name                 String
-  description          String?
-  isActive             Boolean               @default(true) @map("is_active")
-  sortOrder            Int                   @default(0) @map("sort_order")
-  createdAt            DateTime              @default(now()) @map("created_at")
-  updatedAt            DateTime              @updatedAt @map("updated_at")
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  description String?
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
   @@index([isActive, sortOrder])
   @@map("shipping_carrier")
 }
 
 model ShopBusinessCategory {
-  id                 String                 @id @default(uuid())
-  shopId             String                 @map("shop_id")
-  categoryId         String                 @map("category_id")
-  registrationStatus String                 @default("pending") @map("registration_status")
-  approvedAt         DateTime?              @map("approved_at")
-  reviewNote         String?                @map("review_note")
-  createdAt          DateTime               @default(now()) @map("created_at")
-  shop               Shop                   @relation(fields: [shopId], references: [id])
-  category           Category               @relation(fields: [categoryId], references: [id])
+  id                 String    @id @default(uuid())
+  shopId             String    @map("shop_id")
+  categoryId         String    @map("category_id")
+  registrationStatus String    @default("pending") @map("registration_status")
+  approvedAt         DateTime? @map("approved_at")
+  reviewNote         String?   @map("review_note")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  shop               Shop      @relation(fields: [shopId], references: [id])
+  category           Category  @relation(fields: [categoryId], references: [id])
 
   @@unique([shopId, categoryId])
   @@index([shopId])
@@ -1395,8 +1398,8 @@ model Shop {
   taxCode                    String?                @map("tax_code")
   phone                      String?
   shopStatus                 String                 @map("shop_status")
-  avatarMediaId              String?                @map("avatar_media_id") @unique
-  bannerMediaId              String?                @map("banner_media_id") @unique
+  avatarMediaId              String?                @unique @map("avatar_media_id")
+  bannerMediaId              String?                @unique @map("banner_media_id")
   warehouseAddress           String?                @map("warehouse_address")
   warehouseProvinceCode      String?                @map("warehouse_province_code")
   warehouseProvinceName      String?                @map("warehouse_province_name")
@@ -1518,10 +1521,10 @@ model SocialReaction {
 }
 
 model SocialShare {
-  id        String   @id @default(uuid())
-  postId    String   @map("post_id")
-  userId    String   @map("user_id")
-  createdAt DateTime @default(now()) @map("created_at")
+  id        String     @id @default(uuid())
+  postId    String     @map("post_id")
+  userId    String     @map("user_id")
+  createdAt DateTime   @default(now()) @map("created_at")
   post      SocialPost @relation(fields: [postId], references: [id])
   user      User       @relation(fields: [userId], references: [id])
 
@@ -1572,10 +1575,10 @@ model UserAddress {
   recipientName String   @map("recipient_name")
   phone         String
   addressLine   String   @map("address_line")
-  provinceCode         String?  @map("province_code")
-  provinceName         String?  @map("province_name")
-  wardCode             String?  @map("ward_code")
-  wardName             String?  @map("ward_name")
+  provinceCode  String?  @map("province_code")
+  provinceName  String?  @map("province_name")
+  wardCode      String?  @map("ward_code")
+  wardName      String?  @map("ward_name")
   isDefault     Boolean  @default(false) @map("is_default")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
@@ -1664,52 +1667,52 @@ model UserKyc {
 }
 
 model User {
-  id                   String                @id @default(uuid())
-  phone                String?               @unique
-  email                String?               @unique
-  displayName          String?               @map("display_name")
-  password             String?
-  role                 String                @default("user")
-  accountStatus        String                @default("active") @map("account_status")
-  avatarMediaId        String?               @map("avatar_media_id") @unique
-  avatarMedia          MediaAsset?           @relation("UserAvatarMedia", fields: [avatarMediaId], references: [id])
-  createdAt            DateTime              @default(now()) @map("created_at")
-  updatedAt            DateTime              @updatedAt @map("updated_at")
-  authSessions         AuthSession[]
-  passwordResetTokens  PasswordResetToken[]
-  kyc                  UserKyc?
-  ownedShops           Shop[]                @relation("ShopOwner")
-  offers               Offer[]               @relation("OfferSeller")
-  carts                Cart[]
-  orders               Order[]               @relation("OrderBuyer")
-  disputesOpened       Dispute[]             @relation("DisputeOpenedBy")
-  disputeEvidence      DisputeEvidence[]     @relation("DisputeEvidenceUploadedBy")
-  mediaAssets          MediaAsset[]          @relation("MediaAssetOwner")
-  auditLogs            AuditLog[]            @relation("AuditLogActor")
-  reviewsGiven         Review[]              @relation("ReviewFromUser")
-  reviewsReceived      Review[]              @relation("ReviewToUser")
-  chatThreadsAsBuyer   ChatThread[]          @relation("ChatThreadBuyer")
-  chatThreadsAsSeller  ChatThread[]          @relation("ChatThreadSeller")
-  chatMessages         ChatMessage[]         @relation("ChatMessageSender")
-  reports              Report[]              @relation("ReportReporter")
-  moderationCases      ModerationCase[]      @relation("ModerationCaseAssignee")
-  provenanceEvents     ProvenanceEvent[]     @relation("ProvenanceEventActor")
-  affiliateAccounts    AffiliateAccount[]
-  affiliateConversions AffiliateConversion[] @relation("AffiliateConversionCustomer")
-  addresses            UserAddress[]
-  notifications        Notification[]
-  notificationFcmTokens NotificationFcmToken[]
+  id                           String                        @id @default(uuid())
+  phone                        String?                       @unique
+  email                        String?                       @unique
+  displayName                  String?                       @map("display_name")
+  password                     String?
+  role                         String                        @default("user")
+  accountStatus                String                        @default("active") @map("account_status")
+  avatarMediaId                String?                       @unique @map("avatar_media_id")
+  avatarMedia                  MediaAsset?                   @relation("UserAvatarMedia", fields: [avatarMediaId], references: [id])
+  createdAt                    DateTime                      @default(now()) @map("created_at")
+  updatedAt                    DateTime                      @updatedAt @map("updated_at")
+  authSessions                 AuthSession[]
+  passwordResetTokens          PasswordResetToken[]
+  kyc                          UserKyc?
+  ownedShops                   Shop[]                        @relation("ShopOwner")
+  offers                       Offer[]                       @relation("OfferSeller")
+  carts                        Cart[]
+  orders                       Order[]                       @relation("OrderBuyer")
+  disputesOpened               Dispute[]                     @relation("DisputeOpenedBy")
+  disputeEvidence              DisputeEvidence[]             @relation("DisputeEvidenceUploadedBy")
+  mediaAssets                  MediaAsset[]                  @relation("MediaAssetOwner")
+  auditLogs                    AuditLog[]                    @relation("AuditLogActor")
+  reviewsGiven                 Review[]                      @relation("ReviewFromUser")
+  reviewsReceived              Review[]                      @relation("ReviewToUser")
+  chatThreadsAsBuyer           ChatThread[]                  @relation("ChatThreadBuyer")
+  chatThreadsAsSeller          ChatThread[]                  @relation("ChatThreadSeller")
+  chatMessages                 ChatMessage[]                 @relation("ChatMessageSender")
+  reports                      Report[]                      @relation("ReportReporter")
+  moderationCases              ModerationCase[]              @relation("ModerationCaseAssignee")
+  provenanceEvents             ProvenanceEvent[]             @relation("ProvenanceEventActor")
+  affiliateAccounts            AffiliateAccount[]
+  affiliateConversions         AffiliateConversion[]         @relation("AffiliateConversionCustomer")
+  addresses                    UserAddress[]
+  notifications                Notification[]
+  notificationFcmTokens        NotificationFcmToken[]
   notificationDeliveryAttempts NotificationDeliveryAttempt[]
-  favoriteOffers       UserFavoriteOffer[]
-  socialPosts          SocialPost[]
-  socialComments       SocialComment[]
-  socialCommentLikes   SocialCommentLike[]
-  socialReactions      SocialReaction[]
-  socialShares         SocialShare[]
-  liveSessionReminders LiveSessionReminder[]
-  liveSessionComments  LiveSessionComment[] @relation("LiveCommentAuthor")
-  hiddenLiveSessionComments LiveSessionComment[] @relation("LiveCommentHiddenBy")
-  wallets               Wallet[]
+  favoriteOffers               UserFavoriteOffer[]
+  socialPosts                  SocialPost[]
+  socialComments               SocialComment[]
+  socialCommentLikes           SocialCommentLike[]
+  socialReactions              SocialReaction[]
+  socialShares                 SocialShare[]
+  liveSessionReminders         LiveSessionReminder[]
+  liveSessionComments          LiveSessionComment[]          @relation("LiveCommentAuthor")
+  hiddenLiveSessionComments    LiveSessionComment[]          @relation("LiveCommentHiddenBy")
+  wallets                      Wallet[]
 
   @@map("user")
 }
@@ -1741,6 +1744,7 @@ model VerificationRequirement {
   updatedAt            DateTime              @updatedAt @map("updated_at")
   shopTypes            ShopTypeRequirement[]
   shopDocuments        ShopDocument[]
+
   @@index([isActive])
   @@map("verification_requirement")
 }
@@ -1761,9 +1765,9 @@ model Wallet {
   createdAt        DateTime        @default(now()) @map("created_at")
   updatedAt        DateTime        @updatedAt @map("updated_at")
 
-  user             User?           @relation(fields: [userId], references: [id])
-  shop             Shop?           @relation(fields: [shopId], references: [id])
-  ledgerEntries    WalletLedgerEntry[]
+  user          User?               @relation(fields: [userId], references: [id])
+  shop          Shop?               @relation(fields: [shopId], references: [id])
+  ledgerEntries WalletLedgerEntry[]
 
   @@unique([userId, currency])
   @@unique([shopId, currency])
@@ -1771,38 +1775,44 @@ model Wallet {
 }
 
 model WalletTransaction {
-  id                String                  @id @default(uuid())
-  transactionCode   String                  @unique @map("transaction_code")
-  transactionType   WalletTransactionType   @map("transaction_type")
-  status            WalletTransactionStatus @default(PENDING)
-  amount            Decimal                 @db.Decimal(18, 2)
-  currency          String                  @default("VND")
-  idempotencyKey    String                  @unique @map("idempotency_key")
-  referenceType     String?                 @map("reference_type")
-  referenceId       String?                 @map("reference_id")
-  description       String?
-  createdAt         DateTime                @default(now()) @map("created_at")
-  completedAt       DateTime?               @map("completed_at")
+  id              String                  @id @default(uuid())
+  transactionCode String                  @unique @map("transaction_code")
+  transactionType WalletTransactionType   @map("transaction_type")
+  status          WalletTransactionStatus @default(PENDING)
+  amount          Decimal                 @db.Decimal(18, 2)
+  currency        String                  @default("VND")
+  idempotencyKey  String                  @unique @map("idempotency_key")
+  referenceType   String?                 @map("reference_type")
+  referenceId     String?                 @map("reference_id")
+  orderId         String?                 @map("order_id")
+  paymentIntentId String?                 @map("payment_intent_id")
+  description     String?
+  createdAt       DateTime                @default(now()) @map("created_at")
+  completedAt     DateTime?               @map("completed_at")
 
-  ledgerEntries     WalletLedgerEntry[]
+  ledgerEntries WalletLedgerEntry[]
+  order         Order?              @relation(fields: [orderId], references: [id])
+  paymentIntent PaymentIntent?      @relation(fields: [paymentIntentId], references: [id])
 
   @@index([referenceType, referenceId])
+  @@index([orderId])
+  @@index([paymentIntentId])
   @@map("wallet_transaction")
 }
 
 model WalletLedgerEntry {
-  id              String               @id @default(uuid())
-  walletId        String               @map("wallet_id")
-  transactionId   String               @map("transaction_id")
-  direction       WalletEntryDirection
-  balanceType     WalletBalanceType    @map("balance_type")
-  amount          Decimal              @db.Decimal(18, 2)
-  balanceBefore   Decimal              @map("balance_before") @db.Decimal(18, 2)
-  balanceAfter    Decimal              @map("balance_after") @db.Decimal(18, 2)
-  createdAt       DateTime             @default(now()) @map("created_at")
+  id            String               @id @default(uuid())
+  walletId      String               @map("wallet_id")
+  transactionId String               @map("transaction_id")
+  direction     WalletEntryDirection
+  balanceType   WalletBalanceType    @map("balance_type")
+  amount        Decimal              @db.Decimal(18, 2)
+  balanceBefore Decimal              @map("balance_before") @db.Decimal(18, 2)
+  balanceAfter  Decimal              @map("balance_after") @db.Decimal(18, 2)
+  createdAt     DateTime             @default(now()) @map("created_at")
 
-  wallet          Wallet               @relation(fields: [walletId], references: [id])
-  transaction     WalletTransaction    @relation(fields: [transactionId], references: [id])
+  wallet      Wallet            @relation(fields: [walletId], references: [id])
+  transaction WalletTransaction @relation(fields: [transactionId], references: [id])
 
   @@index([walletId, createdAt])
   @@index([transactionId])

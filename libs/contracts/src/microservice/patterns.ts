@@ -1037,7 +1037,7 @@ export type CreateOrderMessage = {
   offerId: string;
   variantId?: string | null;
   quantity: number;
-  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | null;
+  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'WALLET' | null;
   affiliateCode?: string | null;
   shippingName?: string | null;
   shippingPhone?: string | null;
@@ -1076,7 +1076,7 @@ export type RemoveCartItemMessage = {
 export type CheckoutCartItemMessage = {
   buyerUserId: string;
   cartItemId: string;
-  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | null;
+  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'WALLET' | null;
   affiliateCode?: string | null;
   shippingName?: string | null;
   shippingPhone?: string | null;
@@ -1093,7 +1093,7 @@ export type CheckoutCartItemMessage = {
 export type CheckoutCartMessage = {
   buyerUserId: string;
   cartItemIds: string[];
-  paymentMethod: 'COD' | 'PAYOS';
+  paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   shippingOptionCode: string;
   affiliateCode?: string | null;
 };
@@ -1103,7 +1103,7 @@ export type BuyNowCheckoutMessage = {
   offerId: string;
   variantId?: string | null;
   quantity: number;
-  paymentMethod: 'COD' | 'PAYOS';
+  paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   shippingOptionCode: string;
 };
 

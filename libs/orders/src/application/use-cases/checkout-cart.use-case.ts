@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { CartWithItems, OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import {
   CheckoutShippingOption,
@@ -7,11 +8,12 @@ import {
   OrderPlacementService,
   PayOSPaymentService,
 } from '../services';
+import { WalletService } from '@wallet';
 
 type CheckoutCartInput = {
   buyerUserId: string;
   cartItemIds: string[];
-  paymentMethod: 'COD' | 'PAYOS';
+  paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   shippingOptionCode: string;
   affiliateCode?: string | null;
 };
@@ -24,6 +26,7 @@ export class CheckoutCartUseCase {
     private readonly checkoutShippingService: CheckoutShippingService,
     private readonly payOSPaymentService: PayOSPaymentService,
     private readonly orderNotificationService: OrderNotificationService,
+    private readonly walletService: WalletService,
   ) {}
 
   async execute(input: CheckoutCartInput) {
@@ -77,6 +80,25 @@ export class CheckoutCartUseCase {
         cartItemIds: selectedItems.map((item) => item.id),
       });
       return { success: true, orderId: order.id };
+    }
+
+    if (input.paymentMethod === 'WALLET') {
+      await this.walletService.payOrder({
+        userId: input.buyerUserId,
+        orderId: order.id,
+        paymentIntentId: order.paymentIntent?.id,
+        amount: order.buyerPayableAmount,
+      });
+      const paidOrder = await this.ordersRepository.markOrderPaid({
+        id: order.id,
+        actorUserId: input.buyerUserId,
+        providerRef: null,
+      });
+      await this.ordersRepository.removeCartItems({
+        buyerUserId: input.buyerUserId,
+        cartItemIds: selectedItems.map((item) => item.id),
+      });
+      return paidOrder;
     }
 
     let paymentLink: Awaited<ReturnType<PayOSPaymentService['createPaymentLink']>>;
@@ -177,7 +199,7 @@ export class CheckoutCartUseCase {
   }
 
   private async revalidateSelectedItems(items: CartWithItems['items']) {
-    const refreshed = [];
+    const refreshed: CartWithItems['items'] = [];
     for (const item of items) {
       const offer = await this.ordersRepository.findCurrentOfferForCart(item.offerId);
       if (!offer || offer.offerStatus !== 'active') {
@@ -204,7 +226,7 @@ export class CheckoutCartUseCase {
       refreshed.push({
         ...item,
         offer: { ...item.offer, ...offer },
-        unitPriceSnapshot: currentPrice,
+        unitPriceSnapshot: new Prisma.Decimal(currentPrice),
       });
     }
     return refreshed as CartWithItems['items'];

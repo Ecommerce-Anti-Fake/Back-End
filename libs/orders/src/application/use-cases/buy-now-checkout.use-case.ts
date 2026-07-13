@@ -8,7 +8,7 @@ type BuyNowCheckoutInput = {
   offerId: string;
   variantId?: string | null;
   quantity: number;
-  paymentMethod: 'COD' | 'PAYOS';
+  paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   shippingOptionCode: string;
 };
 

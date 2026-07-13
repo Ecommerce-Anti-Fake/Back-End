@@ -412,7 +412,7 @@ export type CreateOrderRecordInput = {
   parcelLengthCm?: number | null;
   parcelWidthCm?: number | null;
   parcelHeightCm?: number | null;
-  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'manual_confirmation' | null;
+  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'WALLET' | 'manual_confirmation' | null;
   item: {
     offerId: string;
     variantId?: string | null;
@@ -432,7 +432,7 @@ export type CreateOrderRecordInput = {
 export type CreateAggregateOrderRecordInput = {
   buyerUserId: string;
   legacyShopId: string;
-  paymentMethod: 'COD' | 'PAYOS';
+  paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   baseAmount: number;
   platformFeeAmount: number;
   buyerPayableAmount: number;
@@ -563,6 +563,7 @@ export class OrdersRepository {
             batchAllocations: true,
           },
         },
+        paymentIntent: true,
       },
     });
   }

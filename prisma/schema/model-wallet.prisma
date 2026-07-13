@@ -33,13 +33,19 @@ model WalletTransaction {
   idempotencyKey    String                  @unique @map("idempotency_key")
   referenceType     String?                 @map("reference_type")
   referenceId       String?                 @map("reference_id")
+  orderId           String?                 @map("order_id")
+  paymentIntentId   String?                 @map("payment_intent_id")
   description       String?
   createdAt         DateTime                @default(now()) @map("created_at")
   completedAt       DateTime?               @map("completed_at")
 
   ledgerEntries     WalletLedgerEntry[]
+  order             Order?                  @relation(fields: [orderId], references: [id])
+  paymentIntent     PaymentIntent?          @relation(fields: [paymentIntentId], references: [id])
 
   @@index([referenceType, referenceId])
+  @@index([orderId])
+  @@index([paymentIntentId])
   @@map("wallet_transaction")
 }
 

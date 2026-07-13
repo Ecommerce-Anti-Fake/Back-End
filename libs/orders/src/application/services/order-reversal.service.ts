@@ -6,12 +6,14 @@ import {
   OrdersRepository,
 } from '../../infrastructure/persistence/orders.repository';
 import { OrderInventoryService } from './order-inventory.service';
+import { WalletService } from '@wallet';
 
 @Injectable()
 export class OrderReversalService {
   constructor(
     private readonly ordersRepository: OrdersRepository,
     private readonly orderInventoryService: OrderInventoryService,
+    private readonly walletService: WalletService,
   ) {}
 
   cancelOrder(orderId: string, actorUserId: string): Promise<OrderWithRelations> {
@@ -22,16 +24,27 @@ export class OrderReversalService {
       }
 
       await this.orderInventoryService.restoreOrderInventory(tx, order);
+      const paymentIntent = order.paymentIntent;
+      const isWalletPaid = paymentIntent?.paymentMethod === 'WALLET' && paymentIntent.paymentStatus === 'PAID';
+      if (isWalletPaid) {
+        if (!order.buyerUserId) throw new BadRequestException('Wallet refund requires a user buyer');
+        await this.walletService.refundOrder({
+          userId: order.buyerUserId,
+          orderId,
+          paymentIntentId: paymentIntent.id,
+          amount: order.buyerPayableAmount,
+        });
+      }
       await this.ordersRepository.updatePaymentStatusWithAudit(tx, {
         orderId,
         actorUserId,
-        paymentStatus: 'CANCELLED',
+        paymentStatus: isWalletPaid ? 'REFUNDED' : 'CANCELLED',
       });
       await this.ordersRepository.updateEscrowStatusWithAudit(tx, {
         orderId,
         actorUserId,
-        escrowStatus: 'CANCELLED',
-        note: 'Escrow cancelled because order was cancelled',
+        escrowStatus: isWalletPaid ? 'REFUNDED' : 'CANCELLED',
+        note: isWalletPaid ? 'Escrow refunded because wallet order was cancelled' : 'Escrow cancelled because order was cancelled',
       });
       await this.ordersRepository.cancelPendingAffiliateArtifacts(tx, orderId);
 
@@ -64,6 +77,15 @@ export class OrderReversalService {
       }
 
       await this.orderInventoryService.restoreOrderInventory(tx, order);
+      if (order.paymentIntent?.paymentMethod === 'WALLET' && order.paymentIntent.paymentStatus === 'PAID') {
+        if (!order.buyerUserId) throw new BadRequestException('Wallet refund requires a user buyer');
+        await this.walletService.refundOrder({
+          userId: order.buyerUserId,
+          orderId,
+          paymentIntentId: order.paymentIntent.id,
+          amount: order.buyerPayableAmount,
+        });
+      }
       await this.ordersRepository.updatePaymentStatusWithAudit(tx, {
         orderId,
         actorUserId,

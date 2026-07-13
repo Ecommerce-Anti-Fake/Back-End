@@ -27,6 +27,8 @@ export interface WalletTransactionInput {
   referenceType?: string | null;
   referenceId?: string | null;
   description?: string | null;
+  orderId?: string | null;
+  paymentIntentId?: string | null;
   entries: WalletLedgerInput[];
 }
 

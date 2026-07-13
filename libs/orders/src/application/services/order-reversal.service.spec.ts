@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { OrderInventoryService } from './order-inventory.service';
 import { OrderReversalService } from './order-reversal.service';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { WalletService } from '@wallet';
 
 describe('OrderReversalService', () => {
   let service: OrderReversalService;
@@ -23,6 +24,9 @@ describe('OrderReversalService', () => {
   const orderInventoryServiceMock = {
     restoreOrderInventory: jest.fn(),
   };
+  const walletServiceMock = {
+    refundOrder: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -33,6 +37,7 @@ describe('OrderReversalService', () => {
         OrderReversalService,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
         { provide: OrderInventoryService, useValue: orderInventoryServiceMock },
+        { provide: WalletService, useValue: walletServiceMock },
       ],
     }).compile();
 
