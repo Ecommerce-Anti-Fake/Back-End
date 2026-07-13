@@ -8,6 +8,7 @@ import {
   GetMyWalletUseCase,
   GetShopWalletTransactionsUseCase,
   GetShopWalletUseCase,
+  ReconcileShopWalletUseCase,
 } from './application/use-cases';
 import { WalletRpcController } from './presentation/rpc/wallet.rpc-controller';
 
@@ -21,8 +22,9 @@ import { WalletRpcController } from './presentation/rpc/wallet.rpc-controller';
     GetMyWalletTransactionsUseCase,
     GetShopWalletUseCase,
     GetShopWalletTransactionsUseCase,
+    ReconcileShopWalletUseCase,
     { provide: WalletRepositoryPort, useExisting: WalletRepository },
   ],
-  exports: [WalletRepository, WalletService, WalletRepositoryPort],
+  exports: [WalletRepository, WalletService, WalletRepositoryPort, ReconcileShopWalletUseCase],
 })
 export class WalletModule {}

@@ -173,6 +173,7 @@ enum WalletTransactionType {
   PLATFORM_FEE
   AFFILIATE_COMMISSION
   ADJUSTMENT
+  SETTLEMENT
 }
 
 enum WalletTransactionStatus {
