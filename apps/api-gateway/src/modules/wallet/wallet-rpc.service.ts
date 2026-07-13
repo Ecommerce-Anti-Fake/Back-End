@@ -60,6 +60,14 @@ export class WalletRpcService {
     return this.send(WALLET_MESSAGE_PATTERNS.listShopWalletWithdrawals, payload);
   }
 
+  approveWalletWithdrawal(payload: { id: string }) {
+    return this.send(WALLET_MESSAGE_PATTERNS.approveWalletWithdrawal, payload);
+  }
+
+  rejectWalletWithdrawal(payload: { id: string }) {
+    return this.send(WALLET_MESSAGE_PATTERNS.rejectWalletWithdrawal, payload);
+  }
+
   private async send<TResult>(
     pattern: string,
     payload: unknown,

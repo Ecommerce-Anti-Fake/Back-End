@@ -30,6 +30,7 @@ export interface WalletTransactionInput {
   orderId?: string | null;
   paymentIntentId?: string | null;
   entries: WalletLedgerInput[];
+  allowUnbalanced?: boolean;
 }
 
 export abstract class WalletRepositoryPort {

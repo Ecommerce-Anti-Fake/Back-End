@@ -21,3 +21,6 @@ export interface ShopWalletWithdrawalMessage extends ShopWalletLookupMessage {
   accountNumber: string;
   accountHolder: string;
 }
+export interface WalletWithdrawalActionMessage {
+  id: string;
+}

@@ -124,7 +124,7 @@ export class WalletRepository extends WalletRepositoryPort {
           });
           if (existing) return existing;
 
-          assertBalancedLedger(input.entries);
+          if (!input.allowUnbalanced) assertBalancedLedger(input.entries);
 
           const walletIds = [
             ...new Set(input.entries.map((entry) => entry.walletId)),
@@ -291,6 +291,10 @@ export class WalletRepository extends WalletRepositoryPort {
     return this.prisma.wallet.findUnique({
       where: { shopId_currency: { shopId, currency } },
     });
+  }
+
+  findWithdrawalInTransaction(tx: WalletClient, id: string) {
+    return tx.walletWithdrawal.findUnique({ where: { id } });
   }
 
   listWithdrawals(walletId: string) {

@@ -10,6 +10,8 @@ import {
   CurrentUserId,
   ActiveUserGuard,
   JwtAuthGuard,
+  Roles,
+  RolesGuard,
 } from '@security';
 import type { AuthenticatedUser } from '@contracts';
 import {
@@ -114,5 +116,23 @@ export class WalletController {
       requesterUserId,
       requesterRole: requester?.role ?? 'user',
     });
+  }
+
+  @ApiOperation({ summary: 'Admin duyet yeu cau rut tien' })
+  @ApiOkResponse({ schema: { example: { success: true, message: 'Xử lý yêu cầu rút tiền thành công.' } } })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Post('admin/wallet-withdrawals/:id/approve')
+  approveWalletWithdrawal(@Param('id') id: string) {
+    return this.walletRpcService.approveWalletWithdrawal({ id });
+  }
+
+  @ApiOperation({ summary: 'Admin tu choi yeu cau rut tien' })
+  @ApiOkResponse({ schema: { example: { success: true, message: 'Xử lý yêu cầu rút tiền thành công.' } } })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Post('admin/wallet-withdrawals/:id/reject')
+  rejectWalletWithdrawal(@Param('id') id: string) {
+    return this.walletRpcService.rejectWalletWithdrawal({ id });
   }
 }
