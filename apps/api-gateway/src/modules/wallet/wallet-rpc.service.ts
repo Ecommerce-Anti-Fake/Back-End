@@ -40,6 +40,26 @@ export class WalletRpcService {
     );
   }
 
+  requestShopWalletWithdrawal(payload: {
+    shopId: string;
+    requesterUserId: string;
+    requesterRole: string;
+    amount: string;
+    bankName: string;
+    accountNumber: string;
+    accountHolder: string;
+  }) {
+    return this.send(WALLET_MESSAGE_PATTERNS.requestShopWalletWithdrawal, payload);
+  }
+
+  listShopWalletWithdrawals(payload: {
+    shopId: string;
+    requesterUserId: string;
+    requesterRole: string;
+  }) {
+    return this.send(WALLET_MESSAGE_PATTERNS.listShopWalletWithdrawals, payload);
+  }
+
   private async send<TResult>(
     pattern: string,
     payload: unknown,

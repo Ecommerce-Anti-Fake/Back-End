@@ -7,12 +7,15 @@ import type {
   ShopWalletLookupMessage,
   WalletTransactionsLookupMessage,
   ShopWalletTransactionsLookupMessage,
+  ShopWalletWithdrawalMessage,
 } from '@contracts';
 import {
   GetMyWalletTransactionsUseCase,
   GetMyWalletUseCase,
   GetShopWalletTransactionsUseCase,
   GetShopWalletUseCase,
+  RequestWalletWithdrawalUseCase,
+  ListShopWalletWithdrawalsUseCase,
 } from '../../application/use-cases';
 
 @Controller()
@@ -22,6 +25,8 @@ export class WalletRpcController {
     private readonly getMyWalletTransactionsUseCase: GetMyWalletTransactionsUseCase,
     private readonly getShopWalletUseCase: GetShopWalletUseCase,
     private readonly getShopWalletTransactionsUseCase: GetShopWalletTransactionsUseCase,
+    private readonly requestWalletWithdrawalUseCase: RequestWalletWithdrawalUseCase,
+    private readonly listShopWalletWithdrawalsUseCase: ListShopWalletWithdrawalsUseCase,
   ) {}
 
   @MessagePattern(WALLET_MESSAGE_PATTERNS.getMyWallet)
@@ -73,6 +78,24 @@ export class WalletRpcController {
         payload.page,
         payload.limit,
       );
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(WALLET_MESSAGE_PATTERNS.requestShopWalletWithdrawal)
+  async requestShopWalletWithdrawal(@Payload() payload: ShopWalletWithdrawalMessage) {
+    try {
+      return await this.requestWalletWithdrawalUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(WALLET_MESSAGE_PATTERNS.listShopWalletWithdrawals)
+  async listShopWalletWithdrawals(@Payload() payload: ShopWalletLookupMessage) {
+    try {
+      return await this.listShopWalletWithdrawalsUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

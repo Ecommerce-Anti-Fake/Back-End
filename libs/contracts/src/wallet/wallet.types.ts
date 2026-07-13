@@ -15,3 +15,9 @@ export interface ShopWalletTransactionsLookupMessage extends ShopWalletLookupMes
   page: number;
   limit: number;
 }
+export interface ShopWalletWithdrawalMessage extends ShopWalletLookupMessage {
+  amount: string;
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+}

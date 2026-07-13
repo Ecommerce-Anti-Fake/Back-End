@@ -82,6 +82,8 @@ export const WALLET_MESSAGE_PATTERNS = {
   getMyWalletTransactions: 'wallet.get-my-wallet-transactions',
   getShopWallet: 'wallet.get-shop-wallet',
   getShopWalletTransactions: 'wallet.get-shop-wallet-transactions',
+  requestShopWalletWithdrawal: 'wallet.request-shop-wallet-withdrawal',
+  listShopWalletWithdrawals: 'wallet.list-shop-wallet-withdrawals',
 } as const;
 
 export const PRODUCTS_MESSAGE_PATTERNS = {

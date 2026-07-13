@@ -166,6 +166,14 @@ enum WalletTransactionType {
   AFFILIATE_COMMISSION
   ADJUSTMENT
   SETTLEMENT
+  WITHDRAWAL_REQUEST
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
 }
 
 enum WalletTransactionStatus {

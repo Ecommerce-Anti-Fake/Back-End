@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOkResponse,
@@ -16,6 +16,8 @@ import {
   PaginatedWalletLedgerResponseDto,
   WalletResponseDto,
   WalletTransactionsQueryDto,
+  CreateWalletWithdrawalDto,
+  WalletWithdrawalResponseDto,
 } from '@wallet';
 import { WalletRpcService } from './wallet-rpc.service';
 
@@ -79,6 +81,38 @@ export class WalletController {
       requesterRole: requester?.role ?? 'user',
       page: query.page,
       limit: query.limit,
+    });
+  }
+
+  @ApiOperation({ summary: 'Tao yeu cau rut tien cua shop' })
+  @ApiOkResponse({ type: WalletWithdrawalResponseDto })
+  @Post('shops/:shopId/wallet/withdrawals')
+  requestShopWalletWithdrawal(
+    @Param('shopId') shopId: string,
+    @Body() body: CreateWalletWithdrawalDto,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester?: AuthenticatedUser,
+  ) {
+    return this.walletRpcService.requestShopWalletWithdrawal({
+      shopId,
+      requesterUserId,
+      requesterRole: requester?.role ?? 'user',
+      ...body,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach yeu cau rut tien cua shop' })
+  @ApiOkResponse({ type: WalletWithdrawalResponseDto, isArray: true })
+  @Get('shops/:shopId/wallet/withdrawals')
+  listShopWalletWithdrawals(
+    @Param('shopId') shopId: string,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester?: AuthenticatedUser,
+  ) {
+    return this.walletRpcService.listShopWalletWithdrawals({
+      shopId,
+      requesterUserId,
+      requesterRole: requester?.role ?? 'user',
     });
   }
 }

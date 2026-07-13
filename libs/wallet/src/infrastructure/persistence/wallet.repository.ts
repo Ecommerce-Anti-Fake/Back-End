@@ -287,6 +287,19 @@ export class WalletRepository extends WalletRepositoryPort {
     });
   }
 
+  findShopWallet(shopId: string, currency = 'VND') {
+    return this.prisma.wallet.findUnique({
+      where: { shopId_currency: { shopId, currency } },
+    });
+  }
+
+  listWithdrawals(walletId: string) {
+    return this.prisma.walletWithdrawal.findMany({
+      where: { walletId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    });
+  }
+
   private async findOrCreateWallet(input: {
     ownerType: WalletOwnerType;
     userId?: string;

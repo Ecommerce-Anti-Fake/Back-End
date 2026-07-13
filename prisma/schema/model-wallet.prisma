@@ -17,6 +17,7 @@ model Wallet {
   user             User?           @relation(fields: [userId], references: [id])
   shop             Shop?           @relation(fields: [shopId], references: [id])
   ledgerEntries    WalletLedgerEntry[]
+  withdrawals      WalletWithdrawal[]
 
   @@unique([userId, currency])
   @@unique([shopId, currency])

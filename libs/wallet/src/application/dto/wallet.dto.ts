@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import { IsDecimal, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, MaxLength } from 'class-validator';
 
 export class WalletTransactionsQueryDto {
   @ApiPropertyOptional({ example: 1, default: 1, minimum: 1 })
@@ -51,4 +51,40 @@ export class PaginatedWalletLedgerResponseDto {
     total: number;
     totalPages: number;
   };
+}
+
+export class CreateWalletWithdrawalDto {
+  @ApiProperty({ example: '100000' })
+  @IsDecimal({ decimal_digits: '0,2' })
+  amount!: string;
+
+  @ApiProperty({ example: 'Vietcombank' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(100)
+  bankName!: string;
+
+  @ApiProperty({ example: '0123456789' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(50)
+  accountNumber!: string;
+
+  @ApiProperty({ example: 'NGUYEN VAN A' })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(150)
+  accountHolder!: string;
+}
+
+export class WalletWithdrawalResponseDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() walletId!: string;
+  @ApiProperty({ type: String }) amount!: string;
+  @ApiProperty() bankName!: string;
+  @ApiProperty() accountNumber!: string;
+  @ApiProperty() accountHolder!: string;
+  @ApiProperty() status!: string;
+  @ApiProperty() createdAt!: Date;
+  @ApiProperty({ nullable: true }) processedAt!: Date | null;
 }
