@@ -193,9 +193,9 @@ export class OffersRepository {
     });
   }
 
-  findMediaAssetById(id: string) {
-    return this.prisma.mediaAsset.findUnique({
-      where: { id },
+  findMediaAssetById(id: string, ownerUserId?: string) {
+    return this.prisma.mediaAsset.findFirst({
+      where: { id, ...(ownerUserId ? { ownerUserId } : {}) },
       select: { id: true },
     });
   }
@@ -213,7 +213,7 @@ export class OffersRepository {
           select: {
             id: true,
             values: {
-              where: { id: { in: optionValueIds } },
+              where: { id: { in: optionValueIds }, isVisible: true },
               select: { id: true },
             },
           },
@@ -269,6 +269,103 @@ export class OffersRepository {
         },
       },
       include: this.offerVariantResponseInclude(),
+    });
+  }
+
+  async findOwnedOfferVariants(input: {
+    offerId: string;
+    sellerUserId: string;
+    isActive?: boolean;
+  }) {
+    const offer = await this.prisma.offer.findFirst({
+      where: { id: input.offerId, sellerUserId: input.sellerUserId },
+      select: { id: true },
+    });
+    if (!offer) return null;
+    return this.prisma.offerVariant.findMany({
+      where: {
+        offerId: input.offerId,
+        ...(input.isActive === undefined ? {} : { isActive: input.isActive }),
+      },
+      include: this.offerVariantResponseInclude(),
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  async updateOwnedOfferVariant(input: {
+    offerId: string;
+    variantId: string;
+    sellerUserId: string;
+    data: {
+      sku?: string | null;
+      price?: number | null;
+      availableQuantity?: number;
+      mediaAssetId?: string | null;
+      isActive?: boolean;
+    };
+  }) {
+    const result = await this.prisma.offerVariant.updateMany({
+      where: {
+        id: input.variantId,
+        offerId: input.offerId,
+        offer: { sellerUserId: input.sellerUserId },
+      },
+      data: input.data,
+    });
+    if (result.count === 0) return null;
+    return this.prisma.offerVariant.findUniqueOrThrow({
+      where: { id: input.variantId },
+      include: this.offerVariantResponseInclude(),
+    });
+  }
+
+  findOfferOptionGroups(offerId: string) {
+    return this.prisma.offerOptionGroup.findMany({
+      where: { offerId },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        values: {
+          orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+          select: { id: true },
+        },
+      },
+    });
+  }
+
+  async createMissingOfferVariants(offerId: string, combinations: string[][]) {
+    await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.offerVariant.findMany({
+        where: { offerId },
+        select: { values: { select: { optionValueId: true } } },
+      });
+      const keys = new Set(
+        existing.map((variant) =>
+          variant.values
+            .map((value) => value.optionValueId)
+            .sort()
+            .join('|'),
+        ),
+      );
+      for (const optionValueIds of combinations) {
+        const key = [...optionValueIds].sort().join('|');
+        if (keys.has(key)) continue;
+        await tx.offerVariant.create({
+          data: {
+            offerId,
+            sku: null,
+            price: 0,
+            availableQuantity: 0,
+            mediaAssetId: null,
+            isActive: true,
+            values: {
+              create: optionValueIds.map((optionValueId) => ({
+                optionValueId,
+              })),
+            },
+          },
+        });
+        keys.add(key);
+      }
     });
   }
 

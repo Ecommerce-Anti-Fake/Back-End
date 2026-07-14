@@ -1,0 +1,1 @@
+ALTER TYPE "WalletTransactionType" ADD VALUE 'WITHDRAWAL_REQUEST';

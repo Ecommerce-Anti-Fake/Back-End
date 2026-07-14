@@ -115,7 +115,7 @@ function resolveOrderItemShop(order: OrderShopProjectionSource, item: NonNullabl
   return { shopId: order.shopId, shopName: order.shop.shopName };
 }
 
-export function toOrderResponse(order: OrderWithRelations) {
+export function toOrderResponse(order: any) {
   const openDispute = order.disputes?.[0] ?? null;
   const items = order.items.map((item) => toOrderItemResponse(order, item));
   const shops = groupItemsByShop(
@@ -387,6 +387,21 @@ function toOrderItemResponse(order: OrderWithRelations, item: OrderWithRelations
     thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
     unitPrice: decimalToNumber(item.unitPrice),
     quantity: item.quantity,
+    variant: item.variant ? {
+      id: item.variant.id,
+      sku: item.variant.sku,
+      price: decimalToNumber(item.variant.price),
+      availableQuantity: item.variant.availableQuantity,
+      isActive: item.variant.isActive,
+    } : null,
+    selectedOptions: (item.selectedOptions ?? []).map((option) => ({
+      optionGroupId: option.optionGroupId,
+      optionValueId: option.optionValueId,
+      optionGroupDisplayName: option.optionGroupDisplayName,
+      optionValueText: option.optionValueText,
+      mediaAssetId: option.mediaAssetId,
+      mediaUrl: option.mediaUrl,
+    })),
     reviewId: item.reviews?.[0]?.id ?? null,
     reviewRating: item.reviews?.[0]?.rating ?? null,
     reviewComment: item.reviews?.[0]?.comment ?? null,
@@ -416,6 +431,8 @@ function toCartItemResponse(item: CartWithItems['items'][number]) {
   return {
     id: item.id,
     offerId: item.offerId,
+    variantId: item.variantId ?? null,
+    variantSku: item.variant?.sku ?? null,
     offerTitleSnapshot: item.offerTitleSnapshot,
     thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
     unitPriceSnapshot: decimalToNumber(item.unitPriceSnapshot),

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -43,7 +44,9 @@ import {
   CreateOfferDto,
   CreateOfferResponseDto,
   CreateOfferVariantDto,
+  ListOfferVariantsQueryDto,
   OfferVariantResponseDto,
+  UpdateOfferVariantDto,
   UpdateOfferDto,
   ModerateOfferDto,
 } from '@offers';
@@ -223,6 +226,59 @@ export class OfferController {
       mediaAssetId: dto.mediaAssetId,
       isActive: dto.isActive,
       optionValueIds: dto.optionValueIds,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay variants cua offer thuoc seller hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: [OfferVariantResponseDto] })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('offers/:offerId/variants')
+  findOfferVariants(
+    @Param('offerId') offerId: string,
+    @CurrentUserId() sellerUserId: string,
+    @Query() query: ListOfferVariantsQueryDto,
+  ) {
+    return this.catalogRpcService.findOfferVariants({
+      offerId,
+      sellerUserId,
+      isActive: query.isActive,
+    });
+  }
+
+  @ApiOperation({ summary: 'Cap nhat variant cua offer thuoc seller hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: OfferVariantResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Patch('offers/:offerId/variants/:variantId')
+  updateOfferVariant(
+    @Param('offerId') offerId: string,
+    @Param('variantId') variantId: string,
+    @CurrentUserId() sellerUserId: string,
+    @Body() dto: UpdateOfferVariantDto,
+  ) {
+    return this.catalogRpcService.updateOfferVariant({
+      offerId,
+      variantId,
+      sellerUserId,
+      ...dto,
+    });
+  }
+
+  @ApiOperation({ summary: 'Soft delete variant cua seller hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: OfferVariantResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Delete('offers/:offerId/variants/:variantId')
+  deleteOfferVariant(
+    @Param('offerId') offerId: string,
+    @Param('variantId') variantId: string,
+    @CurrentUserId() sellerUserId: string,
+  ) {
+    return this.catalogRpcService.deleteOfferVariant({
+      offerId,
+      variantId,
+      sellerUserId,
     });
   }
 

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { CartWithItems, OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import {
   CheckoutShippingOption,
@@ -7,11 +8,12 @@ import {
   OrderPlacementService,
   PayOSPaymentService,
 } from '../services';
+import { PayOrderByWalletUseCase } from './pay-order-by-wallet.use-case';
 
 type CheckoutCartInput = {
   buyerUserId: string;
   cartItemIds: string[];
-  paymentMethod: 'COD' | 'PAYOS';
+  paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   shippingOptionCode: string;
   affiliateCode?: string | null;
 };
@@ -24,11 +26,14 @@ export class CheckoutCartUseCase {
     private readonly checkoutShippingService: CheckoutShippingService,
     private readonly payOSPaymentService: PayOSPaymentService,
     private readonly orderNotificationService: OrderNotificationService,
+    private readonly payOrderByWalletUseCase: PayOrderByWalletUseCase,
   ) {}
 
   async execute(input: CheckoutCartInput) {
     const cart = await this.ordersRepository.getOrCreateActiveCart(input.buyerUserId);
-    const selectedItems = this.selectCartItems(cart, input.cartItemIds);
+    const selectedItems = await this.revalidateSelectedItems(
+      this.selectCartItems(cart, input.cartItemIds),
+    );
     const shippingOption = await this.resolveShippingOption(input, selectedItems);
     const shipping = await this.checkoutShippingService.resolveDefaultShipping(input.buyerUserId, shippingOption);
     const groups = this.createShopGroups(selectedItems, shippingOption.shippingFee);
@@ -40,7 +45,7 @@ export class CheckoutCartUseCase {
     const sellerReceivableAmount = groups.reduce((total, group) => total + group.sellerReceivableAmount, 0);
     const buyerPayableAmount = this.roundMoney(baseAmount + shippingOption.shippingFee);
 
-    const order = await this.orderPlacementService.createAggregateOrder({
+    const orderInput = {
       buyerUserId: input.buyerUserId,
       legacyShopId: groups[0].shopId,
       paymentMethod: input.paymentMethod,
@@ -66,7 +71,29 @@ export class CheckoutCartUseCase {
             commissionBase: platformFeeAmount,
           }
         : undefined,
-    });
+    };
+
+    if (input.paymentMethod === 'WALLET') {
+      const order = await this.ordersRepository.withSerializableTransaction(async (tx) => {
+        const createdOrder = await this.orderPlacementService.createAggregateOrderInTransaction(tx, orderInput);
+        await this.payOrderByWalletUseCase.executeInTransaction(tx, {
+          orderId: createdOrder.id,
+          requesterUserId: input.buyerUserId,
+          amount: createdOrder.buyerPayableAmount,
+        });
+        await tx.cartItem.deleteMany({
+          where: {
+            id: { in: selectedItems.map((item) => item.id) },
+            cart: { buyerUserId: input.buyerUserId },
+          },
+        });
+        return createdOrder;
+      });
+      await this.orderNotificationService.notifyCreated(order);
+      return { success: true, message: 'Đặt hàng và thanh toán bằng ví thành công.' };
+    }
+
+    const order = await this.orderPlacementService.createAggregateOrder(orderInput);
     await this.orderNotificationService.notifyCreated(order);
 
     if (input.paymentMethod === 'COD') {
@@ -153,6 +180,14 @@ export class CheckoutCartUseCase {
           offerTitleSnapshot: item.offerTitleSnapshot,
           unitPrice: Number(item.unitPriceSnapshot.toString()),
           quantity: item.quantity,
+          selectedOptions: item.variant?.values.map(({ optionValue }) => ({
+            optionGroupId: optionValue.optionGroupId,
+            optionValueId: optionValue.id,
+            optionGroupDisplayName: optionValue.optionGroup.displayName,
+            optionValueText: optionValue.text,
+            mediaAssetId: optionValue.mediaAssetId,
+            mediaUrl: optionValue.mediaAsset?.secureUrl ?? null,
+          })),
         })),
       };
     });
@@ -164,6 +199,40 @@ export class CheckoutCartUseCase {
     const selectedItems = cart.items.filter((item) => uniqueCartItemIds.includes(item.id));
     if (selectedItems.length !== uniqueCartItemIds.length) throw new BadRequestException('One or more cart items are invalid');
     return selectedItems;
+  }
+
+  private async revalidateSelectedItems(items: CartWithItems['items']) {
+    const refreshed: CartWithItems['items'] = [];
+    for (const item of items) {
+      const offer = await this.ordersRepository.findCurrentOfferForCart(item.offerId);
+      if (!offer || offer.offerStatus !== 'active') {
+        throw new BadRequestException('Offer is not available');
+      }
+
+      let currentPrice = Number(offer.price.toString());
+      if (item.variantId) {
+        const variant = await this.ordersRepository.findOfferVariantForCart({
+          offerId: item.offerId,
+          variantId: item.variantId,
+        });
+        if (!variant || !variant.isActive || (variant.values ?? []).some(({ optionValue }) => !optionValue.isVisible)) {
+          throw new BadRequestException('Variant is not available');
+        }
+        if (item.quantity > variant.availableQuantity) {
+          throw new BadRequestException('Quantity exceeds available stock');
+        }
+        currentPrice = Number((variant.price ?? offer.price).toString());
+      } else if (item.quantity > offer.availableQuantity) {
+        throw new BadRequestException('Quantity exceeds available stock');
+      }
+
+      refreshed.push({
+        ...item,
+        offer: { ...item.offer, ...offer },
+        unitPriceSnapshot: new Prisma.Decimal(currentPrice),
+      });
+    }
+    return refreshed as CartWithItems['items'];
   }
 
   private async resolveShippingOption(input: CheckoutCartInput, selectedItems: CartWithItems['items']): Promise<CheckoutShippingOption> {

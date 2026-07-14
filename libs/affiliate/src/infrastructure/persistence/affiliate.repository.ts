@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, WalletBalanceType, WalletEntryDirection, WalletTransactionType } from '@prisma/client';
 import { PrismaService } from '@database/prisma/prisma.service';
+import { WalletRepository } from '@wallet/infrastructure/persistence/wallet.repository';
 
 const affiliateProgramArgs = Prisma.validator<Prisma.AffiliateProgramDefaultArgs>()({
   include: {
@@ -39,7 +40,10 @@ export type AffiliatePayoutWithRelations = Prisma.AffiliatePayoutGetPayload<type
 
 @Injectable()
 export class AffiliateRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly walletRepository: WalletRepository,
+  ) {}
 
   findOwnedShop(shopId: string, ownerUserId: string) {
     return this.prisma.shop.findFirst({
@@ -529,6 +533,45 @@ export class AffiliateRepository {
 
       if (input.payoutStatus === 'PAID') {
         updateData.paidAt = new Date();
+      }
+
+      const payoutBeforeUpdate = await tx.affiliatePayout.findUnique({
+        where: { id: input.payoutId },
+        include: {
+          account: { select: { userId: true } },
+          commissionEntries: { select: { id: true, amount: true, commissionStatus: true, conversionId: true } },
+        },
+      });
+      if (!payoutBeforeUpdate) throw new Error('Affiliate payout not found');
+
+      if (input.payoutStatus === 'PAID') {
+        const platformWallet = await this.walletRepository.findOrCreatePlatformWalletInTransaction(
+          tx,
+          'PLATFORM_REVENUE_VND',
+          'VND',
+        );
+        const affiliateWallet = await this.walletRepository.findOrCreateUserWalletInTransaction(
+          tx,
+          payoutBeforeUpdate.account.userId,
+          'VND',
+        );
+
+        for (const entry of payoutBeforeUpdate.commissionEntries) {
+          if (entry.commissionStatus === 'PAID') continue;
+          await this.walletRepository.executeTransactionInTransaction(tx, {
+            transactionCode: `AFFILIATE_COMMISSION:${entry.conversionId}`,
+            transactionType: WalletTransactionType.AFFILIATE_COMMISSION,
+            idempotencyKey: `AFFILIATE_CONVERSION:${entry.conversionId}:COMMISSION`,
+            amount: entry.amount,
+            referenceType: 'AFFILIATE_CONVERSION',
+            referenceId: entry.conversionId,
+            description: `Pay affiliate commission for conversion ${entry.conversionId}`,
+            entries: [
+              { walletId: platformWallet.id, direction: WalletEntryDirection.DEBIT, balanceType: WalletBalanceType.AVAILABLE, amount: entry.amount },
+              { walletId: affiliateWallet.id, direction: WalletEntryDirection.CREDIT, balanceType: WalletBalanceType.AVAILABLE, amount: entry.amount },
+            ],
+          });
+        }
       }
 
       const payout = await tx.affiliatePayout.update({

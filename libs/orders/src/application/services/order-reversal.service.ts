@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, WalletBalanceType, WalletEntryDirection, WalletTransactionType } from '@prisma/client';
+import { WalletRepository } from '@wallet';
 import {
   DisputeWithOrder,
   OrderWithRelations,
@@ -7,34 +8,76 @@ import {
 } from '../../infrastructure/persistence/orders.repository';
 import { OrderInventoryService } from './order-inventory.service';
 
+type WalletRefundOrder = {
+  id: string;
+  orderStatus: string;
+  buyerUserId: string | null;
+  buyerPayableAmount: Prisma.Decimal;
+  paymentIntent: { id: string; paymentMethod: string; paymentStatus: string } | null;
+  escrow: { escrowStatus: string } | null;
+};
+
 @Injectable()
 export class OrderReversalService {
   constructor(
     private readonly ordersRepository: OrdersRepository,
     private readonly orderInventoryService: OrderInventoryService,
+    private readonly walletRepository: WalletRepository,
   ) {}
 
+  openDispute(input: { orderId: string; openedByUserId: string; reason: string }): Promise<any> {
+    return this.ordersRepository.withSerializableTransaction(async (tx) => {
+      const order = await this.ordersRepository.findOrderForReversal(tx, input.orderId);
+      if (!order) throw new BadRequestException('Order not found');
+      const existing = await tx.dispute.findFirst({ where: { orderId: input.orderId, disputeStatus: 'OPEN' } });
+      if (existing) throw new BadRequestException('Order already has an open dispute');
+      const dispute = await tx.dispute.create({ data: { orderId: input.orderId, openedByUserId: input.openedByUserId, reason: input.reason, disputeStatus: 'OPEN' } });
+      const shopWallet = await this.walletRepository.findOrCreateShopWalletInTransaction(tx, order.shopId, 'VND');
+      const available = new Prisma.Decimal(shopWallet.availableBalance);
+      const pending = new Prisma.Decimal(shopWallet.pendingBalance);
+      const requested = new Prisma.Decimal(order.buyerPayableAmount);
+      const amount = Prisma.Decimal.min(requested, available.plus(pending));
+      const availablePart = Prisma.Decimal.min(amount, available);
+      const pendingPart = amount.minus(availablePart);
+      if (amount.gt(0)) {
+        await this.walletRepository.executeTransactionInTransaction(tx, {
+          transactionCode: `DISPUTE_HOLD:${dispute.id}`,
+          transactionType: WalletTransactionType.DISPUTE_HOLD,
+          idempotencyKey: `DISPUTE:${dispute.id}:HOLD`, amount,
+          referenceType: 'DISPUTE', referenceId: dispute.id,
+          entries: [
+            ...(availablePart.gt(0) ? [{ walletId: shopWallet.id, direction: WalletEntryDirection.DEBIT, balanceType: WalletBalanceType.AVAILABLE, amount: availablePart }] : []),
+            ...(pendingPart.gt(0) ? [{ walletId: shopWallet.id, direction: WalletEntryDirection.DEBIT, balanceType: WalletBalanceType.PENDING, amount: pendingPart }] : []),
+            { walletId: shopWallet.id, direction: WalletEntryDirection.CREDIT, balanceType: WalletBalanceType.LOCKED, amount },
+          ],
+        });
+      }
+      await this.ordersRepository.updateEscrowStatusWithAudit(tx, { orderId: input.orderId, actorUserId: input.openedByUserId, escrowStatus: 'FROZEN', note: 'Escrow frozen because a dispute was opened' });
+      await tx.auditLog.create({ data: { targetType: 'DISPUTE', targetId: dispute.id, actorUserId: input.openedByUserId, action: 'DISPUTE_OPENED', toStatus: 'OPEN', note: input.reason, metadata: { orderId: input.orderId, requestedAmount: requested.toFixed(2), lockedAmount: amount.toFixed(2), shortfallAmount: requested.minus(amount).toFixed(2) } } });
+      return dispute;
+    });
+  }
+
   cancelOrder(orderId: string, actorUserId: string): Promise<OrderWithRelations> {
-    return this.ordersRepository.withTransaction(async (tx) => {
+    return this.ordersRepository.withSerializableTransaction(async (tx) => {
       const order = await this.ordersRepository.findOrderForReversal(tx, orderId);
-      if (!order) {
-        throw new BadRequestException('Order not found');
+      if (!order) throw new BadRequestException('Order not found');
+
+      const walletRefund = this.isHeldWalletPayment(order);
+      if (order.orderStatus !== 'pending' && !walletRefund) {
+        throw new BadRequestException('Order is not eligible for cancellation');
       }
 
       await this.orderInventoryService.restoreOrderInventory(tx, order);
+      if (walletRefund) await this.refundWalletInTransaction(tx, order);
       await this.ordersRepository.updatePaymentStatusWithAudit(tx, {
-        orderId,
-        actorUserId,
-        paymentStatus: 'CANCELLED',
+        orderId, actorUserId, paymentStatus: walletRefund ? 'REFUNDED' : 'CANCELLED',
       });
       await this.ordersRepository.updateEscrowStatusWithAudit(tx, {
-        orderId,
-        actorUserId,
-        escrowStatus: 'CANCELLED',
-        note: 'Escrow cancelled because order was cancelled',
+        orderId, actorUserId, escrowStatus: walletRefund ? 'REFUNDED' : 'CANCELLED',
+        note: walletRefund ? 'Escrow refunded because wallet order was cancelled' : 'Escrow cancelled because order was cancelled',
       });
       await this.ordersRepository.cancelPendingAffiliateArtifacts(tx, orderId);
-
       return this.ordersRepository.updateOrderStatus(tx, orderId, 'cancelled');
     });
   }
@@ -42,87 +85,97 @@ export class OrderReversalService {
   cancelOrderShopGroup(orderId: string, groupId: string): Promise<OrderWithRelations> {
     return this.ordersRepository.withTransaction(async (tx) => {
       const order = await this.ordersRepository.findOrderForReversal(tx, orderId);
-      if (!order) {
-        throw new BadRequestException('Order not found');
-      }
-
+      if (!order) throw new BadRequestException('Order not found');
       const groupItems = order.items.filter((item) => item.orderShopGroupId === groupId);
       await this.orderInventoryService.restoreOrderInventory(tx, { items: groupItems });
-
-      return this.ordersRepository.cancelShopGroupFulfillment(tx, {
-        orderId,
-        groupId,
-      });
+      return this.ordersRepository.cancelShopGroupFulfillment(tx, { orderId, groupId });
     });
   }
 
   refundPaidOrder(orderId: string, actorUserId: string): Promise<OrderWithRelations> {
-    return this.ordersRepository.withTransaction(async (tx) => {
+    return this.ordersRepository.withSerializableTransaction(async (tx) => {
       const order = await this.ordersRepository.findOrderForReversal(tx, orderId);
-      if (!order) {
-        throw new BadRequestException('Order not found');
-      }
-
+      if (!order) throw new BadRequestException('Order not found');
       await this.orderInventoryService.restoreOrderInventory(tx, order);
-      await this.ordersRepository.updatePaymentStatusWithAudit(tx, {
-        orderId,
-        actorUserId,
-        paymentStatus: 'REFUNDED',
-      });
-      await this.ordersRepository.updateEscrowStatusWithAudit(tx, {
-        orderId,
-        actorUserId,
-        escrowStatus: 'REFUNDED',
-        note: 'Escrow refunded because order was refunded',
-      });
+      if (this.isHeldWalletPayment(order)) await this.refundWalletInTransaction(tx, order);
+      await this.ordersRepository.updatePaymentStatusWithAudit(tx, { orderId, actorUserId, paymentStatus: 'REFUNDED' });
+      await this.ordersRepository.updateEscrowStatusWithAudit(tx, { orderId, actorUserId, escrowStatus: 'REFUNDED', note: 'Escrow refunded because order was refunded' });
       await this.ordersRepository.cancelRefundableAffiliateArtifacts(tx, orderId);
-
       return this.ordersRepository.updateOrderStatus(tx, orderId, 'refunded');
     });
   }
 
-  resolveDispute(input: {
-    disputeId: string;
-    actorUserId: string;
-    resolution: 'RESOLVED' | 'REFUNDED';
-  }): Promise<DisputeWithOrder> {
+  private isHeldWalletPayment(order: WalletRefundOrder) {
+    return order.orderStatus === 'paid' && order.paymentIntent?.paymentMethod === 'WALLET' &&
+      order.paymentIntent.paymentStatus === 'PAID' && order.escrow?.escrowStatus === 'HELD';
+  }
+
+  private async refundWalletInTransaction(tx: Prisma.TransactionClient, order: WalletRefundOrder) {
+    if (!order.buyerUserId || !order.paymentIntent) throw new BadRequestException('Wallet refund requires a user buyer');
+    const userWallet = await this.walletRepository.findOrCreateUserWalletInTransaction(tx, order.buyerUserId, 'VND');
+    const escrowWallet = await this.walletRepository.findOrCreatePlatformWalletInTransaction(tx, 'PLATFORM_ESCROW_VND', 'VND');
+    return this.walletRepository.executeTransactionInTransaction(tx, {
+      transactionCode: `REFUND:${order.id}`,
+      transactionType: WalletTransactionType.REFUND,
+      idempotencyKey: `ORDER:${order.id}:WALLET_REFUND`,
+      amount: order.buyerPayableAmount,
+      currency: 'VND', referenceType: 'ORDER', referenceId: order.id,
+      orderId: order.id, paymentIntentId: order.paymentIntent.id,
+      description: 'Refund wallet payment to buyer',
+      entries: [
+        { walletId: escrowWallet.id, direction: WalletEntryDirection.DEBIT, balanceType: WalletBalanceType.PENDING, amount: order.buyerPayableAmount },
+        { walletId: userWallet.id, direction: WalletEntryDirection.CREDIT, balanceType: WalletBalanceType.AVAILABLE, amount: order.buyerPayableAmount },
+      ],
+    });
+  }
+
+  resolveDispute(input: { disputeId: string; actorUserId: string; resolution: 'RESOLVED' | 'REFUNDED' }): Promise<DisputeWithOrder> {
     return this.ordersRepository.withTransaction(async (tx) => {
       const dispute = await this.ordersRepository.findDisputeForResolution(tx, input.disputeId);
-      if (!dispute) {
-        throw new BadRequestException('Dispute not found');
+      if (!dispute) throw new BadRequestException('Dispute not found');
+      const shopWallet = await this.walletRepository.findOrCreateShopWalletInTransaction(tx, dispute.order.shopId, 'VND');
+      const hold = await tx.walletTransaction.findUnique({
+        where: { idempotencyKey: `DISPUTE:${dispute.id}:HOLD` },
+      });
+      const disputeAmount = hold?.amount ?? new Prisma.Decimal(0);
+      if (disputeAmount.gt(0) && input.resolution === 'RESOLVED') {
+        await this.walletRepository.executeTransactionInTransaction(tx, {
+          transactionCode: `DISPUTE_RELEASE:${dispute.id}`,
+          transactionType: WalletTransactionType.DISPUTE_RELEASE,
+          idempotencyKey: `DISPUTE:${dispute.id}:RELEASE`,
+          amount: disputeAmount,
+          referenceType: 'DISPUTE', referenceId: dispute.id,
+          entries: [
+            { walletId: shopWallet.id, direction: WalletEntryDirection.DEBIT, balanceType: WalletBalanceType.LOCKED, amount: disputeAmount },
+            { walletId: shopWallet.id, direction: WalletEntryDirection.CREDIT, balanceType: WalletBalanceType.AVAILABLE, amount: disputeAmount },
+          ],
+        });
       }
-
+      if (input.resolution === 'REFUNDED' && disputeAmount.gt(0)) {
+        const buyerWallet = await this.walletRepository.findOrCreateUserWalletInTransaction(tx, dispute.order.buyerUserId!, 'VND');
+        await this.walletRepository.executeTransactionInTransaction(tx, {
+          transactionCode: `DISPUTE_REFUND:${dispute.id}`,
+          transactionType: WalletTransactionType.DISPUTE_REFUND,
+          idempotencyKey: `DISPUTE:${dispute.id}:REFUND`,
+          amount: disputeAmount,
+          referenceType: 'DISPUTE', referenceId: dispute.id,
+          entries: [
+            { walletId: shopWallet.id, direction: WalletEntryDirection.DEBIT, balanceType: WalletBalanceType.LOCKED, amount: disputeAmount },
+            { walletId: buyerWallet.id, direction: WalletEntryDirection.CREDIT, balanceType: WalletBalanceType.AVAILABLE, amount: disputeAmount },
+          ],
+        });
+      }
       if (input.resolution === 'REFUNDED' && dispute.order.orderStatus === 'paid') {
         await this.orderInventoryService.restoreOrderInventory(tx, dispute.order);
-        await this.ordersRepository.updatePaymentStatusWithAudit(tx, {
-          orderId: dispute.orderId,
-          actorUserId: input.actorUserId,
-          paymentStatus: 'REFUNDED',
-        });
-        await this.ordersRepository.updateEscrowStatusWithAudit(tx, {
-          orderId: dispute.orderId,
-          actorUserId: input.actorUserId,
-          escrowStatus: 'REFUNDED',
-          note: 'Escrow refunded by dispute resolution',
-        });
+        await this.ordersRepository.updatePaymentStatusWithAudit(tx, { orderId: dispute.orderId, actorUserId: input.actorUserId, paymentStatus: 'REFUNDED' });
+        await this.ordersRepository.updateEscrowStatusWithAudit(tx, { orderId: dispute.orderId, actorUserId: input.actorUserId, escrowStatus: 'REFUNDED', note: 'Escrow refunded by dispute resolution' });
         await this.ordersRepository.cancelRefundableAffiliateArtifacts(tx, dispute.orderId);
         await this.ordersRepository.updateOrderStatus(tx, dispute.orderId, 'refunded');
       } else if (input.resolution === 'RESOLVED' && dispute.order.orderStatus === 'completed') {
-        await this.ordersRepository.updateEscrowStatusWithAudit(tx, {
-          orderId: dispute.orderId,
-          actorUserId: input.actorUserId,
-          escrowStatus: 'RELEASED',
-          note: 'Escrow released after dispute was resolved without refund',
-        });
+        await this.ordersRepository.updateEscrowStatusWithAudit(tx, { orderId: dispute.orderId, actorUserId: input.actorUserId, escrowStatus: 'RELEASED', note: 'Escrow released after dispute was resolved without refund' });
       } else if (input.resolution === 'RESOLVED' && dispute.order.orderStatus === 'paid') {
-        await this.ordersRepository.updateEscrowStatusWithAudit(tx, {
-          orderId: dispute.orderId,
-          actorUserId: input.actorUserId,
-          escrowStatus: 'HELD',
-          note: 'Escrow returned to hold after dispute was resolved without refund',
-        });
+        await this.ordersRepository.updateEscrowStatusWithAudit(tx, { orderId: dispute.orderId, actorUserId: input.actorUserId, escrowStatus: 'HELD', note: 'Escrow returned to hold after dispute was resolved without refund' });
       }
-
       return this.ordersRepository.updateDisputeStatus(tx, input.disputeId, input.resolution);
     });
   }

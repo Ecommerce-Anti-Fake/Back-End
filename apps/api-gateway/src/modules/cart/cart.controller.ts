@@ -50,6 +50,7 @@ export class CartController {
     await this.ordersRpcService.addCartItem({
       buyerUserId,
       offerId: dto.offerId,
+      variantId: dto.variantId ?? null,
       quantity: dto.quantity,
     });
     return { success: true };

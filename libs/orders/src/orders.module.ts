@@ -68,6 +68,8 @@ import {
   UpdateCartItemUseCase,
   UpdateAdminDisputeCaseUseCase,
   UpdateOrderFulfillmentUseCase,
+  PayOrderByWalletUseCase,
+  ReleaseEscrowUseCase,
 } from './application/use-cases';
 import {
   CatalogWholesalePricingAdapter,
@@ -77,11 +79,13 @@ import {
 import { OrdersRepository } from './infrastructure/persistence/orders.repository';
 import { OrdersRpcController } from './presentation/rpc/orders.rpc-controller';
 import { CATALOG_SERVICE_CLIENT } from '@contracts';
+import { WalletModule } from '@wallet/wallet.module';
 
 @Module({
   imports: [
     ConfigModule,
     PrismaModule,
+    WalletModule,
     MediaModule,
     ClientsModule.registerAsync([
       {
@@ -194,6 +198,8 @@ import { CATALOG_SERVICE_CLIENT } from '@contracts';
     UpdateAdminModerationCaseUseCase,
     UpdateAdminDisputeCaseUseCase,
     UpdateOrderFulfillmentUseCase,
+    PayOrderByWalletUseCase,
+    ReleaseEscrowUseCase,
   ],
   exports: [
     OrdersRepository,
@@ -255,6 +261,8 @@ import { CATALOG_SERVICE_CLIENT } from '@contracts';
     UpdateAdminModerationCaseUseCase,
     UpdateAdminDisputeCaseUseCase,
     UpdateOrderFulfillmentUseCase,
+    PayOrderByWalletUseCase,
+    ReleaseEscrowUseCase,
   ],
 })
 export class OrdersModule {}

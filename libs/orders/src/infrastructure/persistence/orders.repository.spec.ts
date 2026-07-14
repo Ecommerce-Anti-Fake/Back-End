@@ -1,6 +1,82 @@
 import { OrdersRepository } from './orders.repository';
 
 describe('OrdersRepository', () => {
+  it('upserts cart items by cart, offer, and variant', async () => {
+    const prisma = {
+      cart: {
+        findUnique: jest.fn().mockResolvedValueOnce(createActiveCart()).mockResolvedValueOnce(createActiveCart()),
+      },
+      cartItem: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'cart-item-variant-1', quantity: 1 }),
+        update: jest.fn(),
+        create: jest.fn(),
+      },
+    };
+    const repository = new OrdersRepository(prisma as never);
+
+    await repository.upsertCartItem(createCartUpsertInput({ variantId: 'variant-1' }));
+
+    expect(prisma.cartItem.findFirst).toHaveBeenCalledWith({
+      where: { cartId: 'cart-1', offerId: 'offer-1', variantId: 'variant-1' },
+      select: { id: true, quantity: true },
+    });
+    expect(prisma.cartItem.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'cart-item-variant-1' },
+        data: expect.objectContaining({ quantity: { increment: 2 } }),
+      }),
+    );
+    expect(prisma.cartItem.create).not.toHaveBeenCalled();
+  });
+
+  it('creates a new cart item when the same offer uses a different variant', async () => {
+    const prisma = {
+      cart: {
+        findUnique: jest.fn().mockResolvedValueOnce(createActiveCart()).mockResolvedValueOnce(createActiveCart()),
+      },
+      cartItem: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn(),
+        create: jest.fn(),
+      },
+    };
+    const repository = new OrdersRepository(prisma as never);
+
+    await repository.upsertCartItem(createCartUpsertInput({ variantId: 'variant-2' }));
+
+    expect(prisma.cartItem.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        cartId: 'cart-1',
+        offerId: 'offer-1',
+        variantId: 'variant-2',
+        quantity: 2,
+      }),
+    });
+    expect(prisma.cartItem.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects adding to an existing cart variant when cumulative quantity exceeds stock', async () => {
+    const prisma = {
+      cart: {
+        findUnique: jest.fn().mockResolvedValueOnce(createActiveCart()),
+      },
+      cartItem: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'cart-item-variant-1', quantity: 9 }),
+        update: jest.fn(),
+        create: jest.fn(),
+      },
+    };
+    const repository = new OrdersRepository(prisma as never);
+
+    await expect(
+      repository.upsertCartItem({
+        ...createCartUpsertInput({ variantId: 'variant-1' }),
+        availableQuantityLimit: 10,
+      }),
+    ).rejects.toThrow('Quantity exceeds available stock');
+    expect(prisma.cartItem.update).not.toHaveBeenCalled();
+  });
+
   it('lists only COD or paid shop orders and filters by the shop fulfillment status', async () => {
     const count = jest.fn();
     const findMany = jest.fn();
@@ -616,3 +692,25 @@ describe('OrdersRepository', () => {
     ]);
   });
 });
+
+function createActiveCart() {
+  return {
+    id: 'cart-1',
+    buyerUserId: 'buyer-1',
+    cartStatus: 'ACTIVE',
+    items: [],
+  };
+}
+
+function createCartUpsertInput(input: { variantId: string | null }) {
+  return {
+    buyerUserId: 'buyer-1',
+    offerId: 'offer-1',
+    variantId: input.variantId,
+    quantity: 2,
+    offerTitleSnapshot: 'Offer 1',
+    unitPriceSnapshot: 120000,
+    currencySnapshot: 'VND',
+    shopNameSnapshot: 'Shop 1',
+  };
+}

@@ -132,6 +132,48 @@ describe('OffersRepository', () => {
     );
   });
 
+  it('does not recreate an existing option combination', async () => {
+    const tx = {
+      offerVariant: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            values: [
+              { optionValueId: 'black' },
+              { optionValueId: 'm' },
+            ],
+          },
+        ]),
+        create: jest.fn().mockResolvedValue({ id: 'variant-2' }),
+      },
+    };
+    const prisma = {
+      $transaction: jest.fn((callback) => callback(tx)),
+    };
+    const repository = new OffersRepository(prisma as never);
+
+    await repository.createMissingOfferVariants('offer-1', [
+      ['black', 'm'],
+      ['white', 'm'],
+    ]);
+
+    expect(tx.offerVariant.create).toHaveBeenCalledTimes(1);
+    expect(tx.offerVariant.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          price: 0,
+          availableQuantity: 0,
+          isActive: true,
+          values: {
+            create: [
+              { optionValueId: 'white' },
+              { optionValueId: 'm' },
+            ],
+          },
+        }),
+      }),
+    );
+  });
+
   it('updates only moderation fields', async () => {
     const prisma = {
       offer: {

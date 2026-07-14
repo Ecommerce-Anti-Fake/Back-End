@@ -57,6 +57,7 @@ describe('ModerateOfferUseCase', () => {
         moderationStatus: 'approved',
         moderationReason: null,
       }),
+      findOfferOptionGroups: jest.fn().mockResolvedValue([]),
     };
     const useCase = new ModerateOfferUseCase(repository as never);
 
@@ -70,6 +71,41 @@ describe('ModerateOfferUseCase', () => {
       moderationStatus: 'approved',
       moderationReason: null,
     });
+  });
+
+  it('generates the Cartesian product only when approved', async () => {
+    const repository = {
+      moderateOffer: jest.fn().mockResolvedValue({
+        ...updatedOffer,
+        moderationStatus: 'approved',
+      }),
+      findOfferOptionGroups: jest.fn().mockResolvedValue([
+        { values: [{ id: 'black' }, { id: 'white' }] },
+        { values: [{ id: 's' }, { id: 'm' }] },
+      ]),
+      createMissingOfferVariants: jest.fn(),
+      findOfferById: jest.fn().mockResolvedValue({
+        ...updatedOffer,
+        moderationStatus: 'approved',
+      }),
+    };
+    const useCase = new ModerateOfferUseCase(repository as never);
+
+    await useCase.execute({
+      offerId: 'offer-1',
+      moderationStatus: 'approved',
+      moderationReason: null,
+    });
+
+    expect(repository.createMissingOfferVariants).toHaveBeenCalledWith(
+      'offer-1',
+      [
+        ['black', 's'],
+        ['black', 'm'],
+        ['white', 's'],
+        ['white', 'm'],
+      ],
+    );
   });
 
   it('throws NotFoundException when the offer does not exist', async () => {

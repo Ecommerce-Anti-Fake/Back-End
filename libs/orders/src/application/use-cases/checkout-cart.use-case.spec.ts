@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { CheckoutCartUseCase } from './checkout-cart.use-case';
+import { PayOrderByWalletUseCase } from './pay-order-by-wallet.use-case';
 
 describe('CheckoutCartUseCase', () => {
   const ordersRepository = {
@@ -7,11 +8,15 @@ describe('CheckoutCartUseCase', () => {
     removeCartItems: jest.fn(),
     updatePaymentProviderRef: jest.fn(),
     markOrderPaymentFailed: jest.fn(),
+    findCurrentOfferForCart: jest.fn(),
+    findOfferVariantForCart: jest.fn(),
+    withSerializableTransaction: jest.fn(),
   };
-  const orderPlacementService = { createAggregateOrder: jest.fn() };
+  const orderPlacementService = { createAggregateOrder: jest.fn(), createAggregateOrderInTransaction: jest.fn() };
   const checkoutShippingService = { resolveSelectedOption: jest.fn(), resolveDefaultShipping: jest.fn() };
   const payOSPaymentService = { createPaymentLink: jest.fn() };
   const orderNotificationService = { notifyCreated: jest.fn() };
+  const payOrderByWalletUseCase = { execute: jest.fn(), executeInTransaction: jest.fn() };
   let useCase: CheckoutCartUseCase;
 
   beforeEach(() => {
@@ -22,6 +27,7 @@ describe('CheckoutCartUseCase', () => {
       checkoutShippingService as never,
       payOSPaymentService as never,
       orderNotificationService as never,
+      payOrderByWalletUseCase as never,
     );
     ordersRepository.getOrCreateActiveCart.mockResolvedValue(createCart());
     checkoutShippingService.resolveSelectedOption.mockResolvedValue({
@@ -46,6 +52,11 @@ describe('CheckoutCartUseCase', () => {
     orderPlacementService.createAggregateOrder.mockResolvedValue({
       id: 'order-1',
     });
+    ordersRepository.findCurrentOfferForCart.mockImplementation(async (offerId: string) => ({
+      id: offerId,
+      offerStatus: 'active',
+      price: new Prisma.Decimal(offerId === 'offer-1' ? 100000 : 200000),
+    }));
   });
 
   it('creates one COD order with shop groups and removes source cart items', async () => {
@@ -104,6 +115,27 @@ describe('CheckoutCartUseCase', () => {
     expect(orderPlacementService.createAggregateOrder).toHaveBeenCalledTimes(1);
     expect(ordersRepository.updatePaymentProviderRef).toHaveBeenCalledWith('order-1', 'PAYOS:link-1');
     expect(ordersRepository.removeCartItems).not.toHaveBeenCalled();
+  });
+
+  it('atomically creates and pays a wallet order, returning the compact success response', async () => {
+    const tx = { cartItem: { deleteMany: jest.fn() } };
+    ordersRepository.withSerializableTransaction.mockImplementation((callback: any) => callback(tx));
+    orderPlacementService.createAggregateOrderInTransaction.mockResolvedValue({
+      id: 'order-1',
+      buyerPayableAmount: new Prisma.Decimal(530000),
+    });
+    await expect(useCase.execute({
+      buyerUserId: 'buyer-1',
+      cartItemIds: ['cart-item-1', 'cart-item-2'],
+      paymentMethod: 'WALLET',
+      shippingOptionCode: 'GHN_1',
+    })).resolves.toEqual({ success: true, message: 'Đặt hàng và thanh toán bằng ví thành công.' });
+
+    expect(ordersRepository.withSerializableTransaction).toHaveBeenCalledTimes(1);
+    expect(payOrderByWalletUseCase.executeInTransaction).toHaveBeenCalledWith(tx, {
+      orderId: 'order-1', requesterUserId: 'buyer-1', amount: new Prisma.Decimal(530000),
+    });
+    expect(tx.cartItem.deleteMany).toHaveBeenCalledTimes(1);
   });
 
   it('marks the order payment failed when payOS link creation fails', async () => {

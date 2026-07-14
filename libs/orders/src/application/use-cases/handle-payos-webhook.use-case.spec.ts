@@ -6,15 +6,34 @@ describe('HandlePayOSWebhookUseCase', () => {
   const ordersRepository = {
     findOrderByPaymentProviderRef: jest.fn(),
     markOrderPaid: jest.fn(),
+    markOrderPaidInTransaction: jest.fn(),
     markOrderPaymentFailed: jest.fn(),
   };
   const payOSPaymentService = { verifyWebhook: jest.fn() };
+  const prisma = { $transaction: jest.fn() };
+  const walletRepository = {
+    findOrCreatePlatformWalletInTransaction: jest.fn(),
+    executeTransactionInTransaction: jest.fn(),
+  };
   let useCase: HandlePayOSWebhookUseCase;
 
   beforeEach(() => {
     jest.resetAllMocks();
-    useCase = new HandlePayOSWebhookUseCase(ordersRepository as never, payOSPaymentService as never);
+    useCase = new HandlePayOSWebhookUseCase(
+      ordersRepository as never,
+      payOSPaymentService as never,
+      prisma as never,
+      walletRepository as never,
+    );
     payOSPaymentService.verifyWebhook.mockReturnValue(true);
+    const tx = {
+      walletTransaction: { findUnique: jest.fn().mockResolvedValue(null) },
+      wallet: { update: jest.fn() },
+    };
+    prisma.$transaction.mockImplementation((callback: any) => callback(tx));
+    walletRepository.findOrCreatePlatformWalletInTransaction
+      .mockResolvedValueOnce({ id: 'clearing-wallet' })
+      .mockResolvedValueOnce({ id: 'escrow-wallet' });
   });
 
   it('marks the existing order paid on a verified success webhook', async () => {
@@ -24,19 +43,24 @@ describe('HandlePayOSWebhookUseCase', () => {
       paymentStatus: 'PAID',
     });
     ordersRepository.findOrderByPaymentProviderRef.mockResolvedValue(order);
-    ordersRepository.markOrderPaid.mockResolvedValue(paidOrder);
+    ordersRepository.markOrderPaidInTransaction.mockResolvedValue(paidOrder);
 
     const result = await useCase.execute(webhook());
 
-    expect(ordersRepository.markOrderPaid).toHaveBeenCalledWith({
+    expect(ordersRepository.markOrderPaidInTransaction).toHaveBeenCalledWith(expect.anything(), {
       id: 'order-1',
       actorUserId: 'buyer-1',
       providerRef: 'PAYOS:link-1:ref-1',
     });
-    expect(result.order).toMatchObject({
-      id: 'order-1',
-      paymentStatus: 'PAID',
-    });
+    expect(result).toEqual({ received: true });
+    expect(walletRepository.executeTransactionInTransaction).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        transactionType: 'ESCROW_HOLD',
+        idempotencyKey: 'ORDER:order-1:PAYOS_ESCROW_HOLD:link-1',
+        orderId: 'order-1',
+      }),
+    );
   });
 
   it('marks payment failed while leaving cart cleanup to the success transaction', async () => {
@@ -47,7 +71,7 @@ describe('HandlePayOSWebhookUseCase', () => {
     await useCase.execute(webhook({ code: '01', success: false, dataCode: '01' }));
 
     expect(ordersRepository.markOrderPaymentFailed).toHaveBeenCalledWith(expect.objectContaining({ id: 'order-1' }));
-    expect(ordersRepository.markOrderPaid).not.toHaveBeenCalled();
+    expect(ordersRepository.markOrderPaidInTransaction).not.toHaveBeenCalled();
   });
 
   it('ignores stale webhook links after retry', async () => {

@@ -28,7 +28,7 @@ describe('CreateOfferVariantUseCase', () => {
       optionGroups: [{ id: 'group-1', values: [{ id: 'value-1' }] }],
     });
 
-    await expect(useCase.execute(baseInput())).rejects.toThrow(
+    await expect(useCase.execute({ ...baseInput(), optionValueIds: ['value-1'] })).rejects.toThrow(
       'All option values must belong to the offer',
     );
   });
@@ -46,6 +46,20 @@ describe('CreateOfferVariantUseCase', () => {
 
     await expect(useCase.execute(baseInput())).rejects.toThrow(
       'A variant cannot contain multiple values from the same option group',
+    );
+  });
+
+  it('rejects a variant that does not select every option group', async () => {
+    repository.findOwnedOfferOptionValues.mockResolvedValueOnce({
+      id: 'offer-1',
+      optionGroups: [
+        { id: 'group-1', values: [{ id: 'value-1' }] },
+        { id: 'group-2', values: [] },
+      ],
+    });
+
+    await expect(useCase.execute(baseInput())).rejects.toThrow(
+      'A variant must select exactly one value from every option group',
     );
   });
 

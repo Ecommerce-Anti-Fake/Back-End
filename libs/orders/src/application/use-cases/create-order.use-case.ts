@@ -3,6 +3,7 @@ import { OfferForOrdering, OfferVariantForOrdering, OrdersRepository } from '../
 import { WholesalePricingPort } from '../ports';
 import { OrderNotificationService, OrderPlacementService, PayOSPaymentService, ShippingCarrierAdapterService } from '../services';
 import { toOrderResponse } from './orders.mapper';
+import { PayOrderByWalletUseCase } from './pay-order-by-wallet.use-case';
 
 @Injectable()
 export class CreateOrderUseCase {
@@ -13,6 +14,7 @@ export class CreateOrderUseCase {
     private readonly payOSPaymentService: PayOSPaymentService,
     private readonly shippingCarrierAdapterService: ShippingCarrierAdapterService,
     private readonly orderNotificationService: OrderNotificationService,
+    private readonly payOrderByWalletUseCase: PayOrderByWalletUseCase,
   ) {}
 
   async execute(input: {
@@ -22,7 +24,7 @@ export class CreateOrderUseCase {
     offerId: string;
     variantId?: string | null;
     quantity: number;
-    paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | null;
+    paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'WALLET' | null;
     affiliateCode?: string | null;
     shippingName?: string | null;
     shippingPhone?: string | null;
@@ -114,6 +116,14 @@ export class CreateOrderUseCase {
           offerTitleSnapshot: offer.title,
           unitPrice: pricing.unitPrice,
           quantity: input.quantity,
+          selectedOptions: (variant?.values ?? []).map(({ optionValue }) => ({
+            optionGroupId: optionValue.optionGroupId,
+            optionValueId: optionValue.id,
+            optionGroupDisplayName: optionValue.optionGroup.displayName,
+            optionValueText: optionValue.text,
+            mediaAssetId: optionValue.mediaAssetId,
+            mediaUrl: optionValue.mediaAsset?.secureUrl ?? null,
+          })),
         },
       },
       affiliateAttribution: input.affiliateCode
@@ -131,6 +141,14 @@ export class CreateOrderUseCase {
     await this.orderNotificationService.notifyCreated(order);
 
     const response = toOrderResponse(order);
+    if (paymentMethod === 'WALLET') {
+      await this.payOrderByWalletUseCase.execute({
+        orderId: order.id,
+        requesterUserId: input.buyerUserId,
+        amount: order.buyerPayableAmount,
+      });
+      return { success: true, message: 'Thanh toán đơn hàng bằng ví thành công.' };
+    }
     if (paymentMethod !== 'PAYOS' || input.skipPayOSPaymentLink) return response;
 
     const paymentLink = await this.payOSPaymentService.createPaymentLink({
@@ -178,7 +196,7 @@ export class CreateOrderUseCase {
       offerId: offer.id,
       variantId,
     });
-    if (!variant || !variant.isActive) {
+    if (!variant || !variant.isActive || (variant.values ?? []).some((value) => !value.optionValue.isVisible)) {
       throw new BadRequestException('Variant is not available');
     }
     return variant;

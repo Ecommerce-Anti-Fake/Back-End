@@ -30,6 +30,15 @@ const offerForOrderingArgs = Prisma.validator<Prisma.OfferDefaultArgs>()({
         },
       },
     },
+    variants: {
+      select: {
+        id: true,
+        price: true,
+        availableQuantity: true,
+        isActive: true,
+        values: { include: { optionValue: { include: { optionGroup: true, mediaAsset: true } } } },
+      },
+    },
   },
 });
 
@@ -65,6 +74,8 @@ const orderWithRelationsArgs = Prisma.validator<Prisma.OrderDefaultArgs>()({
     },
     items: {
       include: {
+        variant: { include: { values: { include: { optionValue: { include: { optionGroup: true, mediaAsset: true } } } } } },
+        selectedOptions: true,
         batchAllocations: {
           include: {
             batch: {
@@ -281,6 +292,9 @@ const cartWithItemsArgs = Prisma.validator<Prisma.CartDefaultArgs>()({
             },
           },
         },
+        variant: {
+          include: { values: { include: { optionValue: { include: { optionGroup: true, mediaAsset: true } } } } },
+        },
       },
       orderBy: {
         createdAt: 'asc',
@@ -290,7 +304,9 @@ const cartWithItemsArgs = Prisma.validator<Prisma.CartDefaultArgs>()({
 });
 
 export type OfferForOrdering = Prisma.OfferGetPayload<typeof offerForOrderingArgs>;
-export type OfferVariantForOrdering = Prisma.OfferVariantGetPayload<Prisma.OfferVariantDefaultArgs>;
+export type OfferVariantForOrdering = Prisma.OfferVariantGetPayload<{
+  include: { values: { include: { optionValue: { include: { optionGroup: true; mediaAsset: true } } } } };
+}>;
 export type OrderWithRelations = Prisma.OrderGetPayload<typeof orderWithRelationsArgs>;
 export type SellerShopOrderRecord = Prisma.OrderGetPayload<typeof sellerShopOrderListArgs>;
 type FinanceOrderRecord = Prisma.OrderGetPayload<{
@@ -396,19 +412,27 @@ export type CreateOrderRecordInput = {
   parcelLengthCm?: number | null;
   parcelWidthCm?: number | null;
   parcelHeightCm?: number | null;
-  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'manual_confirmation' | null;
+  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'WALLET' | 'manual_confirmation' | null;
   item: {
     offerId: string;
     variantId?: string | null;
     offerTitleSnapshot: string;
     unitPrice: number;
     quantity: number;
+    selectedOptions?: Array<{
+      optionGroupId: string;
+      optionValueId: string;
+      optionGroupDisplayName: string;
+      optionValueText: string;
+      mediaAssetId: string | null;
+      mediaUrl: string | null;
+    }>;
   };
 };
 export type CreateAggregateOrderRecordInput = {
   buyerUserId: string;
   legacyShopId: string;
-  paymentMethod: 'COD' | 'PAYOS';
+  paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   baseAmount: number;
   platformFeeAmount: number;
   buyerPayableAmount: number;
@@ -442,6 +466,7 @@ export type CreateAggregateOrderRecordInput = {
       offerTitleSnapshot: string;
       unitPrice: number;
       quantity: number;
+      selectedOptions?: CreateOrderRecordInput['item']['selectedOptions'];
       batchAllocations: OrderBatchAllocation[];
     }>;
   }>;
@@ -529,6 +554,12 @@ export class OrdersRepository {
     return this.prisma.$transaction((tx) => callback(tx));
   }
 
+  withSerializableTransaction<T>(callback: (tx: Prisma.TransactionClient) => Promise<T>) {
+    return this.prisma.$transaction((tx) => callback(tx), {
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    });
+  }
+
   findOrderForReversal(tx: Prisma.TransactionClient, id: string) {
     return tx.order.findUnique({
       where: { id },
@@ -538,6 +569,8 @@ export class OrdersRepository {
             batchAllocations: true,
           },
         },
+        paymentIntent: true,
+        escrow: true,
       },
     });
   }
@@ -555,6 +588,7 @@ export class OrdersRepository {
         id: input.variantId,
         offerId: input.offerId,
       },
+      include: { values: { include: { optionValue: { include: { optionGroup: true, mediaAsset: true } } } } },
     });
   }
 
@@ -620,6 +654,32 @@ export class OrdersRepository {
     });
   }
 
+  findOfferVariantForCart(input: { offerId: string; variantId: string }) {
+    return this.prisma.offerVariant.findFirst({
+      where: {
+        id: input.variantId,
+        offerId: input.offerId,
+      },
+      select: {
+        id: true,
+        offerId: true,
+        sku: true,
+        price: true,
+        availableQuantity: true,
+        isActive: true,
+        values: {
+          select: {
+            optionValue: { select: { isVisible: true } },
+          },
+        },
+      },
+    });
+  }
+
+  findCurrentOfferForCart(offerId: string) {
+    return this.findOfferForOrdering(offerId);
+  }
+
   findDefaultAddressByUserId(userId: string) {
     return this.prisma.userAddress.findFirst({
       where: {
@@ -633,7 +693,9 @@ export class OrdersRepository {
   async upsertCartItem(input: {
     buyerUserId: string;
     offerId: string;
+    variantId?: string | null;
     quantity: number;
+    availableQuantityLimit?: number;
     offerTitleSnapshot: string;
     unitPriceSnapshot: number;
     currencySnapshot: string;
@@ -641,11 +703,21 @@ export class OrdersRepository {
   }): Promise<CartWithItems> {
     const cart = await this.getOrCreateActiveCart(input.buyerUserId);
 
+    await this.prisma.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${cart.id}:${input.offerId}:${input.variantId ?? 'offer'}`}))`;
+
     const existingItem = await this.prisma.cartItem.findFirst({
-      where: { cartId: cart.id, offerId: input.offerId, variantId: null },
-      select: { id: true },
+      where: {
+        cartId: cart.id,
+        offerId: input.offerId,
+        variantId: input.variantId ?? null,
+      },
+      select: { id: true, quantity: true },
     });
     if (existingItem) {
+      if (input.availableQuantityLimit !== undefined && existingItem.quantity + input.quantity > input.availableQuantityLimit) {
+        throw new BadRequestException('Quantity exceeds available stock');
+      }
+
       await this.prisma.cartItem.update({
         where: { id: existingItem.id },
         data: {
@@ -663,6 +735,7 @@ export class OrdersRepository {
         data: {
           cartId: cart.id,
           offerId: input.offerId,
+          variantId: input.variantId ?? null,
           quantity: input.quantity,
           offerTitleSnapshot: input.offerTitleSnapshot,
           unitPriceSnapshot: input.unitPriceSnapshot,
@@ -921,8 +994,13 @@ export class OrdersRepository {
         },
         items: {
           create: {
-            ...data.item,
+            offerId: data.item.offerId,
+            variantId: data.item.variantId ?? null,
+            offerTitleSnapshot: data.item.offerTitleSnapshot,
+            unitPrice: data.item.unitPrice,
+            quantity: data.item.quantity,
             orderShopGroupId,
+            selectedOptions: data.item.selectedOptions?.length ? { create: data.item.selectedOptions } : undefined,
             batchAllocations: batchAllocations.length ? { create: batchAllocations } : undefined,
           },
         },
@@ -1006,6 +1084,7 @@ export class OrdersRepository {
               offerTitleSnapshot: item.offerTitleSnapshot,
               unitPrice: item.unitPrice,
               quantity: item.quantity,
+              selectedOptions: item.selectedOptions?.length ? { create: item.selectedOptions } : undefined,
               batchAllocations: item.batchAllocations.length ? { create: item.batchAllocations } : undefined,
             })),
           ),
@@ -2694,7 +2773,13 @@ export class OrdersRepository {
   }
 
   async markOrderPaid(input: { id: string; actorUserId: string; providerRef: string | null }): Promise<OrderWithRelations> {
-    return this.prisma.$transaction(async (tx) => {
+    return this.withTransaction((tx) => this.markOrderPaidInTransaction(tx, input));
+  }
+
+  async markOrderPaidInTransaction(
+    tx: Prisma.TransactionClient,
+    input: { id: string; actorUserId: string; providerRef: string | null },
+  ): Promise<OrderWithRelations> {
       const now = new Date();
       const heldAmount = await this.getOrderPayableAmount(tx, input.id);
       const paymentIntent = await tx.paymentIntent.findUnique({
@@ -2763,7 +2848,7 @@ export class OrdersRepository {
         },
         ...orderWithRelationsArgs,
       });
-    });
+
   }
 
   async markOrderPaymentFailed(input: {
@@ -2892,23 +2977,14 @@ export class OrdersRepository {
   }
 
   async completeOrder(input: { id: string; actorUserId: string }): Promise<OrderWithRelations> {
-    return this.prisma.$transaction(async (tx) => {
-      await this.updateEscrowStatusWithAudit(tx, {
-        orderId: input.id,
-        actorUserId: input.actorUserId,
-        escrowStatus: 'RELEASED',
-        note: 'Escrow released after seller completed delivered order',
-      });
-
-      return tx.order.update({
+    return this.prisma.$transaction(async (tx) => tx.order.update({
         where: { id: input.id },
         data: {
           orderStatus: 'completed',
           fulfillmentStatus: 'DELIVERED',
         },
         ...orderWithRelationsArgs,
-      });
-    });
+      }));
   }
 
   private async getShopRiskSignals(shopId: string): Promise<RiskSignalSnapshot | null> {

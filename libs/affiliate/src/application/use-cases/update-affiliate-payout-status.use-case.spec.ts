@@ -54,10 +54,9 @@ describe('UpdateAffiliatePayoutStatusUseCase', () => {
       fromStatus: 'PENDING',
       payoutStatus: 'PAID',
     });
-    expect(result).toMatchObject({
-      id: 'payout-1',
-      payoutStatus: 'PAID',
-      totalAmount: 35000,
+    expect(result).toEqual({
+      success: true,
+      message: 'Thanh toán hoa hồng affiliate thành công.',
     });
   });
 

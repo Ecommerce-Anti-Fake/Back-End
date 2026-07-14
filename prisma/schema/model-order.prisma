@@ -37,6 +37,7 @@ model Order {
   items                   OrderItem[]
   shopGroups              OrderShopGroup[]
   paymentIntent           PaymentIntent?
+  walletTransactions      WalletTransaction[]
   escrow                  Escrow?
   disputes                Dispute[]
   reviews                 Review[]

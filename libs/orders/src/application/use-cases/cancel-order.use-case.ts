@@ -1,7 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { OrderNotificationService, OrderReversalService } from '../services';
-import { toOrderResponse } from './orders.mapper';
 
 @Injectable()
 export class CancelOrderUseCase {
@@ -25,12 +24,23 @@ export class CancelOrderUseCase {
       throw new ForbiddenException('You do not have permission to cancel this order');
     }
 
-    if (order.orderStatus !== 'pending') {
-      throw new BadRequestException('Only pending orders can be cancelled');
+    const canCancelPaidWalletOrder =
+      order.orderStatus === 'paid' &&
+      order.paymentIntent?.paymentMethod === 'WALLET' &&
+      order.paymentIntent.paymentStatus === 'PAID' &&
+      order.escrow?.escrowStatus === 'HELD';
+    if (order.orderStatus !== 'pending' && !canCancelPaidWalletOrder) {
+      throw new BadRequestException('Only pending orders or paid wallet orders can be cancelled');
     }
 
+    const wasWalletPaid = canCancelPaidWalletOrder;
     const updatedOrder = await this.orderReversalService.cancelOrder(order.id, input.requesterUserId);
     await this.orderNotificationService.notifyCancelled(updatedOrder, input.requesterUserId);
-    return toOrderResponse(updatedOrder);
+    return {
+      success: true,
+      message: wasWalletPaid
+        ? 'Hủy đơn hàng và hoàn tiền vào ví thành công.'
+        : 'Hủy đơn hàng thành công.',
+    };
   }
 }

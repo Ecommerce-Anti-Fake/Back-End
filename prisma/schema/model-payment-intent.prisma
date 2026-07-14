@@ -7,6 +7,7 @@ model PaymentIntent {
   providerRef   String?  @map("provider_ref")
   createdAt     DateTime @default(now()) @map("created_at")
   order         Order    @relation(fields: [orderId], references: [id])
+  walletTransactions WalletTransaction[]
 
   @@map("payment_intent")
 }

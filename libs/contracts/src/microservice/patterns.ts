@@ -77,6 +77,19 @@ export const SHOPS_MESSAGE_PATTERNS = {
   reviewShopDocument: 'shops.review-shop-document',
 } as const;
 
+export const WALLET_MESSAGE_PATTERNS = {
+  getMyWallet: 'wallet.get-my-wallet',
+  getMyWalletTransactions: 'wallet.get-my-wallet-transactions',
+  getShopWallet: 'wallet.get-shop-wallet',
+  getShopWalletTransactions: 'wallet.get-shop-wallet-transactions',
+  requestShopWalletWithdrawal: 'wallet.request-shop-wallet-withdrawal',
+  listShopWalletWithdrawals: 'wallet.list-shop-wallet-withdrawals',
+  approveWalletWithdrawal: 'wallet.approve-withdrawal',
+  rejectWalletWithdrawal: 'wallet.reject-withdrawal',
+  adjustWalletBalance: 'wallet.adjust-wallet-balance',
+  getWalletReconciliation: 'wallet.get-wallet-reconciliation',
+} as const;
+
 export const PRODUCTS_MESSAGE_PATTERNS = {
   findBrands: 'products.find-brands',
   createBrand: 'products.create-brand',
@@ -84,6 +97,9 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   createCategory: 'products.create-category',
   createOffer: 'products.create-offer',
   createOfferVariant: 'products.create-offer-variant',
+  findOfferVariants: 'products.find-offer-variants',
+  updateOfferVariant: 'products.update-offer-variant',
+  deleteOfferVariant: 'products.delete-offer-variant',
   updateOffer: 'products.update-offer',
   moderateOffer: 'products.moderate-offer',
   findShippingCarriers: 'products.find-shipping-carriers',
@@ -818,10 +834,10 @@ export type CreateOfferMessage = {
   distributionNodeId?: string | null;
   title: string;
   description: string;
-  price: number;
+  price?: number;
   currency?: string;
   itemCondition?: string;
-  availableQuantity: number;
+  availableQuantity?: number;
   offerStatus?: 'active' | 'inactive' | 'draft';
   parcelWeightGrams?: number | null;
   parcelLengthCm?: number | null;
@@ -833,6 +849,7 @@ export type CreateOfferMessage = {
     values: Array<{
       text: string;
       mediaAssetId?: string | null;
+      image?: string | null;
       sortOrder?: number;
     }>;
   }>;
@@ -847,6 +864,29 @@ export type CreateOfferVariantMessage = {
   mediaAssetId?: string | null;
   isActive?: boolean;
   optionValueIds: string[];
+};
+
+export type FindOfferVariantsMessage = {
+  offerId: string;
+  sellerUserId: string;
+  isActive?: boolean;
+};
+
+export type UpdateOfferVariantMessage = {
+  offerId: string;
+  variantId: string;
+  sellerUserId: string;
+  sku?: string | null;
+  priceOverride?: number | null;
+  availableQuantity?: number;
+  mediaAssetId?: string | null;
+  isActive?: boolean;
+};
+
+export type DeleteOfferVariantMessage = {
+  offerId: string;
+  variantId: string;
+  sellerUserId: string;
 };
 
 export type UpdateOfferMessage = {
@@ -1003,7 +1043,7 @@ export type CreateOrderMessage = {
   offerId: string;
   variantId?: string | null;
   quantity: number;
-  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | null;
+  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'WALLET' | null;
   affiliateCode?: string | null;
   shippingName?: string | null;
   shippingPhone?: string | null;
@@ -1024,6 +1064,7 @@ export type ActiveCartMessage = {
 export type AddCartItemMessage = {
   buyerUserId: string;
   offerId: string;
+  variantId?: string | null;
   quantity: number;
 };
 
@@ -1041,7 +1082,7 @@ export type RemoveCartItemMessage = {
 export type CheckoutCartItemMessage = {
   buyerUserId: string;
   cartItemId: string;
-  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | null;
+  paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'WALLET' | null;
   affiliateCode?: string | null;
   shippingName?: string | null;
   shippingPhone?: string | null;
@@ -1058,7 +1099,7 @@ export type CheckoutCartItemMessage = {
 export type CheckoutCartMessage = {
   buyerUserId: string;
   cartItemIds: string[];
-  paymentMethod: 'COD' | 'PAYOS';
+  paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   shippingOptionCode: string;
   affiliateCode?: string | null;
 };
@@ -1068,7 +1109,7 @@ export type BuyNowCheckoutMessage = {
   offerId: string;
   variantId?: string | null;
   quantity: number;
-  paymentMethod: 'COD' | 'PAYOS';
+  paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   shippingOptionCode: string;
 };
 

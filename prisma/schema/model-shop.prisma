@@ -34,6 +34,7 @@ model Shop {
   chatThreads                ChatThread[]
   socialPosts                SocialPost[]
   liveSessions               LiveCommerceSession[]
+  wallets                    Wallet[]
 
   @@index([shopTypeId])
   @@map("shop")

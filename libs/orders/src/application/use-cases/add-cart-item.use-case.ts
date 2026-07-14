@@ -6,7 +6,7 @@ import { toCartResponse } from './orders.mapper';
 export class AddCartItemUseCase {
   constructor(private readonly ordersRepository: OrdersRepository) {}
 
-  async execute(input: { buyerUserId: string; offerId: string; quantity: number }) {
+  async execute(input: { buyerUserId: string; offerId: string; variantId?: string | null; quantity: number }) {
     if (input.quantity < 1) {
       throw new BadRequestException('Quantity must be greater than zero');
     }
@@ -16,16 +16,38 @@ export class AddCartItemUseCase {
       throw new NotFoundException('Offer not found');
     }
 
-    if (input.quantity > offer.availableQuantity) {
+    const hasVariants = offer.variants.length > 0;
+    if (hasVariants && !input.variantId) {
+      throw new BadRequestException('variantId is required for this offer');
+    }
+
+    const variant = input.variantId
+      ? await this.ordersRepository.findOfferVariantForCart({
+          offerId: offer.id,
+          variantId: input.variantId,
+        })
+      : null;
+
+    if (input.variantId && !variant) {
+      throw new NotFoundException('Variant not found');
+    }
+    if (variant && !variant.isActive) {
+      throw new BadRequestException('Variant is inactive');
+    }
+
+    const availableQuantity = variant?.availableQuantity ?? offer.availableQuantity;
+    if (input.quantity > availableQuantity) {
       throw new BadRequestException('Quantity exceeds available stock');
     }
 
     const cart = await this.ordersRepository.upsertCartItem({
       buyerUserId: input.buyerUserId,
       offerId: offer.id,
+      variantId: variant?.id ?? null,
       quantity: input.quantity,
+      availableQuantityLimit: availableQuantity,
       offerTitleSnapshot: offer.title,
-      unitPriceSnapshot: Number(offer.price.toString()),
+      unitPriceSnapshot: Number((variant?.price ?? offer.price).toString()),
       currencySnapshot: offer.currency,
       shopNameSnapshot: offer.shop.shopName,
     });

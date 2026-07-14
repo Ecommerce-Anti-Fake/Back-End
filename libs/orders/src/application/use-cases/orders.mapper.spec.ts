@@ -34,6 +34,32 @@ describe('orders mapper shop grouping', () => {
     expect(response.shops[0].items[0]).not.toHaveProperty('shippingMethods');
   });
 
+  it('projects compact variant fields in cart items', () => {
+    const cart = {
+      id: 'cart-1',
+      buyerUserId: 'buyer-1',
+      cartStatus: 'ACTIVE',
+      createdAt: new Date('2026-06-01T10:00:00.000Z'),
+      updatedAt: new Date('2026-06-01T10:05:00.000Z'),
+      items: [
+        {
+          ...createCartItem({ id: 'cart-item-1', offerId: 'offer-1', shopId: 'shop-1', shopName: 'Shop One' }),
+          variantId: 'variant-1',
+          variant: { id: 'variant-1', sku: 'AO-DEN-M' },
+        },
+      ],
+    };
+
+    const response = toCartResponse(cart as any);
+
+    expect(response.shops[0].items[0]).toMatchObject({
+      id: 'cart-item-1',
+      variantId: 'variant-1',
+      variantSku: 'AO-DEN-M',
+    });
+    expect(response.shops[0].items[0]).not.toHaveProperty('variant');
+  });
+
   it('groups order items by shop with shop id and name', () => {
     const order = {
       id: 'order-1',
@@ -160,6 +186,7 @@ function createCartItem(input: { id: string; offerId: string; shopId: string; sh
   return {
     id: input.id,
     offerId: input.offerId,
+    variantId: null,
     offerTitleSnapshot: `Offer ${input.offerId}`,
     unitPriceSnapshot: new Prisma.Decimal(100000),
     currencySnapshot: 'VND',
@@ -176,6 +203,7 @@ function createCartItem(input: { id: string; offerId: string; shopId: string; sh
       media: [],
       shippingMethods: [],
     },
+    variant: null,
   };
 }
 

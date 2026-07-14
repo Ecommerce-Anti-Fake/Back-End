@@ -12,7 +12,7 @@ export class CheckoutCartItemUseCase {
   async execute(input: {
     buyerUserId: string;
     cartItemId: string;
-    paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | null;
+    paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'WALLET' | null;
     affiliateCode?: string | null;
     shippingName?: string | null;
     shippingPhone?: string | null;

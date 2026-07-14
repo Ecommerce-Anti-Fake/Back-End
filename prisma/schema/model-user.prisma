@@ -44,6 +44,7 @@ model User {
   liveSessionReminders LiveSessionReminder[]
   liveSessionComments  LiveSessionComment[] @relation("LiveCommentAuthor")
   hiddenLiveSessionComments LiveSessionComment[] @relation("LiveCommentHiddenBy")
+  wallets               Wallet[]
 
   @@map("user")
 }

@@ -3,13 +3,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { OrderInventoryService } from './order-inventory.service';
 import { OrderReversalService } from './order-reversal.service';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { WalletRepository } from '@wallet';
 
 describe('OrderReversalService', () => {
   let service: OrderReversalService;
 
-  const tx = { id: 'tx' };
+  const tx = { id: 'tx', walletTransaction: { findUnique: jest.fn().mockResolvedValue(null) }, dispute: { findFirst: jest.fn(), create: jest.fn() } };
   const ordersRepositoryMock = {
     withTransaction: jest.fn(),
+    withSerializableTransaction: jest.fn(),
     findOrderForReversal: jest.fn(),
     updatePaymentStatusWithAudit: jest.fn(),
     updateEscrowStatusWithAudit: jest.fn(),
@@ -23,16 +25,27 @@ describe('OrderReversalService', () => {
   const orderInventoryServiceMock = {
     restoreOrderInventory: jest.fn(),
   };
+  const walletRepositoryMock = {
+    findOrCreateUserWalletInTransaction: jest.fn(),
+    findOrCreatePlatformWalletInTransaction: jest.fn(),
+    findOrCreateShopWalletInTransaction: jest.fn(),
+    executeTransactionInTransaction: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.resetAllMocks();
     ordersRepositoryMock.withTransaction.mockImplementation((callback) => callback(tx));
+    ordersRepositoryMock.withSerializableTransaction.mockImplementation((callback) => callback(tx));
+    walletRepositoryMock.findOrCreateUserWalletInTransaction.mockResolvedValue({ id: 'user-wallet' });
+    walletRepositoryMock.findOrCreatePlatformWalletInTransaction.mockResolvedValue({ id: 'escrow-wallet' });
+    walletRepositoryMock.findOrCreateShopWalletInTransaction.mockResolvedValue({ id: 'shop-wallet', availableBalance: 0, pendingBalance: 0 });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrderReversalService,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
         { provide: OrderInventoryService, useValue: orderInventoryServiceMock },
+        { provide: WalletRepository, useValue: walletRepositoryMock },
       ],
     }).compile();
 
@@ -77,6 +90,25 @@ describe('OrderReversalService', () => {
       escrowStatus: 'REFUNDED',
       note: 'Escrow refunded because order was refunded',
     });
+    expect(walletRepositoryMock.executeTransactionInTransaction).toHaveBeenCalledWith(tx, expect.objectContaining({
+      transactionType: 'REFUND',
+      idempotencyKey: 'ORDER:order-1:WALLET_REFUND',
+      referenceType: 'ORDER',
+      referenceId: 'order-1',
+      entries: expect.arrayContaining([
+        expect.objectContaining({ walletId: 'escrow-wallet', direction: 'DEBIT', balanceType: 'PENDING' }),
+        expect.objectContaining({ walletId: 'user-wallet', direction: 'CREDIT', balanceType: 'AVAILABLE' }),
+      ]),
+    }));
+  });
+
+  it('rejects wallet cancellation after escrow release', async () => {
+    const order = { ...createOrderRecord('paid'), escrow: { escrowStatus: 'RELEASED' } };
+    ordersRepositoryMock.findOrderForReversal.mockResolvedValueOnce(order);
+
+    await expect(service.cancelOrder('order-1', 'buyer-1')).rejects.toBeInstanceOf(BadRequestException);
+    expect(walletRepositoryMock.executeTransactionInTransaction).not.toHaveBeenCalled();
+    expect(ordersRepositoryMock.updateOrderStatus).not.toHaveBeenCalled();
   });
 
   it('returns escrow to hold when a paid dispute is resolved without refund', async () => {
@@ -134,6 +166,10 @@ function createOrderRecord(orderStatus: string) {
     id: 'order-1',
     orderStatus,
     items: [],
+    buyerPayableAmount: 100,
+    buyerUserId: 'buyer-1',
+    paymentIntent: orderStatus === 'paid' ? { id: 'payment-1', paymentMethod: 'WALLET', paymentStatus: 'PAID' } : null,
+    escrow: orderStatus === 'paid' ? { escrowStatus: 'HELD' } : null,
   };
 }
 

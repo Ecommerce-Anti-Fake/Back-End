@@ -12,6 +12,8 @@ import {
   CreateOfferMessage,
   CreateOfferVariantMessage,
   BuyNowOfferPreviewMessage,
+  DeleteOfferVariantMessage,
+  FindOfferVariantsMessage,
   CreateLiveCommentMessage,
   CreateLiveSessionMessage,
   CreateSocialCommentMessage,
@@ -53,6 +55,7 @@ import {
   UpdateLiveSessionStatusMessage,
   UpdateOfferMessage,
   ModerateOfferMessage,
+  UpdateOfferVariantMessage,
   CATALOG_SERVICE_CLIENT,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
@@ -91,6 +94,18 @@ export class CatalogRpcService {
 
   createOfferVariant(payload: CreateOfferVariantMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.createOfferVariant, payload);
+  }
+
+  findOfferVariants(payload: FindOfferVariantsMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.findOfferVariants, payload);
+  }
+
+  updateOfferVariant(payload: UpdateOfferVariantMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.updateOfferVariant, payload);
+  }
+
+  deleteOfferVariant(payload: DeleteOfferVariantMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.deleteOfferVariant, payload);
   }
 
   updateOffer(payload: UpdateOfferMessage) {

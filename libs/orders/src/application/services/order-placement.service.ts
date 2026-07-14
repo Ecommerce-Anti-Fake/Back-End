@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import {
   AffiliateAttributionInput,
   CreateAggregateOrderRecordInput,
@@ -42,7 +43,22 @@ export class OrderPlacementService {
       affiliateAttribution?: AffiliateAttributionInput;
     },
   ): Promise<OrderWithRelations> {
-    return this.ordersRepository.withTransaction(async (tx) => {
+    return this.ordersRepository.withTransaction((tx) =>
+      this.createAggregateOrderInTransaction(tx, input),
+    );
+  }
+
+  async createAggregateOrderInTransaction(
+    tx: Prisma.TransactionClient,
+    input: Omit<CreateAggregateOrderRecordInput, 'groups'> & {
+      groups: Array<
+        Omit<CreateAggregateOrderRecordInput['groups'][number], 'items'> & {
+          items: Array<Omit<CreateAggregateOrderRecordInput['groups'][number]['items'][number], 'batchAllocations'>>;
+        }
+      >;
+      affiliateAttribution?: AffiliateAttributionInput;
+    },
+  ): Promise<OrderWithRelations> {
       const groups: CreateAggregateOrderRecordInput['groups'] = [];
       for (const group of input.groups) {
         const items: CreateAggregateOrderRecordInput['groups'][number]['items'] = [];
@@ -64,6 +80,6 @@ export class OrderPlacementService {
         await this.ordersRepository.createAffiliateAttribution(tx, order.id, input.affiliateAttribution);
       }
       return order;
-    });
+
   }
 }

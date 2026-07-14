@@ -11,6 +11,7 @@ import { ReviewsModule } from '@reviews/reviews.module';
 import { OfferAssetsModule } from '@offer-assets/offer-assets.module';
 import { FavoritesModule } from '@favorites/favorites.module';
 import { CatalogMetadataModule } from '@catalog-metadata/catalog-metadata.module';
+import { WalletModule } from '@wallet/wallet.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { CatalogMetadataModule } from '@catalog-metadata/catalog-metadata.module
     FavoritesModule,
     CatalogMetadataModule,
     ShopsModule,
+    WalletModule,
   ],
 })
 export class AppModule {}

@@ -1,0 +1,86 @@
+import { Prisma } from '@prisma/client';
+import {
+  WalletBalanceType,
+  WalletEntryDirection,
+  WalletTransactionType,
+} from '@prisma/client';
+import { WalletLedgerInput } from '../../domain';
+
+export interface WalletLedgerPage {
+  data: Prisma.WalletLedgerEntryGetPayload<{
+    include: { transaction: true };
+  }>[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+  };
+}
+
+export interface WalletTransactionInput {
+  transactionCode: string;
+  transactionType: WalletTransactionType;
+  idempotencyKey: string;
+  amount: Prisma.Decimal;
+  currency?: string;
+  referenceType?: string | null;
+  referenceId?: string | null;
+  description?: string | null;
+  orderId?: string | null;
+  paymentIntentId?: string | null;
+  entries: WalletLedgerInput[];
+  allowUnbalanced?: boolean;
+}
+
+export abstract class WalletRepositoryPort {
+  abstract executeTransactionInTransaction(
+    tx: Prisma.TransactionClient,
+    input: WalletTransactionInput,
+  ): Promise<Prisma.WalletTransactionGetPayload<{ include: { ledgerEntries: true } }>>;
+  abstract findById(
+    walletId: string,
+  ): Promise<Prisma.WalletGetPayload<{}> | null>;
+  abstract findOrCreateUserWallet(
+    userId: string,
+    currency?: string,
+  ): Promise<Prisma.WalletGetPayload<{}>>;
+  abstract findOrCreateShopWallet(
+    shopId: string,
+    currency?: string,
+  ): Promise<Prisma.WalletGetPayload<{}>>;
+  abstract findOrCreatePlatformWallet(
+    platformCode: string,
+    currency?: string,
+  ): Promise<Prisma.WalletGetPayload<{}>>;
+  abstract findOrCreateShopWalletInTransaction(
+    tx: Prisma.TransactionClient,
+    shopId: string,
+    currency?: string,
+  ): Promise<Prisma.WalletGetPayload<{}>>;
+  abstract findShopWalletInTransaction(
+    tx: Prisma.TransactionClient,
+    shopId: string,
+    currency?: string,
+  ): Promise<Prisma.WalletGetPayload<{}> | null>;
+  abstract findShopWallet(
+    shopId: string,
+    currency?: string,
+  ): Promise<Prisma.WalletGetPayload<{}> | null>;
+  abstract listWithdrawals(walletId: string): Promise<Prisma.WalletWithdrawalGetPayload<{}>[]>;
+  abstract canAccessShopWallet(
+    shopId: string,
+    requesterUserId: string,
+    requesterRole: string,
+  ): Promise<boolean>;
+  abstract listLedger(
+    walletId: string,
+    page?: number,
+    pageSize?: number,
+  ): Promise<WalletLedgerPage>;
+  abstract executeTransaction(
+    input: WalletTransactionInput,
+  ): Promise<
+    Prisma.WalletTransactionGetPayload<{ include: { ledgerEntries: true } }>
+  >;
+}

@@ -1,0 +1,16 @@
+model WalletWithdrawal {
+  id            String             @id @default(uuid())
+  walletId      String             @map("wallet_id")
+  amount        Decimal            @db.Decimal(18, 2)
+  bankName      String             @map("bank_name")
+  accountNumber String             @map("account_number")
+  accountHolder String             @map("account_holder")
+  status        WithdrawalStatus   @default(PENDING)
+  createdAt     DateTime           @default(now()) @map("created_at")
+  processedAt   DateTime?          @map("processed_at")
+
+  wallet        Wallet             @relation(fields: [walletId], references: [id])
+
+  @@index([walletId, createdAt])
+  @@map("wallet_withdrawal")
+}

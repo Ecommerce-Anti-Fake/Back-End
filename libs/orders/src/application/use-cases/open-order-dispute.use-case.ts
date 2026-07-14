@@ -1,12 +1,14 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { RecalculateRiskTargetsUseCase } from './recalculate-risk-targets.use-case';
+import { OrderReversalService } from '../services';
 
 @Injectable()
 export class OpenOrderDisputeUseCase {
   constructor(
     private readonly ordersRepository: OrdersRepository,
     private readonly recalculateRiskTargetsUseCase: RecalculateRiskTargetsUseCase,
+    private readonly orderReversalService: OrderReversalService,
   ) {}
 
   async execute(input: { id: string; requesterUserId: string; reason: string }) {
@@ -37,28 +39,10 @@ export class OpenOrderDisputeUseCase {
       throw new BadRequestException('Order already has an open dispute');
     }
 
-    const dispute = await this.ordersRepository.createDispute({
+    const dispute = await this.orderReversalService.openDispute({
       orderId: order.id,
       openedByUserId: input.requesterUserId,
       reason,
-    });
-    await this.ordersRepository.updateEscrowStatusForOrder({
-      orderId: order.id,
-      actorUserId: input.requesterUserId,
-      escrowStatus: 'FROZEN',
-      note: 'Escrow frozen because a dispute was opened',
-    });
-
-    await this.ordersRepository.createAuditLog({
-      targetType: 'DISPUTE',
-      targetId: dispute.id,
-      actorUserId: input.requesterUserId,
-      action: 'DISPUTE_OPENED',
-      toStatus: 'OPEN',
-      note: reason,
-      metadata: {
-        orderId: order.id,
-      },
     });
 
     await this.recalculateRiskTargetsUseCase.executeForReport({

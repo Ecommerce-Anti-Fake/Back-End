@@ -142,3 +142,57 @@ enum LiveSessionStatus {
   ENDED
   CANCELLED
 }
+
+enum WalletOwnerType {
+  USER
+  SHOP
+  PLATFORM
+}
+
+enum WalletStatus {
+  ACTIVE
+  FROZEN
+  CLOSED
+}
+
+enum WalletTransactionType {
+  TOP_UP
+  PAYMENT
+  ESCROW_HOLD
+  ESCROW_RELEASE
+  REFUND
+  WITHDRAWAL
+  PLATFORM_FEE
+  AFFILIATE_COMMISSION
+  ADJUSTMENT
+  SETTLEMENT
+  WITHDRAWAL_REQUEST
+  DISPUTE_HOLD
+  DISPUTE_RELEASE
+  DISPUTE_REFUND
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum WalletTransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+enum WalletEntryDirection {
+  DEBIT
+  CREDIT
+}
+
+enum WalletBalanceType {
+  AVAILABLE
+  PENDING
+  LOCKED
+}

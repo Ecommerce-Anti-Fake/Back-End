@@ -151,6 +151,60 @@ enum LiveSessionStatus {
   CANCELLED
 }
 
+enum WalletOwnerType {
+  USER
+  SHOP
+  PLATFORM
+}
+
+enum WalletStatus {
+  ACTIVE
+  FROZEN
+  CLOSED
+}
+
+enum WalletTransactionType {
+  TOP_UP
+  PAYMENT
+  ESCROW_HOLD
+  ESCROW_RELEASE
+  REFUND
+  WITHDRAWAL
+  PLATFORM_FEE
+  AFFILIATE_COMMISSION
+  ADJUSTMENT
+  SETTLEMENT
+  WITHDRAWAL_REQUEST
+  DISPUTE_HOLD
+  DISPUTE_RELEASE
+  DISPUTE_REFUND
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum WalletTransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+enum WalletEntryDirection {
+  DEBIT
+  CREDIT
+}
+
+enum WalletBalanceType {
+  AVAILABLE
+  PENDING
+  LOCKED
+}
+
 model AffiliateAccount {
   id                String                      @id @default(uuid())
   programId         String                      @map("program_id")
@@ -1130,6 +1184,7 @@ model Order {
   items                   OrderItem[]
   shopGroups              OrderShopGroup[]
   paymentIntent           PaymentIntent?
+  walletTransactions      WalletTransaction[]
   escrow                  Escrow?
   disputes                Dispute[]
   reviews                 Review[]
@@ -1165,6 +1220,7 @@ model PaymentIntent {
   providerRef   String?  @map("provider_ref")
   createdAt     DateTime @default(now()) @map("created_at")
   order         Order    @relation(fields: [orderId], references: [id])
+  walletTransactions WalletTransaction[]
 
   @@map("payment_intent")
 }
@@ -1379,6 +1435,7 @@ model Shop {
   chatThreads                ChatThread[]
   socialPosts                SocialPost[]
   liveSessions               LiveCommerceSession[]
+  wallets                    Wallet[]
 
   @@index([shopTypeId])
   @@map("shop")
@@ -1666,6 +1723,7 @@ model User {
   liveSessionReminders LiveSessionReminder[]
   liveSessionComments  LiveSessionComment[] @relation("LiveCommentAuthor")
   hiddenLiveSessionComments LiveSessionComment[] @relation("LiveCommentHiddenBy")
+  wallets               Wallet[]
 
   @@map("user")
 }
@@ -1699,4 +1757,92 @@ model VerificationRequirement {
   shopDocuments        ShopDocument[]
   @@index([isActive])
   @@map("verification_requirement")
+}
+
+model WalletWithdrawal {
+  id            String             @id @default(uuid())
+  walletId      String             @map("wallet_id")
+  amount        Decimal            @db.Decimal(18, 2)
+  bankName      String             @map("bank_name")
+  accountNumber String             @map("account_number")
+  accountHolder String             @map("account_holder")
+  status        WithdrawalStatus   @default(PENDING)
+  createdAt     DateTime           @default(now()) @map("created_at")
+  processedAt   DateTime?          @map("processed_at")
+
+  wallet        Wallet             @relation(fields: [walletId], references: [id])
+
+  @@index([walletId, createdAt])
+  @@map("wallet_withdrawal")
+}
+
+model Wallet {
+  id               String          @id @default(uuid())
+  walletCode       String          @unique @map("wallet_code")
+  ownerType        WalletOwnerType @map("owner_type")
+  userId           String?         @map("user_id")
+  shopId           String?         @map("shop_id")
+  platformCode     String?         @unique @map("platform_code")
+  currency         String          @default("VND")
+  availableBalance Decimal         @default(0) @map("available_balance") @db.Decimal(18, 2)
+  pendingBalance   Decimal         @default(0) @map("pending_balance") @db.Decimal(18, 2)
+  lockedBalance    Decimal         @default(0) @map("locked_balance") @db.Decimal(18, 2)
+  status           WalletStatus    @default(ACTIVE)
+  version          Int             @default(0)
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  user             User?           @relation(fields: [userId], references: [id])
+  shop             Shop?           @relation(fields: [shopId], references: [id])
+  ledgerEntries    WalletLedgerEntry[]
+  withdrawals      WalletWithdrawal[]
+
+  @@unique([userId, currency])
+  @@unique([shopId, currency])
+  @@map("wallet")
+}
+
+model WalletTransaction {
+  id                String                  @id @default(uuid())
+  transactionCode   String                  @unique @map("transaction_code")
+  transactionType   WalletTransactionType   @map("transaction_type")
+  status            WalletTransactionStatus @default(PENDING)
+  amount            Decimal                 @db.Decimal(18, 2)
+  currency          String                  @default("VND")
+  idempotencyKey    String                  @unique @map("idempotency_key")
+  referenceType     String?                 @map("reference_type")
+  referenceId       String?                 @map("reference_id")
+  orderId           String?                 @map("order_id")
+  paymentIntentId   String?                 @map("payment_intent_id")
+  description       String?
+  createdAt         DateTime                @default(now()) @map("created_at")
+  completedAt       DateTime?               @map("completed_at")
+
+  ledgerEntries     WalletLedgerEntry[]
+  order             Order?                  @relation(fields: [orderId], references: [id])
+  paymentIntent     PaymentIntent?          @relation(fields: [paymentIntentId], references: [id])
+
+  @@index([referenceType, referenceId])
+  @@index([orderId])
+  @@index([paymentIntentId])
+  @@map("wallet_transaction")
+}
+
+model WalletLedgerEntry {
+  id              String               @id @default(uuid())
+  walletId        String               @map("wallet_id")
+  transactionId   String               @map("transaction_id")
+  direction       WalletEntryDirection
+  balanceType     WalletBalanceType    @map("balance_type")
+  amount          Decimal              @db.Decimal(18, 2)
+  balanceBefore   Decimal              @map("balance_before") @db.Decimal(18, 2)
+  balanceAfter    Decimal              @map("balance_after") @db.Decimal(18, 2)
+  createdAt       DateTime             @default(now()) @map("created_at")
+
+  wallet          Wallet               @relation(fields: [walletId], references: [id])
+  transaction     WalletTransaction    @relation(fields: [transactionId], references: [id])
+
+  @@index([walletId, createdAt])
+  @@index([transactionId])
+  @@map("wallet_ledger_entry")
 }
