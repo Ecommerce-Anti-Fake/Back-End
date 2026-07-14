@@ -19,6 +19,7 @@ import {
   ListShopWalletWithdrawalsUseCase,
   ApproveWalletWithdrawalUseCase,
   RejectWalletWithdrawalUseCase,
+  AdjustWalletBalanceUseCase,
 } from '../../application/use-cases';
 
 @Controller()
@@ -32,6 +33,7 @@ export class WalletRpcController {
     private readonly listShopWalletWithdrawalsUseCase: ListShopWalletWithdrawalsUseCase,
     private readonly approveWalletWithdrawalUseCase: ApproveWalletWithdrawalUseCase,
     private readonly rejectWalletWithdrawalUseCase: RejectWalletWithdrawalUseCase,
+    private readonly adjustWalletBalanceUseCase: AdjustWalletBalanceUseCase,
   ) {}
 
   @MessagePattern(WALLET_MESSAGE_PATTERNS.getMyWallet)
@@ -122,5 +124,10 @@ export class WalletRpcController {
     } catch (error) {
       throwRpcException(error);
     }
+  }
+
+  @MessagePattern(WALLET_MESSAGE_PATTERNS.adjustWalletBalance)
+  async adjustWalletBalance(@Payload() payload: any) {
+    try { return await this.adjustWalletBalanceUseCase.execute(payload); } catch (error) { throwRpcException(error); }
   }
 }

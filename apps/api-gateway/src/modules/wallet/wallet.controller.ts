@@ -18,7 +18,7 @@ import {
   PaginatedWalletLedgerResponseDto,
   WalletResponseDto,
   WalletTransactionsQueryDto,
-  CreateWalletWithdrawalDto,
+  CreateWalletWithdrawalDto, AdjustWalletBalanceDto,
   WalletWithdrawalResponseDto,
 } from '@wallet';
 import { WalletRpcService } from './wallet-rpc.service';
@@ -134,5 +134,14 @@ export class WalletController {
   @Post('admin/wallet-withdrawals/:id/reject')
   rejectWalletWithdrawal(@Param('id') id: string) {
     return this.walletRpcService.rejectWalletWithdrawal({ id });
+  }
+
+  @ApiOperation({ summary: 'Admin dieu chinh so du vi' })
+  @ApiOkResponse({ schema: { example: { success: true, message: 'Điều chỉnh số dư ví thành công.' } } })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Post('admin/wallets/:walletId/adjustments')
+  adjustWalletBalance(@Param('walletId') walletId: string, @CurrentUserId() adminUserId: string, @Body() body: AdjustWalletBalanceDto) {
+    return this.walletRpcService.adjustWalletBalance({ walletId, adminUserId, ...body });
   }
 }

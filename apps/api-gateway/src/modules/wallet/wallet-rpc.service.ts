@@ -68,6 +68,10 @@ export class WalletRpcService {
     return this.send(WALLET_MESSAGE_PATTERNS.rejectWalletWithdrawal, payload);
   }
 
+  adjustWalletBalance(payload: { walletId: string; adminUserId: string; direction: 'CREDIT' | 'DEBIT'; balanceType: 'AVAILABLE' | 'PENDING' | 'LOCKED'; amount: string; reason: string }) {
+    return this.send(WALLET_MESSAGE_PATTERNS.adjustWalletBalance, payload);
+  }
+
   private async send<TResult>(
     pattern: string,
     payload: unknown,

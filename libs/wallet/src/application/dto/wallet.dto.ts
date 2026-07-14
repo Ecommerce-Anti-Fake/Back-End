@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDecimal, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, MaxLength } from 'class-validator';
+import { IsDecimal, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Max, Min, MaxLength } from 'class-validator';
 
 export class WalletTransactionsQueryDto {
   @ApiPropertyOptional({ example: 1, default: 1, minimum: 1 })
@@ -86,4 +86,11 @@ export class WalletWithdrawalResponseDto {
   @ApiProperty() status!: string;
   @ApiProperty() createdAt!: Date;
   @ApiProperty({ nullable: true }) processedAt!: Date | null;
+}
+
+export class AdjustWalletBalanceDto {
+  @ApiProperty({ enum: ['CREDIT', 'DEBIT'] }) @IsIn(['CREDIT', 'DEBIT']) direction!: 'CREDIT' | 'DEBIT';
+  @ApiProperty({ enum: ['AVAILABLE', 'PENDING', 'LOCKED'] }) @IsIn(['AVAILABLE', 'PENDING', 'LOCKED']) balanceType!: 'AVAILABLE' | 'PENDING' | 'LOCKED';
+  @ApiProperty({ example: '100000' }) @IsDecimal({ decimal_digits: '0,2' }) amount!: string;
+  @ApiProperty({ example: 'Điều chỉnh sau đối soát' }) @IsString() @IsNotEmpty() @MaxLength(500) reason!: string;
 }

@@ -8,3 +8,4 @@ export * from './request-wallet-withdrawal.use-case';
 export * from './list-shop-wallet-withdrawals.use-case';
 export * from './approve-wallet-withdrawal.use-case';
 export * from './reject-wallet-withdrawal.use-case';
+export * from './adjust-wallet-balance.use-case';

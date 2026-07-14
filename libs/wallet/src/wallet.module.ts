@@ -13,6 +13,7 @@ import {
   ListShopWalletWithdrawalsUseCase,
   ApproveWalletWithdrawalUseCase,
   RejectWalletWithdrawalUseCase,
+  AdjustWalletBalanceUseCase,
 } from './application/use-cases';
 import { WalletRpcController } from './presentation/rpc/wallet.rpc-controller';
 
@@ -31,8 +32,9 @@ import { WalletRpcController } from './presentation/rpc/wallet.rpc-controller';
     ListShopWalletWithdrawalsUseCase,
     ApproveWalletWithdrawalUseCase,
     RejectWalletWithdrawalUseCase,
+    AdjustWalletBalanceUseCase,
     { provide: WalletRepositoryPort, useExisting: WalletRepository },
   ],
-  exports: [WalletRepository, WalletService, WalletRepositoryPort, ReconcileShopWalletUseCase, RequestWalletWithdrawalUseCase, ListShopWalletWithdrawalsUseCase, ApproveWalletWithdrawalUseCase, RejectWalletWithdrawalUseCase],
+  exports: [WalletRepository, WalletService, WalletRepositoryPort, ReconcileShopWalletUseCase, RequestWalletWithdrawalUseCase, ListShopWalletWithdrawalsUseCase, ApproveWalletWithdrawalUseCase, RejectWalletWithdrawalUseCase, AdjustWalletBalanceUseCase],
 })
 export class WalletModule {}
