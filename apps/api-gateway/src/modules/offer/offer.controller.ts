@@ -45,6 +45,7 @@ import {
   CreateOfferResponseDto,
   ListOfferVariantsQueryDto,
   OfferVariantResponseDto,
+  OfferMutationSuccessResponseDto,
   UpdateOfferVariantDto,
   UpdateOfferDto,
   ModerateOfferDto,
@@ -229,7 +230,7 @@ export class OfferController {
 
   @ApiOperation({ summary: 'Cap nhat variant cua offer thuoc seller hien tai' })
   @ApiBearerAuth('access-token')
-  @ApiOkResponse({ type: OfferVariantResponseDto })
+  @ApiOkResponse({ type: OfferMutationSuccessResponseDto })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Patch('offers/:offerId/variants/:variantId')
   updateOfferVariant(
@@ -248,7 +249,7 @@ export class OfferController {
 
   @ApiOperation({ summary: 'Soft delete variant cua seller hien tai' })
   @ApiBearerAuth('access-token')
-  @ApiOkResponse({ type: OfferVariantResponseDto })
+  @ApiOkResponse({ type: OfferMutationSuccessResponseDto })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Delete('offers/:offerId/variants/:variantId')
   deleteOfferVariant(

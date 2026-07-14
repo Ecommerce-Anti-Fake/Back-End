@@ -1,6 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { OffersRepository } from '../../infrastructure/persistence/offers.repository';
-import { toOfferVariantResponse } from './offers.mapper';
 
 @Injectable()
 export class DeleteOfferVariantUseCase {
@@ -18,6 +17,6 @@ export class DeleteOfferVariantUseCase {
     if (!variant) {
       throw new NotFoundException('Variant not found');
     }
-    return toOfferVariantResponse(variant);
+    return { success: true as const, message: 'Xoa variant thanh cong.' };
   }
 }

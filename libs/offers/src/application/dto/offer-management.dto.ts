@@ -276,11 +276,15 @@ export class UpdateOfferVariantDto {
   @Min(0)
   availableQuantity?: number;
 
-  @ApiPropertyOptional({ example: 'media-id', nullable: true })
+  @ApiPropertyOptional({ example: 'data:image/png;base64,iVBORw0KGgo...', nullable: true })
   @IsOptional()
   @IsString()
   image?: string | null;
+}
 
+export class OfferMutationSuccessResponseDto {
+  @ApiProperty({ example: true }) success!: true;
+  @ApiProperty({ example: 'Cap nhat variant thanh cong.' }) message!: string;
 }
 
 export class OfferResponseDto {

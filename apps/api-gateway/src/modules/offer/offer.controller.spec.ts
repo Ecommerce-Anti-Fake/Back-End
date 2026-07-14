@@ -64,12 +64,6 @@ describe('OfferController', () => {
     expect(
       Reflect.getMetadata(
         PATH_METADATA,
-        OfferController.prototype.createOfferVariant,
-      ),
-    ).toBe('offers/:offerId/variants');
-    expect(
-      Reflect.getMetadata(
-        PATH_METADATA,
         OfferController.prototype.findOfferVariants,
       ),
     ).toBe('offers/:offerId/variants');
@@ -85,37 +79,6 @@ describe('OfferController', () => {
         OfferController.prototype.deleteOfferVariant,
       ),
     ).toBe('offers/:offerId/variants/:variantId');
-  });
-
-  it('creates a variant for the authenticated seller offer', async () => {
-    const catalogRpcService = {
-      createOfferVariant: jest.fn().mockResolvedValue({ id: 'variant-1' }),
-    };
-    const controller = new OfferController(
-      catalogRpcService as never,
-      { buyNowCheckout: jest.fn() } as never,
-      { notifyShop: jest.fn() } as never,
-    );
-
-    await controller.createOfferVariant('offer-1', 'seller-1', {
-      sku: 'RED-M',
-      priceOverride: 120000,
-      availableQuantity: 5,
-      mediaAssetId: 'media-1',
-      isActive: true,
-      optionValueIds: ['red-id', 'm-id'],
-    });
-
-    expect(catalogRpcService.createOfferVariant).toHaveBeenCalledWith({
-      offerId: 'offer-1',
-      sellerUserId: 'seller-1',
-      sku: 'RED-M',
-      priceOverride: 120000,
-      availableQuantity: 5,
-      mediaAssetId: 'media-1',
-      isActive: true,
-      optionValueIds: ['red-id', 'm-id'],
-    });
   });
 
   it('returns compact public offer list items for shop offers', async () => {

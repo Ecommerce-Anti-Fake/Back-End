@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { OffersRepository } from '../../infrastructure/persistence/offers.repository';
 import { MediaService } from '@media';
-import { toOfferVariantResponse } from './offers.mapper';
 
 const IMAGE_DATA_URL = /^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=]+)$/;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -75,6 +74,6 @@ export class UpdateOfferVariantUseCase {
     if (!variant) {
       throw new NotFoundException('Variant not found');
     }
-    return toOfferVariantResponse(variant);
+    return { success: true as const, message: 'Cap nhat variant thanh cong.' };
   }
 }

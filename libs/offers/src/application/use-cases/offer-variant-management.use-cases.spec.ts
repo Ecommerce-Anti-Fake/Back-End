@@ -83,12 +83,6 @@ describe('offer variant management use cases', () => {
       sellerUserId: 'seller-1',
       data: { isActive: false, price: 0, availableQuantity: 0 },
     });
-    expect(result).toEqual(
-      expect.objectContaining({
-        isActive: false,
-        priceOverride: 0,
-        availableQuantity: 0,
-      }),
-    );
+    expect(result).toEqual({ success: true, message: 'Xoa variant thanh cong.' });
   });
 });
