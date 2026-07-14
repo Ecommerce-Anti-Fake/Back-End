@@ -62,4 +62,14 @@ describe('RequestWalletWithdrawalUseCase', () => {
     })).rejects.toThrow('Insufficient available balance');
     expect(walletRepository.executeTransactionInTransaction).not.toHaveBeenCalled();
   });
+
+  it('does not update withdrawal state when ledger transaction fails', async () => {
+    walletRepository.executeTransactionInTransaction.mockRejectedValueOnce(new Error('ledger failure'));
+    const useCase = new RequestWalletWithdrawalUseCase(prisma as never, walletService as never, walletRepository as never);
+    await expect(useCase.execute({
+      shopId: 'shop-1', requesterUserId: 'owner-1', requesterRole: 'user', amount: '40',
+      bankName: 'ACB', accountNumber: '123456', accountHolder: 'SHOP OWNER',
+    })).rejects.toThrow('ledger failure');
+    expect(tx.walletWithdrawal.create).toHaveBeenCalled();
+  });
 });

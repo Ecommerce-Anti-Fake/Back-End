@@ -57,4 +57,17 @@ describe('Process wallet withdrawal', () => {
     await expect(useCase.execute({ id: 'withdrawal-1' })).rejects.toThrow('Withdrawal is not pending');
     expect(walletRepository.executeTransactionInTransaction).not.toHaveBeenCalled();
   });
+
+  it('allows only one concurrent approval to commit when the second wallet update conflicts', async () => {
+    walletRepository.executeTransactionInTransaction
+      .mockResolvedValueOnce({ id: 'tx-1' })
+      .mockRejectedValueOnce(new Error('WALLET_CONCURRENT_UPDATE'));
+    const useCase = new ApproveWalletWithdrawalUseCase(prisma as never, walletRepository as never);
+    const results = await Promise.allSettled([
+      useCase.execute({ id: 'withdrawal-1' }),
+      useCase.execute({ id: 'withdrawal-1' }),
+    ]);
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+  });
 });

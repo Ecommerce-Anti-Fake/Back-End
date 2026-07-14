@@ -57,6 +57,12 @@ describe('ReleaseEscrowUseCase', () => {
       where: { id: 'escrow-1' },
       data: expect.objectContaining({ escrowStatus: 'RELEASED', releaseAt: expect.any(Date) }),
     });
+    const entries = walletRepository.executeTransactionInTransaction.mock.calls[0][1].entries;
+    const debit = entries.filter((entry: { direction: string }) => entry.direction === 'DEBIT')
+      .reduce((total: Prisma.Decimal, entry: { amount: Prisma.Decimal }) => total.plus(entry.amount), new Prisma.Decimal(0));
+    const credit = entries.filter((entry: { direction: string }) => entry.direction === 'CREDIT')
+      .reduce((total: Prisma.Decimal, entry: { amount: Prisma.Decimal }) => total.plus(entry.amount), new Prisma.Decimal(0));
+    expect(debit.equals(credit)).toBe(true);
   });
 
   it('rejects unpaid orders and non-held escrow', async () => {
@@ -66,5 +72,25 @@ describe('ReleaseEscrowUseCase', () => {
     tx.order.findUnique.mockResolvedValueOnce({ orderStatus: 'paid', escrow: { escrowStatus: 'RELEASED' } });
     await expect(useCase.execute({ orderId: 'order-1', actorUserId: 'seller-1' })).rejects.toThrow('Escrow is not held');
     expect(walletRepository.executeTransactionInTransaction).not.toHaveBeenCalled();
+  });
+
+  it('does not release the same escrow twice', async () => {
+    const useCase = new ReleaseEscrowUseCase(prisma as never, walletRepository as never);
+    await useCase.execute({ orderId: 'order-1', actorUserId: 'seller-1' });
+    tx.order.findUnique.mockResolvedValueOnce({
+      id: 'order-1',
+      orderStatus: 'paid',
+      escrow: { id: 'escrow-1', escrowStatus: 'RELEASED' },
+      shop: { id: 'shop-1' },
+    });
+
+    await expect(useCase.execute({ orderId: 'order-1', actorUserId: 'seller-1' })).rejects.toThrow('Escrow is not held');
+    expect(walletRepository.executeTransactionInTransaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('rolls back escrow update when wallet settlement fails', async () => {
+    walletRepository.executeTransactionInTransaction.mockRejectedValueOnce(new Error('wallet failure'));
+    await expect(useCase.execute({ orderId: 'order-1', actorUserId: 'seller-1' })).rejects.toThrow('wallet failure');
+    expect(tx.escrow.update).not.toHaveBeenCalled();
   });
 });

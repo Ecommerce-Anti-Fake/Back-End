@@ -42,6 +42,8 @@ describe('ReconcileShopWalletUseCase', () => {
       }),
     );
     expect(walletRepository.findShopWalletInTransaction).toHaveBeenCalledWith(tx, 'shop-1', 'VND');
+    const [debit, credit] = walletRepository.executeTransactionInTransaction.mock.calls[0][1].entries;
+    expect(new Prisma.Decimal('100').minus(debit.amount).plus(credit.amount).equals(new Prisma.Decimal('100'))).toBe(true);
   });
 
   it('supports partial reconciliation and rejects more than pending', async () => {
