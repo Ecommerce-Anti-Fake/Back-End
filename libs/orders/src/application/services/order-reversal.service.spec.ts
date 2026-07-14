@@ -8,7 +8,7 @@ import { WalletRepository } from '@wallet';
 describe('OrderReversalService', () => {
   let service: OrderReversalService;
 
-  const tx = { id: 'tx' };
+  const tx = { id: 'tx', walletTransaction: { findUnique: jest.fn().mockResolvedValue(null) }, dispute: { findFirst: jest.fn(), create: jest.fn() } };
   const ordersRepositoryMock = {
     withTransaction: jest.fn(),
     withSerializableTransaction: jest.fn(),
@@ -28,6 +28,7 @@ describe('OrderReversalService', () => {
   const walletRepositoryMock = {
     findOrCreateUserWalletInTransaction: jest.fn(),
     findOrCreatePlatformWalletInTransaction: jest.fn(),
+    findOrCreateShopWalletInTransaction: jest.fn(),
     executeTransactionInTransaction: jest.fn(),
   };
 
@@ -37,6 +38,7 @@ describe('OrderReversalService', () => {
     ordersRepositoryMock.withSerializableTransaction.mockImplementation((callback) => callback(tx));
     walletRepositoryMock.findOrCreateUserWalletInTransaction.mockResolvedValue({ id: 'user-wallet' });
     walletRepositoryMock.findOrCreatePlatformWalletInTransaction.mockResolvedValue({ id: 'escrow-wallet' });
+    walletRepositoryMock.findOrCreateShopWalletInTransaction.mockResolvedValue({ id: 'shop-wallet', availableBalance: 0, pendingBalance: 0 });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

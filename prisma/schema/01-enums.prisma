@@ -167,6 +167,9 @@ enum WalletTransactionType {
   ADJUSTMENT
   SETTLEMENT
   WITHDRAWAL_REQUEST
+  DISPUTE_HOLD
+  DISPUTE_RELEASE
+  DISPUTE_REFUND
 }
 
 enum WithdrawalStatus {

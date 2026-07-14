@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { OpenOrderDisputeUseCase } from './open-order-dispute.use-case';
 import { RecalculateRiskTargetsUseCase } from './recalculate-risk-targets.use-case';
+import { OrderReversalService } from '../services';
 
 describe('OpenOrderDisputeUseCase', () => {
   let useCase: OpenOrderDisputeUseCase;
@@ -17,6 +18,7 @@ describe('OpenOrderDisputeUseCase', () => {
   const recalculateRiskTargetsUseCaseMock = {
     executeForReport: jest.fn(),
   };
+  const orderReversalServiceMock = { openDispute: jest.fn() };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -26,6 +28,7 @@ describe('OpenOrderDisputeUseCase', () => {
         OpenOrderDisputeUseCase,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
         { provide: RecalculateRiskTargetsUseCase, useValue: recalculateRiskTargetsUseCaseMock },
+        { provide: OrderReversalService, useValue: orderReversalServiceMock },
       ],
     }).compile();
 
@@ -35,7 +38,7 @@ describe('OpenOrderDisputeUseCase', () => {
   it('should allow buyer to open dispute on paid order', async () => {
     ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord());
     ordersRepositoryMock.findOpenDisputeByOrder.mockResolvedValueOnce(null);
-    ordersRepositoryMock.createDispute.mockResolvedValueOnce({
+    orderReversalServiceMock.openDispute.mockResolvedValueOnce({
       id: 'dispute-1',
       orderId: 'order-1',
       openedByUserId: 'buyer-user-1',
@@ -49,26 +52,11 @@ describe('OpenOrderDisputeUseCase', () => {
       reason: 'Wrong item delivered',
     });
 
-    expect(ordersRepositoryMock.createDispute).toHaveBeenCalledWith({
+    expect(orderReversalServiceMock.openDispute).toHaveBeenCalledWith({
       orderId: 'order-1',
       openedByUserId: 'buyer-user-1',
       reason: 'Wrong item delivered',
     });
-    expect(ordersRepositoryMock.updateEscrowStatusForOrder).toHaveBeenCalledWith({
-      orderId: 'order-1',
-      actorUserId: 'buyer-user-1',
-      escrowStatus: 'FROZEN',
-      note: 'Escrow frozen because a dispute was opened',
-    });
-    expect(ordersRepositoryMock.createAuditLog).toHaveBeenCalledWith(
-      expect.objectContaining({
-        targetType: 'DISPUTE',
-        targetId: 'dispute-1',
-        actorUserId: 'buyer-user-1',
-        action: 'DISPUTE_OPENED',
-        toStatus: 'OPEN',
-      }),
-    );
     expect(recalculateRiskTargetsUseCaseMock.executeForReport).toHaveBeenCalledWith({
       targetType: 'ORDER',
       targetId: 'order-1',
