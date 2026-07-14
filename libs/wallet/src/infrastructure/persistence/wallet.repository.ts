@@ -98,7 +98,7 @@ export class WalletRepository extends WalletRepositoryPort {
   }
 
   async executeTransaction(input: WalletTransactionInput) {
-    return this.prisma
+    const result = await this.prisma
       .$transaction(
         (tx) => this.executeTransactionInTransaction(tx, input),
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
@@ -112,6 +112,28 @@ export class WalletRepository extends WalletRepositoryPort {
         }
         throw error;
       });
+    void this.notifyWalletTransaction(result).catch(() => undefined);
+    return result;
+  }
+
+  private async notifyWalletTransaction(transaction: Prisma.WalletTransactionGetPayload<{ include: { ledgerEntries: true } }>) {
+    const recipients = await this.prisma.wallet.findMany({ where: { id: { in: transaction.ledgerEntries.map((entry) => entry.walletId) } }, select: { userId: true, shop: { select: { ownerUserId: true } } } });
+    const userIds = new Set(recipients.flatMap((wallet) => [wallet.userId, wallet.shop?.ownerUserId].filter((id): id is string => Boolean(id))));
+    if (!userIds.size) return;
+    const labels: Record<string, [string, string]> = {
+      PAYMENT: ['Thanh toán bằng ví', 'Bạn đã thanh toán đơn hàng bằng ví.'],
+      REFUND: ['Hoàn tiền', `Bạn đã nhận được ${transaction.amount.toFixed(2)} đồng tiền hoàn trả.`],
+      AFFILIATE_COMMISSION: ['Nhận hoa hồng affiliate', `Bạn đã nhận được ${transaction.amount.toFixed(2)} đồng tiền hoa hồng affiliate.`],
+      DISPUTE_HOLD: ['Tiền bị khóa', 'Một phần tiền trong ví shop đã bị khóa do tranh chấp.'],
+      DISPUTE_RELEASE: ['Tiền được mở khóa', 'Tiền trong ví shop đã được mở khóa sau tranh chấp.'],
+      DISPUTE_REFUND: ['Hoàn tiền tranh chấp', `Bạn đã nhận được ${transaction.amount.toFixed(2)} đồng tiền hoàn trả do tranh chấp.`],
+      SETTLEMENT: ['Đối soát thành công', `Shop đã nhận được ${transaction.amount.toFixed(2)} đồng từ đối soát.`],
+      WITHDRAWAL_REQUEST: ['Đã tạo yêu cầu rút tiền', 'Yêu cầu rút tiền của bạn đã được tạo.'],
+      WITHDRAWAL: ['Cập nhật rút tiền', 'Yêu cầu rút tiền của bạn đã được xử lý.'],
+    };
+    const [title, body] = labels[transaction.transactionType] ?? [];
+    if (!title) return;
+    await Promise.all([...userIds].map((userId) => this.prisma.notification.upsert({ where: { dedupeKey: `WALLET:${transaction.id}:${userId}` }, update: {}, create: { userId, notificationType: `WALLET_${transaction.transactionType}`, title, body, targetType: 'WALLET_TRANSACTION', targetId: transaction.referenceId, dedupeKey: `WALLET:${transaction.id}:${userId}` } })));
   }
 
   async executeTransactionInTransaction(
