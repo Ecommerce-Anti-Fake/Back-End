@@ -87,6 +87,7 @@ export const WALLET_MESSAGE_PATTERNS = {
   approveWalletWithdrawal: 'wallet.approve-withdrawal',
   rejectWalletWithdrawal: 'wallet.reject-withdrawal',
   adjustWalletBalance: 'wallet.adjust-wallet-balance',
+  getWalletReconciliation: 'wallet.get-wallet-reconciliation',
 } as const;
 
 export const PRODUCTS_MESSAGE_PATTERNS = {

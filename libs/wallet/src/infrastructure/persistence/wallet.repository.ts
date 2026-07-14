@@ -277,6 +277,31 @@ export class WalletRepository extends WalletRepositoryPort {
     return this.findOrCreateWallet({ ownerType: WalletOwnerType.PLATFORM, platformCode, currency }, tx);
   }
 
+  async getReconciliation(input: { fromDate?: string; toDate?: string; shopId?: string; transactionType?: string; status?: string; page?: number; limit?: number }) {
+    const page = Math.max(1, input.page ?? 1), limit = Math.min(100, Math.max(1, input.limit ?? 20));
+    const where: Prisma.WalletTransactionWhereInput = {
+      ...(input.transactionType ? { transactionType: input.transactionType as any } : {}),
+      ...(input.status ? { status: input.status as any } : {}),
+      ...(input.fromDate || input.toDate ? { createdAt: { ...(input.fromDate ? { gte: new Date(input.fromDate) } : {}), ...(input.toDate ? { lte: new Date(input.toDate) } : {}) } } : {}),
+      ...(input.shopId ? { ledgerEntries: { some: { wallet: { shopId: input.shopId } } } } : {}),
+    };
+    const ledgerWhere = { transaction: where };
+    const [items, total, credits, debits, payment, escrowHeld, released, platformFee, refund, withdrawal] = await this.prisma.$transaction([
+      this.prisma.walletTransaction.findMany({ where, select: { transactionType: true, status: true, amount: true, currency: true, referenceType: true, referenceId: true, createdAt: true }, orderBy: [{ createdAt: 'desc' }, { transactionCode: 'desc' }], skip: (page - 1) * limit, take: limit }),
+      this.prisma.walletTransaction.count({ where }),
+      this.prisma.walletLedgerEntry.aggregate({ where: ledgerWhere, _sum: { amount: true } }),
+      this.prisma.walletLedgerEntry.aggregate({ where: { ...ledgerWhere, direction: 'DEBIT' }, _sum: { amount: true } }),
+      this.prisma.walletTransaction.aggregate({ where: { ...where, transactionType: 'PAYMENT' }, _sum: { amount: true } }),
+      this.prisma.walletTransaction.aggregate({ where: { ...where, transactionType: 'ESCROW_HOLD' }, _sum: { amount: true } }),
+      this.prisma.walletTransaction.aggregate({ where: { ...where, transactionType: 'ESCROW_RELEASE' }, _sum: { amount: true } }),
+      this.prisma.walletTransaction.aggregate({ where: { ...where, transactionType: 'PLATFORM_FEE' }, _sum: { amount: true } }),
+      this.prisma.walletTransaction.aggregate({ where: { ...where, transactionType: { in: ['REFUND', 'DISPUTE_REFUND'] as any } }, _sum: { amount: true } }),
+      this.prisma.walletTransaction.aggregate({ where: { ...where, transactionType: { in: ['WITHDRAWAL', 'WITHDRAWAL_REQUEST'] as any } }, _sum: { amount: true } }),
+    ]);
+    const sum = (value: Prisma.Decimal | null | undefined) => (value ?? new Prisma.Decimal(0)).toFixed(2);
+    return { summary: { totalPayment: sum(payment._sum.amount), totalEscrowHeld: sum(escrowHeld._sum.amount), totalReleasedToShops: sum(released._sum.amount), totalPlatformFee: sum(platformFee._sum.amount), totalRefund: sum(refund._sum.amount), totalWithdrawal: sum(withdrawal._sum.amount), difference: sum((credits._sum.amount ?? new Prisma.Decimal(0)).minus(debits._sum.amount ?? new Prisma.Decimal(0))) }, items: items.map((item) => ({ transactionType: item.transactionType, status: item.status, amount: item.amount.toFixed(2), currency: item.currency, referenceType: item.referenceType, referenceId: item.referenceId, createdAt: item.createdAt })), pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  }
+
   findOrCreateShopWalletInTransaction(tx: WalletClient, shopId: string, currency = 'VND') {
     return this.findOrCreateWallet({ ownerType: WalletOwnerType.SHOP, shopId, currency }, tx);
   }

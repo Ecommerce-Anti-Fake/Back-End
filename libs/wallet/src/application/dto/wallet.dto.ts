@@ -94,3 +94,11 @@ export class AdjustWalletBalanceDto {
   @ApiProperty({ example: '100000' }) @IsDecimal({ decimal_digits: '0,2' }) amount!: string;
   @ApiProperty({ example: 'Điều chỉnh sau đối soát' }) @IsString() @IsNotEmpty() @MaxLength(500) reason!: string;
 }
+
+export class WalletReconciliationQueryDto extends WalletTransactionsQueryDto {
+  @ApiPropertyOptional() @IsOptional() @IsString() fromDate?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() toDate?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() shopId?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() transactionType?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() status?: string;
+}
