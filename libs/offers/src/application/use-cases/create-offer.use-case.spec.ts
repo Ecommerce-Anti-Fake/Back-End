@@ -661,38 +661,15 @@ describe('CreateOfferUseCase', () => {
     ).rejects.toThrow('Option value texts must be unique within a group');
   });
 
-  it('rejects option media not owned by the seller', async () => {
-    mockActiveApprovedShop();
-    productRepositoryMock.findOwnedMediaAssets.mockResolvedValueOnce([]);
-
-    await expect(
-      useCase.execute({
-        sellerUserId: 'user-1',
-        shopId: 'shop-1',
-        categoryId: 'category-1',
-        brandId: 'brand-1',
-        title: 'Offer',
-        description: 'Desc',
-        price: 100,
-        availableQuantity: 1,
-        productImages: productImages(),
-        optionGroups: [
-          {
-            displayName: 'Mau sac',
-            values: [{ text: 'Do', mediaAssetId: 'media-1' }],
-          },
-        ],
-      }),
-    ).rejects.toThrow(
-      'Option media asset is invalid or does not belong to current user',
-    );
-  });
-
   it('creates the offer and sales options through the transactional repository path', async () => {
     mockActiveApprovedShop();
-    productRepositoryMock.findOwnedMediaAssets.mockResolvedValueOnce([
-      { id: 'media-1' },
-    ]);
+    mediaServiceMock.uploadCloudinaryBuffer.mockResolvedValueOnce({
+      publicId: 'option-red',
+      secureUrl: 'https://cdn.example.com/red.png',
+    });
+    mediaServiceMock.createCloudinaryAsset.mockResolvedValueOnce({
+      id: 'option-media-1',
+    });
     productRepositoryMock.createOfferWithSalesOptions.mockResolvedValueOnce({
       id: 'offer-1',
       title: 'Offer',
@@ -732,7 +709,7 @@ describe('CreateOfferUseCase', () => {
       optionGroups: [
         {
           displayName: 'Mau sac',
-          values: [{ text: 'Do', mediaAssetId: 'media-1' }],
+          values: [{ text: 'Do', image: 'data:image/png;base64,RG8=' }],
         },
       ],
     });
@@ -754,7 +731,7 @@ describe('CreateOfferUseCase', () => {
       optionGroups: [
         {
           displayName: 'Mau sac',
-          values: [{ text: 'Do', mediaAssetId: 'media-1', sortOrder: 0 }],
+          values: [{ text: 'Do', mediaAssetId: 'option-media-1', sortOrder: 0 }],
         },
       ],
     });
@@ -826,30 +803,4 @@ describe('CreateOfferUseCase', () => {
     );
   });
 
-  it('rejects an option value with both image sources', async () => {
-    await expect(
-      useCase.execute({
-        sellerUserId: 'user-1',
-        categoryId: 'category-1',
-        brandId: 'brand-1',
-        title: 'Offer',
-        description: 'Desc',
-        productImages: productImages(),
-        optionGroups: [
-          {
-            displayName: 'Mau sac',
-            values: [
-              {
-                text: 'Den',
-                mediaAssetId: 'media-1',
-                image: 'data:image/png;base64,YmxhY2s=',
-              },
-            ],
-          },
-        ],
-      }),
-    ).rejects.toThrow(
-      'Option value cannot include both mediaAssetId and image',
-    );
-  });
 });

@@ -44,11 +44,6 @@ export class CreateOfferOptionValueDto {
   @MaxLength(255)
   text!: string;
 
-  @ApiPropertyOptional({ example: 'media-asset-id', nullable: true })
-  @IsOptional()
-  @IsString()
-  mediaAssetId?: string | null;
-
   @ApiPropertyOptional({
     example: 'data:image/png;base64,iVBORw0KGgo...',
     nullable: true,
@@ -60,12 +55,6 @@ export class CreateOfferOptionValueDto {
   })
   image?: string | null;
 
-  @ApiPropertyOptional({ example: 0, default: 0 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(0)
-  sortOrder?: number;
 }
 
 export class CreateOfferOptionGroupDto {

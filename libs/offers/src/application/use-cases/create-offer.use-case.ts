@@ -46,9 +46,7 @@ export class CreateOfferUseCase {
       displayName: string;
       values: Array<{
         text: string;
-        mediaAssetId?: string | null;
         image?: string | null;
-        sortOrder?: number;
       }>;
     }>;
   }) {
@@ -148,27 +146,6 @@ export class CreateOfferUseCase {
       );
     }
 
-    const mediaAssetIds = [
-      ...new Set(
-        optionGroups.flatMap((group) =>
-          group.values.flatMap((value) =>
-            value.mediaAssetId ? [value.mediaAssetId] : [],
-          ),
-        ),
-      ),
-    ];
-    if (mediaAssetIds.length > 0) {
-      const ownedAssets = await this.productRepository.findOwnedMediaAssets(
-        mediaAssetIds,
-        input.sellerUserId,
-      );
-      if (ownedAssets.length !== mediaAssetIds.length) {
-        throw new BadRequestException(
-          'Option media asset is invalid or does not belong to current user',
-        );
-      }
-    }
-
     const offerData = {
       sellerUserId: input.sellerUserId,
       shopId: ownedShop.id,
@@ -225,9 +202,7 @@ export class CreateOfferUseCase {
       displayName: string;
       values: Array<{
         text: string;
-        mediaAssetId: string | null;
-        image: string | null;
-        sortOrder: number;
+        image?: string | null;
       }>;
     }>,
     ownerUserId: string,
@@ -240,8 +215,8 @@ export class CreateOfferUseCase {
             if (!value.image) {
               return {
                 text: value.text,
-                mediaAssetId: value.mediaAssetId,
-                sortOrder: value.sortOrder,
+                mediaAssetId: null,
+                sortOrder: index,
               };
             }
             const dataUrl = PRODUCT_IMAGE_DATA_URL.exec(value.image);
@@ -279,7 +254,7 @@ export class CreateOfferUseCase {
             return {
               text: value.text,
               mediaAssetId: asset.id,
-              sortOrder: value.sortOrder,
+              sortOrder: index,
             };
           }),
         ),
@@ -429,9 +404,7 @@ export class CreateOfferUseCase {
       displayName: string;
       values: Array<{
         text: string;
-        mediaAssetId?: string | null;
         image?: string | null;
-        sortOrder?: number;
       }>;
     }>,
   ) {
@@ -446,15 +419,10 @@ export class CreateOfferUseCase {
         );
       }
 
-      const values = group.values.map((value, valueIndex) => {
+      const values = group.values.map((value) => {
         const text = value.text.trim();
         if (!text) {
           throw new BadRequestException('Option value text is required');
-        }
-        if (value.mediaAssetId && value.image) {
-          throw new BadRequestException(
-            'Option value cannot include both mediaAssetId and image',
-          );
         }
         const image = value.image?.trim() || null;
         if (image) {
@@ -476,9 +444,7 @@ export class CreateOfferUseCase {
         }
         return {
           text,
-          mediaAssetId: value.mediaAssetId?.trim() || null,
           image,
-          sortOrder: value.sortOrder ?? valueIndex,
         };
       });
       if (new Set(values.map((value) => value.text)).size !== values.length) {
