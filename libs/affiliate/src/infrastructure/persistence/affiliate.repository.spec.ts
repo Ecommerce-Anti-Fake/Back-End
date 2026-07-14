@@ -8,6 +8,10 @@ describe('AffiliateRepository', () => {
     };
     const tx = {
       affiliatePayout: {
+        findUnique: jest.fn().mockResolvedValue({
+          account: { userId: 'affiliate-1' },
+          commissionEntries: [],
+        }),
         update: jest.fn().mockResolvedValue(payout),
       },
       affiliateCommissionLedger: {

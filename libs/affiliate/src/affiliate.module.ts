@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '@database/prisma/prisma.module';
+import { WalletModule } from '@wallet/wallet.module';
 import {
   ApproveAffiliateConversionUseCase,
   CreateAffiliateCodeUseCase,
@@ -22,7 +23,7 @@ import { AffiliateRepository } from './infrastructure/persistence/affiliate.repo
 import { AffiliateRpcController } from './presentation/rpc/affiliate.rpc-controller';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, WalletModule],
   controllers: [AffiliateRpcController],
   providers: [
     AffiliateRepository,

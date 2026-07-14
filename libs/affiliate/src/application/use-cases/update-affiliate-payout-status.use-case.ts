@@ -27,6 +27,9 @@ export class UpdateAffiliatePayoutStatusUseCase {
       payoutStatus: input.payoutStatus,
     });
 
+    if (input.payoutStatus === 'PAID') {
+      return { success: true, message: 'Thanh toán hoa hồng affiliate thành công.' };
+    }
     return toAffiliatePayoutResponse(updated);
   }
 }
