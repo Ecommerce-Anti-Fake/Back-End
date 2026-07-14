@@ -6,7 +6,6 @@ import {
   AdminShopRegistrationDetailResponseDto,
   PendingVerificationShopQueryDto,
   PaginatedPendingVerificationShopResponseDto,
-  ReviewBrandAuthorizationDto,
   ReviewShopDocumentDto,
 } from '@shops';
 import { ShopsRpcService } from '../shop/shops-rpc.service';
@@ -87,22 +86,4 @@ export class AdminShopVerificationController {
     });
   }
 
-  @ApiOperation({ summary: 'Admin duyet ho so uy quyen brand cua shop' })
-  @ApiBearerAuth('access-token')
-  @ApiForbiddenResponse({ description: 'Chi admin moi co quyen truy cap.' })
-  @Roles('admin')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
-  @Post('brand-authorizations/:authorizationId/review')
-  reviewBrandAuthorization(
-    @Param('authorizationId') authorizationId: string,
-    @CurrentUserId() reviewerUserId: string,
-    @Body() dto: ReviewBrandAuthorizationDto,
-  ) {
-    return this.shopsRpcService.reviewBrandAuthorization({
-      authorizationId,
-      reviewerUserId,
-      verificationStatus: dto.verificationStatus,
-      reviewNote: dto.reviewNote ?? null,
-    });
-  }
 }

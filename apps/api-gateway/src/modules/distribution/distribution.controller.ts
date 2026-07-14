@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Post, Query, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -13,10 +14,8 @@ import {
   AddBatchDocumentsBatchDto,
   AdminInventoryAuditQueryDto,
   AdminInventoryAuditResponseDto,
-  BatchDocumentUploadSignatureResponseDto,
   BatchDocumentResponseDto,
   CreateSupplyBatchDto,
-  GetBatchDocumentUploadSignaturesDto,
   ListSupplyBatchesQueryDto,
   CreateDistributionNetworkDto,
   CreateDistributionNodeDto,
@@ -490,29 +489,6 @@ export class DistributionController {
     });
   }
 
-  @ApiOperation({ summary: 'Lay chu ky upload tai lieu cho supply batch' })
-  @ApiBearerAuth('access-token')
-  @ApiParam({ name: 'batchId', description: 'ID supply batch.' })
-  @ApiCreatedResponse({
-    description: 'Danh sach chu ky upload batch documents.',
-    type: BatchDocumentUploadSignatureResponseDto,
-    isArray: true,
-  })
-  @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @RateLimit({ profile: 'uploadSignature' })
-  @Post('batches/:batchId/documents/upload-signatures')
-  getBatchDocumentUploadSignatures(
-    @CurrentUserId() requesterUserId: string,
-    @Param('batchId') batchId: string,
-    @Body() dto: GetBatchDocumentUploadSignaturesDto,
-  ) {
-    return this.distributionRpcService.getBatchDocumentUploadSignatures({
-      batchId,
-      requesterUserId,
-      items: dto.items,
-    });
-  }
-
   @ApiOperation({ summary: 'Luu metadata tai lieu da upload cho supply batch' })
   @ApiBearerAuth('access-token')
   @ApiParam({ name: 'batchId', description: 'ID supply batch.' })
@@ -522,16 +498,21 @@ export class DistributionController {
     isArray: true,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @UseInterceptors(FilesInterceptor('files', 20, { limits: { fileSize: 10 * 1024 * 1024 } }))
   @Post('batches/:batchId/documents')
   addBatchDocumentsBatch(
     @CurrentUserId() requesterUserId: string,
     @Param('batchId') batchId: string,
-    @Body() dto: AddBatchDocumentsBatchDto,
+    @Body('items') itemsJson: string,
+    @UploadedFiles() files: Array<{ buffer: Buffer; mimetype: string; originalname?: string; size: number }> = [],
   ) {
+    let items: Array<{ docType: string; issuerName?: string; documentNumber?: string }>;
+    try { items = JSON.parse(itemsJson ?? '[]'); } catch { throw new BadRequestException('items must be valid JSON'); }
+    if (items.length !== files.length) throw new BadRequestException('items and files must have the same length');
     return this.distributionRpcService.addBatchDocumentsBatch({
       batchId,
       requesterUserId,
-      items: dto.items,
+      items: items.map((item, index) => ({ ...item, file: files[index] })),
     });
   }
 

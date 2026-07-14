@@ -50,7 +50,7 @@ export class CloudinaryService {
     buffer: Buffer;
     folder: string;
     requesterUserId: string;
-    assetType: 'IMAGE' | 'VIDEO';
+    assetType: 'IMAGE' | 'VIDEO' | 'RAW';
     mimeType: string;
     sequence?: number;
   }) {

@@ -12,12 +12,14 @@ describe('AddBatchDocumentsBatchUseCase', () => {
   };
 
   const mediaServiceMock = {
-    isOwnedCloudinaryUrl: jest.fn(),
+    uploadCloudinaryBuffer: jest.fn().mockResolvedValue({ publicId: 'batches/batch-1/documents/invoice', secureUrl: 'https://res.cloudinary.com/demo/raw/upload/invoice.pdf' }),
     createCloudinaryAsset: jest.fn(),
   };
 
   beforeEach(async () => {
     jest.resetAllMocks();
+    mediaServiceMock.uploadCloudinaryBuffer.mockResolvedValue({ publicId: 'batches/batch-1/documents/invoice', secureUrl: 'https://res.cloudinary.com/demo/raw/upload/invoice.pdf' });
+    mediaServiceMock.createCloudinaryAsset.mockResolvedValue({ id: 'media-1' });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -38,7 +40,6 @@ describe('AddBatchDocumentsBatchUseCase', () => {
         shopStatus: 'verified',
       },
     });
-    mediaServiceMock.isOwnedCloudinaryUrl.mockReturnValue(true);
     mediaServiceMock.createCloudinaryAsset.mockResolvedValueOnce({
       id: 'media-1',
     });
@@ -64,9 +65,7 @@ describe('AddBatchDocumentsBatchUseCase', () => {
       items: [
         {
           docType: 'INVOICE',
-          mimeType: 'application/pdf',
-          fileUrl: 'https://res.cloudinary.com/demo/raw/upload/v1/batches/batch-1/documents/invoice.pdf',
-          publicId: 'batches/batch-1/documents/invoice',
+          file: { buffer: Buffer.from('invoice'), mimetype: 'application/pdf', size: 7 },
           issuerName: 'Cong ty ABC',
           documentNumber: 'INV-001',
         },

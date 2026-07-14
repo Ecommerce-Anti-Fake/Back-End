@@ -23,7 +23,7 @@ export class MediaService {
     buffer: Buffer;
     folder: string;
     requesterUserId: string;
-    assetType: 'IMAGE' | 'VIDEO';
+    assetType: 'IMAGE' | 'VIDEO' | 'RAW';
     mimeType: string;
     sequence?: number;
   }) {

@@ -43,7 +43,6 @@ import {
   PublicOfferDetailResponseDto,
   CreateOfferDto,
   CreateOfferResponseDto,
-  CreateOfferVariantDto,
   ListOfferVariantsQueryDto,
   OfferVariantResponseDto,
   UpdateOfferVariantDto,
@@ -211,24 +210,6 @@ export class OfferController {
       'Option values, media asset hoac du lieu variant khong hop le.',
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post('offers/:offerId/variants')
-  createOfferVariant(
-    @Param('offerId') offerId: string,
-    @CurrentUserId() sellerUserId: string,
-    @Body() dto: CreateOfferVariantDto,
-  ) {
-    return this.catalogRpcService.createOfferVariant({
-      offerId,
-      sellerUserId,
-      sku: dto.sku,
-      priceOverride: dto.priceOverride,
-      availableQuantity: dto.availableQuantity,
-      mediaAssetId: dto.mediaAssetId,
-      isActive: dto.isActive,
-      optionValueIds: dto.optionValueIds,
-    });
-  }
-
   @ApiOperation({ summary: 'Lay variants cua offer thuoc seller hien tai' })
   @ApiBearerAuth('access-token')
   @ApiOkResponse({ type: [OfferVariantResponseDto] })

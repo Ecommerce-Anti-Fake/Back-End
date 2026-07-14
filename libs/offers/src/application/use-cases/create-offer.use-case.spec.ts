@@ -30,6 +30,11 @@ describe('CreateOfferUseCase', () => {
 
   beforeEach(async () => {
     jest.resetAllMocks();
+    mediaServiceMock.uploadCloudinaryBuffer.mockResolvedValue({
+      publicId: 'product-image',
+      secureUrl: 'https://cdn.example.com/product.jpg',
+    });
+    mediaServiceMock.createCloudinaryAsset.mockResolvedValue({ id: 'asset-1' });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -60,7 +65,7 @@ describe('CreateOfferUseCase', () => {
   }
 
   function productImages() {
-    return ['https://cdn.example.com/product.jpg'];
+    return ['data:image/jpeg;base64,Ynl0ZXM='];
   }
 
   function mockOfferCreateResult(brandId: string) {
@@ -540,7 +545,7 @@ describe('CreateOfferUseCase', () => {
     );
     expect(productRepositoryMock.createOfferMedia).toHaveBeenCalledWith({
       offerId: 'offer-1',
-      mediaAssetId: null,
+      mediaAssetId: 'asset-1',
       mediaType: 'thumbnail',
       fileUrl: 'https://cdn.example.com/product.jpg',
       phash: null,
@@ -663,6 +668,10 @@ describe('CreateOfferUseCase', () => {
 
   it('creates the offer and sales options through the transactional repository path', async () => {
     mockActiveApprovedShop();
+    mediaServiceMock.uploadCloudinaryBuffer.mockResolvedValueOnce({ publicId: 'product', secureUrl: 'https://cdn.example.com/product.jpg' });
+    mediaServiceMock.createCloudinaryAsset.mockResolvedValueOnce({ id: 'product-asset' });
+    mediaServiceMock.uploadCloudinaryBuffer.mockResolvedValueOnce({ publicId: 'option-red', secureUrl: 'https://cdn.example.com/red.png' });
+    mediaServiceMock.createCloudinaryAsset.mockResolvedValueOnce({ id: 'option-media-1' });
     mediaServiceMock.uploadCloudinaryBuffer.mockResolvedValueOnce({
       publicId: 'option-red',
       secureUrl: 'https://cdn.example.com/red.png',
@@ -725,7 +734,7 @@ describe('CreateOfferUseCase', () => {
       productImages: [
         {
           fileUrl: 'https://cdn.example.com/product.jpg',
-          mediaAssetId: null,
+          mediaAssetId: 'product-asset',
         },
       ],
       optionGroups: [
@@ -741,6 +750,8 @@ describe('CreateOfferUseCase', () => {
 
   it('uploads an option value image and accepts zero offer price and stock', async () => {
     mockActiveApprovedShop();
+    mediaServiceMock.uploadCloudinaryBuffer.mockResolvedValueOnce({ publicId: 'product', secureUrl: 'https://cdn.example.com/product.jpg' });
+    mediaServiceMock.createCloudinaryAsset.mockResolvedValueOnce({ id: 'product-asset' });
     mediaServiceMock.uploadCloudinaryBuffer.mockResolvedValueOnce({
       publicId: 'option-black',
       secureUrl: 'https://cdn.example.com/black.png',

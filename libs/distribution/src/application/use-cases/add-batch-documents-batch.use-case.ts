@@ -15,9 +15,7 @@ export class AddBatchDocumentsBatchUseCase {
     requesterUserId: string;
     items: Array<{
       docType: string;
-      mimeType: string;
-      fileUrl: string;
-      publicId: string;
+      file: { buffer: Buffer | { data?: number[] }; mimetype: string; originalname?: string; size: number };
       issuerName?: string | null;
       documentNumber?: string | null;
     }>;
@@ -38,30 +36,30 @@ export class AddBatchDocumentsBatchUseCase {
     const results: Array<ReturnType<typeof toBatchDocumentResponse>> = [];
 
     for (const item of input.items) {
-      if (!this.mediaService.isOwnedCloudinaryUrl(item.fileUrl)) {
-        throw new BadRequestException('Batch document URL must belong to the configured Cloudinary cloud');
-      }
-
-      const publicId = item.publicId.trim();
-      if (!publicId.startsWith(`batches/${batch.id}/documents/`)) {
-        throw new BadRequestException('Batch document public ID does not belong to the batch documents folder');
-      }
+      if (!item.file?.buffer || !item.file.size) throw new BadRequestException('Batch document file is required');
+      const buffer = Buffer.isBuffer(item.file.buffer) ? item.file.buffer : Buffer.from(item.file.buffer.data ?? []);
+      if (!buffer.length || buffer.length > 10 * 1024 * 1024) throw new BadRequestException('Batch document must be non-empty and not exceed 10 MB');
+      const folder = `batches/${batch.id}/documents`;
+      const uploaded = await this.mediaService.uploadCloudinaryBuffer({
+        buffer, folder, requesterUserId: input.requesterUserId, assetType: 'RAW',
+        mimeType: item.file.mimetype, sequence: results.length + 1,
+      });
 
       const mediaAsset = await this.mediaService.createCloudinaryAsset({
         ownerUserId: input.requesterUserId,
         assetType: 'RAW',
         resourceType: 'BATCH_DOCUMENT',
-        publicId,
-        secureUrl: item.fileUrl,
-        mimeType: item.mimeType.trim().toLowerCase(),
-        folder: `batches/${batch.id}/documents`,
+        publicId: uploaded.publicId,
+        secureUrl: uploaded.secureUrl,
+        mimeType: item.file.mimetype.trim().toLowerCase(),
+        folder,
       });
 
       const document = await this.repository.createBatchDocument({
         batchId: batch.id,
         mediaAssetId: mediaAsset.id,
         docType: item.docType.trim(),
-        fileUrl: item.fileUrl,
+        fileUrl: uploaded.secureUrl,
         issuerName: item.issuerName?.trim() || null,
         documentNumber: item.documentNumber?.trim() || null,
       });

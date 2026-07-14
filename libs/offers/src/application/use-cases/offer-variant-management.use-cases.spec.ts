@@ -36,17 +36,20 @@ describe('offer variant management use cases', () => {
 
   it('updates seller-managed fields without option values', async () => {
     const repository = {
-      findOwnedMediaAssets: jest.fn().mockResolvedValue([{ id: 'media-1' }]),
       updateOwnedOfferVariant: jest.fn().mockResolvedValue(variant),
     };
-    const useCase = new UpdateOfferVariantUseCase(repository as never);
+    const mediaService = {
+      uploadCloudinaryBuffer: jest.fn().mockResolvedValue({ publicId: 'variant-1', secureUrl: 'https://cdn/variant.png' }),
+      createCloudinaryAsset: jest.fn().mockResolvedValue({ id: 'media-1' }),
+    };
+    const useCase = new UpdateOfferVariantUseCase(repository as never, mediaService as never);
     await useCase.execute({
       offerId: 'offer-1',
       variantId: 'variant-1',
       sellerUserId: 'seller-1',
       priceOverride: 0,
       availableQuantity: 10,
-      mediaAssetId: 'media-1',
+      image: 'data:image/png;base64,dmFyaWFudA==',
     });
     expect(repository.updateOwnedOfferVariant).toHaveBeenCalledWith(
       expect.objectContaining({

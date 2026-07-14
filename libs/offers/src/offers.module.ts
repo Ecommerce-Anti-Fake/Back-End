@@ -4,7 +4,6 @@ import { MediaModule } from '@media';
 import {
   AllocateOfferBatchesUseCase,
   CreateOfferUseCase,
-  CreateOfferVariantUseCase,
   GetBuyNowOfferPreviewUseCase,
   DeleteOfferVariantUseCase,
   GetOfferByIdUseCase,
@@ -25,7 +24,6 @@ import { OffersRpcController } from './presentation/rpc/offers.rpc-controller';
   providers: [
     OffersRepository,
     CreateOfferUseCase,
-    CreateOfferVariantUseCase,
     ListOfferVariantsUseCase,
     UpdateOfferVariantUseCase,
     DeleteOfferVariantUseCase,
@@ -41,7 +39,6 @@ import { OffersRpcController } from './presentation/rpc/offers.rpc-controller';
   exports: [
     OffersRepository,
     CreateOfferUseCase,
-    CreateOfferVariantUseCase,
     ListOfferVariantsUseCase,
     UpdateOfferVariantUseCase,
     DeleteOfferVariantUseCase,

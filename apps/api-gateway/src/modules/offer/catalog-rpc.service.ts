@@ -10,7 +10,6 @@ import {
   CreateBrandMessage,
   CreateCategoryMessage,
   CreateOfferMessage,
-  CreateOfferVariantMessage,
   BuyNowOfferPreviewMessage,
   DeleteOfferVariantMessage,
   FindOfferVariantsMessage,
@@ -90,10 +89,6 @@ export class CatalogRpcService {
 
   createOffer(payload: CreateOfferMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.createOffer, payload);
-  }
-
-  createOfferVariant(payload: CreateOfferVariantMessage) {
-    return this.send(PRODUCTS_MESSAGE_PATTERNS.createOfferVariant, payload);
   }
 
   findOfferVariants(payload: FindOfferVariantsMessage) {

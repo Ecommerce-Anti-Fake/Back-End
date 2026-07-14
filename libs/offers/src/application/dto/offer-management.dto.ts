@@ -166,7 +166,7 @@ export class CreateOfferVariantDto {
   @ApiPropertyOptional({ example: 'media-asset-id', nullable: true })
   @IsOptional()
   @IsString()
-  mediaAssetId?: string | null;
+  image?: string | null;
 
   @ApiPropertyOptional({ example: true, default: true })
   @IsOptional()
@@ -262,12 +262,6 @@ export class ListOfferVariantsQueryDto {
 }
 
 export class UpdateOfferVariantDto {
-  @ApiPropertyOptional({ example: 'AO-DEN-M', nullable: true })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  sku?: string | null;
-
   @ApiPropertyOptional({ example: 120000, nullable: true })
   @IsOptional()
   @Type(() => Number)
@@ -285,12 +279,8 @@ export class UpdateOfferVariantDto {
   @ApiPropertyOptional({ example: 'media-id', nullable: true })
   @IsOptional()
   @IsString()
-  mediaAssetId?: string | null;
+  image?: string | null;
 
-  @ApiPropertyOptional({ example: true })
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
 }
 
 export class OfferResponseDto {
@@ -794,6 +784,10 @@ export class CreateOfferDto {
   @ArrayMinSize(1)
   @ArrayMaxSize(10)
   @IsString({ each: true })
+  @Matches(/^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/, {
+    each: true,
+    message: 'productImages must contain image Data URLs only',
+  })
   productImages!: string[];
 
   @ApiPropertyOptional({ example: 150000, default: 0 })

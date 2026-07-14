@@ -264,10 +264,6 @@ export class CreateOfferUseCase {
 
   private async persistProductImages(imageUrls: string[], ownerUserId: string) {
     const images = imageUrls.map((fileUrl) => {
-      if (!fileUrl.startsWith('data:')) {
-        return { fileUrl, data: null };
-      }
-
       const dataUrl = PRODUCT_IMAGE_DATA_URL.exec(fileUrl);
       if (!dataUrl) {
         throw new BadRequestException('Product image Data URL is invalid');

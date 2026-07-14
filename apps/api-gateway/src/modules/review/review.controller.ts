@@ -15,14 +15,10 @@ import {
 } from '@nestjs/swagger';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import {
-  AddReviewMediaBatchDto,
   CreateOfferReviewDto,
-  GetReviewMediaUploadSignaturesDto,
   OfferReviewResponseDto,
   OfferReviewsResponseDto,
-  ReviewMediaResponseDto,
 } from '@reviews';
-import { OfferMediaUploadSignatureResponseDto } from '@offer-assets';
 import { RateLimit } from '../../observability';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 
@@ -86,46 +82,4 @@ export class ReviewController {
     });
   }
 
-  @ApiOperation({ summary: 'Lay chu ky upload anh cho danh gia san pham' })
-  @ApiBearerAuth('access-token')
-  @ApiCreatedResponse({
-    description: 'Danh sach chu ky upload anh danh gia.',
-    type: OfferMediaUploadSignatureResponseDto,
-    isArray: true,
-  })
-  @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @RateLimit({ profile: 'uploadSignature' })
-  @Post('reviews/:reviewId/media/upload-signatures')
-  getReviewMediaUploadSignatures(
-    @Param('reviewId') reviewId: string,
-    @CurrentUserId() requesterUserId: string,
-    @Body() dto: GetReviewMediaUploadSignaturesDto,
-  ) {
-    return this.catalogRpcService.getReviewMediaUploadSignatures({
-      reviewId,
-      requesterUserId,
-      items: dto.items,
-    });
-  }
-
-  @ApiOperation({ summary: 'Luu metadata anh da upload cho danh gia san pham' })
-  @ApiBearerAuth('access-token')
-  @ApiCreatedResponse({
-    description: 'Danh sach anh danh gia da luu.',
-    type: ReviewMediaResponseDto,
-    isArray: true,
-  })
-  @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post('reviews/:reviewId/media')
-  addReviewMediaBatch(
-    @Param('reviewId') reviewId: string,
-    @CurrentUserId() requesterUserId: string,
-    @Body() dto: AddReviewMediaBatchDto,
-  ) {
-    return this.catalogRpcService.addReviewMediaBatch({
-      reviewId,
-      requesterUserId,
-      items: dto.items,
-    });
-  }
 }

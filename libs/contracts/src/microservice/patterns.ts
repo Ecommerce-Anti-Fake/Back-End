@@ -848,9 +848,7 @@ export type CreateOfferMessage = {
     displayName: string;
     values: Array<{
       text: string;
-      mediaAssetId?: string | null;
       image?: string | null;
-      sortOrder?: number;
     }>;
   }>;
 };
@@ -861,7 +859,7 @@ export type CreateOfferVariantMessage = {
   sku?: string | null;
   priceOverride?: number | null;
   availableQuantity: number;
-  mediaAssetId?: string | null;
+  image?: string | null;
   isActive?: boolean;
   optionValueIds: string[];
 };
@@ -876,11 +874,9 @@ export type UpdateOfferVariantMessage = {
   offerId: string;
   variantId: string;
   sellerUserId: string;
-  sku?: string | null;
   priceOverride?: number | null;
   availableQuantity?: number;
-  mediaAssetId?: string | null;
-  isActive?: boolean;
+  image?: string | null;
 };
 
 export type DeleteOfferVariantMessage = {
@@ -1617,9 +1613,7 @@ export type AddBatchDocumentsBatchMessage = {
   requesterUserId: string;
   items: Array<{
     docType: string;
-    mimeType: string;
-    fileUrl: string;
-    publicId: string;
+    file: { buffer: Buffer | { data?: number[] }; mimetype: string; originalname?: string; size: number };
     issuerName?: string | null;
     documentNumber?: string | null;
   }>;
