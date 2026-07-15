@@ -23,7 +23,9 @@ export async function seedOffers(prisma: PrismaClient, ctx: SeedContext) {
   for (let i = 0; i < COUNTS.offers; i += 1) {
     const brand = pick(ctx.brands, i);
     const category = pick(ctx.categories, i);
-    const shop = i % 4 === 0 ? pick(ctx.distributorShops, i) : pick(ctx.manufacturerShops.length ? ctx.manufacturerShops : ctx.shops, i);
+    const distributorPool = ctx.distributorShops.length ? ctx.distributorShops : ctx.shops;
+    const manufacturerPool = ctx.manufacturerShops.length ? ctx.manufacturerShops : ctx.shops;
+    const shop = i % 4 === 0 ? pick(distributorPool, i) : pick(manufacturerPool, i);
     const seller = ctx.users.find((user) => user.id === shop.ownerUserId) ?? pick(ctx.users, i);
     const templateIndex = i % productTemplates.length;
     const template = productTemplates[templateIndex];
