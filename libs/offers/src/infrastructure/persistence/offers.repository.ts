@@ -487,6 +487,7 @@ export class OffersRepository {
       id: true,
       sku: true,
       price: true,
+      availableQuantity: true,
       isActive: true,
       values: {
         orderBy: { id: 'asc' as const },
