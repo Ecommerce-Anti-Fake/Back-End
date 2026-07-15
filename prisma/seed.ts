@@ -7,12 +7,6 @@ import { seedUsersAndKyc } from './seeds/02-users-kyc.seed';
 import { seedShops } from './seeds/03-shops.seed';
 import { seedOffers } from './seeds/04-offers.seed';
 import { seedBatchesQr } from './seeds/05-batches-qr.seed';
-import { seedDistribution } from './seeds/06-distribution.seed';
-import { seedOrders } from './seeds/07-orders.seed';
-import { seedReviewsDisputes } from './seeds/08-reviews-disputes.seed';
-import { seedAffiliate } from './seeds/09-affiliate.seed';
-import { seedSocialChatLive } from './seeds/10-social-chat-live.seed';
-import { seedNotificationsModeration } from './seeds/11-notifications-moderation.seed';
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -37,18 +31,8 @@ async function main() {
   await seedShops(prisma, ctx);
   await seedOffers(prisma, ctx);
 
-  console.log('Phase 2: batches, QR labels, provenance, distribution...');
+  console.log('Phase 2: batches, QR labels, provenance...');
   await seedBatchesQr(prisma, ctx);
-  await seedDistribution(prisma, ctx);
-
-  console.log('Phase 3: carts, orders, payments, escrow, reviews, disputes...');
-  await seedOrders(prisma, ctx);
-  await seedReviewsDisputes(prisma, ctx);
-
-  console.log('Phase 4: affiliate, social, chat, live, notifications, moderation...');
-  await seedAffiliate(prisma, ctx);
-  await seedSocialChatLive(prisma, ctx);
-  await seedNotificationsModeration(prisma, ctx);
 
   console.log('AntiFake UAT seed completed.');
   console.table({
@@ -60,13 +44,9 @@ async function main() {
     supplyBatches: COUNTS.supplyBatches,
     verificationLabels: COUNTS.verificationLabels,
     provenanceEvents: COUNTS.provenanceEvents,
-    orders: COUNTS.orders,
-    reviews: COUNTS.reviews,
-    affiliatePrograms: COUNTS.affiliatePrograms,
-    liveSessions: COUNTS.liveSessions,
   });
   console.log('Demo password for all seeded users: 12345678');
-  console.log('Admin accounts: seed.user19@antifake.local, seed.user20@antifake.local');
+  console.log('Admin account: seed.user03@antifake.local');
 }
 
 main()

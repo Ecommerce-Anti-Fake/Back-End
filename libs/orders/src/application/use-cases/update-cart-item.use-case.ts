@@ -28,10 +28,7 @@ export class UpdateCartItemUseCase {
         throw new BadRequestException('Quantity exceeds available stock');
       }
     } else {
-      const offer = await this.ordersRepository.findOfferForOrdering(cartItem.offerId);
-      if (!offer || input.quantity > offer.availableQuantity) {
-        throw new BadRequestException('Quantity exceeds available stock');
-      }
+      throw new BadRequestException('Variant is required for this offer');
     }
 
     const cart = await this.ordersRepository.updateCartItemQuantity(input);

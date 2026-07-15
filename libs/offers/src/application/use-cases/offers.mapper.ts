@@ -98,19 +98,28 @@ export function toOfferResponse(offer: OfferWithRelations) {
     ) ??
     offer.media?.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
   const imageUrls = offerImageUrls(offer.media);
+  const activeVariants = (offer.variants ?? []).filter((variant) => variant.isActive);
+  const variantPrices = activeVariants
+    .map((variant) => decimalToNumber(variant.price))
+    .filter((price): price is number => price !== null);
+  const price = variantPrices.length > 0 ? Math.min(...variantPrices) : null;
+  const availableQuantity = activeVariants.reduce(
+    (sum, variant) => sum + variant.availableQuantity,
+    0,
+  );
   const allocatedQuantity =
     offer.batchLinks?.reduce((sum, link) => sum + link.allocatedQuantity, 0) ??
-    offer.availableQuantity;
-  const soldQuantity = Math.max(allocatedQuantity - offer.availableQuantity, 0);
+    availableQuantity;
+  const soldQuantity = Math.max(allocatedQuantity - availableQuantity, 0);
 
   return {
     id: offer.id,
     title: offer.title,
     description: offer.description,
-    price: decimalToNumber(offer.price),
+    price,
     currency: offer.currency,
     itemCondition: offer.itemCondition,
-    availableQuantity: offer.availableQuantity,
+    availableQuantity,
     soldQuantity,
     parcelWeightGrams: offer.parcelWeightGrams ?? null,
     parcelLengthCm: offer.parcelLengthCm ?? null,

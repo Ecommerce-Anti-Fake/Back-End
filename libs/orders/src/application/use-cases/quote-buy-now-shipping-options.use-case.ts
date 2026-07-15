@@ -21,7 +21,13 @@ export class QuoteBuyNowShippingOptionsUseCase {
       throw new BadRequestException('Offer is not available for Buy Now');
     }
     const variant = await this.resolveVariant(input.variantId, offer);
-    if (input.quantity > (variant?.availableQuantity ?? offer.availableQuantity)) {
+    if (!variant) {
+      throw new BadRequestException('Variant is required for this offer');
+    }
+    if (variant.price === null) {
+      throw new BadRequestException('Variant price is not configured');
+    }
+    if (input.quantity > variant.availableQuantity) {
       throw new BadRequestException('Quantity exceeds available stock');
     }
     const quoted = await this.checkoutShippingService.quoteOptionsForItems({
@@ -29,7 +35,7 @@ export class QuoteBuyNowShippingOptionsUseCase {
       items: [{
         offerId: offer.id,
         quantity: input.quantity,
-        unitPrice: Number((variant?.price ?? offer.price).toString()),
+        unitPrice: Number(variant.price.toString()),
         offer,
       }],
     });

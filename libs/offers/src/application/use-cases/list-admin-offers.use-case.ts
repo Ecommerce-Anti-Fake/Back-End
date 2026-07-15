@@ -38,7 +38,9 @@ export class ListAdminOffersUseCase {
             thumbnailMedia?.mediaAsset?.secureUrl ??
             thumbnailMedia?.fileUrl ??
             null,
-          price: decimalToNumber(offer.price),
+          price: offer.variants.length
+            ? Math.min(...offer.variants.map((variant) => decimalToNumber(variant.price)))
+            : null,
           currency: offer.currency,
           shop: { id: offer.shop.id, name: offer.shop.shopName },
           category: { id: offer.category.id, name: offer.category.name },

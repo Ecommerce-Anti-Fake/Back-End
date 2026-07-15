@@ -39,7 +39,7 @@ export async function seedUsersAndKyc(prisma: PrismaClient, ctx: SeedContext) {
   const password = hashPassword('12345678');
 
   for (let i = 0; i < COUNTS.users; i += 1) {
-    const role = i >= 18 ? 'admin' : 'user';
+    const role = i === 2 ? 'admin' : 'user';
     let user = await prisma.user.create({
       data: {
         id: id(),
@@ -67,8 +67,7 @@ export async function seedUsersAndKyc(prisma: PrismaClient, ctx: SeedContext) {
     ctx.users.push(user);
 
     if (role === 'admin') ctx.admins.push(user);
-    else if (i < 8) ctx.buyers.push(user);
-    else if (i < 16) ctx.shopOwners.push(user);
+    else if (i < 2) ctx.shopOwners.push(user);
     else ctx.affiliateUsers.push(user);
   }
 

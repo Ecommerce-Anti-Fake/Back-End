@@ -20,6 +20,10 @@ export class GetShopBestSellingProductsUseCase {
         offer: {
           include: {
             media: { include: { mediaAsset: true } },
+            variants: {
+              where: { isActive: true },
+              select: { price: true, availableQuantity: true },
+            },
           },
         },
       },
@@ -57,9 +61,16 @@ export class GetShopBestSellingProductsUseCase {
       const current = bestSellingMap.get(item.offerId) ?? {
         id: item.offerId,
         title: item.offerTitleSnapshot,
-        price: Number(offer.price),
+        price: Math.min(
+          ...offer.variants
+            .filter((variant) => variant.price !== null)
+            .map((variant) => Number(variant.price)),
+        ),
         currency: offer.currency,
-        availableQuantity: offer.availableQuantity,
+        availableQuantity: offer.variants.reduce(
+          (sum, variant) => sum + variant.availableQuantity,
+          0,
+        ),
         offerStatus: offer.offerStatus,
         thumbnailUrl:
           thumbnailMedia?.mediaAsset?.secureUrl ??

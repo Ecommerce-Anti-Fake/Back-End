@@ -36,7 +36,10 @@ export class GetBuyNowOfferPreviewUseCase {
       throw new BadRequestException('Variant is not available for Buy Now.');
     }
 
-    const availableQuantity = variant?.availableQuantity ?? offer.availableQuantity;
+    if (!variant) {
+      throw new BadRequestException('Variant is required for Buy Now.');
+    }
+    const availableQuantity = variant.availableQuantity;
     if (quantity > availableQuantity) {
       throw new BadRequestException('Requested quantity exceeds available stock.');
     }
@@ -52,7 +55,7 @@ export class GetBuyNowOfferPreviewUseCase {
       variantId: variant?.id ?? null,
       sku: variant?.sku ?? null,
       quantity,
-      price: decimalToNumber(variant?.price ?? offer.price),
+      price: decimalToNumber(variant.price),
       thumbnailUrl,
     };
   }

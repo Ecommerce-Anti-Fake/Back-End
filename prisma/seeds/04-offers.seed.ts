@@ -44,10 +44,8 @@ export async function seedOffers(prisma: PrismaClient, ctx: SeedContext) {
         verificationPolicy: i % 5 === 0 ? 'MANUAL_REVIEW' : 'BATCH_REQUIRED',
         title: `${title} - ${brand.name}`,
         description: `Sáº£n pháº©m ${title.toLowerCase()} tá»« ${brand.name}, cÃ³ há»“ sÆ¡ nguá»“n gá»‘c vÃ  thÃ´ng tin lÃ´ Ä‘á»ƒ phá»¥c vá»¥ xÃ¡c thá»±c AntiFake.`,
-        price: money(price),
         currency: 'VND',
         itemCondition: 'new',
-        availableQuantity: 50 + (i * 7) % 450,
         offerStatus: i % 17 === 0 ? 'draft' : 'active',
         parcelWeightGrams: isRetailShoe ? 1000 : 300 + (i % 10) * 150,
         parcelLengthCm: isRetailShoe ? 35 : 10 + (i % 6) * 3,
@@ -99,6 +97,45 @@ export async function seedOffers(prisma: PrismaClient, ctx: SeedContext) {
           reviewStatus: i % 7 === 0 ? 'pending' : 'approved',
           uploadedAt: recentDate(45 - (i % 30)),
         },
+      });
+    }
+
+    const colorGroup = await prisma.offerOptionGroup.create({
+      data: { id: id(), offerId: offer.id, displayName: 'Màu sắc' },
+    });
+    const sizeGroup = await prisma.offerOptionGroup.create({
+      data: { id: id(), offerId: offer.id, displayName: 'Kích thước' },
+    });
+    const colors = await Promise.all(
+      ['Đỏ', 'Xanh'].map((text, sortOrder) =>
+        prisma.offerOptionValue.create({
+          data: { id: id(), optionGroupId: colorGroup.id, text, sortOrder },
+        }),
+      ),
+    );
+    const sizes = await Promise.all(
+      ['S', 'M'].map((text, sortOrder) =>
+        prisma.offerOptionValue.create({
+          data: { id: id(), optionGroupId: sizeGroup.id, text, sortOrder },
+        }),
+      ),
+    );
+    for (let variantIndex = 0; variantIndex < 4; variantIndex += 1) {
+      const variant = await prisma.offerVariant.create({
+        data: {
+          id: id(),
+          offerId: offer.id,
+          sku: `SEED-${String(i + 1).padStart(2, '0')}-${variantIndex + 1}`,
+          price: money(price + variantIndex * 5000),
+          availableQuantity: 10 + variantIndex * 5,
+          isActive: true,
+        },
+      });
+      await prisma.offerVariantValue.createMany({
+        data: [
+          { id: id(), variantId: variant.id, optionValueId: colors[variantIndex % 2].id },
+          { id: id(), variantId: variant.id, optionValueId: sizes[Math.floor(variantIndex / 2)].id },
+        ],
       });
     }
   }

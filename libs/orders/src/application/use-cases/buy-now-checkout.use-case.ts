@@ -34,11 +34,17 @@ export class BuyNowCheckoutUseCase {
     }
 
     const variant = await this.resolveVariant(input, offer);
-    const availableQuantity = variant ? variant.availableQuantity : offer.availableQuantity;
+    if (!variant) {
+      throw new BadRequestException('Variant is required for this offer');
+    }
+    if (variant.price === null) {
+      throw new BadRequestException('Variant price is not configured');
+    }
+    const availableQuantity = variant.availableQuantity;
     if (input.quantity > availableQuantity) {
       throw new BadRequestException('Quantity exceeds available stock');
     }
-    const unitPrice = Number((variant?.price ?? offer.price).toString());
+    const unitPrice = Number(variant.price.toString());
     const shippingOption = await this.checkoutShippingService.resolveSelectedOption({
       buyerUserId: input.buyerUserId,
       shippingOptionCode: input.shippingOptionCode,

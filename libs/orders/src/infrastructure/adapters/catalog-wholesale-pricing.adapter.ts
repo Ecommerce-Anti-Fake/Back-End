@@ -22,7 +22,7 @@ export class CatalogWholesalePricingAdapter implements WholesalePricingPort {
       buyerDistributionNodeId: input.buyerDistributionNodeId,
       quantity: input.quantity,
       offer: {
-        price: Number(input.offer.price.toString()),
+        price: Number(input.variantPrice.toString()),
         categoryId: input.offer.categoryId,
         distributionNodeId: input.offer.distributionNode?.id ?? null,
         distributionNetworkId: input.offer.distributionNode?.networkId ?? null,

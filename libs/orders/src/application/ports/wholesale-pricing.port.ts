@@ -4,6 +4,7 @@ export type WholesalePricingInput = {
   buyerShopId: string;
   buyerDistributionNodeId?: string;
   offer: OfferForOrdering;
+  variantPrice: import('@prisma/client').Prisma.Decimal;
   quantity: number;
 };
 

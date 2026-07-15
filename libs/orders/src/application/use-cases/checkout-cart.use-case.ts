@@ -209,7 +209,10 @@ export class CheckoutCartUseCase {
         throw new BadRequestException('Offer is not available');
       }
 
-      let currentPrice = Number(offer.price.toString());
+      if (!item.variantId) {
+        throw new BadRequestException('Variant is required for this offer');
+      }
+      let currentPrice = 0;
       if (item.variantId) {
         const variant = await this.ordersRepository.findOfferVariantForCart({
           offerId: item.offerId,
@@ -221,9 +224,10 @@ export class CheckoutCartUseCase {
         if (item.quantity > variant.availableQuantity) {
           throw new BadRequestException('Quantity exceeds available stock');
         }
-        currentPrice = Number((variant.price ?? offer.price).toString());
-      } else if (item.quantity > offer.availableQuantity) {
-        throw new BadRequestException('Quantity exceeds available stock');
+        if (variant.price === null) {
+          throw new BadRequestException('Variant price is not configured');
+        }
+        currentPrice = Number(variant.price.toString());
       }
 
       refreshed.push({

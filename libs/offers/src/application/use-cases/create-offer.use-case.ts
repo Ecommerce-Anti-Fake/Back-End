@@ -122,22 +122,8 @@ export class CreateOfferUseCase {
     const itemCondition = input.itemCondition?.trim() || 'new';
     const offerStatus = input.offerStatus === 'draft' ? 'draft' : 'active';
 
-    const price = input.price ?? 0;
-    const availableQuantity = input.availableQuantity ?? 0;
-    if (optionGroups.length === 0 && price <= 0) {
-      throw new BadRequestException('Price must be greater than 0');
-    }
-    if (
-      !Number.isInteger(availableQuantity) ||
-      (optionGroups.length === 0
-        ? availableQuantity < 1
-        : availableQuantity < 0)
-    ) {
-      throw new BadRequestException(
-        optionGroups.length === 0
-          ? 'Available quantity must be at least 1'
-          : 'Available quantity must be at least 0',
-      );
+    if (optionGroups.length === 0) {
+      throw new BadRequestException('At least one option group is required');
     }
 
     if (!['active', 'inactive', 'draft'].includes(offerStatus)) {
@@ -157,10 +143,8 @@ export class CreateOfferUseCase {
       distributionNodeId,
       title,
       description,
-      price,
       currency,
       itemCondition,
-      availableQuantity,
       offerStatus,
       ...this.resolveParcelSnapshot(input),
     };

@@ -48,7 +48,10 @@ export class CreateOrderUseCase {
       throw new BadRequestException('Quantity must be greater than zero');
     }
     const variant = await this.resolveVariant(input, offer);
-    const availableQuantity = variant ? variant.availableQuantity : offer.availableQuantity;
+    if (!variant) {
+      throw new BadRequestException('Variant is required for this offer');
+    }
+    const availableQuantity = variant.availableQuantity;
     if (input.quantity > availableQuantity) {
       throw new BadRequestException('Quantity exceeds available stock');
     }
@@ -212,6 +215,7 @@ export class CreateOrderUseCase {
         buyerShopId: input.buyerShopId,
         buyerDistributionNodeId: input.buyerDistributionNodeId,
         offer,
+        variantPrice: variant!.price!,
         quantity: input.quantity,
       });
       if (offer.distributionNode && !pricing.isInNetworkTrade) {
@@ -219,7 +223,10 @@ export class CreateOrderUseCase {
       }
       return pricing;
     }
-    const unitPrice = Number((variant?.price ?? offer.price).toString());
+    if (!variant || variant.price === null) {
+      throw new BadRequestException('Variant price is not configured');
+    }
+    const unitPrice = Number(variant.price.toString());
     const baseAmount = this.roundMoney(unitPrice * input.quantity);
     const platformFeeAmount = this.roundMoney(baseAmount * 0.2);
     return {

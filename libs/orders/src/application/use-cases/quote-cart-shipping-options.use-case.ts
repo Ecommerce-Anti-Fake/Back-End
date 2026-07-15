@@ -20,7 +20,7 @@ export class QuoteCartShippingOptionsUseCase {
       items: selectedItems.map((item) => ({
         offerId: item.offerId,
         quantity: item.quantity,
-        unitPrice: Number((item.unitPriceSnapshot ?? item.offer.price).toString()),
+        unitPrice: Number(item.unitPriceSnapshot.toString()),
         offer: item.offer,
       })),
     });

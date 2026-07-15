@@ -35,7 +35,13 @@ export class AddCartItemUseCase {
       throw new BadRequestException('Variant is inactive');
     }
 
-    const availableQuantity = variant?.availableQuantity ?? offer.availableQuantity;
+    if (!variant) {
+      throw new BadRequestException('variantId is required for this offer');
+    }
+    if (variant.price === null) {
+      throw new BadRequestException('Variant price is not configured');
+    }
+    const availableQuantity = variant.availableQuantity;
     if (input.quantity > availableQuantity) {
       throw new BadRequestException('Quantity exceeds available stock');
     }
@@ -47,7 +53,7 @@ export class AddCartItemUseCase {
       quantity: input.quantity,
       availableQuantityLimit: availableQuantity,
       offerTitleSnapshot: offer.title,
-      unitPriceSnapshot: Number((variant?.price ?? offer.price).toString()),
+      unitPriceSnapshot: Number(variant.price.toString()),
       currencySnapshot: offer.currency,
       shopNameSnapshot: offer.shop.shopName,
     });

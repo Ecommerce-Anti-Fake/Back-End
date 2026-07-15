@@ -25,8 +25,18 @@ export class QuoteCartItemShippingOptionsUseCase {
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
+    if (!cartItem.variantId) {
+      throw new BadRequestException('Variant is required for this cart item');
+    }
+    const variant = await this.ordersRepository.findOfferVariantForOrdering({
+      offerId: offer.id,
+      variantId: cartItem.variantId,
+    });
+    if (!variant || !variant.isActive || variant.price === null) {
+      throw new BadRequestException('Variant is unavailable');
+    }
 
-    const baseAmount = Number(offer.price.toString()) * cartItem.quantity;
+    const baseAmount = Number(variant.price.toString()) * cartItem.quantity;
     const options: CartItemShippingOption[] = [];
     const carriers = await this.ordersRepository.findActiveShippingCarriers();
     for (const carrier of carriers) {

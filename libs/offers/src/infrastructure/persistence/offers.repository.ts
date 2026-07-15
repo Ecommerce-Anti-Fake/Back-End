@@ -13,10 +13,8 @@ type OfferCreateData = {
   verificationPolicy: string;
   title: string;
   description: string;
-  price: number;
   currency: string;
   itemCondition: string;
-  availableQuantity: number;
   offerStatus: string;
   parcelWeightGrams?: number | null;
   parcelLengthCm?: number | null;
@@ -61,7 +59,6 @@ export class OffersRepository {
         select: {
           id: true,
           title: true,
-          price: true,
           currency: true,
           offerStatus: true,
           moderationStatus: true,
@@ -473,8 +470,6 @@ export class OffersRepository {
     return {
       id: true,
       sku: true,
-      price: true,
-      availableQuantity: true,
       isActive: true,
       values: {
         orderBy: { id: 'asc' as const },
@@ -505,6 +500,10 @@ export class OffersRepository {
             },
           },
         },
+      },
+      variants: {
+        where: { isActive: true },
+        select: { price: true, availableQuantity: true, isActive: true },
       },
     };
   }
@@ -634,6 +633,10 @@ export class OffersRepository {
           },
         },
       },
+      variants: {
+        where: { isActive: true },
+        select: { price: true, availableQuantity: true, isActive: true },
+      },
     };
     const orderBy = this.resolveOfferSort(input.sort);
 
@@ -737,8 +740,6 @@ export class OffersRepository {
         id: true,
         shopId: true,
         modelName: true,
-        price: true,
-        availableQuantity: true,
         offerStatus: true,
         moderationStatus: true,
         shop: {
@@ -763,7 +764,6 @@ export class OffersRepository {
           select: {
             id: true,
             sku: true,
-            price: true,
             availableQuantity: true,
             isActive: true,
             mediaAsset: {
@@ -856,7 +856,7 @@ export class OffersRepository {
         category: {
           select: { name: true },
         },
-        media: {
+          media: {
           orderBy: { createdAt: 'asc' },
           select: {
             mediaType: true,
@@ -865,6 +865,10 @@ export class OffersRepository {
               select: { secureUrl: true },
             },
           },
+        },
+        variants: {
+          where: { isActive: true },
+          select: { price: true },
         },
       },
     });

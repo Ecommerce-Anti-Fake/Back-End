@@ -13,7 +13,7 @@ export class LocalWholesalePricingAdapter implements WholesalePricingPort {
 
   async resolve(input: WholesalePricingInput): Promise<WholesalePricingResult> {
     let buyerDistributionNodeId: string | null = null;
-    let unitPrice = this.decimalToNumber(input.offer.price);
+    let unitPrice = this.decimalToNumber(input.variantPrice);
     let discountPercent = 0;
 
     if (input.buyerDistributionNodeId) {
@@ -70,7 +70,7 @@ export class LocalWholesalePricingAdapter implements WholesalePricingPort {
       unitPrice = this.applyPercentDiscount(unitPrice, discountPercent);
     }
 
-    const baseUnitPrice = this.decimalToNumber(input.offer.price);
+    const baseUnitPrice = this.decimalToNumber(input.variantPrice);
     const baseAmount = this.roundMoney(baseUnitPrice * input.quantity);
     const discountedAmount = this.roundMoney(unitPrice * input.quantity);
     const discountAmount = this.roundMoney(baseAmount - discountedAmount);
