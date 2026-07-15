@@ -504,7 +504,6 @@ export class DistributionPricingRepository {
               select: {
                 id: true,
                 title: true,
-                availableQuantity: true,
               },
             },
           },

@@ -152,7 +152,6 @@ export function toSupplyBatchDetailResponse(
       offer: {
         id: string;
         title: string;
-        availableQuantity: number;
       };
     }>;
     orderItemAllocations: Array<{
@@ -236,7 +235,6 @@ export function toInventorySummaryResponse(input: {
   offers: Array<{
     id: string;
     title: string;
-    availableQuantity: number;
     batchLinks: Array<{
       allocatedQuantity: number;
     }>;
@@ -269,7 +267,7 @@ export function toInventorySummaryResponse(input: {
     return {
       offerId: offer.id,
       title: offer.title,
-      availableQuantity: offer.availableQuantity,
+      availableQuantity: 0,
       allocatedQuantity,
       consumedQuantity: offerConsumedQuantity.get(offer.id) ?? 0,
     };

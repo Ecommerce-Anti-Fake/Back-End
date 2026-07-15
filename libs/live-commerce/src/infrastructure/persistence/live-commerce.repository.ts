@@ -55,7 +55,7 @@ export class LiveCommerceRepository {
         id: true,
         shopId: true,
         offerStatus: true,
-        availableQuantity: true,
+        variants: { where: { isActive: true }, select: { availableQuantity: true } },
       },
     });
   }
@@ -219,6 +219,10 @@ export class LiveCommerceRepository {
               media: {
                 include: { mediaAsset: true },
                 orderBy: { createdAt: 'desc' as const },
+              },
+              variants: {
+                where: { isActive: true },
+                select: { price: true, availableQuantity: true },
               },
             },
           },

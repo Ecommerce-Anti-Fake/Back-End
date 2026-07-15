@@ -31,24 +31,27 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
   for (let j = 0; j < 4; j += 1) {
     const offer = pick(ctx.offers, i * 4 + j);
     const shop = ctx.shops.find((item) => item.id === offer.shopId) ?? pick(ctx.shops, i);
+    const variant = await prisma.offerVariant.findFirst({
+      where: { offerId: offer.id, isActive: true },
+      orderBy: { price: 'asc' },
+    });
+    if (!variant) throw new Error(`Offer ${offer.id} has no active variant`);
 
-    await prisma.cartItem.upsert({
-      where: {
-        cartId_offerId: {
+    const existingCartItem = await prisma.cartItem.findFirst({
+      where: { cartId: cart.id, offerId: offer.id },
+    });
+    if (!existingCartItem) {
+      await prisma.cartItem.create({
+        data: {
+          id: id(),
           cartId: cart.id,
           offerId: offer.id,
-        },
-      },
-      update: {},
-      create: {
-        id: id(),
-        cartId: cart.id,
-        offerId: offer.id,
-        quantity: 1 + (j % 3),
-        offerTitleSnapshot: offer.title,
-        unitPriceSnapshot: offer.price,
-        currencySnapshot: offer.currency,
-        shopNameSnapshot: shop.shopName,
+          variantId: variant.id,
+          quantity: 1 + (j % 3),
+          offerTitleSnapshot: offer.title,
+          unitPriceSnapshot: variant.price,
+          currencySnapshot: offer.currency,
+          shopNameSnapshot: shop.shopName,
         },
       });
     }
@@ -65,9 +68,14 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
   for (let i = 0; i < COUNTS.orders; i += 1) {
     const offer = pick(ctx.offers, i);
     const sellerShop = ctx.shops.find((shop) => shop.id === offer.shopId) ?? pick(ctx.shops, i);
+    const variant = await prisma.offerVariant.findFirst({
+      where: { offerId: offer.id, isActive: true },
+      orderBy: { price: 'asc' },
+    });
+    if (!variant) throw new Error(`Offer ${offer.id} has no active variant`);
     const hasDistributionContext = i % 5 === 0;
     const qty = 1 + (i % 3);
-    const baseAmount = Number(offer.price) * qty;
+    const baseAmount = Number(variant.price) * qty;
     const shippingFee = 18000 + (i % 4) * 5000;
     const platformFee = Math.round(baseAmount * 0.03);
     const [orderStatus, fulfillmentStatus] = orderStatuses[i];
@@ -116,13 +124,19 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
     for (let j = 0; j < itemCount; j += 1) {
       const itemOffer = pick(ctx.offers, i + j);
       const quantity = j === 0 ? qty : 1;
+      const itemVariant = await prisma.offerVariant.findFirst({
+        where: { offerId: itemOffer.id, isActive: true },
+        orderBy: { price: 'asc' },
+      });
+      if (!itemVariant) throw new Error(`Offer ${itemOffer.id} has no active variant`);
       const orderItem = await prisma.orderItem.create({
         data: {
           id: id(),
           orderId: order.id,
           offerId: itemOffer.id,
+          variantId: itemVariant.id,
           offerTitleSnapshot: itemOffer.title,
-          unitPrice: itemOffer.price,
+          unitPrice: itemVariant.price,
           quantity,
         },
       });
@@ -150,6 +164,7 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
         releaseAt: orderStatus === 'completed' ? recentDate(5 - (i % 5)) : null,
       },
     });
+  }
   }
 
   for (let i = 0; i < COUNTS.orderItemBatchAllocations; i += 1) {

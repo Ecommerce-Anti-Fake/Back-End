@@ -88,7 +88,7 @@ export class CreateLiveSessionUseCase {
         (offer) =>
           offer.shopId !== input.shopId ||
           offer.offerStatus !== 'active' ||
-          offer.availableQuantity <= 0,
+          offer.variants.reduce((sum, variant) => sum + variant.availableQuantity, 0) <= 0,
       );
       if (invalidOffer) {
         throw new BadRequestException(

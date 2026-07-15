@@ -13,7 +13,7 @@ describe('GetBuyNowOfferPreviewUseCase', () => {
     useCase = new GetBuyNowOfferPreviewUseCase(repository as never);
   });
 
-  it('returns an offer preview without touching variants when variantId is omitted', async () => {
+  it('rejects Buy Now when variantId is omitted', async () => {
     repository.findBuyNowOfferPreview.mockResolvedValue(
       offerFixture({
         price: '150000',
@@ -30,17 +30,7 @@ describe('GetBuyNowOfferPreviewUseCase', () => {
 
     await expect(
       useCase.execute({ offerId: 'offer-1', quantity: 2 }),
-    ).resolves.toEqual({
-      shopId: 'shop-1',
-      shopName: 'Shop ABC',
-      offerId: 'offer-1',
-      modelName: 'Kem chong nang SPF50',
-      variantId: null,
-      sku: null,
-      quantity: 2,
-      price: 150000,
-      thumbnailUrl: 'https://cdn.test/offer-thumb.jpg',
-    });
+    ).rejects.toThrow('Variant is required for Buy Now.');
     expect(repository.findBuyNowOfferPreview).toHaveBeenCalledWith({
       offerId: 'offer-1',
       variantId: null,
@@ -79,7 +69,7 @@ describe('GetBuyNowOfferPreviewUseCase', () => {
     });
   });
 
-  it('falls back to offer price and thumbnail when variant price and image are null', async () => {
+  it('rejects variants without a configured price', async () => {
     repository.findBuyNowOfferPreview.mockResolvedValue(
       offerFixture({
         price: '150000',
@@ -109,10 +99,7 @@ describe('GetBuyNowOfferPreviewUseCase', () => {
         variantId: 'variant-1',
         quantity: 1,
       }),
-    ).resolves.toMatchObject({
-      price: 150000,
-      thumbnailUrl: 'https://cdn.test/gallery.jpg',
-    });
+    ).rejects.toThrow('Variant price is not configured.');
   });
 
   it('rejects missing, inactive, or unapproved offers', async () => {

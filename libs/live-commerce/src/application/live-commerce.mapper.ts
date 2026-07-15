@@ -37,9 +37,8 @@ type LiveSessionWithRelations = {
     offer: {
       id: string;
       title: string;
-      price: Prisma.Decimal | number | string | null;
       currency: string;
-      availableQuantity: number;
+      variants?: Array<{ price: Prisma.Decimal | number | string | null; availableQuantity: number }>;
       media?: Array<{
         mediaType: string;
         fileUrl?: string | null;
@@ -89,9 +88,9 @@ export function toLiveSessionResponse(
       return {
         offerId: offer.id,
         title: offer.title,
-        price: decimalToNumber(offer.price),
+        price: Math.min(...(offer.variants ?? []).filter((variant) => variant.price !== null).map((variant) => decimalToNumber(variant.price))),
         currency: offer.currency,
-        availableQuantity: offer.availableQuantity,
+        availableQuantity: (offer.variants ?? []).reduce((sum, variant) => sum + variant.availableQuantity, 0),
         thumbnailUrl:
           thumbnailMedia?.mediaAsset?.secureUrl ??
           thumbnailMedia?.fileUrl ??
