@@ -15,8 +15,6 @@ export class UpdateOfferUseCase {
     sellerUserId: string;
     title?: string;
     description?: string;
-    price?: number;
-    availableQuantity?: number;
     offerStatus?: 'active' | 'inactive' | 'draft';
     parcelWeightGrams?: number | null;
     parcelLengthCm?: number | null;
@@ -34,8 +32,6 @@ export class UpdateOfferUseCase {
     const data: {
       title?: string;
       description?: string;
-      price?: number;
-      availableQuantity?: number;
       offerStatus?: string;
       parcelWeightGrams?: number | null;
       parcelLengthCm?: number | null;
@@ -61,20 +57,6 @@ export class UpdateOfferUseCase {
       data.description = description;
     }
 
-    if (input.price !== undefined) {
-      if (input.price <= 0) {
-        throw new BadRequestException('Price must be greater than 0');
-      }
-      data.price = input.price;
-    }
-
-    if (input.availableQuantity !== undefined) {
-      if (input.availableQuantity < 0) {
-        throw new BadRequestException('Available quantity cannot be negative');
-      }
-      data.availableQuantity = input.availableQuantity;
-    }
-
     if (input.offerStatus !== undefined) {
       if (!['active', 'inactive', 'draft'].includes(input.offerStatus)) {
         throw new BadRequestException(
@@ -82,7 +64,7 @@ export class UpdateOfferUseCase {
         );
       }
       if (input.offerStatus === 'active' && offer.offerStatus === 'draft') {
-        this.assertCanPublishDraft(offer, input.availableQuantity);
+        this.assertCanPublishDraft(offer);
       }
       data.offerStatus = input.offerStatus;
     }
@@ -122,7 +104,6 @@ export class UpdateOfferUseCase {
 
   private assertCanPublishDraft(
     offer: {
-      availableQuantity: number;
       distributionNodeId: string | null;
       distributionNode: {
         relationshipStatus: string;
@@ -150,7 +131,7 @@ export class UpdateOfferUseCase {
       return;
     }
 
-    const availableQuantity = nextAvailableQuantity ?? offer.availableQuantity;
+    const availableQuantity = nextAvailableQuantity ?? 0;
     if (!Number.isInteger(availableQuantity) || availableQuantity < 1) {
       throw new BadRequestException(
         'Resale draft must have available stock before publishing',

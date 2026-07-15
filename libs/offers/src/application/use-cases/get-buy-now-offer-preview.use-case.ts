@@ -47,6 +47,9 @@ export class GetBuyNowOfferPreviewUseCase {
     const thumbnailUrl =
       variant?.mediaAsset?.secureUrl ?? resolveOfferThumbnailUrl(offer.media);
 
+    if (variant.price === null) {
+      throw new BadRequestException('Variant price is not configured.');
+    }
     return {
       shopId: offer.shop.id,
       shopName: offer.shop.shopName,

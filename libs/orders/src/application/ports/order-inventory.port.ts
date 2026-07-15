@@ -7,6 +7,7 @@ export abstract class OrderInventoryPort {
   abstract decrementOfferAvailableQuantity(
     tx: Prisma.TransactionClient,
     offerId: string,
+    variantId: string,
     quantity: number,
   ): Promise<boolean>;
 
@@ -19,6 +20,7 @@ export abstract class OrderInventoryPort {
   abstract incrementOfferAvailableQuantity(
     tx: Prisma.TransactionClient,
     offerId: string,
+    variantId: string,
     quantity: number,
   ): Promise<unknown>;
 

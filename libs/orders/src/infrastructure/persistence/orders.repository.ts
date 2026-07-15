@@ -3389,10 +3389,12 @@ export class OrdersRepository {
     return this.lockOfferInventoryRowsInternal(tx, offerId);
   }
 
-  async decrementOfferAvailableQuantity(tx: Prisma.TransactionClient, offerId: string, quantity: number) {
-    const stockUpdateResult = await tx.offer.updateMany({
+  async decrementOfferAvailableQuantity(tx: Prisma.TransactionClient, offerId: string, variantId: string, quantity: number) {
+    const stockUpdateResult = await tx.offerVariant.updateMany({
       where: {
-        id: offerId,
+        id: variantId,
+        offerId,
+        isActive: true,
         availableQuantity: {
           gte: quantity,
         },
@@ -3407,9 +3409,9 @@ export class OrdersRepository {
     return stockUpdateResult.count > 0;
   }
 
-  incrementOfferAvailableQuantity(tx: Prisma.TransactionClient, offerId: string, quantity: number) {
-    return tx.offer.update({
-      where: { id: offerId },
+  incrementOfferAvailableQuantity(tx: Prisma.TransactionClient, offerId: string, variantId: string, quantity: number) {
+    return tx.offerVariant.update({
+      where: { id: variantId },
       data: {
         availableQuantity: {
           increment: quantity,

@@ -59,10 +59,7 @@ export class AllocateOfferBatchesUseCase {
       (sum, item) => sum + item.allocatedQuantity,
       0,
     );
-    const soldQuantity = Math.max(
-      existingAllocatedTotal - ownedOffer.availableQuantity,
-      0,
-    );
+    const soldQuantity = 0;
 
     const batches = await this.productRepository.findAllocatableBatches(
       uniqueBatchIds,

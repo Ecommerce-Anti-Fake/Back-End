@@ -73,6 +73,10 @@ export class OffersRepository {
               mediaAsset: { select: { secureUrl: true } },
             },
           },
+          variants: {
+            where: { isActive: true },
+            select: { price: true },
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip: (input.page - 1) * input.pageSize,
@@ -470,6 +474,7 @@ export class OffersRepository {
     return {
       id: true,
       sku: true,
+      price: true,
       isActive: true,
       values: {
         orderBy: { id: 'asc' as const },
@@ -674,10 +679,10 @@ export class OffersRepository {
     sort?: 'featured' | 'newest' | 'price-asc' | 'price-desc',
   ): Prisma.OfferOrderByWithRelationInput {
     if (sort === 'price-asc') {
-      return { price: 'asc' };
+      return { createdAt: 'asc' };
     }
     if (sort === 'price-desc') {
-      return { price: 'desc' };
+      return { createdAt: 'desc' };
     }
 
     return { createdAt: 'desc' };
@@ -764,6 +769,7 @@ export class OffersRepository {
           select: {
             id: true,
             sku: true,
+            price: true,
             availableQuantity: true,
             isActive: true,
             mediaAsset: {
@@ -945,15 +951,6 @@ export class OffersRepository {
           })),
         });
       }
-
-      await tx.offer.update({
-        where: {
-          id: input.offerId,
-        },
-        data: {
-          availableQuantity: newAvailableQuantity,
-        },
-      });
 
       return tx.offerBatchLink.findMany({
         where: {

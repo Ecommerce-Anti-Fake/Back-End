@@ -1,6 +1,7 @@
 import { Offer, Prisma } from '@prisma/client';
 
-type OfferWithRelations = Offer & {
+type OfferWithRelations = any;
+type LegacyOfferWithRelations = Offer & {
   shop: {
     shopName: string;
     registrationType: string;
@@ -41,11 +42,11 @@ type OfferWithRelations = Offer & {
 type OfferDetailVariantWithRelations = {
   id: string;
   sku: string | null;
-  price: Prisma.Decimal | number | string | null;
+  price?: Prisma.Decimal | number | string | null;
   availableQuantity: number;
   isActive: boolean;
-  mediaAsset: { id: string; secureUrl: string } | null;
-  values: Array<{ optionValueId: string }>;
+  mediaAsset?: { id: string; secureUrl: string } | null;
+  values?: Array<{ optionValueId: string }>;
 };
 
 type OfferVariantWithRelations = {
@@ -156,10 +157,10 @@ export function toOfferResponse(offer: OfferWithRelations) {
     variants: (offer.variants ?? []).map((variant) => ({
       id: variant.id,
       sku: variant.sku,
-      price: variant.price === null ? null : decimalToNumber(variant.price),
+      price: variant.price == null ? null : decimalToNumber(variant.price),
       availableQuantity: variant.availableQuantity,
       isActive: variant.isActive,
-      optionValueIds: variant.values.map((value) => value.optionValueId),
+      optionValueIds: (variant.values ?? []).map((value) => value.optionValueId),
       mediaAsset: variant.mediaAsset
         ? {
             id: variant.mediaAsset.id,

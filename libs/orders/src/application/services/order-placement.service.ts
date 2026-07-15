@@ -20,6 +20,7 @@ export class OrderPlacementService {
     return this.ordersRepository.withTransaction(async (tx) => {
       const batchAllocations = await this.orderInventoryService.reserveForOrder(tx, {
         offerId: input.order.item.offerId,
+        variantId: input.order.item.variantId!,
         quantity: input.order.item.quantity,
       });
 
@@ -65,6 +66,7 @@ export class OrderPlacementService {
         for (const item of group.items) {
           const batchAllocations = await this.orderInventoryService.reserveForOrder(tx, {
             offerId: item.offerId,
+            variantId: item.variantId!,
             quantity: item.quantity,
           });
           items.push({ ...item, batchAllocations });

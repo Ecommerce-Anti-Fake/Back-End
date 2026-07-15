@@ -11,16 +11,16 @@ export class LocalOrderInventoryAdapter implements OrderInventoryPort {
     return this.ordersRepository.lockOfferInventoryRows(tx, offerId);
   }
 
-  decrementOfferAvailableQuantity(tx: Prisma.TransactionClient, offerId: string, quantity: number) {
-    return this.ordersRepository.decrementOfferAvailableQuantity(tx, offerId, quantity);
+  decrementOfferAvailableQuantity(tx: Prisma.TransactionClient, offerId: string, variantId: string, quantity: number) {
+    return this.ordersRepository.decrementOfferAvailableQuantity(tx, offerId, variantId, quantity);
   }
 
   consumeOfferBatchAllocations(tx: Prisma.TransactionClient, offerId: string, quantity: number) {
     return this.ordersRepository.consumeOfferBatchAllocations(tx, offerId, quantity);
   }
 
-  incrementOfferAvailableQuantity(tx: Prisma.TransactionClient, offerId: string, quantity: number) {
-    return this.ordersRepository.incrementOfferAvailableQuantity(tx, offerId, quantity);
+  incrementOfferAvailableQuantity(tx: Prisma.TransactionClient, offerId: string, variantId: string, quantity: number) {
+    return this.ordersRepository.incrementOfferAvailableQuantity(tx, offerId, variantId, quantity);
   }
 
   restoreOrderItemBatchAllocations(

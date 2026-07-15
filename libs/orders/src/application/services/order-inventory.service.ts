@@ -14,6 +14,7 @@ export class OrderInventoryService {
     tx: Prisma.TransactionClient,
     input: {
       offerId: string;
+      variantId: string;
       quantity: number;
     },
   ): Promise<OrderBatchAllocation[]> {
@@ -22,6 +23,7 @@ export class OrderInventoryService {
     const stockReserved = await this.orderInventoryPort.decrementOfferAvailableQuantity(
       tx,
       input.offerId,
+      input.variantId,
       input.quantity,
     );
     if (!stockReserved) {
@@ -36,13 +38,17 @@ export class OrderInventoryService {
     order: {
       items: Array<{
         offerId: string;
+        variantId: string | null;
         quantity: number;
         batchAllocations?: OrderBatchAllocation[];
       }>;
     },
   ) {
     for (const item of order.items) {
-      await this.orderInventoryPort.incrementOfferAvailableQuantity(tx, item.offerId, item.quantity);
+      if (!item.variantId) {
+        throw new BadRequestException('Variant is required to restore order inventory');
+      }
+      await this.orderInventoryPort.incrementOfferAvailableQuantity(tx, item.offerId, item.variantId, item.quantity);
       await this.orderInventoryPort.restoreOrderItemBatchAllocations(tx, item.offerId, item.batchAllocations ?? []);
     }
   }
