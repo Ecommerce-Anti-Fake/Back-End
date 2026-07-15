@@ -134,6 +134,13 @@ describe('OffersRepository', () => {
 
   it('does not recreate an existing option combination', async () => {
     const tx = {
+      offerOptionValue: {
+        findMany: jest.fn().mockResolvedValue([
+          { id: 'black', text: 'Đen' },
+          { id: 'white', text: 'Trắng' },
+          { id: 'm', text: 'M' },
+        ]),
+      },
       offerVariant: {
         findMany: jest.fn().mockResolvedValue([
           {
@@ -163,6 +170,7 @@ describe('OffersRepository', () => {
           price: 0,
           availableQuantity: 0,
           isActive: true,
+          sku: 'Trắng-M',
           values: {
             create: [
               { optionValueId: 'white' },

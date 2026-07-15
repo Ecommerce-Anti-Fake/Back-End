@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@database/prisma/prisma.service';
+import { buildVariantSku } from '../../application/use-cases/variant-sku';
 
 type OfferCreateData = {
   sellerUserId: string;
@@ -335,6 +336,13 @@ export class OffersRepository {
 
   async createMissingOfferVariants(offerId: string, combinations: string[][]) {
     await this.prisma.$transaction(async (tx) => {
+      const optionValues = await tx.offerOptionValue.findMany({
+        where: { optionGroup: { offerId } },
+        select: { id: true, text: true },
+      });
+      const optionValueTextById = new Map(
+        optionValues.map((optionValue) => [optionValue.id, optionValue.text]),
+      );
       const existing = await tx.offerVariant.findMany({
         where: { offerId },
         select: { values: { select: { optionValueId: true } } },
@@ -353,7 +361,11 @@ export class OffersRepository {
         await tx.offerVariant.create({
           data: {
             offerId,
-            sku: null,
+            sku: buildVariantSku(
+              optionValueIds.map((optionValueId) =>
+                optionValueTextById.get(optionValueId) ?? '',
+              ),
+            ),
             price: 0,
             availableQuantity: 0,
             mediaAssetId: null,
