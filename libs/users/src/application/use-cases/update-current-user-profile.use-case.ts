@@ -36,7 +36,7 @@ export class UpdateCurrentUserProfileUseCase {
       displayName,
     });
 
-    return { success: true, message: 'Profile updated successfully.' };
+    return { success: true, message: 'Cập nhật hồ sơ thành công.' };
   }
 
   private normalizeNullableString(value?: string | null): string | null | undefined {

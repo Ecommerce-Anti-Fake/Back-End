@@ -51,7 +51,7 @@ export class CreateOfferOptionValueDto {
   @IsOptional()
   @IsString()
   @Matches(/^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/, {
-    message: 'image must be a jpeg, png, webp, or gif base64 Data URL',
+    message: 'image phải là Data URL base64 định dạng jpeg, png, webp hoặc gif',
   })
   image?: string | null;
 
@@ -280,7 +280,7 @@ export class UpdateOfferVariantDto {
 
 export class OfferMutationSuccessResponseDto {
   @ApiProperty({ example: true }) success!: true;
-  @ApiProperty({ example: 'Cap nhat variant thanh cong.' }) message!: string;
+  @ApiProperty({ example: 'Cập nhật variant thành công.' }) message!: string;
 }
 
 export class OfferResponseDto {
@@ -487,7 +487,7 @@ export class CreateOfferResponseDto {
   success!: boolean;
 
   @ApiProperty({
-    example: 'Offer created successfully and is pending moderation.',
+    example: 'Tạo offer thành công và đang chờ kiểm duyệt.',
   })
   message!: string;
 }
@@ -786,7 +786,7 @@ export class CreateOfferDto {
   @IsString({ each: true })
   @Matches(/^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/, {
     each: true,
-    message: 'productImages must contain image Data URLs only',
+    message: 'productImages chỉ được chứa Data URL của hình ảnh',
   })
   productImages!: string[];
 

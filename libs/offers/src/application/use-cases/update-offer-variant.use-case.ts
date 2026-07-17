@@ -74,6 +74,6 @@ export class UpdateOfferVariantUseCase {
     if (!variant) {
       throw new NotFoundException('Variant not found');
     }
-    return { success: true as const, message: 'Cap nhat variant thanh cong.' };
+    return { success: true as const, message: 'Cập nhật variant thành công.' };
   }
 }

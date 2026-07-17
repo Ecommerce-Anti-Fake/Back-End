@@ -12,7 +12,7 @@ export class ForgotPasswordDto {
 
 export class ForgotPasswordResponseDto {
   @ApiProperty({
-    example: 'If the account exists, password reset instructions have been created.',
+    example: 'Nếu tài khoản tồn tại, yêu cầu đặt lại mật khẩu đã được tạo.',
   })
   message!: string;
 
@@ -47,7 +47,7 @@ export class ChangePasswordDto {
 }
 
 export class AccountSecurityResponseDto {
-  @ApiProperty({ example: 'Password updated successfully.' })
+  @ApiProperty({ example: 'Cập nhật mật khẩu thành công.' })
   message!: string;
 }
 

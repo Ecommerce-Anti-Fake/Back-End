@@ -243,8 +243,8 @@ export class CreateOrderUseCase {
   private resolveShippingSnapshot(input: any, buyer: { displayName: string | null; phone: string | null }) {
     const phone = input.shippingPhone?.trim() || buyer.phone?.trim() || null;
     const address = input.shippingAddress?.trim() || null;
-    if (!phone) throw new BadRequestException('Shipping contact phone is required before creating an order');
-    if (!address) throw new BadRequestException('Shipping address is required before creating an order');
+    if (!phone) throw new BadRequestException('Vui lòng bổ sung số điện thoại nhận hàng trước khi tạo đơn.');
+    if (!address) throw new BadRequestException('Vui lòng bổ sung địa chỉ nhận hàng trước khi tạo đơn.');
     return {
       name: input.shippingName?.trim() || buyer.displayName?.trim() || null,
       phone,
@@ -262,7 +262,7 @@ export class CreateOrderUseCase {
     const requested = providerCode?.trim().toUpperCase() || null;
     const selected = (requested ? carriers.find((carrier) => carrier.code === requested) : null) ?? carriers.find((carrier) => carrier.code === 'GHN') ?? carriers[0];
     if (requested && selected.code !== requested) {
-      throw new BadRequestException('Shipping provider is not available');
+      throw new BadRequestException('Đơn vị vận chuyển đã chọn hiện không khả dụng.');
     }
     return {
       providerCode: selected.code,

@@ -65,7 +65,7 @@ export class AdminShopVerificationController {
     schema: {
       example: {
         success: true,
-        message: 'Shop registration reviewed',
+        message: 'Đã xử lý hồ sơ đăng ký shop.',
       },
     },
   })

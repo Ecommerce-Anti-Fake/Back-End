@@ -54,7 +54,7 @@ export class CheckoutShippingService {
 
   async quoteOptionsForItems(input: { buyerUserId: string; items: CheckoutShippingItem[] }) {
     if (input.items.length === 0) {
-      throw new BadRequestException('At least one item is required for shipping quote');
+      throw new BadRequestException('Cần ít nhất một sản phẩm để báo giá vận chuyển.');
     }
 
     const destination = await this.resolveQuoteDestination(input.buyerUserId);
@@ -257,12 +257,12 @@ export class CheckoutShippingService {
   private async resolveQuoteDestination(buyerUserId: string): Promise<ShippingQuoteDestination> {
     const defaultAddress = await this.ordersRepository.findDefaultAddressByUserId(buyerUserId);
     if (!defaultAddress) {
-      throw new BadRequestException('Buyer default shipping address is required for shipping quote');
+      throw new BadRequestException('Vui lòng thêm địa chỉ giao hàng mặc định trước khi báo giá vận chuyển.');
     }
 
     const carrierLocation = parseInternalAddressWardCode(defaultAddress.wardCode);
     if (!carrierLocation) {
-      throw new BadRequestException('Buyer default shipping address ward code is invalid for shipping quote');
+      throw new BadRequestException('Mã phường/xã trong địa chỉ giao hàng mặc định không hợp lệ.');
     }
 
     return {
@@ -275,7 +275,7 @@ export class CheckoutShippingService {
   private resolveShopOrigin(group: ShopCheckoutItemGroup): ShippingQuoteOrigin {
     const carrierLocation = parseInternalAddressWardCode(group.warehouseWardCode);
     if (!carrierLocation) {
-      throw new BadRequestException('Shop warehouse address is required for shipping quote');
+      throw new BadRequestException('Địa chỉ kho của shop chưa được cấu hình để báo giá vận chuyển.');
     }
 
     return {

@@ -215,7 +215,7 @@ export class AuthController {
   @Get('admin-check')
   adminCheck(@CurrentUser() user: AuthUserResponseDto) {
     return {
-      message: 'Admin access granted',
+      message: 'Cấp quyền quản trị thành công.',
       user,
     };
   }

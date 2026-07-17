@@ -88,7 +88,7 @@ describe('ReviewShopDocumentUseCase', () => {
     );
     expect(result).toEqual({
       success: true,
-      message: 'Shop registration reviewed',
+      message: 'Đã xử lý hồ sơ đăng ký shop.',
     });
   });
 

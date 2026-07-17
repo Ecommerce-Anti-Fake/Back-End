@@ -98,7 +98,7 @@ export class LogoutResponseDto {
 export class AdminAccessResponseDto {
   @ApiProperty({
     description: 'Thong bao xac nhan user co quyen admin.',
-    example: 'Admin access granted',
+    example: 'Cấp quyền quản trị thành công.',
   })
   message!: string;
 

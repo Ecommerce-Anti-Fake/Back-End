@@ -22,12 +22,15 @@ export function throwRpcException(error: unknown): never {
       typeof response === 'string'
         ? {
             statusCode: error.getStatus(),
-            message: response,
+            message: toVietnameseMessage(response, error.getStatus()),
             error: error.name,
           }
         : {
             statusCode: error.getStatus(),
-            message: toVietnameseMessage(extractMessage(response, error.message)),
+            message: toVietnameseMessage(
+              extractMessage(response, error.message),
+              error.getStatus(),
+            ),
             error: extractErrorName(response, error.name),
           };
 
@@ -36,13 +39,22 @@ export function throwRpcException(error: unknown): never {
 
   throw new RpcException({
     statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-    message: toVietnameseMessage(error instanceof Error ? error.message : 'Internal server error'),
+    message: toVietnameseMessage(
+      error instanceof Error ? error.message : 'Internal server error',
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    ),
     error: 'InternalServerError',
   });
 }
 
-function toVietnameseMessage(message: string | string[]): string | string[] {
-  if (Array.isArray(message)) return message.map((item) => toVietnameseMessage(item) as string);
+export function toVietnameseMessage(
+  message: string | string[],
+  statusCode?: number,
+): string | string[] {
+  if (Array.isArray(message)) {
+    return message.map((item) => toVietnameseMessage(item, statusCode) as string);
+  }
+
   const mappings: Record<string, string> = {
     ORDER_NOT_FOUND: 'Không tìm thấy đơn hàng.',
     ORDER_ALREADY_PAID: 'Đơn hàng đã được thanh toán.',
@@ -54,8 +66,23 @@ function toVietnameseMessage(message: string | string[]): string | string[] {
     ESCROW_ALREADY_RELEASED: 'Tiền của đơn hàng đã được đối soát cho shop và không thể hoàn theo luồng này.',
     PAYMENT_FAILED: 'Thanh toán không thành công. Vui lòng thử lại.',
     REFUND_FAILED: 'Hoàn tiền không thành công. Vui lòng thử lại.',
+    'Invalid credentials': 'Thông tin đăng nhập không hợp lệ.',
+    'Invalid access token': 'Phiên đăng nhập không hợp lệ.',
+    'Offer not found': 'Không tìm thấy offer.',
+    'Order not found': 'Không tìm thấy đơn hàng.',
+    'Shop not found': 'Không tìm thấy shop.',
+    'Variant is required for this offer': 'Vui lòng chọn variant cho offer này.',
+    'Variant is not available': 'Variant không khả dụng.',
   };
-  return mappings[message] ?? message;
+
+  if (mappings[message]) return mappings[message];
+  if (/[À-ỹ]/.test(message)) return message;
+  if (statusCode === HttpStatus.UNAUTHORIZED) return 'Phiên đăng nhập không hợp lệ.';
+  if (statusCode === HttpStatus.FORBIDDEN) return 'Bạn không có quyền thực hiện thao tác này.';
+  if (statusCode === HttpStatus.NOT_FOUND) return 'Không tìm thấy dữ liệu yêu cầu.';
+  if (statusCode === HttpStatus.CONFLICT) return 'Dữ liệu đã tồn tại hoặc đang xung đột.';
+  if (statusCode && statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) return 'Đã xảy ra lỗi máy chủ.';
+  return 'Dữ liệu yêu cầu không hợp lệ.';
 }
 
 export function throwHttpExceptionFromRpc(error: unknown): never {
@@ -81,7 +108,7 @@ function normalizeRpcError(error: unknown): RpcErrorPayload {
     return (error as { error: RpcErrorPayload }).error;
   }
 
-  const fallback = new InternalServerErrorException('Unexpected RPC error');
+  const fallback = new InternalServerErrorException('Đã xảy ra lỗi máy chủ.');
   return {
     statusCode: fallback.getStatus(),
     message: fallback.message,

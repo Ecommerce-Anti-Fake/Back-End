@@ -197,7 +197,7 @@ describe('QuoteCartShippingOptionsUseCase', () => {
     ordersRepositoryMock.findDefaultAddressByUserId.mockResolvedValueOnce(null);
 
     await expect(useCase.execute({ buyerUserId: 'buyer-1', cartItemIds: ['item-1'] })).rejects.toThrow(
-      'Buyer default shipping address is required for shipping quote',
+      'Vui lòng thêm địa chỉ giao hàng mặc định trước khi báo giá vận chuyển.',
     );
   });
 
@@ -211,7 +211,7 @@ describe('QuoteCartShippingOptionsUseCase', () => {
     mockDefaultAddress(ordersRepositoryMock);
 
     await expect(useCase.execute({ buyerUserId: 'buyer-1', cartItemIds: ['item-1'] })).rejects.toThrow(
-      'Shop warehouse address is required for shipping quote',
+      'Địa chỉ kho của shop chưa được cấu hình để báo giá vận chuyển.',
     );
   });
 

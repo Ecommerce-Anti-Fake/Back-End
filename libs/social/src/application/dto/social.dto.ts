@@ -152,12 +152,12 @@ export class SocialCommentReplyResponseDto {
 }
 
 export class SocialCommentReplyMutationResponseDto {
-  @ApiProperty({ example: 'Reply created successfully.' })
+  @ApiProperty({ example: 'Tạo phản hồi thành công.' })
   message!: string;
 }
 
 export class SocialCommentMutationResponseDto {
-  @ApiProperty({ example: 'Comment created successfully.' })
+  @ApiProperty({ example: 'Tạo bình luận thành công.' })
   message!: string;
 }
 
@@ -180,7 +180,7 @@ export class SocialPostMediaResponseDto {
 }
 
 export class SocialPostMutationResponseDto {
-  @ApiProperty({ example: 'Post created successfully.' })
+  @ApiProperty({ example: 'Tạo bài viết thành công.' })
   message!: string;
 }
 

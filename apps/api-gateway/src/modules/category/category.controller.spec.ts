@@ -40,7 +40,7 @@ describe('CategoryController routes', () => {
       ),
     ).resolves.toEqual({
       success: true,
-      message: 'Category created successfully.',
+      message: 'Tạo danh mục thành công.',
     });
 
     expect(catalogRpcService.createCategory).toHaveBeenCalledWith({

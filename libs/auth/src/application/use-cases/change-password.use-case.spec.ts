@@ -48,7 +48,7 @@ describe('ChangePasswordUseCase', () => {
     expect(passwordHasherServiceMock.verifyPassword).toHaveBeenCalledWith('OldStrongPass123', 'stored-password-hash');
     expect(userIdentityPortMock.updatePassword).toHaveBeenCalledWith('user-1', 'new-password-hash');
     expect(authSessionRepositoryMock.revokeActiveSessionsForUser).toHaveBeenCalledWith('user-1');
-    expect(result).toEqual({ message: 'Password updated successfully.' });
+    expect(result).toEqual({ message: 'Cập nhật mật khẩu thành công.' });
   });
 
   it('rejects an invalid current password', async () => {

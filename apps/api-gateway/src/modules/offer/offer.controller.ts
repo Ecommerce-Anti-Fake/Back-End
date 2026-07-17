@@ -152,7 +152,7 @@ export class OfferController {
 
     return {
       success: true,
-      message: 'Offer created successfully and is pending moderation.',
+      message: 'Tạo offer thành công và đang chờ kiểm duyệt.',
     };
   }
 

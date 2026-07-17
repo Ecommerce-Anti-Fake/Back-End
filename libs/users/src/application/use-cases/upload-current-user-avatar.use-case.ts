@@ -68,7 +68,7 @@ export class UploadCurrentUserAvatarUseCase {
 
     return {
       success: true,
-      message: 'Avatar uploaded successfully.',
+      message: 'Tải ảnh đại diện thành công.',
       mediaAssetId: mediaAsset.id,
       avatarUrl: uploaded.secureUrl,
     };

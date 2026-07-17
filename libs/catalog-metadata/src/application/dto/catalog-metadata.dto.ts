@@ -72,7 +72,7 @@ export class CategoryCommandResponseDto {
   @ApiProperty({ example: true })
   success!: boolean;
 
-  @ApiProperty({ example: 'Category created successfully.' })
+  @ApiProperty({ example: 'Tạo danh mục thành công.' })
   message!: string;
 }
 

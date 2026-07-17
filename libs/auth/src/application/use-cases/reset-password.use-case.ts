@@ -29,7 +29,7 @@ export class ResetPasswordUseCase {
     await this.passwordResetTokenRepository.markUsed(resetToken.id);
     await this.authSessionRepository.revokeActiveSessionsForUser(resetToken.userId);
 
-    return { message: 'Password updated successfully.' };
+    return { message: 'Cập nhật mật khẩu thành công.' };
   }
 
   private parseToken(token: string) {

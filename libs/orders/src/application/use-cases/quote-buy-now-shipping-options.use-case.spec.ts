@@ -10,8 +10,14 @@ describe('QuoteBuyNowShippingOptionsUseCase', () => {
     };
     const ordersRepository = {
       findOfferForOrdering: jest.fn().mockResolvedValue(offer),
-      countOfferVariants: jest.fn().mockResolvedValue(0),
-      findOfferVariantForOrdering: jest.fn(),
+      countOfferVariants: jest.fn().mockResolvedValue(1),
+      findOfferVariantForOrdering: jest.fn().mockResolvedValue({
+        id: 'variant-1',
+        offerId: 'offer-1',
+        price: { toString: () => '150000' },
+        availableQuantity: 5,
+        isActive: true,
+      }),
     };
     const internalOption = {
       optionCode: 'GHN_1', providerCode: 'GHN', providerName: 'GHN', methodName: 'Standard',
@@ -25,7 +31,12 @@ describe('QuoteBuyNowShippingOptionsUseCase', () => {
       ordersRepository as never, checkoutShippingService as unknown as CheckoutShippingService,
     );
 
-    await useCase.execute({ buyerUserId: 'buyer-1', offerId: 'offer-1', quantity: 2 });
+    await useCase.execute({
+      buyerUserId: 'buyer-1',
+      offerId: 'offer-1',
+      variantId: 'variant-1',
+      quantity: 2,
+    });
 
     expect(checkoutShippingService.quoteOptionsForItems).toHaveBeenCalledWith({
       buyerUserId: 'buyer-1',

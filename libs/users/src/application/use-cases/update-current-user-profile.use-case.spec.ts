@@ -39,7 +39,7 @@ describe('UpdateCurrentUserProfileUseCase', () => {
       displayName: 'Nguyen Van A',
       phone: '0987654321',
     });
-    expect(result).toEqual({ success: true, message: 'Profile updated successfully.' });
+    expect(result).toEqual({ success: true, message: 'Cập nhật hồ sơ thành công.' });
   });
 
   it('rejects duplicate phone numbers', async () => {

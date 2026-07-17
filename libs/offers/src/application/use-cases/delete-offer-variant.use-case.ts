@@ -17,6 +17,6 @@ export class DeleteOfferVariantUseCase {
     if (!variant) {
       throw new NotFoundException('Variant not found');
     }
-    return { success: true as const, message: 'Xoa variant thanh cong.' };
+    return { success: true as const, message: 'Xóa variant thành công.' };
   }
 }

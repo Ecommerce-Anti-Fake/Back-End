@@ -75,7 +75,7 @@ describe('SocialController routes', () => {
         { postType: 'QUESTION', body: 'Kiem tra hang that the nao?' },
         media,
       ),
-    ).resolves.toEqual({ message: 'Post created successfully.' });
+    ).resolves.toEqual({ message: 'Tạo bài viết thành công.' });
     expect(catalogRpcService.createSocialPost).toHaveBeenCalledWith({
       requesterUserId: 'user-id',
       postType: 'QUESTION',
@@ -112,7 +112,7 @@ describe('SocialController routes', () => {
         { role: 'user' } as never,
         { body: 'Minh da mua va thay tem QR hop le.' },
       ),
-    ).resolves.toEqual({ message: 'Comment created successfully.' });
+    ).resolves.toEqual({ message: 'Tạo bình luận thành công.' });
     expect(catalogRpcService.createSocialComment).toHaveBeenCalledWith({
       postId: 'post-id',
       requesterUserId: 'user-id',
@@ -151,7 +151,7 @@ describe('SocialController routes', () => {
       controller.createSocialCommentReply('comment-id', 'user-id', {
         body: 'Cam on ban da chia se.',
       }),
-    ).resolves.toEqual({ message: 'Reply created successfully.' });
+    ).resolves.toEqual({ message: 'Tạo phản hồi thành công.' });
     expect(catalogRpcService.createSocialCommentReply).toHaveBeenCalledWith({
       commentId: 'comment-id',
       requesterUserId: 'user-id',

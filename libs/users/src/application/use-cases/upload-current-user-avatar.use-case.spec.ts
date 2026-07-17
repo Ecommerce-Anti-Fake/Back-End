@@ -75,7 +75,7 @@ describe('UploadCurrentUserAvatarUseCase', () => {
     });
     expect(result).toEqual({
       success: true,
-      message: 'Avatar uploaded successfully.',
+      message: 'Tải ảnh đại diện thành công.',
       mediaAssetId: 'media-new',
       avatarUrl: 'https://res.cloudinary.com/demo/image/upload/v1/users/avatars/user-1-1.jpg',
     });

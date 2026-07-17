@@ -263,7 +263,7 @@ describe('OfferController', () => {
     expect(dashboardSseBrokerService.notifyShop).toHaveBeenCalledWith('shop-1');
     expect(result).toEqual({
       success: true,
-      message: 'Offer created successfully and is pending moderation.',
+      message: 'Tạo offer thành công và đang chờ kiểm duyệt.',
     });
     expect(result).not.toHaveProperty('id');
     expect(result).not.toHaveProperty('title');

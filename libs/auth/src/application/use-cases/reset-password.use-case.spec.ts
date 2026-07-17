@@ -52,7 +52,7 @@ describe('ResetPasswordUseCase', () => {
     expect(userIdentityPortMock.updatePassword).toHaveBeenCalledWith('user-1', 'new-password-hash');
     expect(passwordResetTokenRepositoryMock.markUsed).toHaveBeenCalledWith('reset-token-1');
     expect(authSessionRepositoryMock.revokeActiveSessionsForUser).toHaveBeenCalledWith('user-1');
-    expect(result).toEqual({ message: 'Password updated successfully.' });
+    expect(result).toEqual({ message: 'Cập nhật mật khẩu thành công.' });
   });
 
   it('rejects used reset tokens', async () => {

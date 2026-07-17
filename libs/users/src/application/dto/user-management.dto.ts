@@ -518,7 +518,7 @@ export class ProfileMutationSuccessResponseDto {
   @ApiProperty({ example: true })
   success!: boolean;
 
-  @ApiProperty({ example: 'Profile updated successfully.' })
+  @ApiProperty({ example: 'Cập nhật hồ sơ thành công.' })
   message!: string;
 }
 
@@ -526,7 +526,7 @@ export class AvatarUploadResponseDto {
   @ApiProperty({ example: true })
   success!: boolean;
 
-  @ApiProperty({ example: 'Avatar uploaded successfully.' })
+  @ApiProperty({ example: 'Tải ảnh đại diện thành công.' })
   message!: string;
 
   @ApiProperty({ example: 'media-asset-id' })

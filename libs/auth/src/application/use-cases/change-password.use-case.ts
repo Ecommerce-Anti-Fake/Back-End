@@ -30,6 +30,6 @@ export class ChangePasswordUseCase {
     await this.userIdentityPort.updatePassword(user.id, passwordHash);
     await this.authSessionRepository.revokeActiveSessionsForUser(user.id);
 
-    return { message: 'Password updated successfully.' };
+    return { message: 'Cập nhật mật khẩu thành công.' };
   }
 }

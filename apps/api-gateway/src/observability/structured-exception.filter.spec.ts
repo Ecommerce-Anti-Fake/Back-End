@@ -38,6 +38,9 @@ describe('StructuredExceptionFilter', () => {
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('"statusCode":401'));
     expect(logger.error).not.toHaveBeenCalled();
     expect(response.status).toHaveBeenCalledWith(HttpStatus.UNAUTHORIZED);
+    expect(response.json).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'Phiên đăng nhập không hợp lệ.' }),
+    );
   });
 
   it('maps body parser payload limit errors to HTTP 413', () => {
@@ -60,7 +63,7 @@ describe('StructuredExceptionFilter', () => {
     expect(response.status).toHaveBeenCalledWith(HttpStatus.PAYLOAD_TOO_LARGE);
     expect(response.json).toHaveBeenCalledWith({
       statusCode: HttpStatus.PAYLOAD_TOO_LARGE,
-      message: 'Request payload too large',
+      message: 'Dữ liệu gửi lên vượt quá kích thước cho phép.',
       requestId: 'request-1',
     });
   });

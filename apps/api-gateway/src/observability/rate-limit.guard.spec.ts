@@ -37,6 +37,6 @@ describe('RateLimitGuard', () => {
     const context = createContext();
 
     expect(guard.canActivate(context)).toBe(true);
-    expect(() => guard.canActivate(context)).toThrow('Too many requests');
+    expect(() => guard.canActivate(context)).toThrow('Bạn gửi quá nhiều yêu cầu. Vui lòng thử lại sau.');
   });
 });

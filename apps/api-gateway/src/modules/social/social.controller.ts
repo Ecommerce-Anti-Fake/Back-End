@@ -154,7 +154,7 @@ export class SocialController {
     });
 
     return {
-      message: 'Post created successfully.',
+      message: 'Tạo bài viết thành công.',
     };
   }
 
@@ -180,7 +180,7 @@ export class SocialController {
     });
 
     return {
-      message: 'Comment created successfully.',
+      message: 'Tạo bình luận thành công.',
     };
   }
 
@@ -204,7 +204,7 @@ export class SocialController {
     });
 
     return {
-      message: 'Reply created successfully.',
+      message: 'Tạo phản hồi thành công.',
     };
   }
 

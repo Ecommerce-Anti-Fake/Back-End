@@ -66,7 +66,7 @@ export class RateLimitGuard implements CanActivate {
 
     throw new HttpException(
       {
-        message: 'Too many requests',
+        message: 'Bạn gửi quá nhiều yêu cầu. Vui lòng thử lại sau.',
         rateLimit: {
           profile: options.profile,
           limit: profile.limit,

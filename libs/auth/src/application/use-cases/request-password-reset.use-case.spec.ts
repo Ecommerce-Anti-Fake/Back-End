@@ -65,7 +65,7 @@ describe('RequestPasswordResetUseCase', () => {
 
     expect(passwordResetTokenRepositoryMock.create).not.toHaveBeenCalled();
     expect(result).toEqual({
-      message: 'If the account exists, password reset instructions have been created.',
+      message: 'Nếu tài khoản tồn tại, yêu cầu đặt lại mật khẩu đã được tạo.',
     });
   });
 });

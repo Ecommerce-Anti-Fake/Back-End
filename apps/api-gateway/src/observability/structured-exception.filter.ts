@@ -1,5 +1,6 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { toVietnameseMessage } from '@common';
 
 @Catch()
 export class StructuredExceptionFilter implements ExceptionFilter {
@@ -14,14 +15,18 @@ export class StructuredExceptionFilter implements ExceptionFilter {
       exception instanceof HttpException
         ? exception.getResponse()
         : statusCode === HttpStatus.PAYLOAD_TOO_LARGE
-          ? { message: 'Request payload too large' }
-          : { message: 'Internal server error' };
-    const message =
+          ? { message: 'Dữ liệu gửi lên vượt quá kích thước cho phép.' }
+          : { message: 'Đã xảy ra lỗi máy chủ.' };
+    const rawMessage =
       typeof payload === 'string'
         ? payload
         : typeof payload === 'object' && payload !== null && 'message' in payload
           ? (payload as { message: unknown }).message
-          : 'Internal server error';
+          : 'Đã xảy ra lỗi máy chủ.';
+    const message =
+      typeof rawMessage === 'string' || Array.isArray(rawMessage)
+        ? toVietnameseMessage(rawMessage, statusCode)
+        : toVietnameseMessage('Đã xảy ra lỗi máy chủ.', statusCode);
 
     const logPayload = JSON.stringify({
       event: 'http.error',
@@ -29,7 +34,7 @@ export class StructuredExceptionFilter implements ExceptionFilter {
       method: request.method,
       path: request.originalUrl ?? request.url,
       statusCode,
-      message,
+      message: rawMessage,
       errorName: exception instanceof Error ? exception.name : 'UnknownError',
     });
     const stack = exception instanceof Error ? exception.stack : undefined;

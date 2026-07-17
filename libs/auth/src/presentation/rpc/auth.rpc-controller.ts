@@ -108,7 +108,7 @@ export class AuthRpcController {
       }
 
       return {
-        message: 'Admin access granted',
+        message: 'Cấp quyền quản trị thành công.',
         user,
       };
     } catch (error) {

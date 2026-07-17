@@ -104,7 +104,7 @@ export class CategoryController {
 
     return {
       success: true,
-      message: 'Category created successfully.',
+      message: 'Tạo danh mục thành công.',
     };
   }
 }

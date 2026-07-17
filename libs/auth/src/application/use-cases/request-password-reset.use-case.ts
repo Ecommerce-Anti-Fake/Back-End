@@ -6,7 +6,7 @@ import { PasswordResetTokenRepository } from '../../infrastructure/persistence';
 import { ForgotPasswordDto } from '../dto';
 import { PasswordHasherService } from '../services';
 
-const GENERIC_RESET_MESSAGE = 'If the account exists, password reset instructions have been created.';
+const GENERIC_RESET_MESSAGE = 'Nếu tài khoản tồn tại, yêu cầu đặt lại mật khẩu đã được tạo.';
 
 @Injectable()
 export class RequestPasswordResetUseCase {
