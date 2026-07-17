@@ -186,16 +186,12 @@ export class BuyNowOfferPreviewQueryDto {
   @IsUUID('4')
   offerId!: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
+    type: String,
     example: '6faacfa4-e09f-4ed2-bd74-a05c538f988d',
-    nullable: true,
   })
-  @Transform(({ value }) =>
-    value === undefined || value === '' || value === 'null' ? null : value,
-  )
-  @IsOptional()
-  @IsUUID('4')
-  variantId?: string | null;
+  @IsUUID('4', { message: 'variantId phải là UUID hợp lệ.' })
+  variantId!: string;
 
   @ApiProperty({ example: 1, minimum: 1 })
   @Type(() => Number)

@@ -314,7 +314,7 @@ describe('OfferController', () => {
         shopName: 'Shop ABC',
         offerId: 'offer-1',
         modelName: 'Kem chong nang SPF50',
-        variantId: null,
+        variantId: 'variant-1',
         sku: null,
         quantity: 2,
         price: 150000,
@@ -337,18 +337,18 @@ describe('OfferController', () => {
 
     const result = await controller.getBuyNowPreview('buyer-1', {
       offerId: 'offer-1',
-      variantId: null,
+      variantId: 'variant-1',
       quantity: 2,
     });
 
     expect(catalogRpcService.getBuyNowOfferPreview).toHaveBeenCalledWith({
       offerId: 'offer-1',
-      variantId: null,
+      variantId: 'variant-1',
       quantity: 2,
     });
     expect(ordersRpcService.buyNowCheckout).not.toHaveBeenCalled();
     expect(ordersRpcService.quoteBuyNowShippingOptions).toHaveBeenCalledWith({
-      buyerUserId: 'buyer-1', offerId: 'offer-1', variantId: null, quantity: 2,
+      buyerUserId: 'buyer-1', offerId: 'offer-1', variantId: 'variant-1', quantity: 2,
     });
     expect(result).toEqual(
       expect.objectContaining({

@@ -30,7 +30,7 @@ describe('GetBuyNowOfferPreviewUseCase', () => {
 
     await expect(
       useCase.execute({ offerId: 'offer-1', quantity: 2 }),
-    ).rejects.toThrow('Variant is required for Buy Now.');
+    ).rejects.toThrow('Vui lòng chọn variant để Mua ngay.');
     expect(repository.findBuyNowOfferPreview).toHaveBeenCalledWith({
       offerId: 'offer-1',
       variantId: null,
@@ -99,7 +99,7 @@ describe('GetBuyNowOfferPreviewUseCase', () => {
         variantId: 'variant-1',
         quantity: 1,
       }),
-    ).rejects.toThrow('Variant price is not configured.');
+    ).rejects.toThrow('Variant chưa được cấu hình giá.');
   });
 
   it('rejects missing, inactive, or unapproved offers', async () => {

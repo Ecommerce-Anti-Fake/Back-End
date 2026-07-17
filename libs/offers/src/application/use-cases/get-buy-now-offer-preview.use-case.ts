@@ -15,7 +15,7 @@ export class GetBuyNowOfferPreviewUseCase {
   async execute(input: BuyNowOfferPreviewInput) {
     const quantity = input.quantity;
     if (!Number.isInteger(quantity) || quantity < 1) {
-      throw new BadRequestException('Quantity must be at least 1.');
+      throw new BadRequestException('Số lượng phải lớn hơn hoặc bằng 1.');
     }
 
     const variantId = input.variantId ?? null;
@@ -25,30 +25,30 @@ export class GetBuyNowOfferPreviewUseCase {
     });
 
     if (!offer) {
-      throw new NotFoundException('Offer not found.');
+      throw new NotFoundException('Không tìm thấy offer.');
     }
     if (offer.offerStatus !== 'active' || offer.moderationStatus !== 'approved') {
-      throw new BadRequestException('Offer is not available for Buy Now.');
+      throw new BadRequestException('Offer không khả dụng để Mua ngay.');
     }
 
     const variant = variantId ? (offer.variants[0] ?? null) : null;
     if (variantId && (!variant || !variant.isActive)) {
-      throw new BadRequestException('Variant is not available for Buy Now.');
+      throw new BadRequestException('Variant không khả dụng để Mua ngay.');
     }
 
     if (!variant) {
-      throw new BadRequestException('Variant is required for Buy Now.');
+      throw new BadRequestException('Vui lòng chọn variant để Mua ngay.');
     }
     const availableQuantity = variant.availableQuantity;
     if (quantity > availableQuantity) {
-      throw new BadRequestException('Requested quantity exceeds available stock.');
+      throw new BadRequestException('Số lượng yêu cầu vượt quá tồn kho.');
     }
 
     const thumbnailUrl =
       variant?.mediaAsset?.secureUrl ?? resolveOfferThumbnailUrl(offer.media);
 
     if (variant.price === null) {
-      throw new BadRequestException('Variant price is not configured.');
+      throw new BadRequestException('Variant chưa được cấu hình giá.');
     }
     return {
       shopId: offer.shop.id,

@@ -13,22 +13,22 @@ export class QuoteBuyNowShippingOptionsUseCase {
 
   async execute(input: Input) {
     if (!Number.isInteger(input.quantity) || input.quantity < 1) {
-      throw new BadRequestException('Quantity must be greater than zero');
+      throw new BadRequestException('Số lượng phải lớn hơn 0.');
     }
     const offer = await this.ordersRepository.findOfferForOrdering(input.offerId);
-    if (!offer) throw new NotFoundException('Offer not found');
+    if (!offer) throw new NotFoundException('Không tìm thấy offer.');
     if (offer.offerStatus !== 'active' || offer.moderationStatus !== 'approved') {
-      throw new BadRequestException('Offer is not available for Buy Now');
+      throw new BadRequestException('Offer không khả dụng để Mua ngay.');
     }
     const variant = await this.resolveVariant(input.variantId, offer);
     if (!variant) {
-      throw new BadRequestException('Variant is required for this offer');
+      throw new BadRequestException('Vui lòng chọn variant cho offer này.');
     }
     if (variant.price === null) {
-      throw new BadRequestException('Variant price is not configured');
+      throw new BadRequestException('Variant chưa được cấu hình giá.');
     }
     if (input.quantity > variant.availableQuantity) {
-      throw new BadRequestException('Quantity exceeds available stock');
+      throw new BadRequestException('Số lượng vượt quá tồn kho.');
     }
     const quoted = await this.checkoutShippingService.quoteOptionsForItems({
       buyerUserId: input.buyerUserId,
@@ -46,12 +46,12 @@ export class QuoteBuyNowShippingOptionsUseCase {
     const variantId = variantIdInput?.trim() || null;
     if (!variantId) {
       if ((await this.ordersRepository.countOfferVariants(offer.id)) > 0) {
-        throw new BadRequestException('Variant is required for this offer');
+        throw new BadRequestException('Vui lòng chọn variant cho offer này.');
       }
       return null;
     }
     const variant = await this.ordersRepository.findOfferVariantForOrdering({ offerId: offer.id, variantId });
-    if (!variant || !variant.isActive) throw new BadRequestException('Variant is not available');
+    if (!variant || !variant.isActive) throw new BadRequestException('Variant không khả dụng.');
     return variant;
   }
 }

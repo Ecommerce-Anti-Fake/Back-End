@@ -29,7 +29,14 @@ describe('BuyNowCheckoutUseCase', () => {
       checkoutShippingService as unknown as CheckoutShippingService,
       createOrderUseCase as unknown as CreateOrderUseCase,
     );
-    ordersRepository.countOfferVariants.mockResolvedValue(0);
+    ordersRepository.countOfferVariants.mockResolvedValue(1);
+    ordersRepository.findOfferVariantForOrdering.mockResolvedValue({
+      id: 'variant-1',
+      offerId: 'offer-1',
+      price: new Prisma.Decimal(100000),
+      availableQuantity: 100,
+      isActive: true,
+    });
     ordersRepository.findOfferForOrdering.mockResolvedValue(createOffer());
     checkoutShippingService.resolveSelectedOption.mockResolvedValue({
       optionCode: 'GHN_1',
@@ -64,6 +71,7 @@ describe('BuyNowCheckoutUseCase', () => {
     const result = await useCase.execute({
       buyerUserId: 'buyer-1',
       offerId: 'offer-1',
+      variantId: 'variant-1',
       quantity,
       paymentMethod: 'PAYOS',
       shippingOptionCode: 'GHN_1',
@@ -88,7 +96,7 @@ describe('BuyNowCheckoutUseCase', () => {
       expect.objectContaining({
         buyerUserId: 'buyer-1',
         offerId: 'offer-1',
-        variantId: null,
+        variantId: 'variant-1',
         quantity,
         paymentMethod: 'PAYOS',
         shippingName: 'Buyer',
@@ -138,17 +146,24 @@ describe('BuyNowCheckoutUseCase', () => {
   });
 
   it('rejects unavailable quantity before resolving shipping', async () => {
-    ordersRepository.findOfferForOrdering.mockResolvedValue(createOffer({ availableQuantity: 1 }));
+    ordersRepository.findOfferVariantForOrdering.mockResolvedValue({
+      id: 'variant-1',
+      offerId: 'offer-1',
+      price: new Prisma.Decimal(100000),
+      availableQuantity: 1,
+      isActive: true,
+    });
 
     await expect(
       useCase.execute({
         buyerUserId: 'buyer-1',
         offerId: 'offer-1',
+        variantId: 'variant-1',
         quantity: 2,
         paymentMethod: 'PAYOS',
         shippingOptionCode: 'GHN_1',
       }),
-    ).rejects.toThrow('Quantity exceeds available stock');
+    ).rejects.toThrow('Số lượng vượt quá tồn kho.');
 
     expect(checkoutShippingService.resolveSelectedOption).not.toHaveBeenCalled();
     expect(createOrderUseCase.execute).not.toHaveBeenCalled();

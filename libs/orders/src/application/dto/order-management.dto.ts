@@ -1876,10 +1876,9 @@ export class BuyNowCheckoutDto {
   @IsString()
   offerId!: string;
 
-  @ApiPropertyOptional({ example: 'variant-id', nullable: true })
-  @IsOptional()
-  @IsString()
-  variantId?: string;
+  @ApiProperty({ example: 'variant-id' })
+  @IsString({ message: 'variantId phải là chuỗi.' })
+  variantId!: string;
 
   @ApiProperty({ example: 2 })
   @Type(() => Number)
