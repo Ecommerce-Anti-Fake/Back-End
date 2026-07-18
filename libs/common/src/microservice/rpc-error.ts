@@ -55,6 +55,9 @@ export function toVietnameseMessage(
     return message.map((item) => toVietnameseMessage(item, statusCode) as string);
   }
 
+  const validationMessage = toVietnameseValidationMessage(message);
+  if (validationMessage) return validationMessage;
+
   const mappings: Record<string, string> = {
     ORDER_NOT_FOUND: 'Không tìm thấy đơn hàng.',
     ORDER_ALREADY_PAID: 'Đơn hàng đã được thanh toán.',
@@ -83,6 +86,39 @@ export function toVietnameseMessage(
   if (statusCode === HttpStatus.CONFLICT) return 'Dữ liệu đã tồn tại hoặc đang xung đột.';
   if (statusCode && statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) return 'Đã xảy ra lỗi máy chủ.';
   return 'Dữ liệu yêu cầu không hợp lệ.';
+}
+
+function toVietnameseValidationMessage(message: string): string | null {
+  const match = message.match(
+    /^(?<field>[A-Za-z][A-Za-z0-9_.-]*) (?<rule>must be a string|must be an array|must be a valid email|must be longer than or equal to (?<min>\d+) characters|must be shorter than or equal to (?<max>\d+) characters|should not be empty)$/,
+  );
+
+  if (!match?.groups) return null;
+
+  const fieldLabels: Record<string, string> = {
+    shopName: 'Tên shop',
+    registrationType: 'Loại hình đăng ký',
+    businessType: 'Loại hình kinh doanh',
+    phone: 'Số điện thoại',
+    taxCode: 'Mã số thuế',
+    categoryIds: 'Danh mục sản phẩm',
+  };
+  const field = fieldLabels[match.groups.field] ?? match.groups.field;
+
+  switch (match.groups.rule) {
+    case 'must be a string':
+      return `${field}: không được để trống và phải là chuỗi.`;
+    case 'must be an array':
+      return `${field}: phải là danh sách.`;
+    case 'must be a valid email':
+      return `${field}: phải là email hợp lệ.`;
+    case 'should not be empty':
+      return `${field}: không được để trống.`;
+    default:
+      if (match.groups.min) return `${field}: phải có ít nhất ${match.groups.min} ký tự.`;
+      if (match.groups.max) return `${field}: không được vượt quá ${match.groups.max} ký tự.`;
+      return `${field}: dữ liệu không hợp lệ.`;
+  }
 }
 
 export function throwHttpExceptionFromRpc(error: unknown): never {
