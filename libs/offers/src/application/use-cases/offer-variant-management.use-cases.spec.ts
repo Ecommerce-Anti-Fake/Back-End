@@ -85,4 +85,30 @@ describe('offer variant management use cases', () => {
     });
     expect(result).toEqual({ success: true, message: 'Xóa variant thành công.' });
   });
+  it('restores a deleted variant by updating only its active state', async () => {
+    const repository = {
+      updateOwnedOfferVariant: jest.fn().mockResolvedValue({
+        ...variant,
+        isActive: true,
+      }),
+    };
+    const useCase = new UpdateOfferVariantUseCase(
+      repository as never,
+      {} as never,
+    );
+
+    await useCase.execute({
+      offerId: 'offer-1',
+      variantId: 'variant-1',
+      sellerUserId: 'seller-1',
+      isActive: true,
+    });
+
+    expect(repository.updateOwnedOfferVariant).toHaveBeenCalledWith({
+      offerId: 'offer-1',
+      variantId: 'variant-1',
+      sellerUserId: 'seller-1',
+      data: { isActive: true },
+    });
+  });
 });

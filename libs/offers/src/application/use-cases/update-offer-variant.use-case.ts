@@ -22,6 +22,7 @@ export class UpdateOfferVariantUseCase {
     sellerUserId: string;
     priceOverride?: number | null;
     availableQuantity?: number;
+    isActive?: boolean;
     image?: string | null;
   }) {
     if (input.priceOverride != null && input.priceOverride < 0) {
@@ -68,6 +69,7 @@ export class UpdateOfferVariantUseCase {
         ...(input.availableQuantity !== undefined
           ? { availableQuantity: input.availableQuantity }
           : {}),
+        ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
         ...(mediaAssetId !== undefined ? { mediaAssetId } : {}),
       },
     });

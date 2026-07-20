@@ -272,6 +272,11 @@ export class UpdateOfferVariantDto {
   @Min(0)
   availableQuantity?: number;
 
+  @ApiPropertyOptional({ example: true })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
   @ApiPropertyOptional({ example: 'data:image/png;base64,iVBORw0KGgo...', nullable: true })
   @IsOptional()
   @IsString()

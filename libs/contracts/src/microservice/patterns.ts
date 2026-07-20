@@ -876,6 +876,7 @@ export type UpdateOfferVariantMessage = {
   sellerUserId: string;
   priceOverride?: number | null;
   availableQuantity?: number;
+  isActive?: boolean;
   image?: string | null;
 };
 
