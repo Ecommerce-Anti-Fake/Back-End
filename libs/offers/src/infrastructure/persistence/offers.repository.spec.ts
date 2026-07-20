@@ -132,6 +132,24 @@ describe('OffersRepository', () => {
     );
   });
 
+  it('lists seller variants without including a non-existent nested variants relation', async () => {
+    const prisma = {
+      offer: { findFirst: jest.fn().mockResolvedValue({ id: 'offer-1' }) },
+      offerVariant: { findMany: jest.fn().mockResolvedValue([]) },
+    };
+    const repository = new OffersRepository(prisma as never);
+
+    await repository.findOwnedOfferVariants({
+      offerId: 'offer-1',
+      sellerUserId: 'seller-1',
+      isActive: false,
+    });
+
+    const query = prisma.offerVariant.findMany.mock.calls[0][0];
+    expect(query.where).toEqual({ offerId: 'offer-1', isActive: false });
+    expect(query.include).not.toHaveProperty('variants');
+  });
+
   it('does not recreate an existing option combination', async () => {
     const tx = {
       offerOptionValue: {

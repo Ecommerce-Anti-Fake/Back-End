@@ -519,10 +519,6 @@ export class OffersRepository {
           },
         },
       },
-      variants: {
-        where: { isActive: true },
-        select: { price: true, availableQuantity: true, isActive: true },
-      },
     };
   }
 
