@@ -18,10 +18,30 @@ model Wallet {
   shop             Shop?           @relation(fields: [shopId], references: [id])
   ledgerEntries    WalletLedgerEntry[]
   withdrawals      WalletWithdrawal[]
+  topUps           WalletTopUp[]
 
   @@unique([userId, currency])
   @@unique([shopId, currency])
   @@map("wallet")
+}
+
+model WalletTopUp {
+  id             String           @id @default(uuid())
+  walletId       String           @map("wallet_id")
+  idempotencyKey String           @unique @map("idempotency_key")
+  orderCode      String           @unique @map("order_code")
+  paymentLinkId  String           @unique @map("payment_link_id")
+  amount         Decimal          @db.Decimal(18, 2)
+  currency       String           @default("VND")
+  checkoutUrl    String           @map("checkout_url")
+  status         WalletTopUpStatus @default(PENDING)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  paidAt         DateTime?        @map("paid_at")
+
+  wallet         Wallet           @relation(fields: [walletId], references: [id])
+
+  @@index([walletId, createdAt])
+  @@map("wallet_top_up")
 }
 
 model WalletTransaction {

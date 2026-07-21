@@ -20,6 +20,7 @@ import {
   WalletTransactionsQueryDto,
   CreateWalletWithdrawalDto, AdjustWalletBalanceDto,
   WalletWithdrawalResponseDto,
+  CreateWalletTopUpDto, WalletTopUpResponseDto, WalletReconciliationQueryDto, WalletWithdrawalsQueryDto,
 } from '@wallet';
 import { WalletRpcService } from './wallet-rpc.service';
 
@@ -49,6 +50,37 @@ export class WalletController {
       page: query.page,
       limit: query.limit,
     });
+  }
+
+  @ApiOperation({ summary: 'Tao link nap tien vao vi user' })
+  @ApiOkResponse({ type: WalletTopUpResponseDto })
+  @Post('wallet/me/top-ups')
+  createWalletTopUp(@CurrentUserId() userId: string, @Body() body: CreateWalletTopUpDto) {
+    return this.walletRpcService.createWalletTopUp({ userId, amount: body.amount, idempotencyKey: body.idempotencyKey ?? '' });
+  }
+
+  @ApiOperation({ summary: 'Admin xem cac vi platform' })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Get('admin/wallets/platform')
+  getPlatformWallets() {
+    return this.walletRpcService.getPlatformWallets();
+  }
+
+  @ApiOperation({ summary: 'Admin xem ledger va doi soat wallet' })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Get('admin/wallets/reconciliation')
+  getWalletReconciliation(@Query() query: WalletReconciliationQueryDto) {
+    return this.walletRpcService.getWalletReconciliation(query);
+  }
+
+  @ApiOperation({ summary: 'Admin xem danh sach yeu cau rut tien' })
+  @Roles('admin')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @Get('admin/wallet-withdrawals')
+  listAdminWalletWithdrawals(@Query() query: WalletWithdrawalsQueryDto) {
+    return this.walletRpcService.listAdminWalletWithdrawals({ page: query.page, limit: query.limit, status: query.status });
   }
 
   @ApiOperation({ summary: 'Lay vi VND cua shop neu la chu shop hoac admin' })

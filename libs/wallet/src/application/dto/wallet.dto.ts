@@ -27,6 +27,27 @@ export class WalletResponseDto {
   @ApiProperty() status!: string;
 }
 
+export class CreateWalletTopUpDto {
+  @ApiProperty({ example: '100000' })
+  @IsDecimal({ decimal_digits: '0,2' })
+  amount!: string;
+
+  @ApiPropertyOptional({ description: 'Client-generated key for safe retries' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  idempotencyKey?: string;
+}
+
+export class WalletTopUpResponseDto {
+  @ApiProperty() topUpId!: string;
+  @ApiProperty() paymentLinkId!: string;
+  @ApiProperty() checkoutUrl!: string;
+  @ApiProperty({ type: String }) amount!: string;
+  @ApiProperty() currency!: string;
+  @ApiProperty() status!: string;
+}
+
 export class WalletLedgerEntryResponseDto {
   @ApiProperty() transactionCode!: string;
   @ApiProperty() transactionType!: string;
@@ -101,4 +122,11 @@ export class WalletReconciliationQueryDto extends WalletTransactionsQueryDto {
   @ApiPropertyOptional() @IsOptional() @IsString() shopId?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() transactionType?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() status?: string;
+}
+
+export class WalletWithdrawalsQueryDto extends WalletTransactionsQueryDto {
+  @ApiPropertyOptional({ enum: ['PENDING', 'COMPLETED', 'REJECTED'] })
+  @IsOptional()
+  @IsIn(['PENDING', 'COMPLETED', 'REJECTED'])
+  status?: 'PENDING' | 'COMPLETED' | 'REJECTED';
 }

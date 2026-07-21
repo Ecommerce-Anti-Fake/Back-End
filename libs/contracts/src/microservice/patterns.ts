@@ -88,6 +88,10 @@ export const WALLET_MESSAGE_PATTERNS = {
   rejectWalletWithdrawal: 'wallet.reject-withdrawal',
   adjustWalletBalance: 'wallet.adjust-wallet-balance',
   getWalletReconciliation: 'wallet.get-wallet-reconciliation',
+  createWalletTopUp: 'wallet.create-top-up',
+  handleWalletTopUpWebhook: 'wallet.handle-top-up-webhook',
+  getPlatformWallets: 'wallet.get-platform-wallets',
+  listAdminWalletWithdrawals: 'wallet.list-admin-withdrawals',
 } as const;
 
 export const PRODUCTS_MESSAGE_PATTERNS = {

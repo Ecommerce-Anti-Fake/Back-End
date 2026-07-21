@@ -68,6 +68,26 @@ export class WalletRpcService {
     return this.send(WALLET_MESSAGE_PATTERNS.rejectWalletWithdrawal, payload);
   }
 
+  createWalletTopUp(payload: { userId: string; amount: string; idempotencyKey: string }) {
+    return this.send(WALLET_MESSAGE_PATTERNS.createWalletTopUp, payload);
+  }
+
+  handleWalletTopUpWebhook(payload: { code: string; desc: string; success: boolean; signature: string; data: Record<string, unknown> }) {
+    return this.send(WALLET_MESSAGE_PATTERNS.handleWalletTopUpWebhook, payload);
+  }
+
+  getPlatformWallets() {
+    return this.send(WALLET_MESSAGE_PATTERNS.getPlatformWallets, {});
+  }
+
+  getWalletReconciliation(payload: { fromDate?: string; toDate?: string; shopId?: string; transactionType?: string; status?: string; page?: number; limit?: number }) {
+    return this.send(WALLET_MESSAGE_PATTERNS.getWalletReconciliation, payload);
+  }
+
+  listAdminWalletWithdrawals(payload: { page: number; limit: number; status?: string }) {
+    return this.send(WALLET_MESSAGE_PATTERNS.listAdminWalletWithdrawals, payload);
+  }
+
   adjustWalletBalance(payload: { walletId: string; adminUserId: string; direction: 'CREDIT' | 'DEBIT'; balanceType: 'AVAILABLE' | 'PENDING' | 'LOCKED'; amount: string; reason: string }) {
     return this.send(WALLET_MESSAGE_PATTERNS.adjustWalletBalance, payload);
   }

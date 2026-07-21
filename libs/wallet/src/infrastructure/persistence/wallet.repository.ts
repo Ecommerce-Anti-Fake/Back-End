@@ -308,11 +308,12 @@ export class WalletRepository extends WalletRepositoryPort {
       ...(input.shopId ? { ledgerEntries: { some: { wallet: { shopId: input.shopId } } } } : {}),
     };
     const ledgerWhere = { transaction: where };
-    const [items, total, credits, debits, payment, escrowHeld, released, platformFee, refund, withdrawal] = await this.prisma.$transaction([
+    const [items, total, credits, debits, topUp, payment, escrowHeld, released, platformFee, refund, withdrawal] = await this.prisma.$transaction([
       this.prisma.walletTransaction.findMany({ where, select: { transactionType: true, status: true, amount: true, currency: true, referenceType: true, referenceId: true, createdAt: true }, orderBy: [{ createdAt: 'desc' }, { transactionCode: 'desc' }], skip: (page - 1) * limit, take: limit }),
       this.prisma.walletTransaction.count({ where }),
       this.prisma.walletLedgerEntry.aggregate({ where: ledgerWhere, _sum: { amount: true } }),
       this.prisma.walletLedgerEntry.aggregate({ where: { ...ledgerWhere, direction: 'DEBIT' }, _sum: { amount: true } }),
+      this.prisma.walletTransaction.aggregate({ where: { ...where, transactionType: 'TOP_UP' }, _sum: { amount: true } }),
       this.prisma.walletTransaction.aggregate({ where: { ...where, transactionType: 'PAYMENT' }, _sum: { amount: true } }),
       this.prisma.walletTransaction.aggregate({ where: { ...where, transactionType: 'ESCROW_HOLD' }, _sum: { amount: true } }),
       this.prisma.walletTransaction.aggregate({ where: { ...where, transactionType: 'ESCROW_RELEASE' }, _sum: { amount: true } }),
@@ -321,7 +322,7 @@ export class WalletRepository extends WalletRepositoryPort {
       this.prisma.walletTransaction.aggregate({ where: { ...where, transactionType: { in: ['WITHDRAWAL', 'WITHDRAWAL_REQUEST'] as any } }, _sum: { amount: true } }),
     ]);
     const sum = (value: Prisma.Decimal | null | undefined) => (value ?? new Prisma.Decimal(0)).toFixed(2);
-    return { summary: { totalPayment: sum(payment._sum.amount), totalEscrowHeld: sum(escrowHeld._sum.amount), totalReleasedToShops: sum(released._sum.amount), totalPlatformFee: sum(platformFee._sum.amount), totalRefund: sum(refund._sum.amount), totalWithdrawal: sum(withdrawal._sum.amount), difference: sum((credits._sum.amount ?? new Prisma.Decimal(0)).minus(debits._sum.amount ?? new Prisma.Decimal(0))) }, items: items.map((item) => ({ transactionType: item.transactionType, status: item.status, amount: item.amount.toFixed(2), currency: item.currency, referenceType: item.referenceType, referenceId: item.referenceId, createdAt: item.createdAt })), pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return { summary: { totalTopUp: sum(topUp._sum.amount), totalPayment: sum(payment._sum.amount), totalEscrowHeld: sum(escrowHeld._sum.amount), totalReleasedToShops: sum(released._sum.amount), totalPlatformFee: sum(platformFee._sum.amount), totalRefund: sum(refund._sum.amount), totalWithdrawal: sum(withdrawal._sum.amount), difference: sum((credits._sum.amount ?? new Prisma.Decimal(0)).minus(debits._sum.amount ?? new Prisma.Decimal(0))) }, items: items.map((item) => ({ transactionType: item.transactionType, status: item.status, amount: item.amount.toFixed(2), currency: item.currency, referenceType: item.referenceType, referenceId: item.referenceId, createdAt: item.createdAt })), pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
   findOrCreateShopWalletInTransaction(tx: WalletClient, shopId: string, currency = 'VND') {
@@ -349,6 +350,22 @@ export class WalletRepository extends WalletRepositoryPort {
       where: { walletId },
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
     });
+  }
+
+  async listAllWithdrawals(page = 1, pageSize = 20, status?: string) {
+    const safePage = Math.max(1, page);
+    const safePageSize = Math.min(100, Math.max(1, pageSize));
+    const where = status ? { status: status as any } : {};
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.walletWithdrawal.findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], skip: (safePage - 1) * safePageSize, take: safePageSize }),
+      this.prisma.walletWithdrawal.count({ where }),
+    ]);
+    return { items: items.map((withdrawal) => ({ id: withdrawal.id, walletId: withdrawal.walletId, amount: withdrawal.amount.toFixed(2), bankName: withdrawal.bankName, accountNumber: withdrawal.accountNumber, accountHolder: withdrawal.accountHolder, status: withdrawal.status, createdAt: withdrawal.createdAt, processedAt: withdrawal.processedAt })), pagination: { page: safePage, limit: safePageSize, total, totalPages: Math.ceil(total / safePageSize) } };
+  }
+
+  async listPlatformWallets() {
+    const wallets = await Promise.all(['PLATFORM_REVENUE_VND', 'PLATFORM_ESCROW_VND'].map((platformCode) => this.findOrCreatePlatformWallet(platformCode, 'VND')));
+    return Promise.all(wallets.map(async (wallet) => ({ wallet: { walletCode: wallet.walletCode, platformCode: wallet.platformCode, currency: wallet.currency, availableBalance: wallet.availableBalance.toFixed(2), pendingBalance: wallet.pendingBalance.toFixed(2), lockedBalance: wallet.lockedBalance.toFixed(2), status: wallet.status }, ledger: await this.listLedger(wallet.id, 1, 20) })));
   }
 
   private async findOrCreateWallet(input: {

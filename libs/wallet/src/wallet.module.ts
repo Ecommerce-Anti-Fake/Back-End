@@ -14,8 +14,14 @@ import {
   ApproveWalletWithdrawalUseCase,
   RejectWalletWithdrawalUseCase,
   AdjustWalletBalanceUseCase,
+  GetWalletReconciliationUseCase,
+  CreateWalletTopUpUseCase,
+  HandleWalletTopUpWebhookUseCase,
+  ListAdminWalletWithdrawalsUseCase,
+  GetPlatformWalletsUseCase,
 } from './application/use-cases';
 import { WalletRpcController } from './presentation/rpc/wallet.rpc-controller';
+import { PayOSTopUpService } from './infrastructure/payos-top-up.service';
 
 @Module({
   imports: [PrismaModule],
@@ -33,8 +39,14 @@ import { WalletRpcController } from './presentation/rpc/wallet.rpc-controller';
     ApproveWalletWithdrawalUseCase,
     RejectWalletWithdrawalUseCase,
     AdjustWalletBalanceUseCase,
+    GetWalletReconciliationUseCase,
+    CreateWalletTopUpUseCase,
+    HandleWalletTopUpWebhookUseCase,
+    PayOSTopUpService,
+    ListAdminWalletWithdrawalsUseCase,
+    GetPlatformWalletsUseCase,
     { provide: WalletRepositoryPort, useExisting: WalletRepository },
   ],
-  exports: [WalletRepository, WalletService, WalletRepositoryPort, ReconcileShopWalletUseCase, RequestWalletWithdrawalUseCase, ListShopWalletWithdrawalsUseCase, ApproveWalletWithdrawalUseCase, RejectWalletWithdrawalUseCase, AdjustWalletBalanceUseCase],
+  exports: [WalletRepository, WalletService, WalletRepositoryPort, ReconcileShopWalletUseCase, RequestWalletWithdrawalUseCase, ListShopWalletWithdrawalsUseCase, ApproveWalletWithdrawalUseCase, RejectWalletWithdrawalUseCase, AdjustWalletBalanceUseCase, GetWalletReconciliationUseCase],
 })
 export class WalletModule {}

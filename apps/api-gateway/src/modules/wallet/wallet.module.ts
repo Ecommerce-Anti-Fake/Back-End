@@ -6,6 +6,7 @@ import { AuthGuardsModule } from '@security';
 import { GatewayUserModule } from '../user/user.module';
 import { WalletController } from './wallet.controller';
 import { WalletRpcService } from './wallet-rpc.service';
+import { WalletTopUpWebhookController } from './wallet-top-up-webhook.controller';
 
 @Module({
   imports: [
@@ -33,7 +34,7 @@ import { WalletRpcService } from './wallet-rpc.service';
       },
     ]),
   ],
-  controllers: [WalletController],
+  controllers: [WalletController, WalletTopUpWebhookController],
   providers: [WalletRpcService],
 })
 export class GatewayWalletModule {}

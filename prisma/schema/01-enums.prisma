@@ -186,6 +186,13 @@ enum WalletTransactionStatus {
   REVERSED
 }
 
+enum WalletTopUpStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+}
+
 enum WalletEntryDirection {
   DEBIT
   CREDIT

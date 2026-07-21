@@ -9,3 +9,8 @@ export * from './list-shop-wallet-withdrawals.use-case';
 export * from './approve-wallet-withdrawal.use-case';
 export * from './reject-wallet-withdrawal.use-case';
 export * from './adjust-wallet-balance.use-case';
+export * from './get-wallet-reconciliation.use-case';
+export * from './create-wallet-top-up.use-case';
+export * from './handle-wallet-top-up-webhook.use-case';
+export * from './list-admin-wallet-withdrawals.use-case';
+export * from './get-platform-wallets.use-case';

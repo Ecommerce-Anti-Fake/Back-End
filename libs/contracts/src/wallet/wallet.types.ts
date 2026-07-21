@@ -24,3 +24,17 @@ export interface ShopWalletWithdrawalMessage extends ShopWalletLookupMessage {
 export interface WalletWithdrawalActionMessage {
   id: string;
 }
+
+export interface WalletTopUpCreateMessage {
+  userId: string;
+  amount: string;
+  idempotencyKey: string;
+}
+
+export interface WalletTopUpWebhookMessage {
+  code: string;
+  desc: string;
+  success: boolean;
+  signature: string;
+  data: Record<string, unknown>;
+}

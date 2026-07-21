@@ -9,6 +9,8 @@ import type {
   ShopWalletTransactionsLookupMessage,
   ShopWalletWithdrawalMessage,
   WalletWithdrawalActionMessage,
+  WalletTopUpCreateMessage,
+  WalletTopUpWebhookMessage,
 } from '@contracts';
 import {
   GetMyWalletTransactionsUseCase,
@@ -20,6 +22,11 @@ import {
   ApproveWalletWithdrawalUseCase,
   RejectWalletWithdrawalUseCase,
   AdjustWalletBalanceUseCase,
+  GetWalletReconciliationUseCase,
+  CreateWalletTopUpUseCase,
+  HandleWalletTopUpWebhookUseCase,
+  ListAdminWalletWithdrawalsUseCase,
+  GetPlatformWalletsUseCase,
 } from '../../application/use-cases';
 
 @Controller()
@@ -34,6 +41,11 @@ export class WalletRpcController {
     private readonly approveWalletWithdrawalUseCase: ApproveWalletWithdrawalUseCase,
     private readonly rejectWalletWithdrawalUseCase: RejectWalletWithdrawalUseCase,
     private readonly adjustWalletBalanceUseCase: AdjustWalletBalanceUseCase,
+    private readonly getWalletReconciliationUseCase: GetWalletReconciliationUseCase,
+    private readonly createWalletTopUpUseCase: CreateWalletTopUpUseCase,
+    private readonly handleWalletTopUpWebhookUseCase: HandleWalletTopUpWebhookUseCase,
+    private readonly listAdminWalletWithdrawalsUseCase: ListAdminWalletWithdrawalsUseCase,
+    private readonly getPlatformWalletsUseCase: GetPlatformWalletsUseCase,
   ) {}
 
   @MessagePattern(WALLET_MESSAGE_PATTERNS.getMyWallet)
@@ -129,5 +141,30 @@ export class WalletRpcController {
   @MessagePattern(WALLET_MESSAGE_PATTERNS.adjustWalletBalance)
   async adjustWalletBalance(@Payload() payload: any) {
     try { return await this.adjustWalletBalanceUseCase.execute(payload); } catch (error) { throwRpcException(error); }
+  }
+
+  @MessagePattern(WALLET_MESSAGE_PATTERNS.createWalletTopUp)
+  async createWalletTopUp(@Payload() payload: WalletTopUpCreateMessage) {
+    try { return await this.createWalletTopUpUseCase.execute(payload); } catch (error) { throwRpcException(error); }
+  }
+
+  @MessagePattern(WALLET_MESSAGE_PATTERNS.handleWalletTopUpWebhook)
+  async handleWalletTopUpWebhook(@Payload() payload: WalletTopUpWebhookMessage) {
+    try { return await this.handleWalletTopUpWebhookUseCase.execute(payload); } catch (error) { throwRpcException(error); }
+  }
+
+  @MessagePattern(WALLET_MESSAGE_PATTERNS.getWalletReconciliation)
+  async getWalletReconciliation(@Payload() payload: { fromDate?: string; toDate?: string; shopId?: string; transactionType?: string; status?: string; page?: number; limit?: number }) {
+    try { return await this.getWalletReconciliationUseCase.execute(payload); } catch (error) { throwRpcException(error); }
+  }
+
+  @MessagePattern(WALLET_MESSAGE_PATTERNS.getPlatformWallets)
+  async getPlatformWallets() {
+    try { return await this.getPlatformWalletsUseCase.execute(); } catch (error) { throwRpcException(error); }
+  }
+
+  @MessagePattern(WALLET_MESSAGE_PATTERNS.listAdminWalletWithdrawals)
+  async listAdminWalletWithdrawals(@Payload() payload: { page?: number; limit?: number; status?: string }) {
+    try { return await this.listAdminWalletWithdrawalsUseCase.execute(payload); } catch (error) { throwRpcException(error); }
   }
 }
