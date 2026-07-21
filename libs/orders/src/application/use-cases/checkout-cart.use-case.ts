@@ -9,6 +9,7 @@ import {
   PayOSPaymentService,
 } from '../services';
 import { PayOrderByWalletUseCase } from './pay-order-by-wallet.use-case';
+import { VoucherPricingService } from '../vouchers/voucher-pricing.service';
 
 type CheckoutCartInput = {
   buyerUserId: string;
@@ -16,6 +17,9 @@ type CheckoutCartInput = {
   paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   shippingOptionCode: string;
   affiliateCode?: string | null;
+  systemVoucherCode?: string | null;
+  shopVouchers?: Array<{ shopId: string; voucherCode: string }>;
+  shippingVouchers?: Array<{ shopId: string; voucherCode: string }>;
 };
 
 @Injectable()
@@ -27,6 +31,7 @@ export class CheckoutCartUseCase {
     private readonly payOSPaymentService: PayOSPaymentService,
     private readonly orderNotificationService: OrderNotificationService,
     private readonly payOrderByWalletUseCase: PayOrderByWalletUseCase,
+    private readonly voucherPricingService: VoucherPricingService,
   ) {}
 
   async execute(input: CheckoutCartInput) {
@@ -36,20 +41,25 @@ export class CheckoutCartUseCase {
     );
     const shippingOption = await this.resolveShippingOption(input, selectedItems);
     const shipping = await this.checkoutShippingService.resolveDefaultShipping(input.buyerUserId, shippingOption);
-    const groups = this.createShopGroups(selectedItems, shippingOption.shippingFee);
+    const groups = await this.applyVouchers(
+      this.createShopGroups(selectedItems, shippingOption.shippingFee),
+      input,
+    );
     if (input.affiliateCode && selectedItems.length !== 1) {
       throw new BadRequestException('Affiliate checkout currently requires exactly one cart item');
     }
     const baseAmount = groups.reduce((total, group) => total + group.baseAmount, 0);
     const platformFeeAmount = groups.reduce((total, group) => total + group.platformFeeAmount, 0);
     const sellerReceivableAmount = groups.reduce((total, group) => total + group.sellerReceivableAmount, 0);
-    const buyerPayableAmount = this.roundMoney(baseAmount + shippingOption.shippingFee);
+    const discountAmount = groups.reduce((total, group) => total + group.discountAmount, 0);
+    const buyerPayableAmount = this.roundMoney(baseAmount + shippingOption.shippingFee - discountAmount);
 
     const orderInput = {
       buyerUserId: input.buyerUserId,
       legacyShopId: groups[0].shopId,
       paymentMethod: input.paymentMethod,
       baseAmount,
+      discountAmount,
       platformFeeAmount,
       buyerPayableAmount,
       sellerReceivableAmount,
@@ -144,7 +154,7 @@ export class CheckoutCartUseCase {
 
     const subtotal = items.reduce((total, item) => total + Number(item.unitPriceSnapshot.toString()) * item.quantity, 0);
     let allocatedShipping = 0;
-    return Array.from(grouped.entries()).map(([shopId, shopItems], index, allGroups) => {
+      return Array.from(grouped.entries()).map(([shopId, shopItems], index, allGroups) => {
       const baseAmount = this.roundMoney(
         shopItems.reduce((total, item) => total + Number(item.unitPriceSnapshot.toString()) * item.quantity, 0),
       );
@@ -166,6 +176,7 @@ export class CheckoutCartUseCase {
       return {
         shopId,
         baseAmount,
+        discountAmount: 0,
         platformFeeAmount,
         sellerReceivableAmount: this.roundMoney(baseAmount - platformFeeAmount),
         shippingFeeAmount: groupShippingFee,
@@ -189,6 +200,68 @@ export class CheckoutCartUseCase {
             mediaUrl: optionValue.mediaAsset?.secureUrl ?? null,
           })),
         })),
+      };
+    });
+  }
+
+  private async applyVouchers(groups: ReturnType<CheckoutCartUseCase['createShopGroups']>, input: CheckoutCartInput) {
+    if (!input.systemVoucherCode && !(input.shopVouchers?.length) && !(input.shippingVouchers?.length)) {
+      return groups;
+    }
+    const vouchers = await this.ordersRepository.findCheckoutVouchers({
+      systemVoucherCode: input.systemVoucherCode,
+      shopVoucherCodes: input.shopVouchers?.map((voucher) => voucher.voucherCode),
+      shippingVoucherCodes: input.shippingVouchers?.map((voucher) => voucher.voucherCode),
+    });
+    const findCode = (code?: string | null) => vouchers.find((voucher) => voucher.code === code?.trim().toUpperCase());
+    const systemVoucher = findCode(input.systemVoucherCode);
+    if (input.systemVoucherCode && (!systemVoucher || systemVoucher.ownerType !== 'SYSTEM')) {
+      throw new BadRequestException('Voucher hệ thống không hợp lệ hoặc đã hết hạn');
+    }
+
+    const shopDiscounts = groups.map((group) => {
+      const selection = input.shopVouchers?.find((voucher) => voucher.shopId === group.shopId);
+      const voucher = findCode(selection?.voucherCode);
+      if (selection && (!voucher || voucher.ownerType !== 'SHOP' || voucher.shopId !== group.shopId)) {
+        throw new BadRequestException('Voucher shop không hợp lệ');
+      }
+      return voucher?.discountType === 'FREE_SHIPPING'
+        ? new Prisma.Decimal(0)
+        : voucher
+          ? this.voucherPricingService.calculateProductDiscount(voucher, new Prisma.Decimal(group.baseAmount))
+          : new Prisma.Decimal(0);
+    });
+    const eligibleAmounts = groups.map((group, index) => new Prisma.Decimal(group.baseAmount).minus(shopDiscounts[index]));
+    const systemDiscount = systemVoucher
+      ? this.voucherPricingService.calculateProductDiscount(systemVoucher, eligibleAmounts.reduce((sum, value) => sum.plus(value), new Prisma.Decimal(0)))
+      : new Prisma.Decimal(0);
+    const systemAllocations = this.voucherPricingService.allocateSystemDiscount(eligibleAmounts, systemDiscount);
+
+    return groups.map((group, index) => {
+      const shopSelection = input.shopVouchers?.find((voucher) => voucher.shopId === group.shopId);
+      const shopVoucher = findCode(shopSelection?.voucherCode);
+      const shippingSelection = input.shippingVouchers?.find((voucher) => voucher.shopId === group.shopId);
+      const shippingVoucher = findCode(shippingSelection?.voucherCode);
+      if (shippingSelection && (!shippingVoucher || shippingVoucher.ownerType !== 'SHOP' || shippingVoucher.shopId !== group.shopId || shippingVoucher.discountType !== 'FREE_SHIPPING')) {
+        throw new BadRequestException('Voucher vận chuyển không hợp lệ');
+      }
+      const shopShippingDiscount = shippingVoucher
+        ? this.voucherPricingService.calculateShippingDiscount(shippingVoucher, new Prisma.Decimal(group.shippingFeeAmount))
+        : new Prisma.Decimal(0);
+      const pricing = this.voucherPricingService.calculateGroup({
+        grossAmount: new Prisma.Decimal(group.baseAmount),
+        shippingFee: new Prisma.Decimal(group.shippingFeeAmount),
+        shopProductDiscount: shopDiscounts[index],
+        systemProductDiscount: systemAllocations[index],
+        shippingDiscount: shopShippingDiscount,
+        shopShippingDiscount,
+        commissionRate: new Prisma.Decimal('0.2'),
+      });
+      return {
+        ...group,
+        discountAmount: Number(shopDiscounts[index].plus(systemAllocations[index]).plus(shopShippingDiscount)),
+        platformFeeAmount: Number(pricing.platformFee),
+        sellerReceivableAmount: Number(pricing.sellerReceivable),
       };
     });
   }

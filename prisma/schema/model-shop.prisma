@@ -35,6 +35,7 @@ model Shop {
   socialPosts                SocialPost[]
   liveSessions               LiveCommerceSession[]
   wallets                    Wallet[]
+  vouchers                   Voucher[]
 
   @@index([shopTypeId])
   @@map("shop")

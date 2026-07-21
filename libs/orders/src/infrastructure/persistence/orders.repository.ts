@@ -434,6 +434,7 @@ export type CreateAggregateOrderRecordInput = {
   legacyShopId: string;
   paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   baseAmount: number;
+  discountAmount: number;
   platformFeeAmount: number;
   buyerPayableAmount: number;
   sellerReceivableAmount: number;
@@ -452,6 +453,7 @@ export type CreateAggregateOrderRecordInput = {
   groups: Array<{
     shopId: string;
     baseAmount: number;
+    discountAmount: number;
     platformFeeAmount: number;
     sellerReceivableAmount: number;
     shippingFeeAmount: number;
@@ -549,6 +551,28 @@ export type SupplyBatchReceipt = {
 @Injectable()
 export class OrdersRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  async findCheckoutVouchers(input: {
+    systemVoucherCode?: string | null;
+    shopVoucherCodes?: string[];
+    shippingVoucherCodes?: string[];
+  }) {
+    const codes = [
+      input.systemVoucherCode,
+      ...(input.shopVoucherCodes ?? []),
+      ...(input.shippingVoucherCodes ?? []),
+    ].filter((code): code is string => Boolean(code?.trim()));
+    if (codes.length === 0) return [];
+
+    return this.prisma.voucher.findMany({
+      where: {
+        code: { in: [...new Set(codes.map((code) => code.trim().toUpperCase()))] },
+        status: 'ACTIVE',
+        startsAt: { lte: new Date() },
+        endsAt: { gte: new Date() },
+      },
+    });
+  }
 
   withTransaction<T>(callback: (tx: Prisma.TransactionClient) => Promise<T>) {
     return this.prisma.$transaction((tx) => callback(tx));
@@ -1034,7 +1058,7 @@ export class OrdersRepository {
         orderStatus: 'pending',
         fulfillmentStatus: 'PENDING',
         baseAmount: data.baseAmount,
-        discountAmount: 0,
+        discountAmount: data.discountAmount,
         platformFeeAmount: data.platformFeeAmount,
         buyerPayableAmount: data.buyerPayableAmount,
         sellerReceivableAmount: data.sellerReceivableAmount,
@@ -1055,7 +1079,7 @@ export class OrdersRepository {
             shopId: group.shopId,
             fulfillmentStatus: 'PENDING',
             baseAmount: group.baseAmount,
-            discountAmount: 0,
+            discountAmount: group.discountAmount,
             platformFeeAmount: group.platformFeeAmount,
             sellerReceivableAmount: group.sellerReceivableAmount,
             shippingName: data.shipping.name,

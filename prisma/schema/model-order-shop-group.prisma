@@ -29,6 +29,7 @@ model OrderShopGroup {
   order                  Order       @relation(fields: [orderId], references: [id])
   shop                   Shop        @relation(fields: [shopId], references: [id])
   items                  OrderItem[]
+  voucherAllocations     OrderVoucherAllocation[]
 
   @@unique([orderId, shopId])
   @@index([shopId, fulfillmentStatus])

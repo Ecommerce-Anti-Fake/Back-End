@@ -10,6 +10,9 @@ type BuyNowCheckoutInput = {
   quantity: number;
   paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   shippingOptionCode: string;
+  systemVoucherCode?: string | null;
+  shopVoucherCode?: string | null;
+  shippingVoucherCode?: string | null;
 };
 
 @Injectable()
@@ -75,6 +78,9 @@ export class BuyNowCheckoutUseCase {
       shippingProviderCode: shippingOption.providerCode,
       shippingServiceId: shippingOption.shippingServiceId,
       shippingServiceTypeId: shippingOption.shippingServiceTypeId,
+      systemVoucherCode: input.systemVoucherCode,
+      shopVoucherCode: input.shopVoucherCode,
+      shippingVoucherCode: input.shippingVoucherCode,
     });
   }
 

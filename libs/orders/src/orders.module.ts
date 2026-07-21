@@ -80,6 +80,7 @@ import { OrdersRepository } from './infrastructure/persistence/orders.repository
 import { OrdersRpcController } from './presentation/rpc/orders.rpc-controller';
 import { CATALOG_SERVICE_CLIENT } from '@contracts';
 import { WalletModule } from '@wallet/wallet.module';
+import { VoucherPricingService } from './application/vouchers/voucher-pricing.service';
 
 @Module({
   imports: [
@@ -200,6 +201,7 @@ import { WalletModule } from '@wallet/wallet.module';
     UpdateOrderFulfillmentUseCase,
     PayOrderByWalletUseCase,
     ReleaseEscrowUseCase,
+    VoucherPricingService,
   ],
   exports: [
     OrdersRepository,
@@ -263,6 +265,7 @@ import { WalletModule } from '@wallet/wallet.module';
     UpdateOrderFulfillmentUseCase,
     PayOrderByWalletUseCase,
     ReleaseEscrowUseCase,
+    VoucherPricingService,
   ],
 })
 export class OrdersModule {}

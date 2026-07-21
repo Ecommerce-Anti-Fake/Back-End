@@ -45,6 +45,7 @@ model User {
   liveSessionComments  LiveSessionComment[] @relation("LiveCommentAuthor")
   hiddenLiveSessionComments LiveSessionComment[] @relation("LiveCommentHiddenBy")
   wallets               Wallet[]
+  voucherRedemptions    VoucherRedemption[]
 
   @@map("user")
 }

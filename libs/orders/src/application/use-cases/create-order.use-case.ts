@@ -37,6 +37,9 @@ export class CreateOrderUseCase {
     shippingServiceId?: number | null;
     shippingServiceTypeId?: number | null;
     skipPayOSPaymentLink?: boolean | null;
+    systemVoucherCode?: string | null;
+    shopVoucherCode?: string | null;
+    shippingVoucherCode?: string | null;
   }) {
     const buyer = await this.ordersRepository.findUserById(input.buyerUserId);
     if (!buyer) throw new NotFoundException('Buyer not found');

@@ -1869,6 +1869,25 @@ export class CheckoutCartDto {
   @IsOptional()
   @IsString()
   affiliateCode?: string;
+
+  @ApiPropertyOptional({ example: 'SYSTEM2026' })
+  @IsOptional()
+  @IsString()
+  systemVoucherCode?: string;
+
+  @ApiPropertyOptional({
+    example: [{ shopId: 'shop-id', voucherCode: 'SHOP10' }],
+  })
+  @IsOptional()
+  @IsArray()
+  shopVouchers?: Array<{ shopId: string; voucherCode: string }>;
+
+  @ApiPropertyOptional({
+    example: [{ shopId: 'shop-id', voucherCode: 'FREESHIP' }],
+  })
+  @IsOptional()
+  @IsArray()
+  shippingVouchers?: Array<{ shopId: string; voucherCode: string }>;
 }
 
 export class BuyNowCheckoutDto {
@@ -1893,6 +1912,21 @@ export class BuyNowCheckoutDto {
   @ApiProperty({ example: 'GHN_1' })
   @IsString()
   shippingOptionCode!: string;
+
+  @ApiPropertyOptional({ example: 'SYSTEM2026' })
+  @IsOptional()
+  @IsString()
+  systemVoucherCode?: string;
+
+  @ApiPropertyOptional({ example: 'SHOP10' })
+  @IsOptional()
+  @IsString()
+  shopVoucherCode?: string;
+
+  @ApiPropertyOptional({ example: 'FREESHIP' })
+  @IsOptional()
+  @IsString()
+  shippingVoucherCode?: string;
 }
 
 export class CheckoutCartCodResponseDto {

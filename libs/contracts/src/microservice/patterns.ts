@@ -1103,6 +1103,9 @@ export type CheckoutCartMessage = {
   paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   shippingOptionCode: string;
   affiliateCode?: string | null;
+  systemVoucherCode?: string | null;
+  shopVouchers?: Array<{ shopId: string; voucherCode: string }>;
+  shippingVouchers?: Array<{ shopId: string; voucherCode: string }>;
 };
 
 export type BuyNowCheckoutMessage = {
@@ -1112,6 +1115,9 @@ export type BuyNowCheckoutMessage = {
   quantity: number;
   paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   shippingOptionCode: string;
+  systemVoucherCode?: string | null;
+  shopVoucherCode?: string | null;
+  shippingVoucherCode?: string | null;
 };
 
 export type QuoteCartItemShippingOptionsMessage = {

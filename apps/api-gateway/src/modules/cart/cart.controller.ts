@@ -116,6 +116,9 @@ export class CartController {
       paymentMethod: dto.paymentMethod,
       shippingOptionCode: dto.shippingOptionCode,
       affiliateCode: dto.affiliateCode ?? null,
+      systemVoucherCode: dto.systemVoucherCode ?? null,
+      shopVouchers: dto.shopVouchers ?? [],
+      shippingVouchers: dto.shippingVouchers ?? [],
     });
     this.dashboardSseBrokerService.notifyOrderChanged(result, buyerUserId);
 

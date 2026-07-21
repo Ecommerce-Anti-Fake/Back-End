@@ -168,6 +168,9 @@ export class OfferController {
       quantity: dto.quantity,
       paymentMethod: dto.paymentMethod,
       shippingOptionCode: dto.shippingOptionCode,
+      systemVoucherCode: dto.systemVoucherCode ?? null,
+      shopVoucherCode: dto.shopVoucherCode ?? null,
+      shippingVoucherCode: dto.shippingVoucherCode ?? null,
     });
     this.dashboardSseBrokerService.notifyOrderChanged(result, buyerUserId);
 

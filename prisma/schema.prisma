@@ -212,6 +212,30 @@ enum WalletBalanceType {
   LOCKED
 }
 
+enum VoucherOwnerType {
+  SYSTEM
+  SHOP
+}
+
+enum VoucherDiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+}
+
+enum VoucherStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  EXPIRED
+}
+
+enum VoucherRedemptionStatus {
+  RESERVED
+  USED
+  RELEASED
+}
+
 model AffiliateAccount {
   id                String                      @id @default(uuid())
   programId         String                      @map("program_id")
@@ -1144,6 +1168,7 @@ model OrderShopGroup {
   order                  Order       @relation(fields: [orderId], references: [id])
   shop                   Shop        @relation(fields: [shopId], references: [id])
   items                  OrderItem[]
+  voucherAllocations     OrderVoucherAllocation[]
 
   @@unique([orderId, shopId])
   @@index([shopId, fulfillmentStatus])
@@ -1190,6 +1215,8 @@ model Order {
   shopGroups              OrderShopGroup[]
   paymentIntent           PaymentIntent?
   walletTransactions      WalletTransaction[]
+  voucherRedemptions      VoucherRedemption[]
+  voucherAllocations      OrderVoucherAllocation[]
   escrow                  Escrow?
   disputes                Dispute[]
   reviews                 Review[]
@@ -1441,6 +1468,7 @@ model Shop {
   socialPosts                SocialPost[]
   liveSessions               LiveCommerceSession[]
   wallets                    Wallet[]
+  vouchers                   Voucher[]
 
   @@index([shopTypeId])
   @@map("shop")
@@ -1729,6 +1757,7 @@ model User {
   liveSessionComments  LiveSessionComment[] @relation("LiveCommentAuthor")
   hiddenLiveSessionComments LiveSessionComment[] @relation("LiveCommentHiddenBy")
   wallets               Wallet[]
+  voucherRedemptions    VoucherRedemption[]
 
   @@map("user")
 }
@@ -1762,6 +1791,73 @@ model VerificationRequirement {
   shopDocuments        ShopDocument[]
   @@index([isActive])
   @@map("verification_requirement")
+}
+
+model Voucher {
+  id                  String              @id @default(uuid())
+  ownerType           VoucherOwnerType    @map("owner_type")
+  shopId              String?             @map("shop_id")
+  code                String
+  name                String
+  discountType        VoucherDiscountType @map("discount_type")
+  percentage          Decimal?            @db.Decimal(5, 2)
+  fixedAmount         Decimal?            @map("fixed_amount") @db.Decimal(18, 2)
+  maxDiscountAmount   Decimal?            @map("max_discount_amount") @db.Decimal(18, 2)
+  minOrderAmount      Decimal             @default(0) @map("min_order_amount") @db.Decimal(18, 2)
+  scopeType           String              @default("ALL") @map("scope_type")
+  scopeIds            String[]            @default([]) @map("scope_ids")
+  totalUsageLimit     Int?                @map("total_usage_limit")
+  userUsageLimit      Int?                @map("user_usage_limit")
+  startsAt            DateTime            @map("starts_at")
+  endsAt              DateTime            @map("ends_at")
+  status              VoucherStatus       @default(DRAFT)
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+  shop                Shop?               @relation(fields: [shopId], references: [id])
+  redemptions         VoucherRedemption[]
+  allocations         OrderVoucherAllocation[]
+
+  @@unique([ownerType, shopId, code])
+  @@index([ownerType, status, startsAt, endsAt])
+  @@index([shopId, status])
+  @@map("voucher")
+}
+
+model VoucherRedemption {
+  id             String                  @id @default(uuid())
+  voucherId      String                  @map("voucher_id")
+  userId         String                  @map("user_id")
+  orderId        String?                 @map("order_id")
+  status         VoucherRedemptionStatus @default(RESERVED)
+  idempotencyKey String                  @unique @map("idempotency_key")
+  redeemedAt     DateTime                @default(now()) @map("redeemed_at")
+  releasedAt     DateTime?               @map("released_at")
+  voucher        Voucher                 @relation(fields: [voucherId], references: [id])
+  user           User                    @relation(fields: [userId], references: [id])
+  order          Order?                  @relation(fields: [orderId], references: [id])
+
+  @@unique([voucherId, userId, orderId])
+  @@index([voucherId, status])
+  @@index([userId, status])
+  @@map("voucher_redemption")
+}
+
+model OrderVoucherAllocation {
+  id                    String        @id @default(uuid())
+  orderId               String        @map("order_id")
+  orderShopGroupId      String        @map("order_shop_group_id")
+  voucherId             String        @map("voucher_id")
+  productDiscountAmount Decimal       @default(0) @map("product_discount_amount") @db.Decimal(18, 2)
+  shippingDiscountAmount Decimal      @default(0) @map("shipping_discount_amount") @db.Decimal(18, 2)
+  eligibleBaseAmount    Decimal       @default(0) @map("eligible_base_amount") @db.Decimal(18, 2)
+  fundingSource         VoucherOwnerType @map("funding_source")
+  order                 Order         @relation(fields: [orderId], references: [id])
+  orderShopGroup        OrderShopGroup @relation(fields: [orderShopGroupId], references: [id])
+  voucher               Voucher       @relation(fields: [voucherId], references: [id])
+
+  @@unique([orderId, orderShopGroupId, voucherId])
+  @@index([voucherId])
+  @@map("order_voucher_allocation")
 }
 
 model WalletWithdrawal {

@@ -203,3 +203,27 @@ enum WalletBalanceType {
   PENDING
   LOCKED
 }
+
+enum VoucherOwnerType {
+  SYSTEM
+  SHOP
+}
+
+enum VoucherDiscountType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+}
+
+enum VoucherStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  EXPIRED
+}
+
+enum VoucherRedemptionStatus {
+  RESERVED
+  USED
+  RELEASED
+}
