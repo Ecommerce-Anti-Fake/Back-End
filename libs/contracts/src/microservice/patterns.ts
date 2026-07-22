@@ -6,6 +6,15 @@ export const AFFILIATE_SERVICE_CLIENT = 'AFFILIATE_SERVICE_CLIENT';
 
 export const AUTH_MESSAGE_PATTERNS = {
   register: 'auth.register',
+  googleRegister: 'auth.google-register',
+  resumeRegistration: 'auth.registration.resume',
+  getRegistrationSession: 'auth.registration-session.get',
+  getEmailVerificationContext: 'auth.registration-verification.email-context',
+  createRegistrationChallenge: 'auth.registration-verification.create',
+  resendRegistrationChallenge: 'auth.registration-verification.resend',
+  confirmRegistrationChallenge: 'auth.registration-verification.confirm',
+  confirmGoogleLink: 'auth.google-link.confirm',
+  setLocalCredentials: 'auth.local-credentials.set',
   login: 'auth.login',
   firebaseLogin: 'auth.firebase-login',
   refresh: 'auth.refresh',
@@ -92,8 +101,10 @@ export const WALLET_MESSAGE_PATTERNS = {
   createPayoutAccount: 'wallet.create-payout-account',
   listPayoutAccounts: 'wallet.list-payout-accounts',
   disablePayoutAccount: 'wallet.disable-payout-account',
-  createWithdrawalAuthorizationChallenge: 'wallet.create-withdrawal-authorization-challenge',
-  verifyWithdrawalAuthorizationChallenge: 'wallet.verify-withdrawal-authorization-challenge',
+  createWithdrawalAuthorizationChallenge:
+    'wallet.create-withdrawal-authorization-challenge',
+  verifyWithdrawalAuthorizationChallenge:
+    'wallet.verify-withdrawal-authorization-challenge',
   listAdminPayoutAccounts: 'wallet.list-admin-payout-accounts',
   verifyPayoutAccount: 'wallet.verify-payout-account',
   rejectPayoutAccount: 'wallet.reject-payout-account',
@@ -441,7 +452,8 @@ export type CreateUserIdentityMessage = {
   email: string | null;
   phone: string | null;
   displayName: string | null;
-  password: string;
+  password: string | null;
+  accountStatus?: string;
   role?: string;
 };
 
@@ -1130,7 +1142,10 @@ export type CheckoutCartMessage = {
   shippingVouchers?: Array<{ shopId: string; voucherCode: string }>;
 };
 
-export type QuoteCartCheckoutMessage = Omit<CheckoutCartMessage, 'paymentMethod' | 'affiliateCode'>;
+export type QuoteCartCheckoutMessage = Omit<
+  CheckoutCartMessage,
+  'paymentMethod' | 'affiliateCode'
+>;
 
 export type QuoteBuyNowCheckoutMessage = {
   buyerUserId: string;
@@ -1190,8 +1205,15 @@ export type UpdateVoucherStatusMessage = {
 };
 
 export type GetVoucherMessage = { requesterUserId: string; voucherId: string };
-export type UpdateVoucherMessage = Partial<Omit<CreateVoucherMessage, 'requesterUserId' | 'ownerType' | 'shopId'>> & { requesterUserId: string; voucherId: string };
-export type ListVoucherRedemptionsMessage = { requesterUserId: string; voucherId: string; page?: number; pageSize?: number };
+export type UpdateVoucherMessage = Partial<
+  Omit<CreateVoucherMessage, 'requesterUserId' | 'ownerType' | 'shopId'>
+> & { requesterUserId: string; voucherId: string };
+export type ListVoucherRedemptionsMessage = {
+  requesterUserId: string;
+  voucherId: string;
+  page?: number;
+  pageSize?: number;
+};
 
 export type QuoteCartItemShippingOptionsMessage = {
   buyerUserId: string;
@@ -1698,7 +1720,12 @@ export type AddBatchDocumentsBatchMessage = {
   requesterUserId: string;
   items: Array<{
     docType: string;
-    file: { buffer: Buffer | { data?: number[] }; mimetype: string; originalname?: string; size: number };
+    file: {
+      buffer: Buffer | { data?: number[] };
+      mimetype: string;
+      originalname?: string;
+      size: number;
+    };
     issuerName?: string | null;
     documentNumber?: string | null;
   }>;

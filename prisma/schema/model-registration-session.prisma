@@ -1,0 +1,19 @@
+model RegistrationSession {
+  id                     String                      @id @default(uuid())
+  userId                 String                      @map("user_id")
+  provider               String
+  purpose                String
+  pendingProviderSubject String?                     @map("pending_provider_subject")
+  tokenHash              String                      @map("token_hash")
+  expiresAt              DateTime                    @map("expires_at")
+  completedAt            DateTime?                   @map("completed_at")
+  revokedAt              DateTime?                   @map("revoked_at")
+  createdAt              DateTime                    @default(now()) @map("created_at")
+  updatedAt              DateTime                    @updatedAt @map("updated_at")
+  user                   User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenges             RegistrationChallenge[]
+
+  @@index([userId, completedAt, revokedAt])
+  @@index([expiresAt])
+  @@map("registration_session")
+}

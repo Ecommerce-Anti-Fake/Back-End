@@ -9,17 +9,33 @@ import { PrismaModule } from '@database/prisma/prisma.module';
 import { PasswordHasherService } from './application/services';
 import {
   ChangePasswordUseCase,
+  ConfirmGoogleLinkUseCase,
   FirebaseLoginUseCase,
+  GoogleRegisterUseCase,
+  GetEmailVerificationContextUseCase,
+  GetRegistrationSessionUseCase,
   LoginUseCase,
   LogoutUseCase,
   RefreshTokenUseCase,
   RegisterUseCase,
   RequestPasswordResetUseCase,
   ResetPasswordUseCase,
+  ConfirmRegistrationChallengeUseCase,
+  CreateRegistrationChallengeUseCase,
+  ResendRegistrationChallengeUseCase,
+  ResumeRegistrationUseCase,
+  SetLocalCredentialsUseCase,
 } from './application/use-cases';
 import { FirebaseTokenVerifierService } from './application/services';
-import { JwtTokenAdapter, UsersIdentityAdapter } from './infrastructure/adapters';
-import { AuthSessionRepository, PasswordResetTokenRepository } from './infrastructure/persistence';
+import {
+  JwtTokenAdapter,
+  UsersIdentityAdapter,
+} from './infrastructure/adapters';
+import {
+  AuthSessionRepository,
+  PasswordResetTokenRepository,
+  RegistrationRepository,
+} from './infrastructure/persistence';
 import { AuthRpcController } from './presentation/rpc/auth.rpc-controller';
 
 @Module({
@@ -39,7 +55,9 @@ import { AuthRpcController } from './presentation/rpc/auth.rpc-controller';
           secret,
           signOptions: {
             expiresIn:
-              (configService.get<string>('ACCESS_TOKEN_TTL')?.trim() as StringValue) || '15m',
+              (configService
+                .get<string>('ACCESS_TOKEN_TTL')
+                ?.trim() as StringValue) || '15m',
           },
         };
       },
@@ -52,7 +70,9 @@ import { AuthRpcController } from './presentation/rpc/auth.rpc-controller';
         useFactory: (configService: ConfigService) => ({
           transport: Transport.TCP,
           options: {
-            host: configService.get<string>('USERS_SERVICE_HOST')?.trim() || '127.0.0.1',
+            host:
+              configService.get<string>('USERS_SERVICE_HOST')?.trim() ||
+              '127.0.0.1',
             port: configService.get<number>('USERS_SERVICE_PORT') ?? 4002,
           },
         }),
@@ -65,7 +85,16 @@ import { AuthRpcController } from './presentation/rpc/auth.rpc-controller';
     FirebaseTokenVerifierService,
     LoginUseCase,
     FirebaseLoginUseCase,
+    GoogleRegisterUseCase,
+    GetEmailVerificationContextUseCase,
+    GetRegistrationSessionUseCase,
     RegisterUseCase,
+    CreateRegistrationChallengeUseCase,
+    ResendRegistrationChallengeUseCase,
+    ResumeRegistrationUseCase,
+    ConfirmRegistrationChallengeUseCase,
+    ConfirmGoogleLinkUseCase,
+    SetLocalCredentialsUseCase,
     LogoutUseCase,
     RefreshTokenUseCase,
     RequestPasswordResetUseCase,
@@ -73,6 +102,7 @@ import { AuthRpcController } from './presentation/rpc/auth.rpc-controller';
     ChangePasswordUseCase,
     AuthSessionRepository,
     PasswordResetTokenRepository,
+    RegistrationRepository,
     JwtTokenAdapter,
     UsersIdentityAdapter,
     {

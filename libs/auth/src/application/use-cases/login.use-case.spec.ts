@@ -46,18 +46,23 @@ describe('LoginUseCase', () => {
     useCase = module.get<LoginUseCase>(LoginUseCase);
   });
 
-  it('should reject inactive accounts', async () => {
+  it('rejects a pending account only after the password is proven', async () => {
     userIdentityPortMock.findByIdentifier.mockResolvedValueOnce({
       id: 'user-1',
       email: 'user@example.com',
       password: 'stored-hash',
       role: 'user',
-      accountStatus: 'blocked',
+      accountStatus: 'pending_verification',
     });
+    passwordHasherServiceMock.verifyPassword.mockResolvedValueOnce(true);
 
     await expect(
       useCase.execute({ username: 'user@example.com', password: '12345678' }),
-    ).rejects.toThrow(ForbiddenException);
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        error: 'ACCOUNT_VERIFICATION_REQUIRED',
+      }),
+    });
   });
 
   it('should reject invalid credentials', async () => {
@@ -66,6 +71,24 @@ describe('LoginUseCase', () => {
     await expect(
       useCase.execute({ username: 'user@example.com', password: '12345678' }),
     ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('does not allow an unverified contact to be used as the login identifier', async () => {
+    userIdentityPortMock.findByIdentifier.mockResolvedValueOnce({
+      id: 'user-1',
+      email: 'user@example.com',
+      phone: '0901234567',
+      emailVerifiedAt: null,
+      phoneVerifiedAt: new Date(),
+      password: 'stored-hash',
+      role: 'user',
+      accountStatus: 'active',
+    });
+    passwordHasherServiceMock.verifyPassword.mockResolvedValueOnce(true);
+
+    await expect(
+      useCase.execute({ username: 'user@example.com', password: '12345678' }),
+    ).rejects.toThrow(ForbiddenException);
   });
 
   it('should return access token, refresh token, and safe user payload', async () => {
@@ -77,6 +100,8 @@ describe('LoginUseCase', () => {
       password: 'stored-password-hash',
       role: 'user',
       accountStatus: 'active',
+      emailVerifiedAt: new Date(),
+      phoneVerifiedAt: null,
       avatarMedia: {
         secureUrl: 'https://cdn.example.com/avatar.jpg',
       },
@@ -87,13 +112,21 @@ describe('LoginUseCase', () => {
     passwordHasherServiceMock.verifyPassword.mockResolvedValueOnce(true);
     authSessionRepositoryMock.create.mockResolvedValueOnce({ id: 'session-1' });
     authSessionRepositoryMock.update.mockResolvedValue({});
-    jwtTokenAdapterMock.generateAccessToken.mockResolvedValueOnce('access-token');
+    jwtTokenAdapterMock.generateAccessToken.mockResolvedValueOnce(
+      'access-token',
+    );
     jwtTokenAdapterMock.generateTokenId
       .mockReturnValueOnce('refresh-token-id')
       .mockReturnValueOnce('token-family-id');
-    jwtTokenAdapterMock.calculateRefreshExpiry.mockReturnValueOnce(new Date(Date.now() + 60_000));
-    jwtTokenAdapterMock.generateRefreshToken.mockResolvedValueOnce('refresh-token');
-    passwordHasherServiceMock.hashOpaqueToken.mockReturnValueOnce('hashed-refresh-token');
+    jwtTokenAdapterMock.calculateRefreshExpiry.mockReturnValueOnce(
+      new Date(Date.now() + 60_000),
+    );
+    jwtTokenAdapterMock.generateRefreshToken.mockResolvedValueOnce(
+      'refresh-token',
+    );
+    passwordHasherServiceMock.hashOpaqueToken.mockReturnValueOnce(
+      'hashed-refresh-token',
+    );
 
     const result = await useCase.execute({
       username: 'USER@example.com',

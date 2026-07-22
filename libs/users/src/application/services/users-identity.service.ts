@@ -9,7 +9,10 @@ export class UsersIdentityService {
     return this.usersRepository.findById(id);
   }
 
-  findByIdentifier(identifier: { email?: string | null; phone?: string | null }) {
+  findByIdentifier(identifier: {
+    email?: string | null;
+    phone?: string | null;
+  }) {
     return this.usersRepository.findByIdentifier(identifier);
   }
 
@@ -17,7 +20,8 @@ export class UsersIdentityService {
     email: string | null;
     phone: string | null;
     displayName: string | null;
-    password: string;
+    password: string | null;
+    accountStatus?: string;
   }) {
     return this.usersRepository.create(data);
   }

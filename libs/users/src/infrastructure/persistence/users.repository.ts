@@ -73,9 +73,15 @@ const pendingUserKycsArgs = Prisma.validator<Prisma.UserKycDefaultArgs>()({
   },
 });
 
-export type UserKycWithDocuments = Prisma.UserKycGetPayload<typeof userKycWithDocumentsArgs>;
-export type PendingUserKycRecord = Prisma.UserKycGetPayload<typeof pendingUserKycsArgs>;
-export type UserKycWithHistory = Prisma.UserKycGetPayload<typeof userKycWithHistoryArgs>;
+export type UserKycWithDocuments = Prisma.UserKycGetPayload<
+  typeof userKycWithDocumentsArgs
+>;
+export type PendingUserKycRecord = Prisma.UserKycGetPayload<
+  typeof pendingUserKycsArgs
+>;
+export type UserKycWithHistory = Prisma.UserKycGetPayload<
+  typeof userKycWithHistoryArgs
+>;
 export type AuditLogRecord = {
   id: string;
   action: string;
@@ -125,7 +131,12 @@ export class UsersRepository {
     });
   }
 
-  async listNotifications(input: { userId: string; filter?: 'unread' | 'readed'; page?: number; pageSize?: number }) {
+  async listNotifications(input: {
+    userId: string;
+    filter?: 'unread' | 'readed';
+    page?: number;
+    pageSize?: number;
+  }) {
     const page = Math.max(1, Number(input.page || 1));
     const pageSize = Math.min(100, Math.max(1, Number(input.pageSize || 20)));
     const where: Prisma.NotificationWhereInput = {
@@ -136,7 +147,9 @@ export class UsersRepository {
 
     const [total, unreadCount, items] = await this.prisma.$transaction([
       this.prisma.notification.count({ where }),
-      this.prisma.notification.count({ where: { userId: input.userId, readAt: null } }),
+      this.prisma.notification.count({
+        where: { userId: input.userId, readAt: null },
+      }),
       this.prisma.notification.findMany({
         where,
         orderBy: { createdAt: 'desc' },
@@ -199,7 +212,12 @@ export class UsersRepository {
     });
   }
 
-  registerNotificationFcmToken(input: { userId: string; token: string; deviceId?: string | null; userAgent?: string | null }) {
+  registerNotificationFcmToken(input: {
+    userId: string;
+    token: string;
+    deviceId?: string | null;
+    userAgent?: string | null;
+  }) {
     const tokenHash = hashFcmToken(input.token);
 
     return this.prisma.notificationFcmToken.upsert({
@@ -221,7 +239,11 @@ export class UsersRepository {
     });
   }
 
-  revokeNotificationFcmToken(input: { userId: string; token?: string | null; deviceId?: string | null }) {
+  revokeNotificationFcmToken(input: {
+    userId: string;
+    token?: string | null;
+    deviceId?: string | null;
+  }) {
     const tokenHash = input.token ? hashFcmToken(input.token) : null;
     const where: Prisma.NotificationFcmTokenWhereInput = {
       userId: input.userId,
@@ -284,7 +306,9 @@ export class UsersRepository {
     isDefault?: boolean;
   }) {
     return this.prisma.$transaction(async (tx) => {
-      const existingCount = await tx.userAddress.count({ where: { userId: input.userId } });
+      const existingCount = await tx.userAddress.count({
+        where: { userId: input.userId },
+      });
       const shouldBeDefault = Boolean(input.isDefault) || existingCount === 0;
 
       if (shouldBeDefault) {
@@ -325,7 +349,11 @@ export class UsersRepository {
     return this.prisma.$transaction(async (tx) => {
       if (input.isDefault) {
         await tx.userAddress.updateMany({
-          where: { userId: input.userId, isDefault: true, id: { not: input.addressId } },
+          where: {
+            userId: input.userId,
+            isDefault: true,
+            id: { not: input.addressId },
+          },
           data: { isDefault: false },
         });
       }
@@ -405,15 +433,20 @@ export class UsersRepository {
     });
   }
 
-  findByIdentifier(identifier: { email?: string | null; phone?: string | null }) {
+  findByIdentifier(identifier: {
+    email?: string | null;
+    phone?: string | null;
+  }) {
     const { email, phone } = identifier;
 
     return this.prisma.user.findFirst({
       where: {
         OR: [
-          email ? { email } : undefined,
+          email
+            ? { email: { equals: email, mode: 'insensitive' as const } }
+            : undefined,
           phone ? { phone } : undefined,
-        ].filter(Boolean) as Array<{ email?: string; phone?: string }>,
+        ].filter(Boolean) as Prisma.UserWhereInput[],
       },
       include: {
         avatarMedia: {
@@ -462,7 +495,8 @@ export class UsersRepository {
     email: string | null;
     phone: string | null;
     displayName: string | null;
-    password: string;
+    password: string | null;
+    accountStatus?: string;
     role?: string;
   }) {
     return this.prisma.user.create({ data });
@@ -506,27 +540,32 @@ export class UsersRepository {
           : { accountStatus: input.status };
     const where = { ...baseWhere, ...statusWhere };
 
-    const [totalItems, totalUser, totalShop, activeUser, bannedUser, items] = await this.prisma.$transaction([
-      this.prisma.user.count({ where }),
-      this.prisma.user.count({ where: baseWhere }),
-      this.prisma.shop.count({ where: { owner: { is: baseWhere } } }),
-      this.prisma.user.count({ where: { ...baseWhere, accountStatus: 'active' } }),
-      this.prisma.user.count({ where: { ...baseWhere, accountStatus: { not: 'active' } } }),
-      this.prisma.user.findMany({
-        where,
-        include: {
-          avatarMedia: { select: { secureUrl: true } },
-          ownedShops: {
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-            select: { shopName: true },
+    const [totalItems, totalUser, totalShop, activeUser, bannedUser, items] =
+      await this.prisma.$transaction([
+        this.prisma.user.count({ where }),
+        this.prisma.user.count({ where: baseWhere }),
+        this.prisma.shop.count({ where: { owner: { is: baseWhere } } }),
+        this.prisma.user.count({
+          where: { ...baseWhere, accountStatus: 'active' },
+        }),
+        this.prisma.user.count({
+          where: { ...baseWhere, accountStatus: { not: 'active' } },
+        }),
+        this.prisma.user.findMany({
+          where,
+          include: {
+            avatarMedia: { select: { secureUrl: true } },
+            ownedShops: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: { shopName: true },
+            },
           },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip: (input.page - 1) * input.pageSize,
-        take: input.pageSize,
-      }),
-    ]);
+          orderBy: { createdAt: 'desc' },
+          skip: (input.page - 1) * input.pageSize,
+          take: input.pageSize,
+        }),
+      ]);
 
     return { totalItems, totalUser, totalShop, activeUser, bannedUser, items };
   }
@@ -572,38 +611,54 @@ export class UsersRepository {
     }
 
     const shop = user.ownedShops[0];
-    const [orders, posts, reports, receivedReviews, positiveReviews, shopReviewStats, shopSaleStats, shopRevenueStats] =
-      await Promise.all([
-        this.prisma.order.count({ where: { buyerUserId: id } }),
-        this.prisma.socialPost.count({ where: { authorUserId: id } }),
-        this.prisma.report.count({ where: { reporterUserId: id } }),
-        this.prisma.review.count({ where: { toUserId: id } }),
-        this.prisma.review.count({ where: { toUserId: id, rating: { gte: 4 } } }),
-        shop
-          ? this.prisma.review.aggregate({
-              where: {
-                OR: [
-                  { orderItem: { is: { orderShopGroup: { is: { shopId: shop.id } } } } },
-                  { orderItemId: null, order: { shopId: shop.id } },
-                ],
+    const [
+      orders,
+      posts,
+      reports,
+      receivedReviews,
+      positiveReviews,
+      shopReviewStats,
+      shopSaleStats,
+      shopRevenueStats,
+    ] = await Promise.all([
+      this.prisma.order.count({ where: { buyerUserId: id } }),
+      this.prisma.socialPost.count({ where: { authorUserId: id } }),
+      this.prisma.report.count({ where: { reporterUserId: id } }),
+      this.prisma.review.count({ where: { toUserId: id } }),
+      this.prisma.review.count({ where: { toUserId: id, rating: { gte: 4 } } }),
+      shop
+        ? this.prisma.review.aggregate({
+            where: {
+              OR: [
+                {
+                  orderItem: {
+                    is: { orderShopGroup: { is: { shopId: shop.id } } },
+                  },
+                },
+                { orderItemId: null, order: { shopId: shop.id } },
+              ],
+            },
+            _avg: { rating: true },
+            _count: { _all: true },
+          })
+        : null,
+      shop
+        ? this.prisma.orderItem.aggregate({
+            where: {
+              orderShopGroup: {
+                is: { shopId: shop.id, fulfillmentStatus: 'DELIVERED' },
               },
-              _avg: { rating: true },
-              _count: { _all: true },
-            })
-          : null,
-        shop
-          ? this.prisma.orderItem.aggregate({
-              where: { orderShopGroup: { is: { shopId: shop.id, fulfillmentStatus: 'DELIVERED' } } },
-              _sum: { quantity: true },
-            })
-          : null,
-        shop
-          ? this.prisma.orderShopGroup.aggregate({
-              where: { shopId: shop.id, fulfillmentStatus: 'DELIVERED' },
-              _sum: { sellerReceivableAmount: true },
-            })
-          : null,
-      ]);
+            },
+            _sum: { quantity: true },
+          })
+        : null,
+      shop
+        ? this.prisma.orderShopGroup.aggregate({
+            where: { shopId: shop.id, fulfillmentStatus: 'DELIVERED' },
+            _sum: { sellerReceivableAmount: true },
+          })
+        : null,
+    ]);
 
     return {
       user,
@@ -630,7 +685,9 @@ export class UsersRepository {
     });
   }
 
-  findUserKycWithHistoryByUserId(userId: string): Promise<UserKycWithHistory | null> {
+  findUserKycWithHistoryByUserId(
+    userId: string,
+  ): Promise<UserKycWithHistory | null> {
     return this.prisma.userKyc.findUnique({
       where: { userId },
       ...userKycWithHistoryArgs,
@@ -646,7 +703,8 @@ export class UsersRepository {
     sortOrder?: 'asc' | 'desc';
   }): Promise<{ total: number; items: PendingUserKycRecord[] }> {
     const page = input?.page && input.page > 0 ? input.page : 1;
-    const pageSize = input?.pageSize && input.pageSize > 0 ? input.pageSize : 20;
+    const pageSize =
+      input?.pageSize && input.pageSize > 0 ? input.pageSize : 20;
     const sortBy = input?.sortBy ?? 'id';
     const sortOrder = input?.sortOrder ?? 'desc';
     const where: Prisma.UserKycWhereInput = {
@@ -755,7 +813,10 @@ export class UsersRepository {
     `);
   }
 
-  findAuditLogsByTarget(targetType: string, targetId: string): Promise<AuditLogRecord[]> {
+  findAuditLogsByTarget(
+    targetType: string,
+    targetId: string,
+  ): Promise<AuditLogRecord[]> {
     return this.prisma
       .$queryRaw<
         Array<{
@@ -770,7 +831,8 @@ export class UsersRepository {
           actorDisplayName: string | null;
           actorEmail: string | null;
         }>
-      >(Prisma.sql`
+      >(
+        Prisma.sql`
         SELECT
           al.id,
           al.action,
@@ -787,7 +849,8 @@ export class UsersRepository {
         WHERE al.target_type = ${targetType}
           AND al.target_id = ${targetId}
         ORDER BY al.created_at DESC
-      `)
+      `,
+      )
       .then((rows) =>
         rows.map((row) => ({
           id: row.id,
@@ -806,7 +869,10 @@ export class UsersRepository {
       );
   }
 
-  findUserByEmailOrPhone(identifier: { email?: string | null; phone?: string | null }, excludeId?: string) {
+  findUserByEmailOrPhone(
+    identifier: { email?: string | null; phone?: string | null },
+    excludeId?: string,
+  ) {
     const { email, phone } = identifier;
 
     return this.prisma.user.findFirst({

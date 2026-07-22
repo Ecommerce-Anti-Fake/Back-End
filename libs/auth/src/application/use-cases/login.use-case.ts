@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { LoginDto } from '../dto';
 import { TokenPair, UserIdentityPort } from '@contracts';
 import { JwtTokenAdapter } from '../../infrastructure/adapters';
@@ -47,20 +52,50 @@ export class LoginUseCase {
       return null;
     }
 
-    if (user.accountStatus !== 'active') {
-      throw new ForbiddenException('Account is not active');
-    }
-
     const isValid = await this.passwordHasherService.verifyPassword(
       password,
       user.password,
     );
 
-    return isValid ? user : null;
+    if (!isValid) {
+      return null;
+    }
+    if (user.accountStatus === 'pending_verification') {
+      throw new ForbiddenException({
+        statusCode: 403,
+        error: 'ACCOUNT_VERIFICATION_REQUIRED',
+        message: 'Tai khoan chua hoan tat xac minh.',
+      });
+    }
+    if (user.accountStatus !== 'active') {
+      throw new ForbiddenException('Account is not active');
+    }
+    if (identifier.email && user.emailVerifiedAt === null) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        error: 'EMAIL_NOT_VERIFIED',
+        message: 'Email chua duoc xac minh.',
+      });
+    }
+    if (identifier.phone && user.phoneVerifiedAt === null) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        error: 'PHONE_NOT_VERIFIED',
+        message: 'So dien thoai chua duoc xac minh.',
+      });
+    }
+
+    return user;
   }
 
-  private async issueSessionTokens(userId: string, role: string): Promise<TokenPair> {
-    const accessToken = await this.jwtTokenAdapter.generateAccessToken(userId, role);
+  private async issueSessionTokens(
+    userId: string,
+    role: string,
+  ): Promise<TokenPair> {
+    const accessToken = await this.jwtTokenAdapter.generateAccessToken(
+      userId,
+      role,
+    );
     const refreshTokenId = this.jwtTokenAdapter.generateTokenId();
     const session = await this.authSessionRepository.create({
       userId,
@@ -76,10 +111,10 @@ export class LoginUseCase {
     );
 
     await this.authSessionRepository.update(session.id, {
-      currentTokenHash: this.passwordHasherService.hashOpaqueToken(refreshToken),
+      currentTokenHash:
+        this.passwordHasherService.hashOpaqueToken(refreshToken),
     });
 
     return { accessToken, refreshToken };
   }
-
 }

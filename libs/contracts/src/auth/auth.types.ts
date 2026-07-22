@@ -7,6 +7,8 @@ export type SafeUser = {
   shopId: string | null;
   role: string;
   accountStatus: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 };

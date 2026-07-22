@@ -444,6 +444,37 @@ model AuditLog {
   @@map("audit_log")
 }
 
+model AuthIdentity {
+  id              String   @id @default(uuid())
+  userId          String   @map("user_id")
+  provider        String
+  providerSubject String   @map("provider_subject")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSubject])
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("auth_identity")
+}
+
+model AuthLinkIntent {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  provider        String
+  providerSubject String    @map("provider_subject")
+  tokenHash       String    @map("token_hash")
+  expiresAt       DateTime  @map("expires_at")
+  usedAt          DateTime? @map("used_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, usedAt])
+  @@index([expiresAt])
+  @@map("auth_link_intent")
+}
+
 model AuthSession {
   id               String    @id @default(uuid())
   userId           String    @map("user_id")
@@ -1346,6 +1377,42 @@ model ProvenanceEvent {
   @@map("provenance_event")
 }
 
+model RegistrationChallenge {
+  id             String              @id @default(uuid())
+  sessionId      String              @map("session_id")
+  channel        String
+  stateTokenHash String?             @map("state_token_hash")
+  status         String              @default("PENDING")
+  expiresAt      DateTime            @map("expires_at")
+  verifiedAt     DateTime?           @map("verified_at")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  session        RegistrationSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, status])
+  @@index([expiresAt])
+  @@map("registration_challenge")
+}
+
+model RegistrationSession {
+  id                     String                      @id @default(uuid())
+  userId                 String                      @map("user_id")
+  provider               String
+  purpose                String
+  pendingProviderSubject String?                     @map("pending_provider_subject")
+  tokenHash              String                      @map("token_hash")
+  expiresAt              DateTime                    @map("expires_at")
+  completedAt            DateTime?                   @map("completed_at")
+  revokedAt              DateTime?                   @map("revoked_at")
+  createdAt              DateTime                    @default(now()) @map("created_at")
+  updatedAt              DateTime                    @updatedAt @map("updated_at")
+  user                   User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenges             RegistrationChallenge[]
+
+  @@index([userId, completedAt, revokedAt])
+  @@index([expiresAt])
+  @@map("registration_session")
+}
+
 model Report {
   id             String   @id @default(uuid())
   reporterUserId String   @map("reporter_user_id")
@@ -1792,11 +1859,16 @@ model User {
   password             String?
   role                 String                @default("user")
   accountStatus        String                @default("active") @map("account_status")
+  emailVerifiedAt      DateTime?             @map("email_verified_at")
+  phoneVerifiedAt      DateTime?             @map("phone_verified_at")
   avatarMediaId        String?               @map("avatar_media_id") @unique
   avatarMedia          MediaAsset?           @relation("UserAvatarMedia", fields: [avatarMediaId], references: [id])
   createdAt            DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
   authSessions         AuthSession[]
+  authIdentities       AuthIdentity[]
+  registrationSessions RegistrationSession[]
+  authLinkIntents      AuthLinkIntent[]
   passwordResetTokens  PasswordResetToken[]
   kyc                  UserKyc?
   ownedShops           Shop[]                @relation("ShopOwner")

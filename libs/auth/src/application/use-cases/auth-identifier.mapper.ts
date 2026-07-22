@@ -4,15 +4,21 @@ export function normalizeEmail(email?: string): string | null {
 }
 
 export function normalizePhone(phone?: string): string | null {
-  const normalized = phone?.trim();
-  return normalized || null;
+  const normalized = phone?.trim().replace(/[\s.-]/g, '');
+  if (!normalized) return null;
+  if (/^\+84\d{9}$/.test(normalized)) return `0${normalized.slice(3)}`;
+  if (/^84\d{9}$/.test(normalized)) return `0${normalized.slice(2)}`;
+  return normalized;
 }
 
 export function isEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
-export function toLoginIdentifier(username: string): { email: string | null; phone: string | null } {
+export function toLoginIdentifier(username: string): {
+  email: string | null;
+  phone: string | null;
+} {
   const identifier = username.trim();
   return isEmail(identifier)
     ? { email: normalizeEmail(identifier), phone: null }

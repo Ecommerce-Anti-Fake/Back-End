@@ -20,21 +20,25 @@ describe('GetUserByIdUseCase', () => {
         phone: '0901234567',
         role: 'user',
         accountStatus: 'active',
+        emailVerifiedAt: new Date('2022-10-12T08:00:00.000Z'),
+        phoneVerifiedAt: new Date('2022-10-12T08:00:00.000Z'),
         createdAt: new Date('2022-10-12T08:00:00.000Z'),
         updatedAt: new Date('2024-05-15T10:20:00.000Z'),
         avatarMedia: { secureUrl: 'https://cdn.example.com/avatar.jpg' },
         addresses: [{ addressLine: '123 Duy Tan, Ha Noi' }],
-        ownedShops: [{
-          id: 'shop-1',
-          shopName: 'Masan Consumer Store',
-          shopStatus: 'verified',
-          warehouseAddress: '123 Duy Tan, Ha Noi',
-          createdAt: new Date('2023-01-01T00:00:00.000Z'),
-          avatarMedia: { secureUrl: 'https://cdn.example.com/logo.jpg' },
-          bannerMedia: { secureUrl: 'https://cdn.example.com/banner.jpg' },
-          registeredCategories: [{ category: { name: 'Hang tieu dung' } }],
-          _count: { offers: 91 },
-        }],
+        ownedShops: [
+          {
+            id: 'shop-1',
+            shopName: 'Masan Consumer Store',
+            shopStatus: 'verified',
+            warehouseAddress: '123 Duy Tan, Ha Noi',
+            createdAt: new Date('2023-01-01T00:00:00.000Z'),
+            avatarMedia: { secureUrl: 'https://cdn.example.com/logo.jpg' },
+            bannerMedia: { secureUrl: 'https://cdn.example.com/banner.jpg' },
+            registeredCategories: [{ category: { name: 'Hang tieu dung' } }],
+            _count: { offers: 91 },
+          },
+        ],
       },
       orders: 12,
       posts: 4,
@@ -102,6 +106,8 @@ describe('GetUserByIdUseCase', () => {
   it('throws when the user does not exist', async () => {
     usersRepository.findAdminUserDetailById.mockResolvedValueOnce(null);
 
-    await expect(useCase.execute('missing')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(useCase.execute('missing')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 });

@@ -8,6 +8,8 @@ export type UserIdentityRecord = {
   ownedShops?: Array<{ id: string }>;
   role: string;
   accountStatus: string;
+  emailVerifiedAt?: Date | null;
+  phoneVerifiedAt?: Date | null;
   password?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
@@ -25,8 +27,12 @@ export abstract class UserIdentityPort {
     email: string | null;
     phone: string | null;
     displayName: string | null;
-    password: string;
+    password: string | null;
+    accountStatus?: string;
   }): Promise<UserIdentityRecord>;
 
-  abstract updatePassword(userId: string, password: string): Promise<UserIdentityRecord>;
+  abstract updatePassword(
+    userId: string,
+    password: string,
+  ): Promise<UserIdentityRecord>;
 }

@@ -22,7 +22,8 @@ export class ActiveUserGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = getAuthContext(context) as AuthenticatedRequest;
-    const tokenPrincipal = request.user && 'sub' in request.user ? request.user.sub : undefined;
+    const tokenPrincipal =
+      request.user && 'sub' in request.user ? request.user.sub : undefined;
     const userId = request.user?.id ?? tokenPrincipal;
 
     if (!userId) {
@@ -37,16 +38,19 @@ export class ActiveUserGuard implements CanActivate {
       throw new ForbiddenException('Account is not active');
     }
 
-    const {
-      password: _removed,
-      avatarMedia: _avatarMedia,
-      ownedShops: _ownedShops,
-      ...userWithoutPassword
-    } = user;
     const safeUser: SafeUser = {
-      ...userWithoutPassword,
-      avatar: user.avatar ?? _avatarMedia?.secureUrl ?? null,
-      shopId: _ownedShops?.[0]?.id ?? null,
+      id: user.id,
+      email: user.email,
+      phone: user.phone,
+      displayName: user.displayName,
+      role: user.role,
+      accountStatus: user.accountStatus,
+      avatar: user.avatar ?? user.avatarMedia?.secureUrl ?? null,
+      shopId: user.ownedShops?.[0]?.id ?? null,
+      emailVerified: Boolean(user.emailVerifiedAt),
+      phoneVerified: Boolean(user.phoneVerifiedAt),
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
     };
     request.user = safeUser;
     return true;

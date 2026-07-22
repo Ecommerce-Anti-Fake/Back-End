@@ -6,11 +6,16 @@ model User {
   password             String?
   role                 String                @default("user")
   accountStatus        String                @default("active") @map("account_status")
+  emailVerifiedAt      DateTime?             @map("email_verified_at")
+  phoneVerifiedAt      DateTime?             @map("phone_verified_at")
   avatarMediaId        String?               @map("avatar_media_id") @unique
   avatarMedia          MediaAsset?           @relation("UserAvatarMedia", fields: [avatarMediaId], references: [id])
   createdAt            DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
   authSessions         AuthSession[]
+  authIdentities       AuthIdentity[]
+  registrationSessions RegistrationSession[]
+  authLinkIntents      AuthLinkIntent[]
   passwordResetTokens  PasswordResetToken[]
   kyc                  UserKyc?
   ownedShops           Shop[]                @relation("ShopOwner")

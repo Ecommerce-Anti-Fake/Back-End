@@ -10,6 +10,7 @@ export type VerifiedFirebaseToken = {
   phoneNumber?: string;
   name?: string;
   authTime?: number;
+  signInProvider?: string;
 };
 
 @Injectable()
@@ -28,6 +29,10 @@ export class FirebaseTokenVerifierService {
         phoneNumber: decoded.phone_number,
         name: typeof decoded.name === 'string' ? decoded.name : undefined,
         authTime: decoded.auth_time,
+        signInProvider:
+          typeof decoded.firebase?.sign_in_provider === 'string'
+            ? decoded.firebase.sign_in_provider
+            : undefined,
       };
     } catch {
       throw new UnauthorizedException('Invalid Firebase token');
@@ -39,8 +44,12 @@ export class FirebaseTokenVerifierService {
       return;
     }
 
-    const projectId = this.configService.get<string>('FIREBASE_PROJECT_ID')?.trim();
-    const clientEmail = this.configService.get<string>('FIREBASE_CLIENT_EMAIL')?.trim();
+    const projectId = this.configService
+      .get<string>('FIREBASE_PROJECT_ID')
+      ?.trim();
+    const clientEmail = this.configService
+      .get<string>('FIREBASE_CLIENT_EMAIL')
+      ?.trim();
     const privateKey = this.configService
       .get<string>('FIREBASE_PRIVATE_KEY')
       ?.replace(/\\n/g, '\n')

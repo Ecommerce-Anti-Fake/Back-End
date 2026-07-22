@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { RegistrationDetailsDto } from './registration-verification.dto';
 
 export class AuthUserResponseDto {
   @ApiProperty({
@@ -30,13 +31,15 @@ export class AuthUserResponseDto {
 
   @ApiPropertyOptional({
     description: 'URL avatar cua nguoi dung.',
-    example: 'https://res.cloudinary.com/demo/image/upload/v1/users/user-1/avatar.jpg',
+    example:
+      'https://res.cloudinary.com/demo/image/upload/v1/users/user-1/avatar.jpg',
     nullable: true,
   })
   avatar!: string | null;
 
   @ApiPropertyOptional({
-    description: 'ID shop dau tien cua nguoi dung neu co. Null neu la tai khoan nguoi dung thuong.',
+    description:
+      'ID shop dau tien cua nguoi dung neu co. Null neu la tai khoan nguoi dung thuong.',
     example: '3b78611b-0b4f-4f8a-9d71-54c80a251001',
     nullable: true,
   })
@@ -54,6 +57,12 @@ export class AuthUserResponseDto {
   })
   accountStatus!: string;
 
+  @ApiProperty({ description: 'Email da duoc xac minh hay chua.' })
+  emailVerified!: boolean;
+
+  @ApiProperty({ description: 'So dien thoai da duoc xac minh hay chua.' })
+  phoneVerified!: boolean;
+
   @ApiPropertyOptional({
     description: 'Thoi diem tao tai khoan.',
     example: '2026-04-07T09:30:00.000Z',
@@ -67,7 +76,10 @@ export class AuthUserResponseDto {
   updatedAt?: Date;
 }
 
-export class RegisterResponseDto extends AuthUserResponseDto {}
+export class RegisterResponseDto {
+  @ApiProperty({ type: RegistrationDetailsDto })
+  registration!: RegistrationDetailsDto;
+}
 
 export class TokenPairResponseDto {
   @ApiProperty({

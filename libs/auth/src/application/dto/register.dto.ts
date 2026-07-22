@@ -1,31 +1,30 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsString, Matches, MinLength } from 'class-validator';
 
 export class RegisterDto {
-  @ApiPropertyOptional({
-    description: 'Email dang ky. Phai cung cap email hoac phone.',
+  @ApiProperty({
+    description: 'Email bat buoc cua tai khoan.',
     example: 'user@example.com',
     format: 'email',
   })
-  @IsOptional()
   @IsEmail()
-  email?: string;
+  email!: string;
 
-  @ApiPropertyOptional({
-    description: 'So dien thoai dang ky. Phai cung cap email hoac phone.',
+  @ApiProperty({
+    description: 'So dien thoai Viet Nam bat buoc cua tai khoan.',
     example: '0987654321',
   })
-  @IsOptional()
   @IsString()
-  phone?: string;
+  @Matches(/^(0\d{9}|\+84\d{9})$/)
+  phone!: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description: 'Ten hien thi cua nguoi dung.',
     example: 'Nguyen Van A',
   })
-  @IsOptional()
   @IsString()
-  displayName?: string;
+  @MinLength(3)
+  displayName!: string;
 
   @ApiProperty({
     description: 'Mat khau dang nhap, toi thieu 8 ky tu.',

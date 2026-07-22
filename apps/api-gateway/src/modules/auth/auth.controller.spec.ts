@@ -7,6 +7,10 @@ import type { Request, Response } from 'express';
 describe('AuthController refresh cookie contract', () => {
   let nodeEnv: string | undefined;
   const authRpcService = {
+    register: jest.fn(),
+    resumeRegistration: jest.fn(),
+    googleRegister: jest.fn(),
+    confirmRegistrationChallenge: jest.fn(),
     login: jest.fn(),
     firebaseLogin: jest.fn(),
     refresh: jest.fn(),
@@ -60,8 +64,97 @@ describe('AuthController refresh cookie contract', () => {
     expect(response.cookie).toHaveBeenCalledWith(
       'eaf_refresh_token',
       'refresh-token',
-      expect.objectContaining({ secure: true, sameSite: 'none', path: '/api/auth' }),
+      expect.objectContaining({
+        secure: true,
+        sameSite: 'none',
+        path: '/api/auth',
+      }),
     );
+  });
+
+  it('keeps the registration token in an httpOnly cookie and omits it from registration JSON', async () => {
+    authRpcService.register.mockResolvedValue({
+      registrationToken: 'registration-1.secret',
+      registration: {
+        provider: 'LOCAL',
+        email: 'buyer@example.com',
+        phone: '0901234567',
+        expiresAt: new Date('2026-07-23T00:00:00.000Z'),
+      },
+    });
+
+    const result = await controller.register(
+      {
+        email: 'buyer@example.com',
+        phone: '0901234567',
+        displayName: 'Buyer',
+        password: 'StrongPass123',
+      },
+      response as Response,
+    );
+
+    expect(response.cookie).toHaveBeenCalledWith(
+      'eaf_registration_session',
+      'registration-1.secret',
+      expect.objectContaining({ httpOnly: true, path: '/api/auth' }),
+    );
+    expect(result).toEqual(
+      expect.objectContaining({ registration: expect.any(Object) }),
+    );
+    expect(result).not.toHaveProperty('registrationToken');
+  });
+
+  it('resumes a pending registration with a fresh httpOnly registration cookie', async () => {
+    authRpcService.resumeRegistration.mockResolvedValue({
+      registrationToken: 'registration-2.secret',
+      registration: {
+        provider: 'LOCAL',
+        email: 'buyer@example.com',
+        phone: '0901234567',
+        expiresAt: new Date('2026-07-23T00:00:00.000Z'),
+      },
+    });
+
+    const result = await controller.resumeRegistration(
+      { username: 'buyer@example.com', password: 'StrongPass123' },
+      response as Response,
+    );
+
+    expect(authRpcService.resumeRegistration).toHaveBeenCalledWith({
+      username: 'buyer@example.com',
+      password: 'StrongPass123',
+    });
+    expect(response.cookie).toHaveBeenCalledWith(
+      'eaf_registration_session',
+      'registration-2.secret',
+      expect.objectContaining({ httpOnly: true, path: '/api/auth' }),
+    );
+    expect(result).not.toHaveProperty('registrationToken');
+  });
+
+  it('keeps a Google link intent in an httpOnly cookie without creating another user', async () => {
+    authRpcService.googleRegister.mockResolvedValue({
+      kind: 'LINK_REQUIRED',
+      linkToken: 'link-1.secret',
+      email: 'buyer@example.com',
+      expiresAt: new Date('2026-07-22T10:10:00.000Z'),
+    });
+
+    const result = await controller.googleRegister(
+      { idToken: 'google-token' },
+      response as Response,
+    );
+
+    expect(response.cookie).toHaveBeenCalledWith(
+      'eaf_google_link_intent',
+      'link-1.secret',
+      expect.objectContaining({ httpOnly: true, path: '/api/auth' }),
+    );
+    expect(result).toMatchObject({
+      kind: 'LINK_REQUIRED',
+      email: 'buyer@example.com',
+    });
+    expect(result).not.toHaveProperty('linkToken');
   });
 
   it('sets refresh token in an httpOnly cookie and omits it from login response body', async () => {
@@ -118,7 +211,9 @@ describe('AuthController refresh cookie contract', () => {
       response as Response,
     );
 
-    expect(authRpcService.refresh).toHaveBeenCalledWith({ refreshToken: 'old-refresh-token' });
+    expect(authRpcService.refresh).toHaveBeenCalledWith({
+      refreshToken: 'old-refresh-token',
+    });
     expect(response.cookie).toHaveBeenCalledWith(
       'eaf_refresh_token',
       'next-refresh-token',
@@ -149,10 +244,16 @@ describe('AuthController refresh cookie contract', () => {
       ),
     ).resolves.toEqual({ loggedOut: true });
 
-    expect(authRpcService.logout).toHaveBeenCalledWith({ refreshToken: 'refresh-token' });
+    expect(authRpcService.logout).toHaveBeenCalledWith({
+      refreshToken: 'refresh-token',
+    });
     expect(response.clearCookie).toHaveBeenCalledWith(
       'eaf_refresh_token',
-      expect.objectContaining({ secure: true, sameSite: 'none', path: '/api/auth' }),
+      expect.objectContaining({
+        secure: true,
+        sameSite: 'none',
+        path: '/api/auth',
+      }),
     );
   });
 });
