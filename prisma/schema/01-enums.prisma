@@ -209,6 +209,11 @@ enum VoucherOwnerType {
   SHOP
 }
 
+enum VoucherFundingSource {
+  PLATFORM
+  SHOP
+}
+
 enum VoucherDiscountType {
   PERCENTAGE
   FIXED_AMOUNT

@@ -54,3 +54,4 @@ export * from './release-escrow.use-case';
 export * from './resolve-admin-dispute.use-case';
 export * from './update-admin-dispute-case.use-case';
 export * from './update-order-fulfillment.use-case';
+export * from '../vouchers/voucher.service';

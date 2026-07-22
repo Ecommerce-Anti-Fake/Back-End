@@ -28,6 +28,7 @@ import { GatewayChatModule } from './modules/chat/chat.module';
 import { GatewaySocialModule } from './modules/social/social.module';
 import { GatewayUserModule } from './modules/user/user.module';
 import { GatewayWalletModule } from './modules/wallet/wallet.module';
+import { GatewayVoucherModule } from './modules/voucher/voucher.module';
 import {
   HealthController,
   RateLimitGuard,
@@ -67,6 +68,7 @@ import {
     GatewayUserModule,
     GatewayAuthModule,
     GatewayWalletModule,
+    GatewayVoucherModule,
   ],
   controllers: [HealthController],
   providers: [

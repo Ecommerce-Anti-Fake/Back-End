@@ -57,6 +57,14 @@ import type {
   SellerShopSummaryMetricsMessage,
   SellerShopOrderStatusSummaryMessage,
   ShopBestSellingProductsLookupMessage,
+  CreateVoucherMessage,
+  ListVouchersMessage,
+  UpdateVoucherStatusMessage,
+  GetVoucherMessage,
+  UpdateVoucherMessage,
+  ListVoucherRedemptionsMessage,
+  QuoteCartCheckoutMessage,
+  QuoteBuyNowCheckoutMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
 import {
@@ -113,6 +121,7 @@ import {
   UpdateCartItemUseCase,
   UpdateAdminDisputeCaseUseCase,
   UpdateOrderFulfillmentUseCase,
+  VoucherService,
 } from '../../application/use-cases';
 
 @Controller()
@@ -171,6 +180,7 @@ export class OrdersRpcController {
     private readonly syncOrderShippingStatusUseCase: SyncOrderShippingStatusUseCase,
     private readonly updateOrderFulfillmentUseCase: UpdateOrderFulfillmentUseCase,
     private readonly listGhnShippingLocationsUseCase: ListGhnShippingLocationsUseCase,
+    private readonly voucherService: VoucherService,
   ) {}
 
   @MessagePattern(ORDERS_MESSAGE_PATTERNS.getActiveCart)
@@ -223,6 +233,66 @@ export class OrdersRpcController {
     } catch (error) {
       throwRpcException(error);
     }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.quoteCartCheckout)
+  async quoteCartCheckout(@Payload() payload: QuoteCartCheckoutMessage) {
+    try {
+      return await this.checkoutCartUseCase.quote(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.quoteBuyNowCheckout)
+  async quoteBuyNowCheckout(@Payload() payload: QuoteBuyNowCheckoutMessage) {
+    try {
+      return await this.buyNowCheckoutUseCase.quote(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.createVoucher)
+  async createVoucher(@Payload() payload: CreateVoucherMessage) {
+    try {
+      return await this.voucherService.create(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.listVouchers)
+  async listVouchers(@Payload() payload: ListVouchersMessage) {
+    try {
+      return await this.voucherService.list(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.updateVoucherStatus)
+  async updateVoucherStatus(@Payload() payload: UpdateVoucherStatusMessage) {
+    try {
+      return await this.voucherService.updateStatus(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.getVoucher)
+  async getVoucher(@Payload() payload: GetVoucherMessage) {
+    try { return await this.voucherService.get(payload); } catch (error) { throwRpcException(error); }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.updateVoucher)
+  async updateVoucher(@Payload() payload: UpdateVoucherMessage) {
+    try { return await this.voucherService.update(payload); } catch (error) { throwRpcException(error); }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.listVoucherRedemptions)
+  async listVoucherRedemptions(@Payload() payload: ListVoucherRedemptionsMessage) {
+    try { return await this.voucherService.listRedemptions(payload); } catch (error) { throwRpcException(error); }
   }
 
   @MessagePattern(ORDERS_MESSAGE_PATTERNS.checkoutCartItem)

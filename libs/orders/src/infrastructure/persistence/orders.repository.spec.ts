@@ -1,6 +1,35 @@
 import { OrdersRepository } from './orders.repository';
 
 describe('OrdersRepository', () => {
+  it('reserves voucher redemptions inside the transaction after rechecking limits', async () => {
+    const repository = new OrdersRepository({} as never);
+    const tx = {
+      voucher: { findMany: jest.fn().mockResolvedValue([{ id: 'voucher-1', code: 'SAVE10', totalUsageLimit: 3, userUsageLimit: 1 }]) },
+      voucherRedemption: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        count: jest.fn().mockResolvedValueOnce(2).mockResolvedValueOnce(0),
+        create: jest.fn().mockResolvedValue({ id: 'redemption-1' }),
+      },
+    };
+
+    await repository.reserveVoucherRedemptionsInTransaction(tx as never, [{ voucherId: 'voucher-1', userId: 'user-1', idempotencyKey: 'idem-1' }], 'order-1');
+
+    expect(tx.voucherRedemption.create).toHaveBeenCalledWith({
+      data: { voucherId: 'voucher-1', userId: 'user-1', idempotencyKey: 'idem-1', orderId: 'order-1', status: 'RESERVED' },
+    });
+  });
+
+  it('rejects a voucher when the transaction-level total limit is reached', async () => {
+    const repository = new OrdersRepository({} as never);
+    const tx = {
+      voucher: { findMany: jest.fn().mockResolvedValue([{ id: 'voucher-1', code: 'SAVE10', totalUsageLimit: 2, userUsageLimit: null }]) },
+      voucherRedemption: { findUnique: jest.fn().mockResolvedValue(null), count: jest.fn().mockResolvedValue(2), create: jest.fn() },
+    };
+
+    await expect(repository.reserveVoucherRedemptionsInTransaction(tx as never, [{ voucherId: 'voucher-1', userId: 'user-1', idempotencyKey: 'idem-1' }], 'order-1')).rejects.toThrow('đã hết lượt sử dụng');
+    expect(tx.voucherRedemption.create).not.toHaveBeenCalled();
+  });
+
   it('upserts cart items by cart, offer, and variant', async () => {
     const prisma = {
       cart: {

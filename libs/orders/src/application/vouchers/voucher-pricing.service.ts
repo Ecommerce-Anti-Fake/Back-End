@@ -49,8 +49,8 @@ export class VoucherPricingService {
     return this.round(discount);
   }
 
-  calculateShippingDiscount(voucher: VoucherDiscountInput, shippingFee: Prisma.Decimal) {
-    if (voucher.discountType !== 'FREE_SHIPPING') return new Prisma.Decimal(0);
+  calculateShippingDiscount(voucher: VoucherDiscountInput, shippingFee: Prisma.Decimal, eligibleOrderAmount = shippingFee) {
+    if (voucher.discountType !== 'FREE_SHIPPING' || eligibleOrderAmount.lt(voucher.minOrderAmount ?? 0)) return new Prisma.Decimal(0);
     const discount = voucher.maxDiscountAmount
       ? Prisma.Decimal.min(shippingFee, voucher.maxDiscountAmount)
       : shippingFee;

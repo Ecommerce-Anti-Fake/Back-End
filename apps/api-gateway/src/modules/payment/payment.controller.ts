@@ -80,10 +80,11 @@ export class PaymentController {
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post(':id/refund')
-  refund(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
+  refund(@Param('id') id: string, @CurrentUserId() requesterUserId: string, @Body() body?: { items?: Array<{ orderItemId: string; quantity: number }> }) {
     return this.ordersRpcService.refund({
       id,
       requesterUserId,
+      items: body?.items,
     });
   }
 

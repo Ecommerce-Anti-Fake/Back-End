@@ -8,7 +8,13 @@ import { WalletRepository } from '@wallet';
 describe('OrderReversalService', () => {
   let service: OrderReversalService;
 
-  const tx = { id: 'tx', walletTransaction: { findUnique: jest.fn().mockResolvedValue(null) }, dispute: { findFirst: jest.fn(), create: jest.fn() } };
+  const tx = {
+    id: 'tx',
+    walletTransaction: { findUnique: jest.fn().mockResolvedValue(null) },
+    dispute: { findFirst: jest.fn(), create: jest.fn() },
+    auditLog: { findMany: jest.fn().mockResolvedValue([]), create: jest.fn() },
+    escrow: { update: jest.fn() },
+  };
   const ordersRepositoryMock = {
     withTransaction: jest.fn(),
     withSerializableTransaction: jest.fn(),
@@ -134,6 +140,31 @@ describe('OrderReversalService', () => {
     ordersRepositoryMock.findOrderForReversal.mockResolvedValueOnce(null);
 
     await expect(service.refundPaidOrder('missing-order', 'seller-1')).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('refunds selected item quantity and reverses voucher discount proportionally', async () => {
+    tx.auditLog.findMany.mockResolvedValueOnce([]);
+    const order = {
+      ...createOrderRecord('paid'),
+      items: [{ id: 'item-1', orderItemId: 'item-1', offerId: 'offer-1', variantId: 'variant-1', quantity: 2, unitPrice: 100, orderShopGroupId: 'group-1', batchAllocations: [] }],
+      voucherAllocations: [{ orderShopGroupId: 'group-1', fundingSource: 'SHOP', productDiscountAmount: 20 }],
+    };
+    ordersRepositoryMock.findOrderForReversal.mockResolvedValueOnce(order);
+    ordersRepositoryMock.updateOrderStatus.mockResolvedValueOnce({ ...order, orderStatus: 'partially_refunded' });
+
+    await service.partialRefundPaidOrder('order-1', 'seller-1', [{ orderItemId: 'item-1', quantity: 1 }]);
+
+    expect(walletRepositoryMock.executeTransactionInTransaction).toHaveBeenCalledWith(tx, expect.objectContaining({
+      transactionType: 'REFUND',
+      amount: expect.anything(),
+      idempotencyKey: 'ORDER:order-1:PARTIAL_REFUND:item-1:1',
+    }));
+    expect(tx.auditLog.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ action: 'PARTIAL_REFUND', toStatus: 'PARTIALLY_REFUNDED' }),
+    }));
+    expect(orderInventoryServiceMock.restoreOrderInventory).toHaveBeenCalledWith(tx, expect.objectContaining({
+      items: [expect.objectContaining({ id: 'item-1', quantity: 1 })],
+    }));
   });
 
   it('restores only the inventory belonging to the cancelled shop group', async () => {

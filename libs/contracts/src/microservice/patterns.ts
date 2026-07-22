@@ -165,6 +165,14 @@ export const ORDERS_MESSAGE_PATTERNS = {
   updateCartItem: 'orders.update-cart-item',
   removeCartItem: 'orders.remove-cart-item',
   checkoutCart: 'orders.checkout-cart',
+  quoteCartCheckout: 'orders.quote-cart-checkout',
+  quoteBuyNowCheckout: 'orders.quote-buy-now-checkout',
+  createVoucher: 'orders.create-voucher',
+  listVouchers: 'orders.list-vouchers',
+  updateVoucherStatus: 'orders.update-voucher-status',
+  getVoucher: 'orders.get-voucher',
+  updateVoucher: 'orders.update-voucher',
+  listVoucherRedemptions: 'orders.list-voucher-redemptions',
   checkoutCartItem: 'orders.checkout-cart-item',
   buyNowCheckout: 'orders.buy-now-checkout',
   quoteBuyNowShippingOptions: 'orders.quote-buy-now-shipping-options',
@@ -1108,6 +1116,19 @@ export type CheckoutCartMessage = {
   shippingVouchers?: Array<{ shopId: string; voucherCode: string }>;
 };
 
+export type QuoteCartCheckoutMessage = Omit<CheckoutCartMessage, 'paymentMethod' | 'affiliateCode'>;
+
+export type QuoteBuyNowCheckoutMessage = {
+  buyerUserId: string;
+  offerId: string;
+  variantId?: string | null;
+  quantity: number;
+  shippingOptionCode: string;
+  systemVoucherCode?: string | null;
+  shopVoucherCode?: string | null;
+  shippingVoucherCode?: string | null;
+};
+
 export type BuyNowCheckoutMessage = {
   buyerUserId: string;
   offerId: string;
@@ -1119,6 +1140,44 @@ export type BuyNowCheckoutMessage = {
   shopVoucherCode?: string | null;
   shippingVoucherCode?: string | null;
 };
+
+export type CreateVoucherMessage = {
+  requesterUserId: string;
+  ownerType: 'SYSTEM' | 'SHOP';
+  shopId?: string | null;
+  code: string;
+  name: string;
+  discountType: 'PERCENTAGE' | 'FIXED_AMOUNT' | 'FREE_SHIPPING';
+  percentage?: number | null;
+  fixedAmount?: number | null;
+  maxDiscountAmount?: number | null;
+  minOrderAmount?: number;
+  scopeType?: string;
+  scopeIds?: string[];
+  totalUsageLimit?: number | null;
+  userUsageLimit?: number | null;
+  startsAt: string;
+  endsAt: string;
+};
+
+export type ListVouchersMessage = {
+  requesterUserId: string;
+  ownerType?: 'SYSTEM' | 'SHOP';
+  shopId?: string;
+  status?: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'EXPIRED';
+  page?: number;
+  pageSize?: number;
+};
+
+export type UpdateVoucherStatusMessage = {
+  requesterUserId: string;
+  voucherId: string;
+  status: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'EXPIRED';
+};
+
+export type GetVoucherMessage = { requesterUserId: string; voucherId: string };
+export type UpdateVoucherMessage = Partial<Omit<CreateVoucherMessage, 'requesterUserId' | 'ownerType' | 'shopId'>> & { requesterUserId: string; voucherId: string };
+export type ListVoucherRedemptionsMessage = { requesterUserId: string; voucherId: string; page?: number; pageSize?: number };
 
 export type QuoteCartItemShippingOptionsMessage = {
   buyerUserId: string;
@@ -1401,6 +1460,7 @@ export type DisputeEvidenceLookupMessage = {
 export type RefundOrderMessage = {
   id: string;
   requesterUserId: string;
+  items?: Array<{ orderItemId: string; quantity: number }>;
 };
 
 export type UpdateOrderFulfillmentMessage = {

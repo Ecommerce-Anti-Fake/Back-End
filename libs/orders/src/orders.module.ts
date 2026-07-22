@@ -81,6 +81,7 @@ import { OrdersRpcController } from './presentation/rpc/orders.rpc-controller';
 import { CATALOG_SERVICE_CLIENT } from '@contracts';
 import { WalletModule } from '@wallet/wallet.module';
 import { VoucherPricingService } from './application/vouchers/voucher-pricing.service';
+import { VoucherService } from './application/vouchers/voucher.service';
 
 @Module({
   imports: [
@@ -202,6 +203,7 @@ import { VoucherPricingService } from './application/vouchers/voucher-pricing.se
     PayOrderByWalletUseCase,
     ReleaseEscrowUseCase,
     VoucherPricingService,
+    VoucherService,
   ],
   exports: [
     OrdersRepository,
@@ -266,6 +268,7 @@ import { VoucherPricingService } from './application/vouchers/voucher-pricing.se
     PayOrderByWalletUseCase,
     ReleaseEscrowUseCase,
     VoucherPricingService,
+    VoucherService,
   ],
 })
 export class OrdersModule {}

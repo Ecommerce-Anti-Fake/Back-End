@@ -8,6 +8,7 @@ import {
   CheckoutCartItemDto,
   QuoteCartShippingOptionsDto,
   UpdateCartItemDto,
+  QuoteCartCheckoutDto,
 } from '@orders';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 import { OrdersRpcService } from '../order/orders-rpc.service';
@@ -123,6 +124,21 @@ export class CartController {
     this.dashboardSseBrokerService.notifyOrderChanged(result, buyerUserId);
 
     return result;
+  }
+
+  @ApiOperation({ summary: 'Bao gia checkout va voucher truoc khi dat hang' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('checkout/quote')
+  quoteCheckout(@CurrentUserId() buyerUserId: string, @Body() dto: QuoteCartCheckoutDto) {
+    return this.ordersRpcService.quoteCartCheckout({
+      buyerUserId,
+      cartItemIds: dto.cartItemIds,
+      shippingOptionCode: dto.shippingOptionCode,
+      systemVoucherCode: dto.systemVoucherCode ?? null,
+      shopVouchers: dto.shopVouchers ?? [],
+      shippingVouchers: dto.shippingVouchers ?? [],
+    });
   }
 
   @ApiTags('Shipping')

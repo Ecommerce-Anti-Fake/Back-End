@@ -17,7 +17,7 @@ export class OrderPlacementService {
   ) {}
 
   createOrder(input: { order: CreateOrderRecordInput; affiliateAttribution?: AffiliateAttributionInput }): Promise<OrderWithRelations> {
-    return this.ordersRepository.withTransaction(async (tx) => {
+    return this.ordersRepository.withSerializableTransaction(async (tx) => {
       const batchAllocations = await this.orderInventoryService.reserveForOrder(tx, {
         offerId: input.order.item.offerId,
         variantId: input.order.item.variantId!,
@@ -25,6 +25,19 @@ export class OrderPlacementService {
       });
 
       const order = await this.ordersRepository.createOrderRecord(tx, input.order, batchAllocations);
+
+      if (input.order.voucherRedemptions?.length) {
+        await this.ordersRepository.reserveVoucherRedemptionsInTransaction(tx, input.order.voucherRedemptions, order.id);
+      }
+      if (input.order.voucherAllocations?.length) {
+        await tx.orderVoucherAllocation.createMany({
+          data: input.order.voucherAllocations.map((allocation) => ({
+            orderId: order.id,
+            orderShopGroupId: order.shopGroups[0].id,
+            ...allocation,
+          })),
+        });
+      }
 
       if (input.affiliateAttribution) {
         await this.ordersRepository.createAffiliateAttribution(tx, order.id, input.affiliateAttribution);
@@ -44,7 +57,7 @@ export class OrderPlacementService {
       affiliateAttribution?: AffiliateAttributionInput;
     },
   ): Promise<OrderWithRelations> {
-    return this.ordersRepository.withTransaction((tx) =>
+    return this.ordersRepository.withSerializableTransaction((tx) =>
       this.createAggregateOrderInTransaction(tx, input),
     );
   }
@@ -78,6 +91,20 @@ export class OrderPlacementService {
         ...input,
         groups,
       });
+      if (input.voucherRedemptions?.length) {
+        await this.ordersRepository.reserveVoucherRedemptionsInTransaction(tx, input.voucherRedemptions, order.id);
+      }
+      const voucherAllocations = input.groups.flatMap((group) => {
+        const orderShopGroup = order.shopGroups.find((candidate) => candidate.shopId === group.shopId);
+        return (group.voucherAllocations ?? []).map((allocation) => ({
+          orderId: order.id,
+          orderShopGroupId: orderShopGroup!.id,
+          ...allocation,
+        }));
+      });
+      if (voucherAllocations.length) {
+        await tx.orderVoucherAllocation.createMany({ data: voucherAllocations });
+      }
       if (input.affiliateAttribution) {
         await this.ordersRepository.createAffiliateAttribution(tx, order.id, input.affiliateAttribution);
       }

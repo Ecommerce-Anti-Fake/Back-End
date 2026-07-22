@@ -50,7 +50,7 @@ import {
   UpdateOfferDto,
   ModerateOfferDto,
 } from '@offers';
-import { BuyNowCheckoutDto } from '@orders';
+import { BuyNowCheckoutDto, BuyNowCheckoutQuoteDto } from '@orders';
 import { RateLimit } from '../../observability';
 import { CatalogRpcService } from './catalog-rpc.service';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
@@ -175,6 +175,23 @@ export class OfferController {
     this.dashboardSseBrokerService.notifyOrderChanged(result, buyerUserId);
 
     return result;
+  }
+
+  @ApiOperation({ summary: 'Bao gia Buy Now va voucher truoc khi dat hang' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('offers/buy-now/quote')
+  buyNowQuote(@CurrentUserId() buyerUserId: string, @Body() dto: BuyNowCheckoutQuoteDto) {
+    return this.ordersRpcService.quoteBuyNowCheckout({
+      buyerUserId,
+      offerId: dto.offerId,
+      variantId: dto.variantId,
+      quantity: dto.quantity,
+      shippingOptionCode: dto.shippingOptionCode,
+      systemVoucherCode: dto.systemVoucherCode ?? null,
+      shopVoucherCode: dto.shopVoucherCode ?? null,
+      shippingVoucherCode: dto.shippingVoucherCode ?? null,
+    });
   }
 
   @ApiOperation({ summary: 'Xem truoc Buy Now tu offer, khong thay doi gio hang' })

@@ -10,7 +10,7 @@ export class RefundOrderUseCase {
     private readonly orderReversalService: OrderReversalService,
   ) {}
 
-  async execute(input: { id: string; requesterUserId: string }) {
+  async execute(input: { id: string; requesterUserId: string; items?: Array<{ orderItemId: string; quantity: number }> }) {
     const order = await this.ordersRepository.findOrderById(input.id);
     if (!order) {
       throw new NotFoundException('Order not found');
@@ -24,7 +24,9 @@ export class RefundOrderUseCase {
       throw new BadRequestException('Only paid orders can be refunded');
     }
 
-    const updatedOrder = await this.orderReversalService.refundPaidOrder(order.id, input.requesterUserId);
+    const updatedOrder = input.items?.length
+      ? await this.orderReversalService.partialRefundPaidOrder(order.id, input.requesterUserId, input.items)
+      : await this.orderReversalService.refundPaidOrder(order.id, input.requesterUserId);
     return toOrderResponse(updatedOrder);
   }
 }

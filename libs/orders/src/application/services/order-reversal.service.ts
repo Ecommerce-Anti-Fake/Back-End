@@ -73,6 +73,12 @@ export class OrderReversalService {
       await this.ordersRepository.updatePaymentStatusWithAudit(tx, {
         orderId, actorUserId, paymentStatus: walletRefund ? 'REFUNDED' : 'CANCELLED',
       });
+      if (!walletRefund) {
+        await (tx as Prisma.TransactionClient & { voucherRedemption?: Prisma.TransactionClient['voucherRedemption'] }).voucherRedemption?.updateMany({
+          where: { orderId, status: 'RESERVED' },
+          data: { status: 'RELEASED', releasedAt: new Date() },
+        });
+      }
       await this.ordersRepository.updateEscrowStatusWithAudit(tx, {
         orderId, actorUserId, escrowStatus: walletRefund ? 'REFUNDED' : 'CANCELLED',
         note: walletRefund ? 'Escrow refunded because wallet order was cancelled' : 'Escrow cancelled because order was cancelled',
@@ -92,6 +98,88 @@ export class OrderReversalService {
     });
   }
 
+  partialRefundPaidOrder(
+    orderId: string,
+    actorUserId: string,
+    requestedItems: Array<{ orderItemId: string; quantity: number }>,
+  ): Promise<OrderWithRelations> {
+    return this.ordersRepository.withSerializableTransaction(async (tx) => {
+      const order = await this.ordersRepository.findOrderForReversal(tx, orderId);
+      if (!order) throw new BadRequestException('Order not found');
+      if (!this.isHeldWalletPayment(order)) {
+        throw new BadRequestException('Partial refund currently requires a wallet payment with held escrow');
+      }
+      const priorRefunds = await tx.auditLog.findMany({
+        where: { targetType: 'ORDER', targetId: orderId, action: 'PARTIAL_REFUND' },
+        select: { metadata: true },
+      });
+      const refundedQuantities = new Map<string, number>();
+      for (const record of priorRefunds) {
+        const metadata = record.metadata as { items?: Array<{ orderItemId: string; quantity: number }> } | null;
+        for (const item of metadata?.items ?? []) {
+          refundedQuantities.set(item.orderItemId, (refundedQuantities.get(item.orderItemId) ?? 0) + item.quantity);
+        }
+      }
+      const selected = requestedItems.map((requested) => {
+        if (!Number.isInteger(requested.quantity) || requested.quantity < 1) {
+          throw new BadRequestException('Refund quantity must be greater than zero');
+        }
+        const item = order.items.find((candidate) => candidate.id === requested.orderItemId);
+        if (!item) throw new BadRequestException('Order item does not belong to this order');
+        const remaining = item.quantity - (refundedQuantities.get(item.id) ?? 0);
+        if (requested.quantity > remaining) throw new BadRequestException('Refund quantity exceeds remaining order quantity');
+        return { item, quantity: requested.quantity };
+      });
+      if (!selected.length) throw new BadRequestException('At least one order item is required');
+
+      const allocationByGroup = new Map<string, typeof order.voucherAllocations>();
+      for (const allocation of order.voucherAllocations) {
+        const entries = allocationByGroup.get(allocation.orderShopGroupId) ?? [];
+        entries.push(allocation);
+        allocationByGroup.set(allocation.orderShopGroupId, entries);
+      }
+      const refundItems = selected.map(({ item, quantity }) => {
+        const itemGross = new Prisma.Decimal(item.unitPrice).mul(quantity);
+        const groupItems = order.items.filter((candidate) => candidate.orderShopGroupId === item.orderShopGroupId);
+        const groupGross = groupItems.reduce((sum, candidate) => sum.plus(new Prisma.Decimal(candidate.unitPrice).mul(candidate.quantity)), new Prisma.Decimal(0));
+        const ratio = groupGross.gt(0) ? itemGross.div(groupGross) : new Prisma.Decimal(0);
+        const allocations = allocationByGroup.get(item.orderShopGroupId ?? '') ?? [];
+        const shopDiscount = allocations.filter((allocation) => allocation.fundingSource === 'SHOP').reduce((sum, allocation) => sum.plus(new Prisma.Decimal(allocation.productDiscountAmount).mul(ratio)), new Prisma.Decimal(0));
+        const systemDiscount = allocations.filter((allocation) => allocation.fundingSource === 'SYSTEM').reduce((sum, allocation) => sum.plus(new Prisma.Decimal(allocation.productDiscountAmount).mul(ratio)), new Prisma.Decimal(0));
+        const buyerRefund = Prisma.Decimal.max(new Prisma.Decimal(0), itemGross.minus(shopDiscount).minus(systemDiscount)).toDecimalPlaces(2);
+        return {
+          orderItemId: item.id,
+          quantity,
+          grossAmount: itemGross.toFixed(2),
+          shopVoucherDiscountAmount: shopDiscount.toDecimalPlaces(2).toFixed(2),
+          systemVoucherDiscountAmount: systemDiscount.toDecimalPlaces(2).toFixed(2),
+          buyerRefundAmount: buyerRefund.toFixed(2),
+        };
+      });
+      const refundAmount = refundItems.reduce((sum, item) => sum.plus(item.buyerRefundAmount), new Prisma.Decimal(0)).toDecimalPlaces(2);
+      if (refundAmount.lte(0)) throw new BadRequestException('Refund amount must be greater than zero');
+      await this.orderInventoryService.restoreOrderInventory(tx, { items: selected.map(({ item, quantity }) => ({ ...item, quantity })) });
+      const userWallet = await this.walletRepository.findOrCreateUserWalletInTransaction(tx, order.buyerUserId!, 'VND');
+      const escrowWallet = await this.walletRepository.findOrCreatePlatformWalletInTransaction(tx, 'PLATFORM_ESCROW_VND', 'VND');
+      await this.walletRepository.executeTransactionInTransaction(tx, {
+        transactionCode: `PARTIAL_REFUND:${order.id}:${Date.now()}`,
+        transactionType: WalletTransactionType.REFUND,
+        idempotencyKey: `ORDER:${order.id}:PARTIAL_REFUND:${refundItems.map((item) => `${item.orderItemId}:${item.quantity}`).join(',')}`,
+        amount: refundAmount,
+        currency: 'VND', referenceType: 'ORDER', referenceId: order.id,
+        orderId: order.id, paymentIntentId: order.paymentIntent!.id,
+        description: 'Partial refund to buyer with voucher allocation reversal',
+        entries: [
+          { walletId: escrowWallet.id, direction: WalletEntryDirection.DEBIT, balanceType: WalletBalanceType.PENDING, amount: refundAmount },
+          { walletId: userWallet.id, direction: WalletEntryDirection.CREDIT, balanceType: WalletBalanceType.AVAILABLE, amount: refundAmount },
+        ],
+      });
+      await tx.escrow.update({ where: { orderId }, data: { heldAmount: { decrement: refundAmount } } });
+      await tx.auditLog.create({ data: { targetType: 'ORDER', targetId: orderId, actorUserId, action: 'PARTIAL_REFUND', toStatus: 'PARTIALLY_REFUNDED', note: 'Partial item refund with proportional voucher reversal', metadata: { items: refundItems, refundAmount: refundAmount.toFixed(2) } } });
+      return this.ordersRepository.updateOrderStatus(tx, orderId, 'partially_refunded');
+    });
+  }
+
   refundPaidOrder(orderId: string, actorUserId: string): Promise<OrderWithRelations> {
     return this.ordersRepository.withSerializableTransaction(async (tx) => {
       const order = await this.ordersRepository.findOrderForReversal(tx, orderId);
@@ -99,6 +187,10 @@ export class OrderReversalService {
       await this.orderInventoryService.restoreOrderInventory(tx, order);
       if (this.isHeldWalletPayment(order)) await this.refundWalletInTransaction(tx, order);
       await this.ordersRepository.updatePaymentStatusWithAudit(tx, { orderId, actorUserId, paymentStatus: 'REFUNDED' });
+      await (tx as Prisma.TransactionClient & { voucherRedemption?: Prisma.TransactionClient['voucherRedemption'] }).voucherRedemption?.updateMany({
+        where: { orderId, status: 'USED' },
+        data: { status: 'RELEASED', releasedAt: new Date() },
+      });
       await this.ordersRepository.updateEscrowStatusWithAudit(tx, { orderId, actorUserId, escrowStatus: 'REFUNDED', note: 'Escrow refunded because order was refunded' });
       await this.ordersRepository.cancelRefundableAffiliateArtifacts(tx, orderId);
       return this.ordersRepository.updateOrderStatus(tx, orderId, 'refunded');
@@ -168,6 +260,10 @@ export class OrderReversalService {
       if (input.resolution === 'REFUNDED' && dispute.order.orderStatus === 'paid') {
         await this.orderInventoryService.restoreOrderInventory(tx, dispute.order);
         await this.ordersRepository.updatePaymentStatusWithAudit(tx, { orderId: dispute.orderId, actorUserId: input.actorUserId, paymentStatus: 'REFUNDED' });
+        await (tx as Prisma.TransactionClient & { voucherRedemption?: Prisma.TransactionClient['voucherRedemption'] }).voucherRedemption?.updateMany({
+          where: { orderId: dispute.orderId, status: 'USED' },
+          data: { status: 'RELEASED', releasedAt: new Date() },
+        });
         await this.ordersRepository.updateEscrowStatusWithAudit(tx, { orderId: dispute.orderId, actorUserId: input.actorUserId, escrowStatus: 'REFUNDED', note: 'Escrow refunded by dispute resolution' });
         await this.ordersRepository.cancelRefundableAffiliateArtifacts(tx, dispute.orderId);
         await this.ordersRepository.updateOrderStatus(tx, dispute.orderId, 'refunded');

@@ -778,6 +778,12 @@ export class AdminFinanceReconciliationSummaryDto {
 
   @ApiProperty({ example: 100000 })
   affiliatePaidTotal!: number;
+
+  @ApiProperty()
+  platformVoucherExpenseTotal!: number;
+
+  @ApiProperty()
+  shopVoucherExpenseTotal!: number;
 }
 
 export class AdminFinanceReconciliationRecordDto {
@@ -819,6 +825,12 @@ export class AdminFinanceReconciliationRecordDto {
 
   @ApiProperty({ example: 0 })
   affiliatePaidAmount!: number;
+
+  @ApiProperty()
+  platformVoucherExpenseAmount!: number;
+
+  @ApiProperty()
+  shopVoucherExpenseAmount!: number;
 
   @ApiProperty({ example: '2026-05-21T10:00:00.000Z' })
   createdAt!: Date;
@@ -1927,6 +1939,65 @@ export class BuyNowCheckoutDto {
   @IsOptional()
   @IsString()
   shippingVoucherCode?: string;
+}
+
+export class BuyNowCheckoutQuoteDto {
+  @ApiProperty({ example: 'offer-id' })
+  @IsString()
+  offerId!: string;
+
+  @ApiProperty({ example: 'variant-id' })
+  @IsString()
+  variantId!: string;
+
+  @ApiProperty({ example: 1 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  quantity!: number;
+
+  @ApiProperty({ example: 'GHN_1' })
+  @IsString()
+  shippingOptionCode!: string;
+
+  @ApiPropertyOptional({ example: 'SYSTEM2026' })
+  @IsOptional()
+  @IsString()
+  systemVoucherCode?: string;
+
+  @ApiPropertyOptional({ example: 'SHOP10' })
+  @IsOptional()
+  @IsString()
+  shopVoucherCode?: string;
+
+  @ApiPropertyOptional({ example: 'FREESHIP' })
+  @IsOptional()
+  @IsString()
+  shippingVoucherCode?: string;
+}
+
+export class QuoteCartCheckoutDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @IsUUID('4', { each: true })
+  cartItemIds!: string[];
+
+  @ApiProperty({ example: 'GHN_1' })
+  @IsString()
+  shippingOptionCode!: string;
+
+  @ApiPropertyOptional({ example: 'SYSTEM2026' })
+  @IsOptional()
+  @IsString()
+  systemVoucherCode?: string;
+
+  @IsOptional()
+  @IsArray()
+  shopVouchers?: Array<{ shopId: string; voucherCode: string }>;
+
+  @IsOptional()
+  @IsArray()
+  shippingVouchers?: Array<{ shopId: string; voucherCode: string }>;
 }
 
 export class CheckoutCartCodResponseDto {

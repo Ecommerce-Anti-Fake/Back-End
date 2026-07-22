@@ -60,6 +60,7 @@ const orderWithRelationsArgs = Prisma.validator<Prisma.OrderDefaultArgs>()({
     shopGroups: {
       include: {
         shop: { select: { id: true, shopName: true, ownerUserId: true } },
+        voucherAllocations: true,
       },
       orderBy: { createdAt: 'asc' },
     },
@@ -158,6 +159,7 @@ const disputeWithOrderArgs = Prisma.validator<Prisma.DisputeDefaultArgs>()({
         },
         paymentIntent: true,
         escrow: true,
+        voucherAllocations: true,
         shopGroups: {
           include: {
             shop: { select: { id: true, shopName: true, ownerUserId: true } },
@@ -325,6 +327,7 @@ type FinanceOrderRecord = Prisma.OrderGetPayload<{
             shopName: true;
           };
         };
+        voucherAllocations: true;
       };
     };
     paymentIntent: true;
@@ -352,6 +355,8 @@ export type AdminFinanceReconciliationResult = {
     refundTotal: number;
     affiliatePendingLiabilityTotal: number;
     affiliatePaidTotal: number;
+    platformVoucherExpenseTotal: number;
+    shopVoucherExpenseTotal: number;
   };
   items: Array<{
     orderId: string;
@@ -367,6 +372,8 @@ export type AdminFinanceReconciliationResult = {
     refundAmount: number;
     affiliatePendingLiabilityAmount: number;
     affiliatePaidAmount: number;
+    platformVoucherExpenseAmount: number;
+    shopVoucherExpenseAmount: number;
     createdAt: Date;
   }>;
 };
@@ -413,6 +420,14 @@ export type CreateOrderRecordInput = {
   parcelWidthCm?: number | null;
   parcelHeightCm?: number | null;
   paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'WALLET' | 'manual_confirmation' | null;
+  voucherRedemptions?: Array<{ voucherId: string; userId: string; idempotencyKey: string }>;
+  voucherAllocations?: Array<{
+    voucherId: string;
+    productDiscountAmount: number;
+    shippingDiscountAmount: number;
+    eligibleBaseAmount: number;
+    fundingSource: 'SYSTEM' | 'SHOP';
+  }>;
   item: {
     offerId: string;
     variantId?: string | null;
@@ -439,6 +454,7 @@ export type CreateAggregateOrderRecordInput = {
   buyerPayableAmount: number;
   sellerReceivableAmount: number;
   shippingFeeAmount: number;
+  voucherRedemptions?: Array<{ voucherId: string; userId: string; idempotencyKey: string }>;
   shipping: {
     name: string | null;
     phone: string;
@@ -470,6 +486,13 @@ export type CreateAggregateOrderRecordInput = {
       quantity: number;
       selectedOptions?: CreateOrderRecordInput['item']['selectedOptions'];
       batchAllocations: OrderBatchAllocation[];
+    }>;
+    voucherAllocations?: Array<{
+      voucherId: string;
+      productDiscountAmount: number;
+      shippingDiscountAmount: number;
+      eligibleBaseAmount: number;
+      fundingSource: 'SYSTEM' | 'SHOP';
     }>;
   }>;
 };
@@ -574,6 +597,80 @@ export class OrdersRepository {
     });
   }
 
+  async createVoucher(data: Prisma.VoucherCreateInput) {
+    return this.prisma.voucher.create({ data });
+  }
+
+  async listVouchers(input: { ownerType?: 'SYSTEM' | 'SHOP'; shopId?: string; status?: string; page: number; pageSize: number }) {
+    const where: Prisma.VoucherWhereInput = {
+      ...(input.ownerType ? { ownerType: input.ownerType } : {}),
+      ...(input.shopId ? { shopId: input.shopId } : {}),
+      ...(input.status ? { status: input.status as never } : {}),
+    };
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.voucher.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (input.page - 1) * input.pageSize, take: input.pageSize }),
+      this.prisma.voucher.count({ where }),
+    ]);
+    return { items, total, page: input.page, pageSize: input.pageSize };
+  }
+
+  updateVoucher(id: string, data: Prisma.VoucherUpdateInput) {
+    return this.prisma.voucher.update({ where: { id }, data });
+  }
+
+  findVoucherById(id: string) {
+    return this.prisma.voucher.findUnique({ where: { id } });
+  }
+
+  async listVoucherRedemptions(input: { voucherId: string; page: number; pageSize: number }) {
+    const where = { voucherId: input.voucherId };
+    const [items, total] = await this.prisma.$transaction([
+      this.prisma.voucherRedemption.findMany({ where, orderBy: { redeemedAt: 'desc' }, skip: (input.page - 1) * input.pageSize, take: input.pageSize, include: { user: { select: { id: true, displayName: true } }, order: { select: { id: true, orderStatus: true } } } }),
+      this.prisma.voucherRedemption.count({ where }),
+    ]);
+    return { items, total, page: input.page, pageSize: input.pageSize };
+  }
+
+  async getVoucherUsage(voucherId: string, userId: string) {
+    const [total, user] = await this.prisma.$transaction([
+      this.prisma.voucherRedemption.count({ where: { voucherId, status: { in: ['RESERVED', 'USED'] } } }),
+      this.prisma.voucherRedemption.count({ where: { voucherId, userId, status: { in: ['RESERVED', 'USED'] } } }),
+    ]);
+    return { total, user };
+  }
+
+  async reserveVoucherRedemptionsInTransaction(
+    tx: Prisma.TransactionClient,
+    redemptions: Array<{ voucherId: string; userId: string; idempotencyKey: string }>,
+    orderId: string,
+  ) {
+    const uniqueRedemptions = [...new Map(redemptions.map((redemption) => [redemption.voucherId, redemption])).values()];
+    if (!uniqueRedemptions.length) return;
+    const vouchers = await tx.voucher.findMany({ where: { id: { in: uniqueRedemptions.map((redemption) => redemption.voucherId) } } });
+    for (const redemption of uniqueRedemptions) {
+      const existing = await tx.voucherRedemption.findUnique({ where: { idempotencyKey: redemption.idempotencyKey } });
+      if (existing) {
+        if (existing.orderId === orderId && existing.voucherId === redemption.voucherId && existing.userId === redemption.userId) continue;
+        throw new BadRequestException('Voucher redemption idempotency key đã được sử dụng');
+      }
+      const voucher = vouchers.find((candidate) => candidate.id === redemption.voucherId);
+      if (!voucher) throw new BadRequestException('Voucher không tồn tại');
+      const [total, user] = await Promise.all([
+        tx.voucherRedemption.count({ where: { voucherId: voucher.id, status: { in: ['RESERVED', 'USED'] } } }),
+        tx.voucherRedemption.count({ where: { voucherId: voucher.id, userId: redemption.userId, status: { in: ['RESERVED', 'USED'] } } }),
+      ]);
+      if (voucher.totalUsageLimit !== null && total >= voucher.totalUsageLimit) {
+        throw new BadRequestException(`Voucher ${voucher.code} đã hết lượt sử dụng`);
+      }
+      if (voucher.userUsageLimit !== null && user >= voucher.userUsageLimit) {
+        throw new BadRequestException(`Voucher ${voucher.code} đã hết lượt sử dụng cho tài khoản này`);
+      }
+      await tx.voucherRedemption.create({
+        data: { ...redemption, orderId, status: 'RESERVED' },
+      });
+    }
+  }
+
   withTransaction<T>(callback: (tx: Prisma.TransactionClient) => Promise<T>) {
     return this.prisma.$transaction((tx) => callback(tx));
   }
@@ -595,6 +692,8 @@ export class OrdersRepository {
         },
         paymentIntent: true,
         escrow: true,
+        voucherAllocations: true,
+        shopGroups: { include: { voucherAllocations: true } },
       },
     });
   }
@@ -830,6 +929,10 @@ export class OrdersRepository {
         displayName: true,
       },
     });
+  }
+
+  findUserRole(id: string) {
+    return this.prisma.user.findUnique({ where: { id }, select: { id: true, role: true } });
   }
 
   findOwnedShop(shopId: string, ownerUserId: string) {
@@ -1076,7 +1179,7 @@ export class OrdersRepository {
         shopGroups: {
           create: groups.map((group) => ({
             id: group.id,
-            shopId: group.shopId,
+            shop: { connect: { id: group.shopId } },
             fulfillmentStatus: 'PENDING',
             baseAmount: group.baseAmount,
             discountAmount: group.discountAmount,
@@ -1830,6 +1933,7 @@ export class OrdersRepository {
               shopName: true,
             },
           },
+          voucherAllocations: true,
         },
       },
       paymentIntent: true,
@@ -1881,6 +1985,8 @@ export class OrdersRepository {
         summary.refundTotal += record.refundAmount;
         summary.affiliatePendingLiabilityTotal += record.affiliatePendingLiabilityAmount;
         summary.affiliatePaidTotal += record.affiliatePaidAmount;
+        summary.platformVoucherExpenseTotal += record.platformVoucherExpenseAmount;
+        summary.shopVoucherExpenseTotal += record.shopVoucherExpenseAmount;
 
         return summary;
       },
@@ -1895,6 +2001,8 @@ export class OrdersRepository {
         refundTotal: 0,
         affiliatePendingLiabilityTotal: 0,
         affiliatePaidTotal: 0,
+        platformVoucherExpenseTotal: 0,
+        shopVoucherExpenseTotal: 0,
       },
     );
   }
@@ -1922,6 +2030,13 @@ export class OrdersRepository {
     const affiliatePaidAmount = commissionEntries
       .filter((entry) => entry.commissionStatus === 'PAID')
       .reduce((total, entry) => total + decimalToNumber(entry.amount), 0);
+    const voucherAllocations = shopGroup?.voucherAllocations ?? [];
+    const platformVoucherExpenseAmount = voucherAllocations
+      .filter((allocation) => allocation.fundingSource === 'SYSTEM')
+      .reduce((total, allocation) => total + decimalToNumber(allocation.productDiscountAmount) + decimalToNumber(allocation.shippingDiscountAmount), 0);
+    const shopVoucherExpenseAmount = voucherAllocations
+      .filter((allocation) => allocation.fundingSource === 'SHOP')
+      .reduce((total, allocation) => total + decimalToNumber(allocation.productDiscountAmount) + decimalToNumber(allocation.shippingDiscountAmount), 0);
 
     return {
       orderId: order.id,
@@ -1938,6 +2053,8 @@ export class OrdersRepository {
       refundAmount: paymentStatus === 'REFUNDED' || escrowStatus === 'REFUNDED' ? buyerPayableAmount : 0,
       affiliatePendingLiabilityAmount,
       affiliatePaidAmount,
+      platformVoucherExpenseAmount,
+      shopVoucherExpenseAmount,
       createdAt: order.createdAt,
     };
   }
@@ -2833,6 +2950,10 @@ export class OrdersRepository {
         heldAmount,
         note: `Escrow held after payment moved from ${fromStatus} to PAID`,
       });
+      await tx.voucherRedemption.updateMany({
+        where: { orderId: input.id, status: 'RESERVED' },
+        data: { status: 'USED' },
+      });
 
       await tx.auditLog.create({
         data: {
@@ -2901,6 +3022,11 @@ export class OrdersRepository {
       if (paymentUpdate.count === 0) {
         return tx.order.findUniqueOrThrow({ where: { id: input.id }, ...orderWithRelationsArgs });
       }
+
+      await tx.voucherRedemption.updateMany({
+        where: { orderId: input.id, status: 'RESERVED' },
+        data: { status: 'RELEASED', releasedAt: new Date() },
+      });
 
       await tx.auditLog.create({
         data: {

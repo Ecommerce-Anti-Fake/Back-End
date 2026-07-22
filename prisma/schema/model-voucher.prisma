@@ -1,6 +1,7 @@
 model Voucher {
   id                  String              @id @default(uuid())
   ownerType           VoucherOwnerType    @map("owner_type")
+  fundingSource       VoucherFundingSource @map("funding_source")
   shopId              String?             @map("shop_id")
   code                String
   name                String

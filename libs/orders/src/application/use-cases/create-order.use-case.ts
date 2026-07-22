@@ -40,6 +40,20 @@ export class CreateOrderUseCase {
     systemVoucherCode?: string | null;
     shopVoucherCode?: string | null;
     shippingVoucherCode?: string | null;
+    voucherPricingOverride?: {
+      discountAmount: number;
+      productPayableAmount: number;
+      platformFeeAmount: number;
+      sellerReceivableAmount: number;
+    };
+    voucherRedemptions?: Array<{ voucherId: string; userId: string; idempotencyKey: string }>;
+    voucherAllocations?: Array<{
+      voucherId: string;
+      productDiscountAmount: number;
+      shippingDiscountAmount: number;
+      eligibleBaseAmount: number;
+      fundingSource: 'SYSTEM' | 'SHOP';
+    }>;
   }) {
     const buyer = await this.ordersRepository.findUserById(input.buyerUserId);
     if (!buyer) throw new NotFoundException('Buyer not found');
@@ -86,7 +100,16 @@ export class CreateOrderUseCase {
       fallbackFee: Number(shippingMethod.shippingFee.toString()),
     });
     const shippingFeeAmount = this.roundMoney(quote.shippingFeeAmount);
-    const buyerPayableAmount = this.roundMoney(pricing.buyerPayableAmount + shippingFeeAmount);
+    const finalPricing = input.voucherPricingOverride
+      ? {
+          ...pricing,
+          discountAmount: input.voucherPricingOverride.discountAmount,
+          platformFeeAmount: input.voucherPricingOverride.platformFeeAmount,
+          sellerReceivableAmount: input.voucherPricingOverride.sellerReceivableAmount,
+          buyerPayableAmount: input.voucherPricingOverride.productPayableAmount,
+        }
+      : pricing;
+    const buyerPayableAmount = this.roundMoney(finalPricing.buyerPayableAmount + shippingFeeAmount);
     const paymentMethod = input.paymentMethod ?? 'COD';
 
     const order = await this.orderPlacementService.createOrder({
@@ -97,10 +120,10 @@ export class CreateOrderUseCase {
         shopId: offer.shopId,
         orderStatus: 'pending',
         baseAmount: pricing.baseAmount,
-        discountAmount: pricing.discountAmount,
-        platformFeeAmount: pricing.platformFeeAmount,
+        discountAmount: finalPricing.discountAmount,
+        platformFeeAmount: finalPricing.platformFeeAmount,
         buyerPayableAmount,
-        sellerReceivableAmount: pricing.sellerReceivableAmount,
+        sellerReceivableAmount: finalPricing.sellerReceivableAmount,
         totalAmount: buyerPayableAmount,
         shippingName: shipping.name,
         shippingPhone: shipping.phone,
@@ -116,11 +139,13 @@ export class CreateOrderUseCase {
         shippingFeeAmount,
         ...parcel,
         paymentMethod,
+        voucherRedemptions: input.voucherRedemptions,
+        voucherAllocations: input.voucherAllocations,
         item: {
           offerId: offer.id,
           variantId: variant?.id ?? null,
           offerTitleSnapshot: offer.title,
-          unitPrice: pricing.unitPrice,
+          unitPrice: finalPricing.unitPrice,
           quantity: input.quantity,
           selectedOptions: (variant?.values ?? []).map(({ optionValue }) => ({
             optionGroupId: optionValue.optionGroupId,
@@ -140,7 +165,7 @@ export class CreateOrderUseCase {
             sellerShopId: offer.shopId,
             brandId: offer.brandId,
             orderAmount: buyerPayableAmount,
-            commissionBase: pricing.platformFeeAmount,
+            commissionBase: finalPricing.platformFeeAmount,
           }
         : undefined,
     });

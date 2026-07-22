@@ -217,6 +217,11 @@ enum VoucherOwnerType {
   SHOP
 }
 
+enum VoucherFundingSource {
+  PLATFORM
+  SHOP
+}
+
 enum VoucherDiscountType {
   PERCENTAGE
   FIXED_AMOUNT
@@ -1796,6 +1801,7 @@ model VerificationRequirement {
 model Voucher {
   id                  String              @id @default(uuid())
   ownerType           VoucherOwnerType    @map("owner_type")
+  fundingSource       VoucherFundingSource @map("funding_source")
   shopId              String?             @map("shop_id")
   code                String
   name                String

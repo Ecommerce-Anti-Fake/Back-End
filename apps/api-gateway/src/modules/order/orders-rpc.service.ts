@@ -58,6 +58,14 @@ import {
   RemoveCartItemMessage,
   UpdateCartItemMessage,
   UpdateOrderFulfillmentMessage,
+  CreateVoucherMessage,
+  ListVouchersMessage,
+  UpdateVoucherStatusMessage,
+  GetVoucherMessage,
+  UpdateVoucherMessage,
+  ListVoucherRedemptionsMessage,
+  QuoteCartCheckoutMessage,
+  QuoteBuyNowCheckoutMessage,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
 import { lastValueFrom } from 'rxjs';
@@ -91,6 +99,38 @@ export class OrdersRpcService {
 
   checkoutCart(payload: CheckoutCartMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.checkoutCart, payload);
+  }
+
+  quoteCartCheckout(payload: QuoteCartCheckoutMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.quoteCartCheckout, payload);
+  }
+
+  quoteBuyNowCheckout(payload: QuoteBuyNowCheckoutMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.quoteBuyNowCheckout, payload);
+  }
+
+  createVoucher(payload: CreateVoucherMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.createVoucher, payload);
+  }
+
+  listVouchers(payload: ListVouchersMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.listVouchers, payload);
+  }
+
+  updateVoucherStatus(payload: UpdateVoucherStatusMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.updateVoucherStatus, payload);
+  }
+
+  getVoucher(payload: GetVoucherMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.getVoucher, payload);
+  }
+
+  updateVoucher(payload: UpdateVoucherMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.updateVoucher, payload);
+  }
+
+  listVoucherRedemptions(payload: ListVoucherRedemptionsMessage) {
+    return this.send(ORDERS_MESSAGE_PATTERNS.listVoucherRedemptions, payload);
   }
 
   buyNowCheckout(payload: BuyNowCheckoutMessage) {
