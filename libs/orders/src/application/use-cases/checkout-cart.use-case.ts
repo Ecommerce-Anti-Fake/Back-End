@@ -17,6 +17,7 @@ type CheckoutCartInput = {
   paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   shippingOptionCode: string;
   affiliateCode?: string | null;
+  requireAffiliateAttribution?: boolean;
   systemVoucherCode?: string | null;
   shopVouchers?: Array<{ shopId: string; voucherCode: string }>;
   shippingVouchers?: Array<{ shopId: string; voucherCode: string }>;
@@ -35,6 +36,13 @@ type CheckoutGroup = ReturnType<CheckoutCartUseCase['createShopGroups']>[number]
 type VoucherApplicationResult = {
   groups: CheckoutGroup[];
   voucherRedemptions: Array<{ voucherId: string; userId: string; idempotencyKey: string }>;
+  affiliateItems: Array<{
+    offerId: string;
+    sellerShopId: string;
+    brandId: string;
+    grossAmount: number;
+    shopProductDiscountAmount: number;
+  }>;
 };
 
 @Injectable()
@@ -62,9 +70,6 @@ export class CheckoutCartUseCase {
       selectedItems,
     );
     const groups = voucherResult.groups;
-    if (input.affiliateCode && selectedItems.length !== 1) {
-      throw new BadRequestException('Affiliate checkout currently requires exactly one cart item');
-    }
     const baseAmount = groups.reduce((total, group) => total + group.baseAmount, 0);
     const platformFeeAmount = groups.reduce((total, group) => total + group.platformFeeAmount, 0);
     const sellerReceivableAmount = groups.reduce((total, group) => total + group.sellerReceivableAmount, 0);
@@ -91,12 +96,14 @@ export class CheckoutCartUseCase {
       affiliateAttribution: input.affiliateCode
         ? {
             affiliateCode: input.affiliateCode,
+            required: input.requireAffiliateAttribution ?? false,
             customerUserId: input.buyerUserId,
-            offerId: selectedItems[0].offerId,
-            sellerShopId: selectedItems[0].offer.shopId,
-            brandId: selectedItems[0].offer.brandId,
             orderAmount: buyerPayableAmount,
-            commissionBase: platformFeeAmount,
+            items: voucherResult.affiliateItems,
+            fundingShopReceivables: groups.map((group) => ({
+              shopId: group.shopId,
+              amount: group.sellerReceivableAmount,
+            })),
           }
         : undefined,
     };
@@ -209,6 +216,12 @@ export class CheckoutCartUseCase {
           offerTitleSnapshot: item.offerTitleSnapshot,
           unitPrice: Number(item.unitPriceSnapshot.toString()),
           quantity: item.quantity,
+          shopProductDiscountAmount: new Prisma.Decimal(0),
+          systemProductDiscountAmount: new Prisma.Decimal(0),
+          platformFeeAmount: new Prisma.Decimal(item.unitPriceSnapshot)
+            .mul(item.quantity)
+            .mul('0.2')
+            .toDecimalPlaces(2),
           selectedOptions: item.variant?.values.map(({ optionValue }) => ({
             optionGroupId: optionValue.optionGroupId,
             optionValueId: optionValue.id,
@@ -246,7 +259,17 @@ export class CheckoutCartUseCase {
 
   private async applyVouchers(groups: ReturnType<CheckoutCartUseCase['createShopGroups']>, input: Omit<CheckoutCartInput, 'paymentMethod' | 'affiliateCode'>, selectedItems: CartWithItems['items']): Promise<VoucherApplicationResult> {
     if (!input.systemVoucherCode && !(input.shopVouchers?.length) && !(input.shippingVouchers?.length)) {
-      return { groups, voucherRedemptions: [] };
+      return {
+        groups,
+        voucherRedemptions: [],
+        affiliateItems: selectedItems.map((item) => ({
+          offerId: item.offerId,
+          sellerShopId: item.offer.shopId,
+          brandId: item.offer.brandId,
+          grossAmount: Number(item.unitPriceSnapshot.toString()) * item.quantity,
+          shopProductDiscountAmount: 0,
+        })),
+      };
     }
     const vouchers = await this.ordersRepository.findCheckoutVouchers({
       systemVoucherCode: input.systemVoucherCode,
@@ -339,12 +362,79 @@ export class CheckoutCartUseCase {
     });
     const redemptionVoucherIds = new Set<string>();
     resultGroups.forEach((group) => group.voucherAllocations?.forEach((allocation) => redemptionVoucherIds.add(allocation.voucherId)));
+    const shopDiscountByItemId = new Map<string, Prisma.Decimal>();
+    groups.forEach((group, index) => {
+      const selection = input.shopVouchers?.find((voucher) => voucher.shopId === group.shopId);
+      const shopVoucher = findCode(selection?.voucherCode);
+      const eligibleItems = eligibleItemsForVoucher(shopVoucher, group.shopId);
+      const allocations = this.voucherPricingService.allocateSystemDiscount(
+        eligibleItems.map(
+          (item) => new Prisma.Decimal(item.unitPriceSnapshot).mul(item.quantity),
+        ),
+        shopDiscounts[index],
+      );
+      eligibleItems.forEach((item, itemIndex) => {
+        shopDiscountByItemId.set(item.id, allocations[itemIndex]);
+      });
+    });
+    const systemDiscountByItemId = new Map<string, Prisma.Decimal>();
+    groups.forEach((group, index) => {
+      const eligibleItems = eligibleItemsForVoucher(systemVoucher, group.shopId);
+      const allocations = this.voucherPricingService.allocateSystemDiscount(
+        eligibleItems.map((item) =>
+          Prisma.Decimal.max(
+            new Prisma.Decimal(0),
+            new Prisma.Decimal(item.unitPriceSnapshot)
+              .mul(item.quantity)
+              .minus(shopDiscountByItemId.get(item.id) ?? 0),
+          ),
+        ),
+        systemAllocations[index],
+      );
+      eligibleItems.forEach((item, itemIndex) => {
+        systemDiscountByItemId.set(item.id, allocations[itemIndex]);
+      });
+    });
+    const financialGroups = resultGroups.map((group) => {
+      const commissionBases = group.items.map((item) =>
+        Prisma.Decimal.max(
+          new Prisma.Decimal(0),
+          new Prisma.Decimal(item.unitPrice)
+            .mul(item.quantity)
+            .minus(shopDiscountByItemId.get(item.sourceCartItemId) ?? 0),
+        ),
+      );
+      const platformFees = this.voucherPricingService.allocateSystemDiscount(
+        commissionBases,
+        new Prisma.Decimal(group.platformFeeAmount),
+      );
+      return {
+        ...group,
+        items: group.items.map((item, itemIndex) => ({
+          ...item,
+          shopProductDiscountAmount:
+            shopDiscountByItemId.get(item.sourceCartItemId) ?? new Prisma.Decimal(0),
+          systemProductDiscountAmount:
+            systemDiscountByItemId.get(item.sourceCartItemId) ?? new Prisma.Decimal(0),
+          platformFeeAmount: platformFees[itemIndex],
+        })),
+      };
+    });
     return {
-      groups: resultGroups,
+      groups: financialGroups,
       voucherRedemptions: [...redemptionVoucherIds].map((voucherId) => ({
         voucherId,
         userId: input.buyerUserId,
         idempotencyKey: `VOUCHER:${voucherId}:BUYER:${input.buyerUserId}:${input.cartItemIds.slice().sort().join(',')}`,
+      })),
+      affiliateItems: selectedItems.map((item) => ({
+        offerId: item.offerId,
+        sellerShopId: item.offer.shopId,
+        brandId: item.offer.brandId,
+        grossAmount: Number(item.unitPriceSnapshot.toString()) * item.quantity,
+        shopProductDiscountAmount: Number(
+          (shopDiscountByItemId.get(item.id) ?? new Prisma.Decimal(0)).toString(),
+        ),
       })),
     };
   }

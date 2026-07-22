@@ -55,6 +55,7 @@ import { RateLimit } from '../../observability';
 import { CatalogRpcService } from './catalog-rpc.service';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 import { OrdersRpcService } from '../order/orders-rpc.service';
+import { AffiliateAttributionTokenService } from '../affiliate/affiliate-attribution-token.service';
 
 @ApiTags('Offer')
 @Controller()
@@ -63,6 +64,7 @@ export class OfferController {
     private readonly catalogRpcService: CatalogRpcService,
     private readonly ordersRpcService: OrdersRpcService,
     private readonly dashboardSseBrokerService: DashboardSseBrokerService,
+    private readonly attributionTokenService: AffiliateAttributionTokenService,
   ) {}
 
   @ApiOperation({ summary: 'Admin lay danh sach offer' })
@@ -168,6 +170,11 @@ export class OfferController {
       quantity: dto.quantity,
       paymentMethod: dto.paymentMethod,
       shippingOptionCode: dto.shippingOptionCode,
+      affiliateCode: this.attributionTokenService.resolvePreferredCode({
+        manualCode: dto.affiliateCode,
+        attributionToken: dto.affiliateAttributionToken,
+      }),
+      requireAffiliateAttribution: Boolean(dto.affiliateCode?.trim()),
       systemVoucherCode: dto.systemVoucherCode ?? null,
       shopVoucherCode: dto.shopVoucherCode ?? null,
       shippingVoucherCode: dto.shippingVoucherCode ?? null,

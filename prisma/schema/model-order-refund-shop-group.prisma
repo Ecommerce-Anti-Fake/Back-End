@@ -1,0 +1,17 @@
+model OrderRefundShopGroup {
+  id                         String         @id @default(uuid())
+  refundId                   String         @map("refund_id")
+  orderShopGroupId           String         @map("order_shop_group_id")
+  baseReductionAmount        Decimal        @default(0) @map("base_reduction_amount") @db.Decimal(18, 2)
+  discountReductionAmount    Decimal        @default(0) @map("discount_reduction_amount") @db.Decimal(18, 2)
+  buyerRefundAmount          Decimal        @default(0) @map("buyer_refund_amount") @db.Decimal(18, 2)
+  platformFeeReductionAmount Decimal        @default(0) @map("platform_fee_reduction_amount") @db.Decimal(18, 2)
+  sellerReductionAmount      Decimal        @default(0) @map("seller_reduction_amount") @db.Decimal(18, 2)
+  createdAt                  DateTime       @default(now()) @map("created_at")
+  refund                     OrderRefund    @relation(fields: [refundId], references: [id], onDelete: Cascade)
+  orderShopGroup             OrderShopGroup @relation(fields: [orderShopGroupId], references: [id])
+
+  @@unique([refundId, orderShopGroupId])
+  @@index([orderShopGroupId])
+  @@map("order_refund_shop_group")
+}

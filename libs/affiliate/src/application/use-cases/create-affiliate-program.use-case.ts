@@ -15,6 +15,7 @@ export class CreateAffiliateProgramUseCase {
     name: string;
     slug: string;
     attributionWindowDays?: number;
+    commissionHoldDays?: number;
     commissionModel?: string;
     tier1Rate: number;
     tier2Rate: number;
@@ -40,6 +41,15 @@ export class CreateAffiliateProgramUseCase {
       throw new BadRequestException('Tier 2 rate cannot be greater than tier 1 rate');
     }
 
+    if (input.tier1Rate + input.tier2Rate > 100) {
+      throw new BadRequestException('Combined affiliate rates cannot exceed 100 percent');
+    }
+
+    const commissionHoldDays = input.commissionHoldDays ?? 7;
+    if (!Number.isInteger(commissionHoldDays) || commissionHoldDays < 0 || commissionHoldDays > 30) {
+      throw new BadRequestException('commissionHoldDays must be an integer between 0 and 30');
+    }
+
     const startedAt = this.parseOptionalDate(input.startedAt);
     const endedAt = this.parseOptionalDate(input.endedAt);
     if (startedAt && endedAt && startedAt > endedAt) {
@@ -59,6 +69,9 @@ export class CreateAffiliateProgramUseCase {
     if (!ownerShop) {
       throw new BadRequestException('Owner shop is invalid or not owned by current user');
     }
+    if (ownerShop.shopStatus !== 'verified') {
+      throw new BadRequestException('Owner shop must be verified');
+    }
 
     await this.validateScopeTarget({
       ownerShopId: input.ownerShopId,
@@ -76,7 +89,9 @@ export class CreateAffiliateProgramUseCase {
       name: normalizedName,
       slug: normalizedSlug,
       attributionWindowDays: input.attributionWindowDays ?? 30,
+      commissionHoldDays,
       commissionModel: input.commissionModel?.trim() || 'revenue_share',
+      settlementMode: 'AUTOMATIC',
       tier1Rate: input.tier1Rate,
       tier2Rate: input.tier2Rate,
       rulesJson: input.rulesJson ?? null,
@@ -106,6 +121,14 @@ export class CreateAffiliateProgramUseCase {
       const brand = await this.repository.findBrandById(input.brandId);
       if (!brand) {
         throw new NotFoundException('Brand not found');
+      }
+
+      const authorization = await this.repository.findApprovedBrandForShop(
+        input.ownerShopId,
+        input.brandId,
+      );
+      if (!authorization) {
+        throw new BadRequestException('Shop is not approved to promote this brand');
       }
 
       return;

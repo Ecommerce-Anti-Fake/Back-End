@@ -285,6 +285,9 @@ export const DISTRIBUTION_MESSAGE_PATTERNS = {
 } as const;
 
 export const AFFILIATE_MESSAGE_PATTERNS = {
+  resolveAttribution: 'affiliate.resolve-attribution',
+  findActivePrograms: 'affiliate.find-active-programs',
+  findProgramMembers: 'affiliate.find-program-members',
   createProgram: 'affiliate.create-program',
   findMyPrograms: 'affiliate.find-my-programs',
   joinProgram: 'affiliate.join-program',
@@ -1080,6 +1083,7 @@ export type CreateOrderMessage = {
   quantity: number;
   paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'WALLET' | null;
   affiliateCode?: string | null;
+  requireAffiliateAttribution?: boolean;
   shippingName?: string | null;
   shippingPhone?: string | null;
   shippingAddress?: string | null;
@@ -1119,6 +1123,7 @@ export type CheckoutCartItemMessage = {
   cartItemId: string;
   paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'WALLET' | null;
   affiliateCode?: string | null;
+  requireAffiliateAttribution?: boolean;
   shippingName?: string | null;
   shippingPhone?: string | null;
   shippingAddress?: string | null;
@@ -1137,6 +1142,7 @@ export type CheckoutCartMessage = {
   paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   shippingOptionCode: string;
   affiliateCode?: string | null;
+  requireAffiliateAttribution?: boolean;
   systemVoucherCode?: string | null;
   shopVouchers?: Array<{ shopId: string; voucherCode: string }>;
   shippingVouchers?: Array<{ shopId: string; voucherCode: string }>;
@@ -1165,6 +1171,8 @@ export type BuyNowCheckoutMessage = {
   quantity: number;
   paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   shippingOptionCode: string;
+  affiliateCode?: string | null;
+  requireAffiliateAttribution?: boolean;
   systemVoucherCode?: string | null;
   shopVoucherCode?: string | null;
   shippingVoucherCode?: string | null;
@@ -1497,6 +1505,7 @@ export type RefundOrderMessage = {
   id: string;
   requesterUserId: string;
   items?: Array<{ orderItemId: string; quantity: number }>;
+  idempotencyKey?: string | null;
 };
 
 export type UpdateOrderFulfillmentMessage = {
@@ -1745,6 +1754,7 @@ export type CreateAffiliateProgramMessage = {
   name: string;
   slug: string;
   attributionWindowDays?: number;
+  commissionHoldDays?: number;
   commissionModel?: string;
   tier1Rate: number;
   tier2Rate: number;
@@ -1753,8 +1763,24 @@ export type CreateAffiliateProgramMessage = {
   endedAt?: string | null;
 };
 
+export type ResolveAffiliateAttributionMessage = {
+  code: string;
+};
+
+export type ActiveAffiliateProgramsLookupMessage = {
+  page: number;
+  pageSize: number;
+};
+
 export type AffiliateProgramsLookupMessage = {
   requesterUserId: string;
+};
+
+export type AffiliateProgramMembersLookupMessage = {
+  requesterUserId: string;
+  programId: string;
+  page: number;
+  pageSize: number;
 };
 
 export type JoinAffiliateProgramMessage = {
@@ -1775,6 +1801,8 @@ export type AffiliateAccountSummaryMessage = {
 export type AffiliateCommissionsLookupMessage = {
   requesterUserId: string;
   accountId: string;
+  page: number;
+  pageSize: number;
 };
 
 export type AffiliateAccountConversionsLookupMessage = {

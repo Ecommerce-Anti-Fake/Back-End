@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { OrderReversalService } from '../services';
@@ -12,6 +13,7 @@ describe('RefundOrderUseCase', () => {
   };
   const orderReversalServiceMock = {
     refundPaidOrder: jest.fn(),
+    partialRefundPaidOrder: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -46,6 +48,43 @@ describe('RefundOrderUseCase', () => {
       paymentStatus: 'REFUNDED',
       escrowStatus: 'REFUNDED',
     });
+  });
+
+  it('rejects an oversized partial-refund idempotency key from any transport', async () => {
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce({
+      ...createOrderRecord(),
+      shopGroups: [{ id: 'group-1', shop: { ownerUserId: 'seller-user-1' } }],
+      items: [{ ...createOrderRecord().items[0], orderShopGroupId: 'group-1' }],
+    });
+
+    await expect(useCase.execute({
+      id: 'order-1',
+      requesterUserId: 'seller-user-1',
+      items: [{ orderItemId: 'order-item-1', quantity: 1 }],
+      idempotencyKey: 'x'.repeat(129),
+    })).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(orderReversalServiceMock.partialRefundPaidOrder).not.toHaveBeenCalled();
+  });
+
+  it('prevents a seller from refunding another shop group', async () => {
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce({
+      ...createOrderRecord(),
+      shopGroups: [
+        { id: 'group-1', shop: { ownerUserId: 'seller-user-1' } },
+        { id: 'group-2', shop: { ownerUserId: 'seller-user-2' } },
+      ],
+      items: [{ ...createOrderRecord().items[0], orderShopGroupId: 'group-2' }],
+    });
+
+    await expect(useCase.execute({
+      id: 'order-1',
+      requesterUserId: 'seller-user-1',
+      items: [{ orderItemId: 'order-item-1', quantity: 1 }],
+      idempotencyKey: 'refund-1',
+    })).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(orderReversalServiceMock.partialRefundPaidOrder).not.toHaveBeenCalled();
   });
 });
 

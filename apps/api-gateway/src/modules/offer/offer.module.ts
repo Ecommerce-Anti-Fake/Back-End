@@ -7,6 +7,7 @@ import { GatewayUserModule } from '../user/user.module';
 import { GatewayOrdersRpcModule } from '../order/orders-rpc.module';
 import { CatalogRpcService } from './catalog-rpc.service';
 import { OfferController } from './offer.controller';
+import { GatewayAffiliateModule } from '../affiliate/affiliate.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { OfferController } from './offer.controller';
     AuthGuardsModule,
     GatewayUserModule,
     GatewayOrdersRpcModule,
+    GatewayAffiliateModule,
     ClientsModule.registerAsync([
       {
         name: CATALOG_SERVICE_CLIENT,

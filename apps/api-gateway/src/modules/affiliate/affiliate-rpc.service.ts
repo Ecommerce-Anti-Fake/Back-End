@@ -3,6 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import {
   AFFILIATE_SERVICE_CLIENT,
   AFFILIATE_MESSAGE_PATTERNS,
+  ActiveAffiliateProgramsLookupMessage,
   AffiliateAccountsLookupMessage,
   AffiliateAccountSummaryMessage,
   AffiliateAccountConversionsLookupMessage,
@@ -12,6 +13,7 @@ import {
   AffiliateConversionsLookupMessage,
   AffiliatePayoutsLookupMessage,
   AffiliateProgramsLookupMessage,
+  AffiliateProgramMembersLookupMessage,
   ApproveAffiliateConversionMessage,
   CreateAffiliateCodeMessage,
   CreateAffiliatePayoutMessage,
@@ -19,6 +21,7 @@ import {
   JoinAffiliateProgramMessage,
   RejectAffiliateConversionMessage,
   UpdateAffiliatePayoutStatusMessage,
+  ResolveAffiliateAttributionMessage,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
 import { lastValueFrom } from 'rxjs';
@@ -32,6 +35,21 @@ export class AffiliateRpcService {
 
   createProgram(payload: CreateAffiliateProgramMessage) {
     return this.send(AFFILIATE_MESSAGE_PATTERNS.createProgram, payload);
+  }
+
+  resolveAttribution(payload: ResolveAffiliateAttributionMessage) {
+    return this.send<{ code: string; programId: string; expiresAt: Date }>(
+      AFFILIATE_MESSAGE_PATTERNS.resolveAttribution,
+      payload,
+    );
+  }
+
+  findActivePrograms(payload: ActiveAffiliateProgramsLookupMessage) {
+    return this.send(AFFILIATE_MESSAGE_PATTERNS.findActivePrograms, payload);
+  }
+
+  findProgramMembers(payload: AffiliateProgramMembersLookupMessage) {
+    return this.send(AFFILIATE_MESSAGE_PATTERNS.findProgramMembers, payload);
   }
 
   findMyPrograms(payload: AffiliateProgramsLookupMessage) {

@@ -2,6 +2,9 @@ import { OfferController } from './offer.controller';
 import { GUARDS_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 
 describe('OfferController', () => {
+  const attributionTokenService = {
+    resolvePreferredCode: jest.fn(({ manualCode }) => manualCode?.trim().toLowerCase() ?? null),
+  };
   it('exposes core offers without the legacy products prefix', () => {
     expect(Reflect.getMetadata(PATH_METADATA, OfferController)).toBe('/');
     expect(
@@ -116,6 +119,7 @@ describe('OfferController', () => {
       catalogRpcService as never,
       { buyNowCheckout: jest.fn() } as never,
       { notifyShop: jest.fn() } as never,
+      attributionTokenService as never,
     );
 
     const result = await controller.findShopOffers('shop-1', {
@@ -180,6 +184,7 @@ describe('OfferController', () => {
       catalogRpcService as never,
       { buyNowCheckout: jest.fn() } as never,
       { notifyShop: jest.fn() } as never,
+      attributionTokenService as never,
     );
 
     await controller.findShopOffers('shop-1', {});
@@ -208,6 +213,7 @@ describe('OfferController', () => {
       catalogRpcService as never,
       { buyNowCheckout: jest.fn() } as never,
       dashboardSseBrokerService as never,
+      attributionTokenService as never,
     );
 
     const result = await controller.createOffer('seller-1', {
@@ -283,6 +289,7 @@ describe('OfferController', () => {
       {} as never,
       ordersRpcService as never,
       dashboardSseBrokerService as never,
+      attributionTokenService as never,
     );
 
     const result = await controller.buyNowCheckout('buyer-1', {
@@ -300,6 +307,11 @@ describe('OfferController', () => {
       quantity: 2,
       paymentMethod: 'PAYOS',
       shippingOptionCode: 'GHN_1',
+      affiliateCode: null,
+      requireAffiliateAttribution: false,
+      systemVoucherCode: null,
+      shopVoucherCode: null,
+      shippingVoucherCode: null,
     });
     expect(ordersRpcService.buyNowCheckout.mock.calls[0][0]).not.toHaveProperty('shippingName');
     expect(ordersRpcService.buyNowCheckout.mock.calls[0][0]).not.toHaveProperty('shippingAddress');
@@ -333,6 +345,7 @@ describe('OfferController', () => {
       catalogRpcService as never,
       ordersRpcService as never,
       { notifyOrderChanged: jest.fn(), notifyShop: jest.fn() } as never,
+      attributionTokenService as never,
     );
 
     const result = await controller.getBuyNowPreview('buyer-1', {
@@ -403,6 +416,7 @@ describe('OfferController', () => {
       catalogRpcService as never,
       { buyNowCheckout: jest.fn() } as never,
       { notifyShop: jest.fn() } as never,
+      attributionTokenService as never,
     );
 
     await expect(
@@ -451,6 +465,7 @@ describe('OfferController', () => {
       catalogRpcService as never,
       { buyNowCheckout: jest.fn() } as never,
       { notifyShop: jest.fn() } as never,
+      attributionTokenService as never,
     );
 
     await expect(controller.findOffers({})).resolves.toEqual({
@@ -537,6 +552,7 @@ describe('OfferController', () => {
       catalogRpcService as never,
       { buyNowCheckout: jest.fn() } as never,
       { notifyShop: jest.fn() } as never,
+      attributionTokenService as never,
     );
 
     const result = await controller.findOfferById('offer-1');

@@ -14,6 +14,7 @@ export class CheckoutCartItemUseCase {
     cartItemId: string;
     paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'WALLET' | null;
     affiliateCode?: string | null;
+    requireAffiliateAttribution?: boolean;
     shippingName?: string | null;
     shippingPhone?: string | null;
     shippingAddress?: string | null;
@@ -41,6 +42,7 @@ export class CheckoutCartItemUseCase {
       quantity: cartItem.quantity,
       paymentMethod: input.paymentMethod ?? 'COD',
       affiliateCode: input.affiliateCode ?? null,
+      requireAffiliateAttribution: input.requireAffiliateAttribution,
       shippingName: input.shippingName ?? null,
       shippingPhone: input.shippingPhone ?? null,
       shippingAddress: input.shippingAddress ?? null,

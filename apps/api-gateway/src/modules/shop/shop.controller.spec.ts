@@ -109,6 +109,28 @@ describe('ShopController', () => {
     });
   });
 
+  it('lists brand authorizations for an owned shop', async () => {
+    const authorizations = [{
+      id: 'authorization-1',
+      shopId: 'shop-1',
+      brandId: 'brand-1',
+      brandName: 'Brand A',
+      verificationStatus: 'approved',
+    }];
+    const shopsRpcService = {
+      findBrandAuthorizations: jest.fn().mockResolvedValue(authorizations),
+    };
+    const controller = createController(shopsRpcService);
+
+    await expect(
+      controller.findBrandAuthorizations('shop-1', 'seller-1'),
+    ).resolves.toEqual(authorizations);
+    expect(shopsRpcService.findBrandAuthorizations).toHaveBeenCalledWith({
+      shopId: 'shop-1',
+      requesterUserId: 'seller-1',
+    });
+  });
+
   it('gets public shop detail by shop id', async () => {
     const shopsRpcService = {
       findById: jest.fn().mockResolvedValue({

@@ -8,7 +8,9 @@ model AffiliateProgram {
   slug                  String                 @unique
   programStatus         AffiliateProgramStatus @default(DRAFT) @map("program_status")
   attributionWindowDays Int                    @default(30) @map("attribution_window_days")
+  commissionHoldDays    Int                    @default(7) @map("commission_hold_days")
   commissionModel       String                 @default("revenue_share") @map("commission_model")
+  settlementMode        AffiliateSettlementMode @default(AUTOMATIC) @map("settlement_mode")
   tier1Rate             Decimal                @map("tier1_rate") @db.Decimal(5, 2)
   tier2Rate             Decimal                @map("tier2_rate") @db.Decimal(5, 2)
   rulesJson             Json?                  @map("rules_json")

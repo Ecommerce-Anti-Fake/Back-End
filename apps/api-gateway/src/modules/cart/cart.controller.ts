@@ -12,6 +12,7 @@ import {
 } from '@orders';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 import { OrdersRpcService } from '../order/orders-rpc.service';
+import { AffiliateAttributionTokenService } from '../affiliate/affiliate-attribution-token.service';
 
 class CartMutationSuccessResponseDto {
   success!: boolean;
@@ -23,6 +24,7 @@ export class CartController {
   constructor(
     private readonly ordersRpcService: OrdersRpcService,
     private readonly dashboardSseBrokerService: DashboardSseBrokerService,
+    private readonly attributionTokenService: AffiliateAttributionTokenService,
   ) {}
 
   @ApiOperation({ summary: 'Lay gio hang active cua buyer hien tai' })
@@ -88,7 +90,11 @@ export class CartController {
     const result = await this.ordersRpcService.checkoutCartItem({
       buyerUserId,
       cartItemId,
-      affiliateCode: dto.affiliateCode ?? null,
+      affiliateCode: this.attributionTokenService.resolvePreferredCode({
+        manualCode: dto.affiliateCode,
+        attributionToken: dto.affiliateAttributionToken,
+      }),
+      requireAffiliateAttribution: Boolean(dto.affiliateCode?.trim()),
       paymentMethod: dto.paymentMethod ?? null,
       shippingName: dto.shippingName ?? null,
       shippingPhone: dto.shippingPhone ?? null,
@@ -116,7 +122,11 @@ export class CartController {
       cartItemIds: dto.cartItemIds,
       paymentMethod: dto.paymentMethod,
       shippingOptionCode: dto.shippingOptionCode,
-      affiliateCode: dto.affiliateCode ?? null,
+      affiliateCode: this.attributionTokenService.resolvePreferredCode({
+        manualCode: dto.affiliateCode,
+        attributionToken: dto.affiliateAttributionToken,
+      }),
+      requireAffiliateAttribution: Boolean(dto.affiliateCode?.trim()),
       systemVoucherCode: dto.systemVoucherCode ?? null,
       shopVouchers: dto.shopVouchers ?? [],
       shippingVouchers: dto.shippingVouchers ?? [],

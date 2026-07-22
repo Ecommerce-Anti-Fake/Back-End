@@ -19,7 +19,11 @@ export class ResolveOrderDisputeUseCase {
       throw new NotFoundException('Dispute not found');
     }
 
-    if (dispute.order.shop.ownerUserId !== input.requesterUserId) {
+    const sellerCanResolve = dispute.order.shopGroups?.length
+      ? dispute.order.shopGroups.length === 1 &&
+        dispute.order.shopGroups[0].shop.ownerUserId === input.requesterUserId
+      : dispute.order.shop.ownerUserId === input.requesterUserId;
+    if (!sellerCanResolve) {
       throw new ForbiddenException('Only the seller can resolve the dispute');
     }
 
@@ -27,8 +31,11 @@ export class ResolveOrderDisputeUseCase {
       throw new BadRequestException('Only open disputes can be resolved');
     }
 
-    if (input.resolution === 'REFUNDED' && dispute.order.orderStatus !== 'paid') {
-      throw new BadRequestException('Only paid orders can be refunded through dispute resolution');
+    if (
+      input.resolution === 'REFUNDED' &&
+      !['paid', 'partially_refunded', 'completed'].includes(dispute.order.orderStatus)
+    ) {
+      throw new BadRequestException('Only paid or completed orders can be refunded through dispute resolution');
     }
 
     const resolved = await this.orderReversalService.resolveDispute({

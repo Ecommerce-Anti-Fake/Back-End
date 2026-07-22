@@ -13,6 +13,8 @@ type BuyNowCheckoutInput = {
   quantity: number;
   paymentMethod: 'COD' | 'PAYOS' | 'WALLET';
   shippingOptionCode: string;
+  affiliateCode?: string | null;
+  requireAffiliateAttribution?: boolean;
   systemVoucherCode?: string | null;
   shopVoucherCode?: string | null;
   shippingVoucherCode?: string | null;
@@ -87,6 +89,8 @@ export class BuyNowCheckoutUseCase {
       systemVoucherCode: input.systemVoucherCode,
       shopVoucherCode: input.shopVoucherCode,
       shippingVoucherCode: input.shippingVoucherCode,
+      affiliateCode: input.affiliateCode,
+      requireAffiliateAttribution: input.requireAffiliateAttribution,
       voucherPricingOverride: {
         discountAmount: voucherQuote.discountAmount,
         productPayableAmount: voucherQuote.productPayableAmount!,

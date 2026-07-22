@@ -32,6 +32,7 @@ import {
   ShopBestSellingProductsQueryDto,
 } from '@orders';
 import {
+  BrandAuthorizationResponseDto,
   CreateShopDto,
   MyShopResponseDto,
   PaginatedPublicShopSummaryResponseDto,
@@ -131,6 +132,18 @@ export class ShopController {
   @Get('mine')
   findMine(@CurrentUserId() ownerUserId: string) {
     return this.shopsRpcService.findMine({ ownerUserId });
+  }
+
+  @ApiOperation({ summary: 'Lay danh sach uy quyen thuong hieu cua shop hien tai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: BrandAuthorizationResponseDto, isArray: true })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get(':shopId/brand-authorizations')
+  findBrandAuthorizations(
+    @Param('shopId') shopId: string,
+    @CurrentUserId() requesterUserId: string,
+  ) {
+    return this.shopsRpcService.findBrandAuthorizations({ shopId, requesterUserId });
   }
 
   @ApiOperation({ summary: 'Lay 3 chi so tong quan cua shop theo khoang ngay' })

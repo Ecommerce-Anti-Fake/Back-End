@@ -59,4 +59,17 @@ describe('ApproveAffiliateConversionUseCase', () => {
       commissionBase: 40000,
     });
   });
+
+  it('rejects manual approval for an automatic settlement program', async () => {
+    repositoryMock.findOwnedConversionById.mockResolvedValueOnce({
+      id: 'conversion-1',
+      conversionStatus: 'PENDING',
+      program: { settlementMode: 'AUTOMATIC' },
+    });
+
+    await expect(useCase.execute({ requesterUserId: 'owner-1', conversionId: 'conversion-1' }))
+      .rejects.toThrow('AFFILIATE_AUTOMATIC_SETTLEMENT_ENABLED');
+
+    expect(repositoryMock.approveConversion).not.toHaveBeenCalled();
+  });
 });

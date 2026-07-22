@@ -16,6 +16,10 @@ export class ApproveAffiliateConversionUseCase {
       throw new BadRequestException('Only pending conversions can be approved');
     }
 
+    if (conversion.program?.settlementMode === 'AUTOMATIC') {
+      throw new BadRequestException('AFFILIATE_AUTOMATIC_SETTLEMENT_ENABLED');
+    }
+
     const approved = await this.repository.approveConversion(input.conversionId);
     return toAffiliateConversionResponse(approved);
   }

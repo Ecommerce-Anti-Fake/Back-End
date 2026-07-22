@@ -1,13 +1,16 @@
+import { Prisma } from '@prisma/client';
+
 export function calculateAffiliateCommissionAmounts(input: {
-  commissionBase: number;
-  tier1Rate: number;
-  tier2Rate: number;
+  commissionBase: Prisma.Decimal.Value;
+  tier1Rate: Prisma.Decimal.Value;
+  tier2Rate: Prisma.Decimal.Value;
   tier2Eligible: boolean;
 }) {
-  const tier1Amount = roundMoney(input.commissionBase * (input.tier1Rate / 100));
+  const commissionBase = new Prisma.Decimal(input.commissionBase);
+  const tier1Amount = roundMoney(commissionBase.mul(input.tier1Rate).div(100));
   const tier2Amount = input.tier2Eligible
-    ? roundMoney(tier1Amount * (input.tier2Rate / 100))
-    : 0;
+    ? roundMoney(commissionBase.mul(input.tier2Rate).div(100))
+    : new Prisma.Decimal(0);
 
   return {
     tier1Amount,
@@ -15,6 +18,6 @@ export function calculateAffiliateCommissionAmounts(input: {
   };
 }
 
-function roundMoney(value: number) {
-  return Math.round(value * 100) / 100;
+function roundMoney(value: Prisma.Decimal.Value) {
+  return new Prisma.Decimal(value).toDecimalPlaces(2);
 }

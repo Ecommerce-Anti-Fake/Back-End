@@ -2,6 +2,10 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@database/prisma/prisma.service';
 import { calculateAffiliateCommissionAmounts } from './affiliate-commission.util';
+import {
+  AffiliateAttributionItem,
+  calculateAffiliateCommissionBase,
+} from './affiliate-attribution.util';
 import { randomUUID } from 'crypto';
 
 const offerForOrderingArgs = Prisma.validator<Prisma.OfferDefaultArgs>()({
@@ -434,6 +438,9 @@ export type CreateOrderRecordInput = {
     offerTitleSnapshot: string;
     unitPrice: number;
     quantity: number;
+    shopProductDiscountAmount?: Prisma.Decimal.Value;
+    systemProductDiscountAmount?: Prisma.Decimal.Value;
+    platformFeeAmount?: Prisma.Decimal.Value;
     selectedOptions?: Array<{
       optionGroupId: string;
       optionValueId: string;
@@ -484,6 +491,9 @@ export type CreateAggregateOrderRecordInput = {
       offerTitleSnapshot: string;
       unitPrice: number;
       quantity: number;
+      shopProductDiscountAmount?: Prisma.Decimal.Value;
+      systemProductDiscountAmount?: Prisma.Decimal.Value;
+      platformFeeAmount?: Prisma.Decimal.Value;
       selectedOptions?: CreateOrderRecordInput['item']['selectedOptions'];
       batchAllocations: OrderBatchAllocation[];
     }>;
@@ -498,12 +508,14 @@ export type CreateAggregateOrderRecordInput = {
 };
 export type AffiliateAttributionInput = {
   affiliateCode: string;
+  required: boolean;
   customerUserId: string;
-  offerId: string;
-  sellerShopId: string;
-  brandId: string;
   orderAmount: number;
-  commissionBase: number;
+  items: AffiliateAttributionItem[];
+  fundingShopReceivables: Array<{
+    shopId: string;
+    amount: Prisma.Decimal.Value;
+  }>;
 };
 export type DisputeWithOrder = Prisma.DisputeGetPayload<typeof disputeWithOrderArgs>;
 export type DisputeEvidenceRecord = Prisma.DisputeEvidenceGetPayload<typeof disputeEvidenceArgs>;
@@ -688,12 +700,20 @@ export class OrdersRepository {
         items: {
           include: {
             batchAllocations: true,
+            offer: { select: { shopId: true, brandId: true } },
           },
         },
         paymentIntent: true,
         escrow: true,
         voucherAllocations: true,
-        shopGroups: { include: { voucherAllocations: true } },
+        shopGroups: {
+          include: {
+            voucherAllocations: true,
+            refundAllocations: {
+              where: { refund: { refundStatus: 'COMPLETED' } },
+            },
+          },
+        },
       },
     });
   }
@@ -931,6 +951,13 @@ export class OrdersRepository {
     });
   }
 
+  findOrderByIdInTransaction(tx: Prisma.TransactionClient, id: string): Promise<OrderWithRelations | null> {
+    return tx.order.findUnique({
+      where: { id },
+      ...orderWithRelationsArgs,
+    });
+  }
+
   findUserRole(id: string) {
     return this.prisma.user.findUnique({ where: { id }, select: { id: true, role: true } });
   }
@@ -1126,6 +1153,9 @@ export class OrdersRepository {
             offerTitleSnapshot: data.item.offerTitleSnapshot,
             unitPrice: data.item.unitPrice,
             quantity: data.item.quantity,
+            shopProductDiscountAmount: data.item.shopProductDiscountAmount ?? 0,
+            systemProductDiscountAmount: data.item.systemProductDiscountAmount ?? 0,
+            platformFeeAmount: data.item.platformFeeAmount ?? 0,
             orderShopGroupId,
             selectedOptions: data.item.selectedOptions?.length ? { create: data.item.selectedOptions } : undefined,
             batchAllocations: batchAllocations.length ? { create: batchAllocations } : undefined,
@@ -1211,6 +1241,9 @@ export class OrdersRepository {
               offerTitleSnapshot: item.offerTitleSnapshot,
               unitPrice: item.unitPrice,
               quantity: item.quantity,
+              shopProductDiscountAmount: item.shopProductDiscountAmount ?? 0,
+              systemProductDiscountAmount: item.systemProductDiscountAmount ?? 0,
+              platformFeeAmount: item.platformFeeAmount ?? 0,
               selectedOptions: item.selectedOptions?.length ? { create: item.selectedOptions } : undefined,
               batchAllocations: item.batchAllocations.length ? { create: item.batchAllocations } : undefined,
             })),
@@ -1411,6 +1444,98 @@ export class OrdersRepository {
         },
       }),
     ]);
+  }
+
+  async findLockedAffiliateReserveForOrder(
+    tx: Prisma.TransactionClient,
+    orderId: string,
+  ) {
+    const conversion = await tx.affiliateConversion.findUnique({
+      where: { orderId },
+      select: {
+        program: { select: { ownerShopId: true } },
+        commissionEntries: {
+          where: { commissionStatus: 'LOCKED' },
+          select: { amount: true },
+        },
+      },
+    });
+    if (!conversion?.program.ownerShopId) {
+      return null;
+    }
+    const amount = conversion.commissionEntries.reduce(
+      (total, entry) => total.plus(entry.amount),
+      new Prisma.Decimal(0),
+    );
+    return amount.gt(0)
+      ? { ownerShopId: conversion.program.ownerShopId, amount }
+      : null;
+  }
+
+  async applyAffiliatePartialRefund(
+    tx: Prisma.TransactionClient,
+    orderId: string,
+    refundedItems: AffiliateAttributionItem[],
+  ) {
+    const conversion = await tx.affiliateConversion.findUnique({
+      where: { orderId },
+      select: {
+        id: true,
+        commissionBase: true,
+        tier2AccountId: true,
+        conversionStatus: true,
+        program: {
+          select: {
+            scopeType: true,
+            ownerShopId: true,
+            brandId: true,
+            offerId: true,
+            tier1Rate: true,
+            tier2Rate: true,
+          },
+        },
+        commissionEntries: {
+          where: { commissionStatus: { in: ['PENDING', 'APPROVED'] } },
+          select: { id: true, tierLevel: true },
+        },
+      },
+    });
+    if (!conversion?.commissionBase || conversion.commissionEntries.length === 0) {
+      return;
+    }
+
+    const refundedBase = calculateAffiliateCommissionBase(
+      conversion.program,
+      refundedItems,
+    );
+    const commissionBase = Prisma.Decimal.max(
+      new Prisma.Decimal(conversion.commissionBase).minus(refundedBase),
+      0,
+    ).toDecimalPlaces(2);
+    const amounts = calculateAffiliateCommissionAmounts({
+      commissionBase,
+      tier1Rate: conversion.program.tier1Rate,
+      tier2Rate: conversion.program.tier2Rate,
+      tier2Eligible: Boolean(conversion.tier2AccountId),
+    });
+
+    await tx.affiliateConversion.update({
+      where: { id: conversion.id },
+      data: {
+        commissionBase,
+        conversionStatus: commissionBase.eq(0) ? 'CANCELLED' : conversion.conversionStatus,
+      },
+    });
+    for (const entry of conversion.commissionEntries) {
+      const amount = entry.tierLevel === 2 ? amounts.tier2Amount : amounts.tier1Amount;
+      await tx.affiliateCommissionLedger.update({
+        where: { id: entry.id },
+        data: {
+          amount,
+          commissionStatus: amount.eq(0) ? 'CANCELLED' : undefined,
+        },
+      });
+    }
   }
 
   updateOrderStatus(tx: Prisma.TransactionClient, id: string, orderStatus: string): Promise<OrderWithRelations> {
@@ -2235,6 +2360,14 @@ export class OrdersRepository {
         id: true,
       },
     });
+  }
+
+  async findAffiliateDisputeDeadline(orderId: string) {
+    const result = await this.prisma.affiliateCommissionLedger.aggregate({
+      where: { conversion: { orderId } },
+      _max: { availableAt: true },
+    });
+    return result._max.availableAt;
   }
 
   findOpenReportByTarget(input: { reporterUserId: string; targetType: string; targetId: string }) {
@@ -3352,12 +3485,14 @@ export class OrdersRepository {
     orderId: string,
     input: {
       affiliateCode: string;
+      required: boolean;
       customerUserId: string;
-      offerId: string;
-      sellerShopId: string;
-      brandId: string;
       orderAmount: number;
-      commissionBase: number;
+      items: AffiliateAttributionItem[];
+      fundingShopReceivables: Array<{
+        shopId: string;
+        amount: Prisma.Decimal.Value;
+      }>;
     },
   ) {
     const normalizedCode = input.affiliateCode.trim().toLowerCase();
@@ -3400,24 +3535,73 @@ export class OrdersRepository {
       },
     });
 
-    if (!referral || !this.isReferralEligible(referral, input)) {
-      return;
+    if (!referral || !this.isReferralEligible(referral, input.customerUserId)) {
+      return this.rejectRequiredAttribution(
+        input.required,
+        'Affiliate code is inactive, expired, or not eligible for this buyer',
+      );
     }
 
     const tier2Eligible = referral.account.parentAccount && referral.account.parentAccount.accountStatus === 'ACTIVE';
-    const commissionBase = this.roundMoney(input.commissionBase);
+    const commissionBase = calculateAffiliateCommissionBase(
+      {
+        scopeType: referral.program.scopeType,
+        ownerShopId: referral.program.ownerShopId,
+        brandId: referral.program.brandId,
+        offerId: referral.program.offerId,
+      },
+      input.items,
+    ).toDecimalPlaces(2);
+    if (commissionBase.lte(0)) {
+      return this.rejectRequiredAttribution(
+        input.required,
+        'Affiliate code does not apply to the selected products',
+      );
+    }
     const { tier1Amount, tier2Amount } = calculateAffiliateCommissionAmounts({
       commissionBase,
-      tier1Rate: Number(referral.program.tier1Rate.toString()),
-      tier2Rate: Number(referral.program.tier2Rate.toString()),
+      tier1Rate: referral.program.tier1Rate,
+      tier2Rate: referral.program.tier2Rate,
       tier2Eligible: !!tier2Eligible,
     });
+    const commissionTotal = tier1Amount.plus(tier2Amount);
+    const fundingReceivable = input.fundingShopReceivables.find(
+      (entry) => entry.shopId === referral.program.ownerShopId,
+    );
+    if (!fundingReceivable || commissionTotal.gt(fundingReceivable.amount)) {
+      return this.rejectRequiredAttribution(
+        input.required,
+        'Affiliate commission cannot be funded by the selected shop order',
+      );
+    }
+    const commissionEntries = [
+      ...(tier1Amount.gt(0) ? [{
+        beneficiaryAccountId: referral.account.id,
+        beneficiaryType: 'AFFILIATE_TIER_1' as const,
+        tierLevel: 1,
+        amount: tier1Amount,
+        commissionStatus: 'PENDING' as const,
+      }] : []),
+      ...(tier2Eligible && tier2Amount.gt(0) ? [{
+        beneficiaryAccountId: referral.account.parentAccount!.id,
+        beneficiaryType: 'AFFILIATE_TIER_2' as const,
+        tierLevel: 2,
+        amount: tier2Amount,
+        commissionStatus: 'PENDING' as const,
+      }] : []),
+    ];
+    if (!commissionEntries.length) {
+      return this.rejectRequiredAttribution(
+        input.required,
+        'Affiliate program has no payable commission rate',
+      );
+    }
 
     await tx.affiliateConversion.create({
       data: {
         programId: referral.programId,
         orderId,
-        offerId: input.offerId,
+        offerId: referral.program.scopeType === 'OFFER' ? referral.program.offerId : null,
         affiliateCodeId: referral.id,
         tier1AccountId: referral.account.id,
         tier2AccountId: tier2Eligible ? referral.account.parentAccount!.id : null,
@@ -3425,30 +3609,28 @@ export class OrdersRepository {
         conversionStatus: 'PENDING',
         orderAmount: input.orderAmount,
         commissionBase,
+        metadata: {
+          attributionVersion: 1,
+          attributionItems: input.items.map((item) => ({
+            offerId: item.offerId,
+            sellerShopId: item.sellerShopId,
+            brandId: item.brandId,
+            grossAmount: new Prisma.Decimal(item.grossAmount).toFixed(2),
+            shopProductDiscountAmount: new Prisma.Decimal(
+              item.shopProductDiscountAmount,
+            ).toFixed(2),
+          })),
+        },
         commissionEntries: {
-          create: [
-            {
-              beneficiaryAccountId: referral.account.id,
-              beneficiaryType: 'AFFILIATE_TIER_1',
-              tierLevel: 1,
-              amount: tier1Amount,
-              commissionStatus: 'PENDING',
-            },
-            ...(tier2Eligible
-              ? [
-                  {
-                    beneficiaryAccountId: referral.account.parentAccount!.id,
-                    beneficiaryType: 'AFFILIATE_TIER_2' as const,
-                    tierLevel: 2,
-                    amount: tier2Amount,
-                    commissionStatus: 'PENDING' as const,
-                  },
-                ]
-              : []),
-          ],
+          create: commissionEntries,
         },
       },
     });
+  }
+
+  private rejectRequiredAttribution(required: boolean, message: string) {
+    if (required) throw new BadRequestException(message);
+    return undefined;
   }
 
   private async getOrderPayableAmount(tx: Prisma.TransactionClient, orderId: string) {
@@ -3483,12 +3665,7 @@ export class OrdersRepository {
         accountStatus: string;
       };
     },
-    input: {
-      customerUserId: string;
-      offerId: string;
-      sellerShopId: string;
-      brandId: string;
-    },
+    customerUserId: string,
   ) {
     const now = new Date();
 
@@ -3496,7 +3673,7 @@ export class OrdersRepository {
       return false;
     }
 
-    if (referral.account.userId === input.customerUserId) {
+    if (referral.account.userId === customerUserId) {
       return false;
     }
 
@@ -3504,7 +3681,7 @@ export class OrdersRepository {
       return false;
     }
 
-    if (referral.expiresAt && referral.expiresAt < now) {
+    if (referral.expiresAt && referral.expiresAt <= now) {
       return false;
     }
 
@@ -3512,23 +3689,11 @@ export class OrdersRepository {
       return false;
     }
 
-    if (referral.program.endedAt && referral.program.endedAt < now) {
+    if (referral.program.endedAt && referral.program.endedAt <= now) {
       return false;
     }
 
-    if (referral.program.scopeType === 'SHOP') {
-      return referral.program.ownerShopId === input.sellerShopId;
-    }
-
-    if (referral.program.scopeType === 'BRAND') {
-      return referral.program.brandId === input.brandId;
-    }
-
-    if (referral.program.scopeType === 'OFFER') {
-      return referral.program.offerId === input.offerId;
-    }
-
-    return false;
+    return referral.program.scopeType !== 'PLATFORM';
   }
 
   private roundMoney(value: number) {

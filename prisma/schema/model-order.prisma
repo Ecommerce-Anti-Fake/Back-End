@@ -44,6 +44,7 @@ model Order {
   disputes                Dispute[]
   reviews                 Review[]
   affiliateConversion     AffiliateConversion?
+  refunds                 OrderRefund[]
   sourceSupplyBatches     SupplyBatch[]        @relation("SupplyBatchSourceOrder")
 
   @@index([buyerUserId])

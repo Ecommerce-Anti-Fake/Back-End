@@ -11,7 +11,7 @@ export class OpenOrderDisputeUseCase {
     private readonly orderReversalService: OrderReversalService,
   ) {}
 
-  async execute(input: { id: string; requesterUserId: string; reason: string }) {
+  async execute(input: { id: string; requesterUserId: string; reason: string; now?: Date }) {
     const order = await this.ordersRepository.findOrderById(input.id);
     if (!order) {
       throw new NotFoundException('Order not found');
@@ -19,14 +19,21 @@ export class OpenOrderDisputeUseCase {
 
     const isRetailBuyer = order.buyerUserId === input.requesterUserId;
     const isWholesaleBuyerOwner = order.buyerShop?.ownerUserId === input.requesterUserId;
-    const isSellerOwner = order.shop.ownerUserId === input.requesterUserId;
+    const isSellerOwner = order.shopGroups?.length
+      ? order.shopGroups.every((group) => group.shop.ownerUserId === input.requesterUserId)
+      : order.shop.ownerUserId === input.requesterUserId;
 
     if (!isRetailBuyer && !isWholesaleBuyerOwner && !isSellerOwner) {
       throw new ForbiddenException('You do not have permission to open a dispute for this order');
     }
 
-    if (!['paid', 'completed'].includes(order.orderStatus)) {
+    if (!['paid', 'partially_refunded', 'completed'].includes(order.orderStatus)) {
       throw new BadRequestException('Only paid or completed orders can be disputed');
+    }
+
+    const disputeDeadline = await this.ordersRepository.findAffiliateDisputeDeadline(order.id);
+    if (disputeDeadline && disputeDeadline <= (input.now ?? new Date())) {
+      throw new BadRequestException('Affiliate dispute window has expired');
     }
 
     const reason = input.reason.trim();

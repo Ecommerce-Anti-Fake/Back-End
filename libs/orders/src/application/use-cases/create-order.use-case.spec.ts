@@ -33,7 +33,15 @@ describe('CreateOrderUseCase', () => {
     ordersRepository.findActiveShippingCarriers.mockResolvedValue([
       { code: 'GHN', name: 'Giao Hang Nhanh', shippingFee: new Prisma.Decimal(0) },
     ]);
-    ordersRepository.countOfferVariants.mockResolvedValue(0);
+    ordersRepository.countOfferVariants.mockResolvedValue(1);
+    ordersRepository.findOfferVariantForOrdering.mockResolvedValue({
+      id: 'variant-1',
+      offerId: 'offer-1',
+      price: new Prisma.Decimal(100000),
+      availableQuantity: 100,
+      isActive: true,
+      values: [],
+    });
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CreateOrderUseCase,
@@ -82,6 +90,7 @@ describe('CreateOrderUseCase', () => {
     await useCase.execute({
       buyerUserId: 'buyer-1',
       offerId: 'offer-1',
+      variantId: 'variant-1',
       quantity: 1,
       shippingAddress: 'HCM',
     });
@@ -143,6 +152,7 @@ describe('CreateOrderUseCase', () => {
     await useCase.execute({
       buyerUserId: 'buyer-1',
       offerId: 'offer-1',
+      variantId: 'variant-1',
       quantity: buyNowQuantity,
       paymentMethod: 'PAYOS',
       shippingAddress: 'HCM',

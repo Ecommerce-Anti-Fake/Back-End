@@ -74,4 +74,20 @@ describe('UpdateAffiliatePayoutStatusUseCase', () => {
       }),
     ).rejects.toThrow('Terminal payout status cannot be changed');
   });
+
+  it('rejects owner status changes for automatic payouts', async () => {
+    repositoryMock.findOwnedPayoutById.mockResolvedValueOnce({
+      id: 'payout-1',
+      payoutStatus: 'PROCESSING',
+      program: { settlementMode: 'AUTOMATIC' },
+    });
+
+    await expect(useCase.execute({
+      requesterUserId: 'owner-1',
+      payoutId: 'payout-1',
+      payoutStatus: 'PAID',
+    })).rejects.toThrow('AFFILIATE_AUTOMATIC_SETTLEMENT_ENABLED');
+
+    expect(repositoryMock.updatePayoutStatus).not.toHaveBeenCalled();
+  });
 });

@@ -8,6 +8,7 @@ model AffiliateCommissionLedger {
   currency             String                    @default("VND")
   commissionStatus     AffiliateCommissionStatus @default(PENDING) @map("commission_status")
   lockedAt             DateTime?                 @map("locked_at")
+  availableAt          DateTime?                 @map("available_at")
   paidAt               DateTime?                 @map("paid_at")
   payoutId             String?                   @map("payout_id")
   createdAt            DateTime                  @default(now()) @map("created_at")

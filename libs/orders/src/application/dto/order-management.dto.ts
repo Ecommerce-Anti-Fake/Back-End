@@ -10,6 +10,7 @@ import {
   IsUrl,
   IsUUID,
   Max,
+  MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
@@ -68,6 +69,33 @@ export const SELLER_FULFILLMENT_STATUS_FILTERS = [
 
 export type SellerFulfillmentStatus =
   (typeof SELLER_FULFILLMENT_STATUSES)[number];
+
+export class RefundOrderItemDto {
+  @ApiProperty({ example: 'order-item-id' })
+  @IsString()
+  orderItemId!: string;
+
+  @ApiProperty({ example: 1 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  quantity!: number;
+}
+
+export class RefundOrderDto {
+  @ApiPropertyOptional({ type: RefundOrderItemDto, isArray: true })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => RefundOrderItemDto)
+  items?: RefundOrderItemDto[];
+
+  @ApiPropertyOptional({ description: 'Required for partial refunds; stable across retries.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(128)
+  idempotencyKey?: string;
+}
 export type SellerFulfillmentStatusFilter =
   (typeof SELLER_FULFILLMENT_STATUS_FILTERS)[number];
 
@@ -1696,6 +1724,11 @@ export class CreateOrderDto {
   @IsString()
   affiliateCode?: string;
 
+  @ApiPropertyOptional({ description: 'Signed token captured from an affiliate link.' })
+  @IsOptional()
+  @IsString()
+  affiliateAttributionToken?: string;
+
   @ApiPropertyOptional({
     example: 'PAYOS',
     enum: ['COD', 'BANK_TRANSFER', 'PAYOS', 'WALLET'],
@@ -1792,6 +1825,11 @@ export class CheckoutCartItemDto {
   @IsString()
   affiliateCode?: string;
 
+  @ApiPropertyOptional({ description: 'Signed token captured from an affiliate link.' })
+  @IsOptional()
+  @IsString()
+  affiliateAttributionToken?: string;
+
   @ApiPropertyOptional({
     example: 'PAYOS',
     enum: ['COD', 'BANK_TRANSFER', 'PAYOS', 'WALLET'],
@@ -1882,6 +1920,11 @@ export class CheckoutCartDto {
   @IsString()
   affiliateCode?: string;
 
+  @ApiPropertyOptional({ description: 'Signed token captured from an affiliate link.' })
+  @IsOptional()
+  @IsString()
+  affiliateAttributionToken?: string;
+
   @ApiPropertyOptional({ example: 'SYSTEM2026' })
   @IsOptional()
   @IsString()
@@ -1924,6 +1967,16 @@ export class BuyNowCheckoutDto {
   @ApiProperty({ example: 'GHN_1' })
   @IsString()
   shippingOptionCode!: string;
+
+  @ApiPropertyOptional({ example: 'spring-aff-001' })
+  @IsOptional()
+  @IsString()
+  affiliateCode?: string;
+
+  @ApiPropertyOptional({ description: 'Signed token captured from an affiliate link.' })
+  @IsOptional()
+  @IsString()
+  affiliateAttributionToken?: string;
 
   @ApiPropertyOptional({ example: 'SYSTEM2026' })
   @IsOptional()

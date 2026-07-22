@@ -1,31 +1,28 @@
+import { Prisma } from '@prisma/client';
 import { calculateAffiliateCommissionAmounts } from './affiliate-commission.util';
 
 describe('calculateAffiliateCommissionAmounts', () => {
-  it('should calculate tier 2 from tier 1 amount', () => {
+  it('calculates both tiers from the same commission base with Decimal precision', () => {
     const result = calculateAffiliateCommissionAmounts({
-      commissionBase: 20000,
-      tier1Rate: 50,
-      tier2Rate: 20,
+      commissionBase: new Prisma.Decimal('123456.78'),
+      tier1Rate: new Prisma.Decimal('6'),
+      tier2Rate: new Prisma.Decimal('2'),
       tier2Eligible: true,
     });
 
-    expect(result).toEqual({
-      tier1Amount: 10000,
-      tier2Amount: 2000,
-    });
+    expect(result.tier1Amount.toFixed(2)).toBe('7407.41');
+    expect(result.tier2Amount.toFixed(2)).toBe('2469.14');
   });
 
-  it('should return zero for tier 2 when not eligible', () => {
+  it('returns zero for tier 2 when the direct affiliate has no active parent', () => {
     const result = calculateAffiliateCommissionAmounts({
-      commissionBase: 20000,
-      tier1Rate: 50,
-      tier2Rate: 20,
+      commissionBase: new Prisma.Decimal('20000'),
+      tier1Rate: new Prisma.Decimal('50'),
+      tier2Rate: new Prisma.Decimal('20'),
       tier2Eligible: false,
     });
 
-    expect(result).toEqual({
-      tier1Amount: 10000,
-      tier2Amount: 0,
-    });
+    expect(result.tier1Amount.toFixed(2)).toBe('10000.00');
+    expect(result.tier2Amount.toFixed(2)).toBe('0.00');
   });
 });

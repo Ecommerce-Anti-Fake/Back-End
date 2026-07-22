@@ -16,6 +16,10 @@ export class RejectAffiliateConversionUseCase {
       throw new BadRequestException('Only pending conversions can be rejected');
     }
 
+    if (conversion.program?.settlementMode === 'AUTOMATIC') {
+      throw new BadRequestException('AFFILIATE_AUTOMATIC_SETTLEMENT_ENABLED');
+    }
+
     const rejected = await this.repository.rejectConversion(input.conversionId);
     return toAffiliateConversionResponse(rejected);
   }

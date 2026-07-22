@@ -23,8 +23,8 @@ export class CompleteOrderUseCase {
       throw new ForbiddenException('Only the seller can complete the order');
     }
 
-    if (order.orderStatus !== 'paid') {
-      throw new BadRequestException('Only paid orders can be completed');
+    if (!['paid', 'partially_refunded'].includes(order.orderStatus)) {
+      throw new BadRequestException('Only paid or partially refunded orders can be completed');
     }
 
     if (order.fulfillmentStatus !== 'DELIVERED') {

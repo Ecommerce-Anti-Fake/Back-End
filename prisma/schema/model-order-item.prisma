@@ -8,6 +8,9 @@ model OrderItem {
   offerTitleSnapshot        String                     @map("offer_title_snapshot")
   unitPrice                 Decimal                    @map("unit_price") @db.Decimal(18, 2)
   quantity                  Int
+  shopProductDiscountAmount   Decimal                  @default(0) @map("shop_product_discount_amount") @db.Decimal(18, 2)
+  systemProductDiscountAmount Decimal                  @default(0) @map("system_product_discount_amount") @db.Decimal(18, 2)
+  platformFeeAmount           Decimal                  @default(0) @map("platform_fee_amount") @db.Decimal(18, 2)
   order                     Order                      @relation(fields: [orderId], references: [id])
   orderShopGroup            OrderShopGroup?            @relation(fields: [orderShopGroupId], references: [id])
   offer                     Offer                      @relation(fields: [offerId], references: [id])

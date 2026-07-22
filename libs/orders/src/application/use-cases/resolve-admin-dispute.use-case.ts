@@ -27,8 +27,11 @@ export class ResolveAdminDisputeUseCase {
       throw new BadRequestException('Only open disputes can be resolved');
     }
 
-    if (input.resolution === 'REFUNDED' && dispute.order.orderStatus !== 'paid') {
-      throw new BadRequestException('Only paid orders can be refunded through admin dispute resolution');
+    if (
+      input.resolution === 'REFUNDED' &&
+      !['paid', 'partially_refunded', 'completed'].includes(dispute.order.orderStatus)
+    ) {
+      throw new BadRequestException('Only paid or completed orders can be refunded through admin dispute resolution');
     }
 
     const resolved = await this.orderReversalService.resolveDispute({

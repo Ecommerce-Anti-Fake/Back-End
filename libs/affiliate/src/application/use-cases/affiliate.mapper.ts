@@ -22,7 +22,9 @@ export function toAffiliateProgramResponse(program: AffiliateProgramWithRelation
     slug: program.slug,
     programStatus: program.programStatus,
     attributionWindowDays: program.attributionWindowDays,
+    commissionHoldDays: program.commissionHoldDays,
     commissionModel: program.commissionModel,
+    settlementMode: program.settlementMode,
     tier1Rate: decimalToNumber(program.tier1Rate),
     tier2Rate: decimalToNumber(program.tier2Rate),
     startedAt: program.startedAt,
@@ -70,6 +72,7 @@ export function toAffiliateCommissionEntryResponse(entry: {
   createdAt: Date;
   paidAt: Date | null;
   lockedAt: Date | null;
+  availableAt: Date | null;
 }) {
   return {
     id: entry.id,
@@ -83,6 +86,7 @@ export function toAffiliateCommissionEntryResponse(entry: {
     createdAt: entry.createdAt,
     paidAt: entry.paidAt,
     lockedAt: entry.lockedAt,
+    availableAt: entry.availableAt,
   };
 }
 

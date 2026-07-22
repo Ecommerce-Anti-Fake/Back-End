@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -11,27 +11,76 @@ import {
 } from '@nestjs/swagger';
 import {
   AffiliateAccountResponseDto,
+  AffiliatePageQueryDto,
   AffiliateAccountSummaryResponseDto,
   AffiliateCodeResponseDto,
-  AffiliateCommissionEntryResponseDto,
   AffiliateConversionResponseDto,
   AffiliatePayoutResponseDto,
   AffiliateProgramResponseDto,
+  AffiliateAttributionResponseDto,
+  PaginatedAffiliateCommissionEntryResponseDto,
+  PaginatedAffiliateProgramMemberResponseDto,
+  PaginatedAffiliateProgramResponseDto,
   ApproveAffiliateConversionDto,
   CreateAffiliateCodeDto,
   CreateAffiliatePayoutDto,
   CreateAffiliateProgramDto,
   JoinAffiliateProgramDto,
   RejectAffiliateConversionDto,
+  ResolveAffiliateAttributionDto,
   UpdateAffiliatePayoutStatusDto,
 } from '@affiliate';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import { AffiliateRpcService } from './affiliate-rpc.service';
+import { AffiliateAttributionTokenService } from './affiliate-attribution-token.service';
 
 @ApiTags('Affiliate')
 @Controller('affiliate')
 export class AffiliateController {
-  constructor(private readonly affiliateRpcService: AffiliateRpcService) {}
+  constructor(
+    private readonly affiliateRpcService: AffiliateRpcService,
+    private readonly attributionTokenService: AffiliateAttributionTokenService,
+  ) {}
+
+  @ApiOperation({ summary: 'Xac minh affiliate code tu link va tao attribution token' })
+  @ApiCreatedResponse({ type: AffiliateAttributionResponseDto })
+  @ApiBadRequestResponse({ description: 'Affiliate code khong hop le hoac da het han.' })
+  @Post('attributions/resolve')
+  async resolveAttribution(@Body() dto: ResolveAffiliateAttributionDto) {
+    const attribution = await this.affiliateRpcService.resolveAttribution({ code: dto.code });
+    return {
+      ...attribution,
+      attributionToken: this.attributionTokenService.sign(attribution),
+    };
+  }
+
+  @ApiOperation({ summary: 'Danh sach affiliate program dang hoat dong' })
+  @ApiOkResponse({ type: PaginatedAffiliateProgramResponseDto })
+  @Get('programs')
+  findActivePrograms(@Query() query: AffiliatePageQueryDto) {
+    return this.affiliateRpcService.findActivePrograms({
+      page: query.page ?? 1,
+      pageSize: query.pageSize ?? 20,
+    });
+  }
+
+  @ApiOperation({ summary: 'Shop xem cay thanh vien va affiliate truc tiep cua ai' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: PaginatedAffiliateProgramMemberResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('programs/:programId/members')
+  findProgramMembers(
+    @CurrentUserId() requesterUserId: string,
+    @Param('programId') programId: string,
+    @Query() query: AffiliatePageQueryDto,
+  ) {
+    return this.affiliateRpcService.findProgramMembers({
+      requesterUserId,
+      programId,
+      page: query.page ?? 1,
+      pageSize: query.pageSize ?? 20,
+    });
+  }
 
   @ApiOperation({ summary: 'Tao affiliate program cho shop hien tai' })
   @ApiBearerAuth('access-token')
@@ -50,6 +99,7 @@ export class AffiliateController {
       name: dto.name,
       slug: dto.slug,
       attributionWindowDays: dto.attributionWindowDays,
+      commissionHoldDays: dto.commissionHoldDays,
       commissionModel: dto.commissionModel,
       tier1Rate: dto.tier1Rate,
       tier2Rate: dto.tier2Rate,
@@ -148,12 +198,21 @@ export class AffiliateController {
   @ApiOperation({ summary: 'Lay danh sach commission ledger cua mot account cua user hien tai' })
   @ApiBearerAuth('access-token')
   @ApiParam({ name: 'accountId', description: 'ID affiliate account.' })
-  @ApiOkResponse({ description: 'Danh sach commission ledger cua account.', type: AffiliateCommissionEntryResponseDto, isArray: true })
+  @ApiOkResponse({ description: 'Danh sach commission ledger cua account.', type: PaginatedAffiliateCommissionEntryResponseDto })
   @ApiUnauthorizedResponse({ description: 'Thieu access token hoac token khong hop le.' })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Get('accounts/:accountId/commissions')
-  findCommissionsByAccount(@CurrentUserId() requesterUserId: string, @Param('accountId') accountId: string) {
-    return this.affiliateRpcService.findCommissionsByAccount({ requesterUserId, accountId });
+  findCommissionsByAccount(
+    @CurrentUserId() requesterUserId: string,
+    @Param('accountId') accountId: string,
+    @Query() query: AffiliatePageQueryDto,
+  ) {
+    return this.affiliateRpcService.findCommissionsByAccount({
+      requesterUserId,
+      accountId,
+      page: query.page ?? 1,
+      pageSize: query.pageSize ?? 20,
+    });
   }
 
   @ApiOperation({ summary: 'Lay lich su payout cua mot affiliate account cua user hien tai' })

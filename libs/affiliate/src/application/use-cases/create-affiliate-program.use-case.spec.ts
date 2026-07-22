@@ -10,6 +10,7 @@ describe('CreateAffiliateProgramUseCase', () => {
     findProgramBySlug: jest.fn(),
     findOwnedShop: jest.fn(),
     findBrandById: jest.fn(),
+    findApprovedBrandForShop: jest.fn(),
     findOwnedOffer: jest.fn(),
     createProgram: jest.fn(),
   };
@@ -29,7 +30,7 @@ describe('CreateAffiliateProgramUseCase', () => {
 
   it('should create a shop-scoped affiliate program', async () => {
     repositoryMock.findProgramBySlug.mockResolvedValueOnce(null);
-    repositoryMock.findOwnedShop.mockResolvedValueOnce({ id: 'shop-1' });
+    repositoryMock.findOwnedShop.mockResolvedValueOnce({ id: 'shop-1', shopStatus: 'verified' });
     repositoryMock.createProgram.mockResolvedValueOnce(createProgramRecord());
 
     const result = await useCase.execute({
@@ -49,7 +50,9 @@ describe('CreateAffiliateProgramUseCase', () => {
         name: 'Spring Program',
         slug: 'spring-program',
         attributionWindowDays: 30,
+        commissionHoldDays: 7,
         commissionModel: 'revenue_share',
+        settlementMode: 'AUTOMATIC',
       }),
     );
     expect(result).toMatchObject({
@@ -75,6 +78,42 @@ describe('CreateAffiliateProgramUseCase', () => {
     ).rejects.toThrow('Tier 2 rate cannot be greater than tier 1 rate');
   });
 
+  it('rejects a program for an owned shop that is not verified', async () => {
+    repositoryMock.findProgramBySlug.mockResolvedValueOnce(null);
+    repositoryMock.findOwnedShop.mockResolvedValueOnce({
+      id: 'shop-1',
+      shopStatus: 'pending_verification',
+    });
+
+    await expect(useCase.execute({
+      requesterUserId: 'user-1',
+      ownerShopId: 'shop-1',
+      scopeType: 'SHOP',
+      name: 'Pending Shop Program',
+      slug: 'pending-shop-program',
+      tier1Rate: 6,
+      tier2Rate: 2,
+    })).rejects.toThrow('Owner shop must be verified');
+
+    expect(repositoryMock.createProgram).not.toHaveBeenCalled();
+  });
+
+  it('rejects programs whose combined tier rates exceed the commission base', async () => {
+    await expect(
+      useCase.execute({
+        requesterUserId: 'user-1',
+        ownerShopId: 'shop-1',
+        scopeType: 'SHOP',
+        name: 'Unsafe Program',
+        slug: 'unsafe-program',
+        tier1Rate: 70,
+        tier2Rate: 40,
+      }),
+    ).rejects.toThrow('Combined affiliate rates cannot exceed 100 percent');
+
+    expect(repositoryMock.createProgram).not.toHaveBeenCalled();
+  });
+
   it('should reject product-model scoped affiliate programs', async () => {
     await expect(
       useCase.execute({
@@ -91,6 +130,24 @@ describe('CreateAffiliateProgramUseCase', () => {
 
     expect(repositoryMock.createProgram).not.toHaveBeenCalled();
   });
+
+  it('rejects a brand scope without approved authorization for the owner shop', async () => {
+    repositoryMock.findProgramBySlug.mockResolvedValueOnce(null);
+    repositoryMock.findOwnedShop.mockResolvedValueOnce({ id: 'shop-1', shopStatus: 'verified' });
+    repositoryMock.findBrandById.mockResolvedValueOnce({ id: 'brand-1' });
+    repositoryMock.findApprovedBrandForShop.mockResolvedValueOnce(null);
+
+    await expect(useCase.execute({
+      requesterUserId: 'user-1',
+      ownerShopId: 'shop-1',
+      brandId: 'brand-1',
+      scopeType: 'BRAND',
+      name: 'Brand Program',
+      slug: 'brand-program',
+      tier1Rate: 6,
+      tier2Rate: 2,
+    })).rejects.toThrow('Shop is not approved to promote this brand');
+  });
 });
 
 function createProgramRecord() {
@@ -105,7 +162,9 @@ function createProgramRecord() {
     slug: 'spring-program',
     programStatus: 'ACTIVE',
     attributionWindowDays: 30,
+    commissionHoldDays: 7,
     commissionModel: 'revenue_share',
+    settlementMode: 'AUTOMATIC',
     tier1Rate: new Prisma.Decimal(12),
     tier2Rate: new Prisma.Decimal(5),
     startedAt: null,

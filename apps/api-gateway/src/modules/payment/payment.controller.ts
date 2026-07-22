@@ -1,9 +1,9 @@
-import { Body, Controller, Get, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, Post, Query, Res, UseGuards } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { PayOSWebhookMessage } from '@contracts';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
-import { AdminFinanceReconciliationQueryDto, MarkOrderPaidDto } from '@orders';
+import { AdminFinanceReconciliationQueryDto, MarkOrderPaidDto, RefundOrderDto } from '@orders';
 import { RateLimit } from '../../observability';
 import { OrdersRpcService } from '../order/orders-rpc.service';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
@@ -80,11 +80,17 @@ export class PaymentController {
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post(':id/refund')
-  refund(@Param('id') id: string, @CurrentUserId() requesterUserId: string, @Body() body?: { items?: Array<{ orderItemId: string; quantity: number }> }) {
+  refund(
+    @Param('id') id: string,
+    @CurrentUserId() requesterUserId: string,
+    @Headers('idempotency-key') idempotencyHeader: string | undefined,
+    @Body() body?: RefundOrderDto,
+  ) {
     return this.ordersRpcService.refund({
       id,
       requesterUserId,
       items: body?.items,
+      idempotencyKey: idempotencyHeader?.trim() || body?.idempotencyKey?.trim() || null,
     });
   }
 

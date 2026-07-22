@@ -10,6 +10,7 @@ import {
 } from '@orders';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 import { OrdersRpcService } from './orders-rpc.service';
+import { AffiliateAttributionTokenService } from '../affiliate/affiliate-attribution-token.service';
 
 @ApiTags('Order')
 @Controller('orders')
@@ -17,6 +18,7 @@ export class OrderController {
   constructor(
     private readonly ordersRpcService: OrdersRpcService,
     private readonly dashboardSseBrokerService: DashboardSseBrokerService,
+    private readonly attributionTokenService: AffiliateAttributionTokenService,
   ) {}
 
   @ApiOperation({ summary: 'Tao don hang tu offer' })
@@ -31,7 +33,11 @@ export class OrderController {
       offerId: dto.offerId,
       variantId: dto.variantId ?? null,
       quantity: dto.quantity,
-      affiliateCode: dto.affiliateCode ?? null,
+      affiliateCode: this.attributionTokenService.resolvePreferredCode({
+        manualCode: dto.affiliateCode,
+        attributionToken: dto.affiliateAttributionToken,
+      }),
+      requireAffiliateAttribution: Boolean(dto.affiliateCode?.trim()),
       paymentMethod: dto.paymentMethod ?? null,
       shippingName: dto.shippingName ?? null,
       shippingPhone: dto.shippingPhone ?? null,

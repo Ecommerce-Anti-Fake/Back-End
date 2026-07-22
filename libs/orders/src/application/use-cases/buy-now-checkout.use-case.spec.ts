@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { CheckoutShippingService } from '../services';
+import { VoucherPricingService } from '../vouchers/voucher-pricing.service';
 import { BuyNowCheckoutUseCase } from './buy-now-checkout.use-case';
 import { CreateOrderUseCase } from './create-order.use-case';
 
@@ -9,6 +10,8 @@ describe('BuyNowCheckoutUseCase', () => {
     findOfferForOrdering: jest.fn(),
     countOfferVariants: jest.fn(),
     findOfferVariantForOrdering: jest.fn(),
+    findCheckoutVouchers: jest.fn(),
+    getVoucherUsage: jest.fn(),
     upsertCartItem: jest.fn(),
     removeCartItem: jest.fn(),
     removeCartItems: jest.fn(),
@@ -20,6 +23,12 @@ describe('BuyNowCheckoutUseCase', () => {
   const createOrderUseCase = {
     execute: jest.fn(),
   };
+  const voucherPricingService = {
+    calculateProductDiscount: jest.fn(),
+    calculateShippingDiscount: jest.fn(),
+    allocateSystemDiscount: jest.fn(),
+    calculateGroup: jest.fn(),
+  };
   let useCase: BuyNowCheckoutUseCase;
 
   beforeEach(() => {
@@ -28,6 +37,7 @@ describe('BuyNowCheckoutUseCase', () => {
       ordersRepository as unknown as OrdersRepository,
       checkoutShippingService as unknown as CheckoutShippingService,
       createOrderUseCase as unknown as CreateOrderUseCase,
+      voucherPricingService as unknown as VoucherPricingService,
     );
     ordersRepository.countOfferVariants.mockResolvedValue(1);
     ordersRepository.findOfferVariantForOrdering.mockResolvedValue({
@@ -38,6 +48,19 @@ describe('BuyNowCheckoutUseCase', () => {
       isActive: true,
     });
     ordersRepository.findOfferForOrdering.mockResolvedValue(createOffer());
+    ordersRepository.findCheckoutVouchers.mockResolvedValue([]);
+    ordersRepository.getVoucherUsage.mockResolvedValue({ total: 0, user: 0 });
+    voucherPricingService.calculateGroup.mockImplementation(({ grossAmount, shippingFee, commissionRate }) => {
+      const platformFee = grossAmount.mul(commissionRate);
+      return {
+        buyerPayable: grossAmount.plus(shippingFee),
+        commissionBase: grossAmount,
+        platformFee,
+        sellerReceivable: grossAmount.minus(platformFee),
+        platformVoucherExpense: new Prisma.Decimal(0),
+        shopVoucherExpense: new Prisma.Decimal(0),
+      };
+    });
     checkoutShippingService.resolveSelectedOption.mockResolvedValue({
       optionCode: 'GHN_1',
       providerCode: 'GHN',

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Prisma, WalletBalanceType, WalletEntryDirection, WalletTransactionType } from '@prisma/client';
 import { PrismaService } from '@database/prisma/prisma.service';
 import { WalletRepository } from '@wallet/infrastructure/persistence/wallet.repository';
@@ -48,12 +48,19 @@ export class AffiliateRepository {
   findOwnedShop(shopId: string, ownerUserId: string) {
     return this.prisma.shop.findFirst({
       where: { id: shopId, ownerUserId },
-      select: { id: true },
+      select: { id: true, shopStatus: true },
     });
   }
 
   findBrandById(id: string) {
     return this.prisma.brand.findUnique({ where: { id }, select: { id: true } });
+  }
+
+  findApprovedBrandForShop(shopId: string, brandId: string) {
+    return this.prisma.brandAuthorization.findFirst({
+      where: { shopId, brandId, verificationStatus: 'approved' },
+      select: { id: true },
+    });
   }
 
   findOwnedOffer(offerId: string, sellerUserId: string) {
@@ -86,7 +93,9 @@ export class AffiliateRepository {
     name: string;
     slug: string;
     attributionWindowDays: number;
+    commissionHoldDays: number;
     commissionModel: string;
+    settlementMode: 'MANUAL' | 'AUTOMATIC';
     tier1Rate: number;
     tier2Rate: number;
     rulesJson: Record<string, unknown> | null;
@@ -103,7 +112,9 @@ export class AffiliateRepository {
         slug: data.slug,
         programStatus: 'ACTIVE',
         attributionWindowDays: data.attributionWindowDays,
+        commissionHoldDays: data.commissionHoldDays,
         commissionModel: data.commissionModel,
+        settlementMode: data.settlementMode,
         tier1Rate: data.tier1Rate,
         tier2Rate: data.tier2Rate,
         rulesJson: data.rulesJson ? (data.rulesJson as Prisma.InputJsonValue) : Prisma.JsonNull,
@@ -176,6 +187,54 @@ export class AffiliateRepository {
     });
   }
 
+  findActivePrograms(now: Date, skip: number, take: number) {
+    return this.prisma.affiliateProgram.findMany({
+      where: {
+        programStatus: 'ACTIVE',
+        AND: [
+          { OR: [{ startedAt: null }, { startedAt: { lte: now } }] },
+          { OR: [{ endedAt: null }, { endedAt: { gt: now } }] },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take,
+      ...affiliateProgramArgs,
+    });
+  }
+
+  countActivePrograms(now: Date) {
+    return this.prisma.affiliateProgram.count({
+      where: {
+        programStatus: 'ACTIVE',
+        AND: [
+          { OR: [{ startedAt: null }, { startedAt: { lte: now } }] },
+          { OR: [{ endedAt: null }, { endedAt: { gt: now } }] },
+        ],
+      },
+    });
+  }
+
+  findAffiliateAttributionByCode(code: string) {
+    return this.prisma.affiliateCode.findUnique({
+      where: { code },
+      select: {
+        code: true,
+        expiresAt: true,
+        account: { select: { accountStatus: true } },
+        program: {
+          select: {
+            id: true,
+            programStatus: true,
+            attributionWindowDays: true,
+            startedAt: true,
+            endedAt: true,
+          },
+        },
+      },
+    });
+  }
+
   createAffiliateAccount(data: {
     programId: string;
     userId: string;
@@ -213,7 +272,7 @@ export class AffiliateRepository {
     });
   }
 
-  findCommissionEntriesByAccount(accountId: string) {
+  findCommissionEntriesByAccount(accountId: string, skip: number, take: number) {
     return this.prisma.affiliateCommissionLedger.findMany({
       where: {
         beneficiaryAccountId: accountId,
@@ -221,6 +280,14 @@ export class AffiliateRepository {
       orderBy: {
         createdAt: 'desc',
       },
+      skip,
+      take,
+    });
+  }
+
+  countCommissionEntriesByAccount(accountId: string) {
+    return this.prisma.affiliateCommissionLedger.count({
+      where: { beneficiaryAccountId: accountId },
     });
   }
 
@@ -319,8 +386,33 @@ export class AffiliateRepository {
       },
       select: {
         id: true,
+        settlementMode: true,
       },
     });
+  }
+
+  findProgramMembers(programId: string, skip: number, take: number) {
+    return this.prisma.affiliateAccount.findMany({
+      where: { programId },
+      select: {
+        id: true,
+        parentAccountId: true,
+        referralPath: true,
+        accountStatus: true,
+        joinedAt: true,
+        user: { select: { displayName: true } },
+        parentAccount: {
+          select: { user: { select: { displayName: true } } },
+        },
+      },
+      orderBy: { joinedAt: 'desc' },
+      skip,
+      take,
+    });
+  }
+
+  countProgramMembers(programId: string) {
+    return this.prisma.affiliateAccount.count({ where: { programId } });
   }
 
   findConversionsByProgram(programId: string): Promise<AffiliateConversionWithRelations[]> {
@@ -355,6 +447,7 @@ export class AffiliateRepository {
         id: true,
         programId: true,
         conversionStatus: true,
+        program: { select: { settlementMode: true } },
       },
     });
   }
@@ -433,6 +526,7 @@ export class AffiliateRepository {
         beneficiaryAccountId: input.accountId,
         payoutId: null,
         commissionStatus: 'APPROVED',
+        amount: { gt: 0 },
         conversion: {
           programId: input.programId,
           approvedAt: {
@@ -452,7 +546,7 @@ export class AffiliateRepository {
     accountId: string;
     periodStart: Date;
     periodEnd: Date;
-    totalAmount: number;
+    totalAmount: Prisma.Decimal.Value;
     externalRef: string | null;
     ledgerEntryIds: string[];
   }): Promise<AffiliatePayoutWithRelations> {
@@ -470,11 +564,13 @@ export class AffiliateRepository {
         ...affiliatePayoutArgs,
       });
 
-      await tx.affiliateCommissionLedger.updateMany({
+      const claimed = await tx.affiliateCommissionLedger.updateMany({
         where: {
           id: {
             in: data.ledgerEntryIds,
           },
+          payoutId: null,
+          commissionStatus: 'APPROVED',
         },
         data: {
           commissionStatus: 'LOCKED',
@@ -482,6 +578,11 @@ export class AffiliateRepository {
           payoutId: payout.id,
         },
       });
+      if (claimed.count !== data.ledgerEntryIds.length) {
+        throw new BadRequestException(
+          'Affiliate commission entries changed while creating the payout; retry the request',
+        );
+      }
 
       return payout;
     });
@@ -516,6 +617,7 @@ export class AffiliateRepository {
       select: {
         id: true,
         payoutStatus: true,
+        program: { select: { settlementMode: true } },
       },
     });
   }
@@ -539,35 +641,39 @@ export class AffiliateRepository {
         where: { id: input.payoutId },
         include: {
           account: { select: { userId: true } },
+          program: { select: { ownerShopId: true } },
           commissionEntries: { select: { id: true, amount: true, commissionStatus: true, conversionId: true } },
         },
       });
       if (!payoutBeforeUpdate) throw new Error('Affiliate payout not found');
 
       if (input.payoutStatus === 'PAID') {
-        const platformWallet = await this.walletRepository.findOrCreatePlatformWalletInTransaction(
+        if (!payoutBeforeUpdate.program.ownerShopId) {
+          throw new Error('Affiliate payout requires a funding shop');
+        }
+        const shopWallet = await this.walletRepository.findOrCreateShopWalletInTransaction(
           tx,
-          'PLATFORM_REVENUE_VND',
-          'VND',
+          payoutBeforeUpdate.program.ownerShopId,
+          payoutBeforeUpdate.currency,
         );
         const affiliateWallet = await this.walletRepository.findOrCreateUserWalletInTransaction(
           tx,
           payoutBeforeUpdate.account.userId,
-          'VND',
+          payoutBeforeUpdate.currency,
         );
 
         for (const entry of payoutBeforeUpdate.commissionEntries) {
           if (entry.commissionStatus === 'PAID') continue;
           await this.walletRepository.executeTransactionInTransaction(tx, {
-            transactionCode: `AFFILIATE_COMMISSION:${entry.conversionId}`,
+            transactionCode: `AFFILIATE_COMMISSION:${entry.id}`,
             transactionType: WalletTransactionType.AFFILIATE_COMMISSION,
-            idempotencyKey: `AFFILIATE_CONVERSION:${entry.conversionId}:COMMISSION`,
+            idempotencyKey: `AFFILIATE_LEDGER:${entry.id}:CREDIT`,
             amount: entry.amount,
-            referenceType: 'AFFILIATE_CONVERSION',
-            referenceId: entry.conversionId,
-            description: `Pay affiliate commission for conversion ${entry.conversionId}`,
+            referenceType: 'AFFILIATE_COMMISSION',
+            referenceId: entry.id,
+            description: `Pay affiliate commission ${entry.id}`,
             entries: [
-              { walletId: platformWallet.id, direction: WalletEntryDirection.DEBIT, balanceType: WalletBalanceType.AVAILABLE, amount: entry.amount },
+              { walletId: shopWallet.id, direction: WalletEntryDirection.DEBIT, balanceType: WalletBalanceType.AVAILABLE, amount: entry.amount },
               { walletId: affiliateWallet.id, direction: WalletEntryDirection.CREDIT, balanceType: WalletBalanceType.AVAILABLE, amount: entry.amount },
             ],
           });

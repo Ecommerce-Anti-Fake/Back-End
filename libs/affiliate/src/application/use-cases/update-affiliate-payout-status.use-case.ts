@@ -20,6 +20,10 @@ export class UpdateAffiliatePayoutStatusUseCase {
       throw new BadRequestException('Terminal payout status cannot be changed');
     }
 
+    if (payout.program?.settlementMode === 'AUTOMATIC') {
+      throw new BadRequestException('AFFILIATE_AUTOMATIC_SETTLEMENT_ENABLED');
+    }
+
     const updated = await this.repository.updatePayoutStatus({
       payoutId: input.payoutId,
       actorUserId: input.requesterUserId,

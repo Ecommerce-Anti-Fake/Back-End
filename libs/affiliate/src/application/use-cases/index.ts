@@ -15,3 +15,7 @@ export * from './list-my-affiliate-accounts.use-case';
 export * from './list-my-affiliate-programs.use-case';
 export * from './list-affiliate-payouts-by-program.use-case';
 export * from './update-affiliate-payout-status.use-case';
+export * from './settle-mature-affiliate-commissions.use-case';
+export * from './resolve-affiliate-attribution.use-case';
+export * from './list-active-affiliate-programs.use-case';
+export * from './list-affiliate-program-members.use-case';

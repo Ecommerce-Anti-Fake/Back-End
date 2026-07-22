@@ -5,6 +5,7 @@ import { AFFILIATE_SERVICE_CLIENT } from '@contracts';
 import { AuthGuardsModule } from '@security';
 import { GatewayUserModule } from '../user/user.module';
 import { AffiliateController } from './affiliate.controller';
+import { AffiliateAttributionTokenService } from './affiliate-attribution-token.service';
 import { AffiliateRpcService } from './affiliate-rpc.service';
 
 @Module({
@@ -34,7 +35,7 @@ import { AffiliateRpcService } from './affiliate-rpc.service';
     ]),
   ],
   controllers: [AffiliateController],
-  providers: [AffiliateRpcService],
-  exports: [AffiliateRpcService],
+  providers: [AffiliateRpcService, AffiliateAttributionTokenService],
+  exports: [AffiliateRpcService, AffiliateAttributionTokenService],
 })
 export class GatewayAffiliateModule {}

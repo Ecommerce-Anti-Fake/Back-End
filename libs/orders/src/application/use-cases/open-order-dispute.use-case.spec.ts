@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
+import { ForbiddenException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { OpenOrderDisputeUseCase } from './open-order-dispute.use-case';
 import { RecalculateRiskTargetsUseCase } from './recalculate-risk-targets.use-case';
@@ -14,6 +15,7 @@ describe('OpenOrderDisputeUseCase', () => {
     createDispute: jest.fn(),
     updateEscrowStatusForOrder: jest.fn(),
     createAuditLog: jest.fn(),
+    findAffiliateDisputeDeadline: jest.fn(),
   };
   const recalculateRiskTargetsUseCaseMock = {
     executeForReport: jest.fn(),
@@ -33,6 +35,23 @@ describe('OpenOrderDisputeUseCase', () => {
     }).compile();
 
     useCase = module.get<OpenOrderDisputeUseCase>(OpenOrderDisputeUseCase);
+    ordersRepositoryMock.findAffiliateDisputeDeadline.mockResolvedValue(null);
+  });
+
+  it('rejects a new dispute after the affiliate hold window expires', async () => {
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord());
+    ordersRepositoryMock.findAffiliateDisputeDeadline.mockResolvedValueOnce(
+      new Date('2026-07-22T09:00:00.000Z'),
+    );
+
+    await expect(useCase.execute({
+      id: 'order-1',
+      requesterUserId: 'buyer-user-1',
+      reason: 'Late dispute',
+      now: new Date('2026-07-22T10:00:00.000Z'),
+    })).rejects.toThrow('Affiliate dispute window has expired');
+
+    expect(orderReversalServiceMock.openDispute).not.toHaveBeenCalled();
   });
 
   it('should allow buyer to open dispute on paid order', async () => {
@@ -66,6 +85,24 @@ describe('OpenOrderDisputeUseCase', () => {
       id: 'dispute-1',
       disputeStatus: 'OPEN',
     });
+  });
+
+  it('does not let one seller freeze an aggregate order owned by multiple shops', async () => {
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce({
+      ...createOrderRecord(),
+      shopGroups: [
+        { shop: { ownerUserId: 'seller-user-1' } },
+        { shop: { ownerUserId: 'seller-user-2' } },
+      ],
+    });
+
+    await expect(useCase.execute({
+      id: 'order-1',
+      requesterUserId: 'seller-user-1',
+      reason: 'Aggregate dispute',
+    })).rejects.toBeInstanceOf(ForbiddenException);
+
+    expect(orderReversalServiceMock.openDispute).not.toHaveBeenCalled();
   });
 });
 

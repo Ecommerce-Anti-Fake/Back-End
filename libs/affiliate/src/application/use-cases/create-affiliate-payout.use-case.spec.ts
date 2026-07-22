@@ -27,7 +27,7 @@ describe('CreateAffiliatePayoutUseCase', () => {
   });
 
   it('should create payout from approved ledger entries', async () => {
-    repositoryMock.findOwnedProgramById.mockResolvedValueOnce({ id: 'program-1' });
+    repositoryMock.findOwnedProgramById.mockResolvedValueOnce({ id: 'program-1', settlementMode: 'MANUAL' });
     repositoryMock.findOwnedAccountInProgram.mockResolvedValueOnce({ id: 'account-1', programId: 'program-1' });
     repositoryMock.findApprovedLedgerEntriesForPayout.mockResolvedValueOnce([
       { id: 'ledger-1', amount: new Prisma.Decimal(20000) },
@@ -60,7 +60,7 @@ describe('CreateAffiliatePayoutUseCase', () => {
       accountId: 'account-1',
       periodStart: new Date('2026-04-01T00:00:00.000Z'),
       periodEnd: new Date('2026-04-30T23:59:59.999Z'),
-      totalAmount: 35000,
+      totalAmount: new Prisma.Decimal(35000),
       externalRef: 'batch-1',
       ledgerEntryIds: ['ledger-1', 'ledger-2'],
     });
@@ -69,5 +69,22 @@ describe('CreateAffiliatePayoutUseCase', () => {
       totalAmount: 35000,
       payoutStatus: 'PENDING',
     });
+  });
+
+  it('rejects owner-created payouts for automatic programs', async () => {
+    repositoryMock.findOwnedProgramById.mockResolvedValueOnce({
+      id: 'program-1',
+      settlementMode: 'AUTOMATIC',
+    });
+
+    await expect(useCase.execute({
+      requesterUserId: 'owner-1',
+      programId: 'program-1',
+      accountId: 'account-1',
+      periodStart: '2026-04-01T00:00:00.000Z',
+      periodEnd: '2026-04-30T23:59:59.999Z',
+    })).rejects.toThrow('AFFILIATE_AUTOMATIC_SETTLEMENT_ENABLED');
+
+    expect(repositoryMock.createPayout).not.toHaveBeenCalled();
   });
 });

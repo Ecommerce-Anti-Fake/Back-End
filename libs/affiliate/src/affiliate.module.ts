@@ -18,9 +18,14 @@ import {
   ListMyAffiliateProgramsUseCase,
   RejectAffiliateConversionUseCase,
   UpdateAffiliatePayoutStatusUseCase,
+  SettleMatureAffiliateCommissionsUseCase,
+  ResolveAffiliateAttributionUseCase,
+  ListActiveAffiliateProgramsUseCase,
+  ListAffiliateProgramMembersUseCase,
 } from './application/use-cases';
 import { AffiliateRepository } from './infrastructure/persistence/affiliate.repository';
 import { AffiliateRpcController } from './presentation/rpc/affiliate.rpc-controller';
+import { AffiliateSettlementWorker } from './application/services/affiliate-settlement.worker';
 
 @Module({
   imports: [PrismaModule, WalletModule],
@@ -43,6 +48,11 @@ import { AffiliateRpcController } from './presentation/rpc/affiliate.rpc-control
     ListAffiliatePayoutsByProgramUseCase,
     RejectAffiliateConversionUseCase,
     UpdateAffiliatePayoutStatusUseCase,
+    SettleMatureAffiliateCommissionsUseCase,
+    ResolveAffiliateAttributionUseCase,
+    ListActiveAffiliateProgramsUseCase,
+    ListAffiliateProgramMembersUseCase,
+    AffiliateSettlementWorker,
   ],
   exports: [
     AffiliateRepository,
@@ -62,6 +72,10 @@ import { AffiliateRpcController } from './presentation/rpc/affiliate.rpc-control
     ListAffiliatePayoutsByProgramUseCase,
     RejectAffiliateConversionUseCase,
     UpdateAffiliatePayoutStatusUseCase,
+    SettleMatureAffiliateCommissionsUseCase,
+    ResolveAffiliateAttributionUseCase,
+    ListActiveAffiliateProgramsUseCase,
+    ListAffiliateProgramMembersUseCase,
   ],
 })
 export class AffiliateModule {}

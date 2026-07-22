@@ -182,6 +182,11 @@ enum WithdrawalStatus {
   CANCELLED
 }
 
+enum AffiliateSettlementMode {
+  MANUAL
+  AUTOMATIC
+}
+
 enum PayoutAccountOwnerType {
   USER
   SHOP

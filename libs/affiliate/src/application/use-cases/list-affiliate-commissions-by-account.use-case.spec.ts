@@ -9,6 +9,7 @@ describe('ListAffiliateCommissionsByAccountUseCase', () => {
   const repositoryMock = {
     findOwnedAffiliateAccount: jest.fn(),
     findCommissionEntriesByAccount: jest.fn(),
+    countCommissionEntriesByAccount: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -30,6 +31,7 @@ describe('ListAffiliateCommissionsByAccountUseCase', () => {
       programId: 'program-1',
       program: { name: 'Spring Program' },
     });
+    repositoryMock.countCommissionEntriesByAccount.mockResolvedValueOnce(1);
     repositoryMock.findCommissionEntriesByAccount.mockResolvedValueOnce([
       {
         id: 'ledger-1',
@@ -49,16 +51,23 @@ describe('ListAffiliateCommissionsByAccountUseCase', () => {
     const result = await useCase.execute({
       requesterUserId: 'user-1',
       accountId: 'account-1',
+      page: 1,
+      pageSize: 20,
     });
 
-    expect(result).toMatchObject([
-      {
+    expect(result).toMatchObject({
+      items: [{
         id: 'ledger-1',
         conversionId: 'conversion-1',
         amount: 12000,
         commissionStatus: 'PENDING',
         beneficiaryType: 'AFFILIATE_TIER_1',
-      },
-    ]);
+      }],
+      page: 1,
+      pageSize: 20,
+      total: 1,
+      totalPages: 1,
+    });
+    expect(repositoryMock.findCommissionEntriesByAccount).toHaveBeenCalledWith('account-1', 0, 20);
   });
 });

@@ -10,6 +10,8 @@ describe('CheckoutCartUseCase', () => {
     markOrderPaymentFailed: jest.fn(),
     findCurrentOfferForCart: jest.fn(),
     findOfferVariantForCart: jest.fn(),
+    findCheckoutVouchers: jest.fn(),
+    getVoucherUsage: jest.fn(),
     withSerializableTransaction: jest.fn(),
   };
   const orderPlacementService = { createAggregateOrder: jest.fn(), createAggregateOrderInTransaction: jest.fn() };
@@ -17,6 +19,12 @@ describe('CheckoutCartUseCase', () => {
   const payOSPaymentService = { createPaymentLink: jest.fn() };
   const orderNotificationService = { notifyCreated: jest.fn() };
   const payOrderByWalletUseCase = { execute: jest.fn(), executeInTransaction: jest.fn() };
+  const voucherPricingService = {
+    calculateProductDiscount: jest.fn(),
+    calculateShippingDiscount: jest.fn(),
+    calculateGroup: jest.fn(),
+    allocateSystemDiscount: jest.fn(),
+  };
   let useCase: CheckoutCartUseCase;
 
   beforeEach(() => {
@@ -28,6 +36,7 @@ describe('CheckoutCartUseCase', () => {
       payOSPaymentService as never,
       orderNotificationService as never,
       payOrderByWalletUseCase as never,
+      voucherPricingService as never,
     );
     ordersRepository.getOrCreateActiveCart.mockResolvedValue(createCart());
     checkoutShippingService.resolveSelectedOption.mockResolvedValue({
@@ -57,6 +66,16 @@ describe('CheckoutCartUseCase', () => {
       offerStatus: 'active',
       price: new Prisma.Decimal(offerId === 'offer-1' ? 100000 : 200000),
     }));
+    ordersRepository.findOfferVariantForCart.mockImplementation(async ({ offerId, variantId }) => ({
+      id: variantId,
+      offerId,
+      price: new Prisma.Decimal(offerId === 'offer-1' ? 100000 : 200000),
+      availableQuantity: 100,
+      isActive: true,
+      values: [],
+    }));
+    ordersRepository.findCheckoutVouchers.mockResolvedValue([]);
+    ordersRepository.getVoucherUsage.mockResolvedValue({ total: 0, user: 0 });
   });
 
   it('creates one COD order with shop groups and removes source cart items', async () => {
@@ -157,6 +176,7 @@ describe('CheckoutCartUseCase', () => {
     return {
       id,
       offerId,
+      variantId: `${offerId}-variant`,
       quantity,
       offerTitleSnapshot: offerId,
       unitPriceSnapshot: new Prisma.Decimal(price),

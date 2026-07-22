@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { AffiliateRepository } from '../../infrastructure/persistence/affiliate.repository';
 import { toAffiliatePayoutResponse } from './affiliate.mapper';
 
@@ -17,6 +18,10 @@ export class CreateAffiliatePayoutUseCase {
     const program = await this.repository.findOwnedProgramById(input.programId, input.requesterUserId);
     if (!program) {
       throw new NotFoundException('Affiliate program not found or not owned by current user');
+    }
+
+    if (program.settlementMode === 'AUTOMATIC') {
+      throw new BadRequestException('AFFILIATE_AUTOMATIC_SETTLEMENT_ENABLED');
     }
 
     const account = await this.repository.findOwnedAccountInProgram(input.accountId, input.programId, input.requesterUserId);
@@ -41,7 +46,10 @@ export class CreateAffiliatePayoutUseCase {
       throw new BadRequestException('No approved commission entries available for payout');
     }
 
-    const totalAmount = ledgerEntries.reduce((sum, entry) => sum + Number(entry.amount.toString()), 0);
+    const totalAmount = ledgerEntries.reduce(
+      (sum, entry) => sum.plus(entry.amount),
+      new Prisma.Decimal(0),
+    );
     const payout = await this.repository.createPayout({
       programId: input.programId,
       accountId: input.accountId,

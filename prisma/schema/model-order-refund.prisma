@@ -1,0 +1,17 @@
+model OrderRefund {
+  id               String                 @id @default(uuid())
+  orderId          String                 @map("order_id")
+  actorUserId      String                 @map("actor_user_id")
+  idempotencyKey   String                 @map("idempotency_key")
+  refundType       String                 @map("refund_type")
+  refundStatus     String                 @default("COMPLETED") @map("refund_status")
+  totalAmount      Decimal                @default(0) @map("total_amount") @db.Decimal(18, 2)
+  itemsJson        Json                   @map("items_json")
+  createdAt        DateTime               @default(now()) @map("created_at")
+  order            Order                  @relation(fields: [orderId], references: [id])
+  groupAllocations OrderRefundShopGroup[]
+
+  @@unique([orderId, idempotencyKey])
+  @@index([orderId, refundStatus])
+  @@map("order_refund")
+}

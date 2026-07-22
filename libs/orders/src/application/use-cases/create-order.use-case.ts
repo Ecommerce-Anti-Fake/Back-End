@@ -1,4 +1,5 @@
 import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { OfferForOrdering, OfferVariantForOrdering, OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { WholesalePricingPort } from '../ports';
 import { OrderNotificationService, OrderPlacementService, PayOSPaymentService, ShippingCarrierAdapterService } from '../services';
@@ -26,6 +27,7 @@ export class CreateOrderUseCase {
     quantity: number;
     paymentMethod?: 'COD' | 'BANK_TRANSFER' | 'PAYOS' | 'WALLET' | null;
     affiliateCode?: string | null;
+    requireAffiliateAttribution?: boolean;
     shippingName?: string | null;
     shippingPhone?: string | null;
     shippingAddress?: string | null;
@@ -111,6 +113,18 @@ export class CreateOrderUseCase {
       : pricing;
     const buyerPayableAmount = this.roundMoney(finalPricing.buyerPayableAmount + shippingFeeAmount);
     const paymentMethod = input.paymentMethod ?? 'COD';
+    const shopProductDiscountAmount = (input.voucherAllocations ?? [])
+      .filter((allocation) => allocation.fundingSource === 'SHOP')
+      .reduce(
+        (total, allocation) => total.plus(allocation.productDiscountAmount),
+        new Prisma.Decimal(0),
+      );
+    const systemProductDiscountAmount = (input.voucherAllocations ?? [])
+      .filter((allocation) => allocation.fundingSource === 'SYSTEM')
+      .reduce(
+        (total, allocation) => total.plus(allocation.productDiscountAmount),
+        new Prisma.Decimal(0),
+      );
 
     const order = await this.orderPlacementService.createOrder({
       order: {
@@ -147,6 +161,9 @@ export class CreateOrderUseCase {
           offerTitleSnapshot: offer.title,
           unitPrice: finalPricing.unitPrice,
           quantity: input.quantity,
+          shopProductDiscountAmount,
+          systemProductDiscountAmount,
+          platformFeeAmount: finalPricing.platformFeeAmount,
           selectedOptions: (variant?.values ?? []).map(({ optionValue }) => ({
             optionGroupId: optionValue.optionGroupId,
             optionValueId: optionValue.id,
@@ -160,12 +177,24 @@ export class CreateOrderUseCase {
       affiliateAttribution: input.affiliateCode
         ? {
             affiliateCode: input.affiliateCode,
+            required: input.requireAffiliateAttribution ?? false,
             customerUserId: input.buyerUserId,
-            offerId: offer.id,
-            sellerShopId: offer.shopId,
-            brandId: offer.brandId,
             orderAmount: buyerPayableAmount,
-            commissionBase: finalPricing.platformFeeAmount,
+            items: [
+              {
+                offerId: offer.id,
+                sellerShopId: offer.shopId,
+                brandId: offer.brandId,
+                grossAmount: pricing.baseAmount,
+                shopProductDiscountAmount,
+              },
+            ],
+            fundingShopReceivables: [
+              {
+                shopId: offer.shopId,
+                amount: finalPricing.sellerReceivableAmount,
+              },
+            ],
           }
         : undefined,
     });

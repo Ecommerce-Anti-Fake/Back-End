@@ -190,6 +190,11 @@ enum WithdrawalStatus {
   CANCELLED
 }
 
+enum AffiliateSettlementMode {
+  MANUAL
+  AUTOMATIC
+}
+
 enum PayoutAccountOwnerType {
   USER
   SHOP
@@ -326,6 +331,7 @@ model AffiliateCommissionLedger {
   currency             String                    @default("VND")
   commissionStatus     AffiliateCommissionStatus @default(PENDING) @map("commission_status")
   lockedAt             DateTime?                 @map("locked_at")
+  availableAt          DateTime?                 @map("available_at")
   paidAt               DateTime?                 @map("paid_at")
   payoutId             String?                   @map("payout_id")
   createdAt            DateTime                  @default(now()) @map("created_at")
@@ -382,6 +388,7 @@ model AffiliatePayout {
   currency          String                      @default("VND")
   payoutStatus      PayoutStatus                @default(PENDING) @map("payout_status")
   externalRef       String?                     @map("external_ref")
+  idempotencyKey    String?                     @unique @map("idempotency_key")
   paidAt            DateTime?                   @map("paid_at")
   createdAt         DateTime                    @default(now()) @map("created_at")
   updatedAt         DateTime                    @updatedAt @map("updated_at")
@@ -404,7 +411,9 @@ model AffiliateProgram {
   slug                  String                 @unique
   programStatus         AffiliateProgramStatus @default(DRAFT) @map("program_status")
   attributionWindowDays Int                    @default(30) @map("attribution_window_days")
+  commissionHoldDays    Int                    @default(7) @map("commission_hold_days")
   commissionModel       String                 @default("revenue_share") @map("commission_model")
+  settlementMode        AffiliateSettlementMode @default(AUTOMATIC) @map("settlement_mode")
   tier1Rate             Decimal                @map("tier1_rate") @db.Decimal(5, 2)
   tier2Rate             Decimal                @map("tier2_rate") @db.Decimal(5, 2)
   rulesJson             Json?                  @map("rules_json")
@@ -1187,6 +1196,9 @@ model OrderItem {
   offerTitleSnapshot        String                     @map("offer_title_snapshot")
   unitPrice                 Decimal                    @map("unit_price") @db.Decimal(18, 2)
   quantity                  Int
+  shopProductDiscountAmount   Decimal                  @default(0) @map("shop_product_discount_amount") @db.Decimal(18, 2)
+  systemProductDiscountAmount Decimal                  @default(0) @map("system_product_discount_amount") @db.Decimal(18, 2)
+  platformFeeAmount           Decimal                  @default(0) @map("platform_fee_amount") @db.Decimal(18, 2)
   order                     Order                      @relation(fields: [orderId], references: [id])
   orderShopGroup            OrderShopGroup?            @relation(fields: [orderShopGroupId], references: [id])
   offer                     Offer                      @relation(fields: [offerId], references: [id])
@@ -1202,6 +1214,42 @@ model OrderItem {
   @@index([offerId])
   @@index([variantId])
   @@map("order_item")
+}
+
+model OrderRefundShopGroup {
+  id                         String         @id @default(uuid())
+  refundId                   String         @map("refund_id")
+  orderShopGroupId           String         @map("order_shop_group_id")
+  baseReductionAmount        Decimal        @default(0) @map("base_reduction_amount") @db.Decimal(18, 2)
+  discountReductionAmount    Decimal        @default(0) @map("discount_reduction_amount") @db.Decimal(18, 2)
+  buyerRefundAmount          Decimal        @default(0) @map("buyer_refund_amount") @db.Decimal(18, 2)
+  platformFeeReductionAmount Decimal        @default(0) @map("platform_fee_reduction_amount") @db.Decimal(18, 2)
+  sellerReductionAmount      Decimal        @default(0) @map("seller_reduction_amount") @db.Decimal(18, 2)
+  createdAt                  DateTime       @default(now()) @map("created_at")
+  refund                     OrderRefund    @relation(fields: [refundId], references: [id], onDelete: Cascade)
+  orderShopGroup             OrderShopGroup @relation(fields: [orderShopGroupId], references: [id])
+
+  @@unique([refundId, orderShopGroupId])
+  @@index([orderShopGroupId])
+  @@map("order_refund_shop_group")
+}
+
+model OrderRefund {
+  id               String                 @id @default(uuid())
+  orderId          String                 @map("order_id")
+  actorUserId      String                 @map("actor_user_id")
+  idempotencyKey   String                 @map("idempotency_key")
+  refundType       String                 @map("refund_type")
+  refundStatus     String                 @default("COMPLETED") @map("refund_status")
+  totalAmount      Decimal                @default(0) @map("total_amount") @db.Decimal(18, 2)
+  itemsJson        Json                   @map("items_json")
+  createdAt        DateTime               @default(now()) @map("created_at")
+  order            Order                  @relation(fields: [orderId], references: [id])
+  groupAllocations OrderRefundShopGroup[]
+
+  @@unique([orderId, idempotencyKey])
+  @@index([orderId, refundStatus])
+  @@map("order_refund")
 }
 
 model OrderShopGroup {
@@ -1236,6 +1284,7 @@ model OrderShopGroup {
   shop                   Shop        @relation(fields: [shopId], references: [id])
   items                  OrderItem[]
   voucherAllocations     OrderVoucherAllocation[]
+  refundAllocations      OrderRefundShopGroup[]
 
   @@unique([orderId, shopId])
   @@index([shopId, fulfillmentStatus])
@@ -1288,6 +1337,7 @@ model Order {
   disputes                Dispute[]
   reviews                 Review[]
   affiliateConversion     AffiliateConversion?
+  refunds                 OrderRefund[]
   sourceSupplyBatches     SupplyBatch[]        @relation("SupplyBatchSourceOrder")
 
   @@index([buyerUserId])
