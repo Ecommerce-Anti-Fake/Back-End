@@ -10,10 +10,36 @@ export class ReviewShopDocumentUseCase {
     reviewerUserId?: string;
     reviewStatus: 'approved' | 'rejected';
     reviewNote?: string | null;
+    verifiedLegalName?: string | null;
   }) {
     const shop = await this.shopsRepository.findAdminShopVerificationDetailById(input.shopId);
     if (!shop) {
       throw new NotFoundException('Shop not found');
+    }
+
+    const normalizedBusinessType = String(shop.businessType ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toUpperCase();
+    const isCompany = ['COMPANY', 'DOANH NGHIEP', 'ENTERPRISE'].includes(normalizedBusinessType);
+    const verifiedLegalName = input.verifiedLegalName?.trim() || null;
+    if (input.reviewStatus === 'approved' && isCompany && !verifiedLegalName) {
+      throw new BadRequestException('Verified legal name is required for a company shop');
+    }
+    if (shop.shopStatus === 'verified' && input.reviewStatus === 'approved' && isCompany) {
+      const updatedShop = await this.shopsRepository.updateShopVerifiedLegalName(shop.id, verifiedLegalName!);
+      await this.shopsRepository.createAuditLog({
+        targetType: 'SHOP_VERIFICATION',
+        targetId: shop.id,
+        actorUserId: input.reviewerUserId ?? shop.ownerUserId,
+        action: 'SHOP_VERIFIED_LEGAL_NAME_UPDATED',
+        fromStatus: shop.shopStatus,
+        toStatus: updatedShop.shopStatus,
+        note: input.reviewNote?.trim() || null,
+        metadata: { verifiedLegalNameSet: true },
+      });
+      return { success: true, message: 'Đã cập nhật tên pháp nhân đã xác minh.' };
     }
 
     if (shop.documents.length === 0) {
@@ -43,6 +69,7 @@ export class ReviewShopDocumentUseCase {
       ownerUserId: shop.ownerUserId,
       reviewStatus: input.reviewStatus,
       reviewNote: input.reviewNote?.trim() || null,
+      ...(verifiedLegalName ? { verifiedLegalName } : {}),
     });
 
     const updatedShop =
@@ -65,6 +92,7 @@ export class ReviewShopDocumentUseCase {
         reviewStatus: input.reviewStatus,
         reviewedKyc: reviewResult.reviewedKyc,
         reviewedShopDocumentIds: reviewResult.reviewedShopDocumentIds,
+        ...(verifiedLegalName ? { verifiedLegalNameSet: true } : {}),
       },
     });
 

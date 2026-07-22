@@ -7,6 +7,8 @@ export * from './reconcile-shop-wallet.use-case';
 export * from './request-wallet-withdrawal.use-case';
 export * from './list-shop-wallet-withdrawals.use-case';
 export * from './approve-wallet-withdrawal.use-case';
+export * from './complete-wallet-withdrawal.use-case';
+export * from './cancel-wallet-withdrawal.use-case';
 export * from './reject-wallet-withdrawal.use-case';
 export * from './adjust-wallet-balance.use-case';
 export * from './get-wallet-reconciliation.use-case';

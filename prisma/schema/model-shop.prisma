@@ -3,6 +3,7 @@ model Shop {
   ownerUserId                String                 @map("owner_user_id")
   shopTypeId                 String?                @map("shop_type_id")
   shopName                   String                 @map("shop_name")
+  verifiedLegalName          String?                @map("verified_legal_name")
   registrationType           ShopRegistrationType   @map("registration_type")
   businessType               String                 @map("business_type")
   taxCode                    String?                @map("tax_code")
@@ -35,6 +36,7 @@ model Shop {
   socialPosts                SocialPost[]
   liveSessions               LiveCommerceSession[]
   wallets                    Wallet[]
+  payoutAccounts             PayoutAccount[]
   vouchers                   Voucher[]
 
   @@index([shopTypeId])

@@ -83,9 +83,22 @@ export const WALLET_MESSAGE_PATTERNS = {
   getShopWallet: 'wallet.get-shop-wallet',
   getShopWalletTransactions: 'wallet.get-shop-wallet-transactions',
   requestShopWalletWithdrawal: 'wallet.request-shop-wallet-withdrawal',
+  requestUserWalletWithdrawal: 'wallet.request-user-wallet-withdrawal',
   listShopWalletWithdrawals: 'wallet.list-shop-wallet-withdrawals',
   approveWalletWithdrawal: 'wallet.approve-withdrawal',
+  completeWalletWithdrawal: 'wallet.complete-withdrawal',
+  cancelWalletWithdrawal: 'wallet.cancel-withdrawal',
   rejectWalletWithdrawal: 'wallet.reject-withdrawal',
+  createPayoutAccount: 'wallet.create-payout-account',
+  listPayoutAccounts: 'wallet.list-payout-accounts',
+  disablePayoutAccount: 'wallet.disable-payout-account',
+  createWithdrawalAuthorizationChallenge: 'wallet.create-withdrawal-authorization-challenge',
+  verifyWithdrawalAuthorizationChallenge: 'wallet.verify-withdrawal-authorization-challenge',
+  listAdminPayoutAccounts: 'wallet.list-admin-payout-accounts',
+  verifyPayoutAccount: 'wallet.verify-payout-account',
+  rejectPayoutAccount: 'wallet.reject-payout-account',
+  revealPayoutAccount: 'wallet.reveal-payout-account',
+  revealWithdrawalAccount: 'wallet.reveal-withdrawal-account',
   adjustWalletBalance: 'wallet.adjust-wallet-balance',
   getWalletReconciliation: 'wallet.get-wallet-reconciliation',
   createWalletTopUp: 'wallet.create-top-up',
@@ -587,6 +600,7 @@ export type ReviewShopDocumentMessage = {
   reviewerUserId: string;
   reviewStatus: 'approved' | 'rejected';
   reviewNote?: string | null;
+  verifiedLegalName?: string | null;
 };
 
 export type BrandAuthorizationUploadSignaturesMessage = {

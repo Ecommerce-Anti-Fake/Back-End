@@ -7,16 +7,25 @@ import { WalletRepository } from '../../infrastructure/persistence/wallet.reposi
 export class RejectWalletWithdrawalUseCase {
   constructor(private readonly prisma: PrismaService, private readonly walletRepository: WalletRepository) {}
 
-  execute(input: { id: string }) {
-    return this.prisma.$transaction((tx) => this.executeInTransaction(tx, input), {
-      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-    });
+  execute(input: { id: string; reason: string; adminUserId?: string }) {
+    const reason = input.reason?.trim();
+    if (!reason) throw new BadRequestException('Rejection reason is required');
+
+    return this.prisma.$transaction(
+      (tx) => this.executeInTransaction(tx, { ...input, reason }),
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
   }
 
-  async executeInTransaction(tx: Prisma.TransactionClient, input: { id: string }) {
+  async executeInTransaction(
+    tx: Prisma.TransactionClient,
+    input: { id: string; reason: string; adminUserId?: string },
+  ) {
     const withdrawal = await this.walletRepository.findWithdrawalInTransaction(tx, input.id);
     if (!withdrawal) throw new NotFoundException('Withdrawal not found');
-    if (withdrawal.status !== 'PENDING') throw new BadRequestException('Withdrawal is not pending');
+    if (!['PENDING', 'APPROVED'].includes(withdrawal.status)) {
+      throw new BadRequestException('Withdrawal can no longer be rejected');
+    }
 
     await this.walletRepository.executeTransactionInTransaction(tx, {
       transactionCode: `WITHDRAWAL:REJECT:${withdrawal.id}`,
@@ -31,10 +40,16 @@ export class RejectWalletWithdrawalUseCase {
         { walletId: withdrawal.walletId, direction: WalletEntryDirection.CREDIT, balanceType: WalletBalanceType.AVAILABLE, amount: withdrawal.amount },
       ],
     });
+    const processedAt = new Date();
     await tx.walletWithdrawal.update({
       where: { id: withdrawal.id },
-      data: { status: 'REJECTED', processedAt: new Date() },
+      data: {
+        status: 'REJECTED',
+        rejectionReason: input.reason,
+        processedAt,
+        ...(input.adminUserId ? { processedByUserId: input.adminUserId } : {}),
+      },
     });
-    return { success: true, message: 'Xử lý yêu cầu rút tiền thành công.' };
+    return { success: true, message: 'Đã từ chối yêu cầu rút tiền và hoàn lại số dư khả dụng.' };
   }
 }

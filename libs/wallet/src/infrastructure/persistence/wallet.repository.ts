@@ -352,6 +352,12 @@ export class WalletRepository extends WalletRepositoryPort {
     });
   }
 
+  findUserWalletInTransaction(tx: WalletClient, userId: string, currency = 'VND') {
+    return tx.wallet.findUnique({
+      where: { userId_currency: { userId, currency } },
+    });
+  }
+
   async listAllWithdrawals(page = 1, pageSize = 20, status?: string) {
     const safePage = Math.max(1, page);
     const safePageSize = Math.min(100, Math.max(1, pageSize));
@@ -360,7 +366,30 @@ export class WalletRepository extends WalletRepositoryPort {
       this.prisma.walletWithdrawal.findMany({ where, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], skip: (safePage - 1) * safePageSize, take: safePageSize }),
       this.prisma.walletWithdrawal.count({ where }),
     ]);
-    return { items: items.map((withdrawal) => ({ id: withdrawal.id, walletId: withdrawal.walletId, amount: withdrawal.amount.toFixed(2), bankName: withdrawal.bankName, accountNumber: withdrawal.accountNumber, accountHolder: withdrawal.accountHolder, status: withdrawal.status, createdAt: withdrawal.createdAt, processedAt: withdrawal.processedAt })), pagination: { page: safePage, limit: safePageSize, total, totalPages: Math.ceil(total / safePageSize) } };
+    return {
+      items: items.map((withdrawal) => ({
+        id: withdrawal.id,
+        walletId: withdrawal.walletId,
+        payoutAccountId: withdrawal.payoutAccountId,
+        amount: withdrawal.amount.toFixed(2),
+        fee: '0.00',
+        bankName: withdrawal.bankName,
+        accountNumberMasked: withdrawal.accountNumberLast4
+          ? `${'*'.repeat(Math.max(0, (withdrawal.accountNumberLength ?? 8) - 4))}${withdrawal.accountNumberLast4}`
+          : withdrawal.accountNumber
+            ? `${'*'.repeat(Math.max(0, withdrawal.accountNumber.length - 4))}${withdrawal.accountNumber.slice(-4)}`
+            : null,
+        accountHolder: withdrawal.accountHolder,
+        status: withdrawal.status,
+        transferReference: withdrawal.transferReference,
+        rejectionReason: withdrawal.rejectionReason,
+        approvedAt: withdrawal.approvedAt,
+        completedAt: withdrawal.completedAt,
+        createdAt: withdrawal.createdAt,
+        processedAt: withdrawal.processedAt,
+      })),
+      pagination: { page: safePage, limit: safePageSize, total, totalPages: Math.ceil(total / safePageSize) },
+    };
   }
 
   async listPlatformWallets() {

@@ -183,8 +183,39 @@ enum WalletTransactionType {
 enum WithdrawalStatus {
   PENDING
   APPROVED
+  PROCESSING
   REJECTED
   COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PayoutAccountOwnerType {
+  USER
+  SHOP
+}
+
+enum PayoutAccountVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  DISABLED
+}
+
+enum PayoutAccountVerificationMethod {
+  MANUAL_BANK_APP
+  PROVIDER
+}
+
+enum WithdrawalAuthorizationChannel {
+  PHONE
+  EMAIL
+}
+
+enum WithdrawalAuthorizationOperation {
+  CREATE_PAYOUT_ACCOUNT
+  DELETE_PAYOUT_ACCOUNT
+  CREATE_WITHDRAWAL
 }
 
 enum WalletTransactionStatus {
@@ -1262,6 +1293,42 @@ model PaymentIntent {
   @@map("payment_intent")
 }
 
+model PayoutAccount {
+  id                       String                          @id @default(uuid())
+  ownerType                PayoutAccountOwnerType          @map("owner_type")
+  userId                   String?                         @map("user_id")
+  shopId                   String?                         @map("shop_id")
+  bankBin                  String                          @map("bank_bin")
+  bankCode                 String                          @map("bank_code")
+  bankName                 String                          @map("bank_name")
+  accountNumberEncrypted   String                          @map("account_number_encrypted")
+  accountNumberHash        String                          @map("account_number_hash")
+  accountNumberLast4       String                          @map("account_number_last4")
+  accountNumberLength      Int                             @map("account_number_length")
+  declaredAccountHolder    String                          @map("declared_account_holder")
+  resolvedAccountHolder    String?                         @map("resolved_account_holder")
+  verificationStatus       PayoutAccountVerificationStatus @default(PENDING) @map("verification_status")
+  verificationMethod       PayoutAccountVerificationMethod? @map("verification_method")
+  verifiedByUserId         String?                         @map("verified_by_user_id")
+  verifiedAt               DateTime?                       @map("verified_at")
+  rejectionReason          String?                         @map("rejection_reason")
+  availableAfter           DateTime                        @map("available_after")
+  disabledAt               DateTime?                       @map("disabled_at")
+  createdAt                DateTime                        @default(now()) @map("created_at")
+  updatedAt                DateTime                        @updatedAt @map("updated_at")
+
+  user                     User?                           @relation("PayoutAccountUserOwner", fields: [userId], references: [id])
+  shop                     Shop?                           @relation(fields: [shopId], references: [id])
+  verifiedBy               User?                           @relation("PayoutAccountVerifiedBy", fields: [verifiedByUserId], references: [id])
+  withdrawals              WalletWithdrawal[]
+  withdrawalAuthorizations WithdrawalAuthorization[]
+
+  @@unique([userId, bankBin, accountNumberHash])
+  @@unique([shopId, bankBin, accountNumberHash])
+  @@index([ownerType, verificationStatus])
+  @@map("payout_account")
+}
+
 model ProvenanceEvent {
   id          String            @id @default(uuid())
   labelId     String            @map("label_id")
@@ -1441,6 +1508,7 @@ model Shop {
   ownerUserId                String                 @map("owner_user_id")
   shopTypeId                 String?                @map("shop_type_id")
   shopName                   String                 @map("shop_name")
+  verifiedLegalName          String?                @map("verified_legal_name")
   registrationType           ShopRegistrationType   @map("registration_type")
   businessType               String                 @map("business_type")
   taxCode                    String?                @map("tax_code")
@@ -1473,6 +1541,7 @@ model Shop {
   socialPosts                SocialPost[]
   liveSessions               LiveCommerceSession[]
   wallets                    Wallet[]
+  payoutAccounts             PayoutAccount[]
   vouchers                   Voucher[]
 
   @@index([shopTypeId])
@@ -1762,6 +1831,11 @@ model User {
   liveSessionComments  LiveSessionComment[] @relation("LiveCommentAuthor")
   hiddenLiveSessionComments LiveSessionComment[] @relation("LiveCommentHiddenBy")
   wallets               Wallet[]
+  payoutAccounts        PayoutAccount[]          @relation("PayoutAccountUserOwner")
+  verifiedPayoutAccounts PayoutAccount[]         @relation("PayoutAccountVerifiedBy")
+  withdrawalAuthorizations WithdrawalAuthorization[]
+  requestedWithdrawals  WalletWithdrawal[]       @relation("WithdrawalRequestedBy")
+  processedWithdrawals  WalletWithdrawal[]       @relation("WithdrawalProcessedBy")
   voucherRedemptions    VoucherRedemption[]
 
   @@map("user")
@@ -1867,19 +1941,39 @@ model OrderVoucherAllocation {
 }
 
 model WalletWithdrawal {
-  id            String             @id @default(uuid())
-  walletId      String             @map("wallet_id")
-  amount        Decimal            @db.Decimal(18, 2)
-  bankName      String             @map("bank_name")
-  accountNumber String             @map("account_number")
-  accountHolder String             @map("account_holder")
-  status        WithdrawalStatus   @default(PENDING)
-  createdAt     DateTime           @default(now()) @map("created_at")
-  processedAt   DateTime?          @map("processed_at")
+  id                             String             @id @default(uuid())
+  walletId                       String             @map("wallet_id")
+  payoutAccountId                String?            @map("payout_account_id")
+  requestedByUserId              String?            @map("requested_by_user_id")
+  processedByUserId              String?            @map("processed_by_user_id")
+  idempotencyKey                 String?            @unique @map("idempotency_key")
+  amount                         Decimal            @db.Decimal(18, 2)
+  bankBin                        String?            @map("bank_bin")
+  bankCode                       String?            @map("bank_code")
+  bankName                       String             @map("bank_name")
+  accountNumber                  String?            @map("account_number")
+  accountNumberEncryptedSnapshot String?            @map("account_number_encrypted_snapshot")
+  accountNumberLast4             String?            @map("account_number_last4")
+  accountNumberLength            Int?               @map("account_number_length")
+  accountHolder                  String             @map("account_holder")
+  status                         WithdrawalStatus   @default(PENDING)
+  transferReference              String?            @map("transfer_reference")
+  rejectionReason                String?            @map("rejection_reason")
+  createdAt                      DateTime           @default(now()) @map("created_at")
+  approvedAt                     DateTime?          @map("approved_at")
+  completedAt                    DateTime?          @map("completed_at")
+  cancelledAt                    DateTime?          @map("cancelled_at")
+  processedAt                    DateTime?          @map("processed_at")
 
-  wallet        Wallet             @relation(fields: [walletId], references: [id])
+  wallet                         Wallet             @relation(fields: [walletId], references: [id])
+  payoutAccount                  PayoutAccount?     @relation(fields: [payoutAccountId], references: [id])
+  requestedBy                    User?              @relation("WithdrawalRequestedBy", fields: [requestedByUserId], references: [id])
+  processedBy                    User?              @relation("WithdrawalProcessedBy", fields: [processedByUserId], references: [id])
 
   @@index([walletId, createdAt])
+  @@index([payoutAccountId])
+  @@index([status, createdAt])
+  @@index([transferReference])
   @@map("wallet_withdrawal")
 }
 
@@ -1903,6 +1997,7 @@ model Wallet {
   shop             Shop?           @relation(fields: [shopId], references: [id])
   ledgerEntries    WalletLedgerEntry[]
   withdrawals      WalletWithdrawal[]
+  withdrawalAuthorizations WithdrawalAuthorization[]
   topUps           WalletTopUp[]
 
   @@unique([userId, currency])
@@ -1972,4 +2067,30 @@ model WalletLedgerEntry {
   @@index([walletId, createdAt])
   @@index([transactionId])
   @@map("wallet_ledger_entry")
+}
+
+model WithdrawalAuthorization {
+  id                     String                           @id @default(uuid())
+  userId                 String                           @map("user_id")
+  walletId               String                           @map("wallet_id")
+  payoutAccountId        String?                          @map("payout_account_id")
+  operation              WithdrawalAuthorizationOperation
+  channel                WithdrawalAuthorizationChannel
+  operationDigest        String                           @map("operation_digest")
+  authorizationTokenHash String?                          @unique @map("authorization_token_hash")
+  failedAttempts         Int                              @default(0) @map("failed_attempts")
+  lockedUntil            DateTime?                        @map("locked_until")
+  verifiedAt             DateTime?                        @map("verified_at")
+  expiresAt              DateTime                         @map("expires_at")
+  consumedAt             DateTime?                        @map("consumed_at")
+  createdAt              DateTime                         @default(now()) @map("created_at")
+
+  user                   User                             @relation(fields: [userId], references: [id])
+  wallet                 Wallet                           @relation(fields: [walletId], references: [id])
+  payoutAccount          PayoutAccount?                   @relation(fields: [payoutAccountId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([userId, lockedUntil])
+  @@index([expiresAt])
+  @@map("withdrawal_authorization")
 }

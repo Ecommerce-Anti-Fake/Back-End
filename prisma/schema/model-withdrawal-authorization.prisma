@@ -1,0 +1,25 @@
+model WithdrawalAuthorization {
+  id                     String                           @id @default(uuid())
+  userId                 String                           @map("user_id")
+  walletId               String                           @map("wallet_id")
+  payoutAccountId        String?                          @map("payout_account_id")
+  operation              WithdrawalAuthorizationOperation
+  channel                WithdrawalAuthorizationChannel
+  operationDigest        String                           @map("operation_digest")
+  authorizationTokenHash String?                          @unique @map("authorization_token_hash")
+  failedAttempts         Int                              @default(0) @map("failed_attempts")
+  lockedUntil            DateTime?                        @map("locked_until")
+  verifiedAt             DateTime?                        @map("verified_at")
+  expiresAt              DateTime                         @map("expires_at")
+  consumedAt             DateTime?                        @map("consumed_at")
+  createdAt              DateTime                         @default(now()) @map("created_at")
+
+  user                   User                             @relation(fields: [userId], references: [id])
+  wallet                 Wallet                           @relation(fields: [walletId], references: [id])
+  payoutAccount          PayoutAccount?                   @relation(fields: [payoutAccountId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([userId, lockedUntil])
+  @@index([expiresAt])
+  @@map("withdrawal_authorization")
+}

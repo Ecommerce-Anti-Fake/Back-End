@@ -905,6 +905,15 @@ export class ReviewShopDocumentDto {
   @IsOptional()
   @IsString()
   reviewNote?: string;
+
+  @ApiPropertyOptional({
+    description: 'Tên pháp nhân đã đối chiếu trên hồ sơ. Bắt buộc với shop loại COMPANY.',
+    example: 'CÔNG TY TNHH ABC',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  verifiedLegalName?: string;
 }
 
 export class ReviewBrandAuthorizationDto {

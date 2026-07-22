@@ -19,10 +19,18 @@ export class ListShopWalletWithdrawalsUseCase {
     return withdrawals.map((withdrawal) => ({
       id: withdrawal.id,
       amount: withdrawal.amount.toFixed(2),
+      fee: '0.00',
+      payoutAccountId: withdrawal.payoutAccountId,
       bankName: withdrawal.bankName,
-      accountNumber: withdrawal.accountNumber,
+      accountNumberMasked: withdrawal.accountNumberLast4
+        ? `${'*'.repeat(Math.max(0, (withdrawal.accountNumberLength ?? 8) - 4))}${withdrawal.accountNumberLast4}`
+        : withdrawal.accountNumber
+          ? `${'*'.repeat(Math.max(0, withdrawal.accountNumber.length - 4))}${withdrawal.accountNumber.slice(-4)}`
+          : null,
       accountHolder: withdrawal.accountHolder,
       status: withdrawal.status,
+      transferReference: withdrawal.transferReference,
+      rejectionReason: withdrawal.rejectionReason,
       createdAt: withdrawal.createdAt,
       processedAt: withdrawal.processedAt,
     }));

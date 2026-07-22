@@ -83,6 +83,7 @@ export class AdminShopVerificationController {
       reviewerUserId,
       reviewStatus: dto.reviewStatus,
       reviewNote: dto.reviewNote ?? null,
+      verifiedLegalName: dto.verifiedLegalName ?? null,
     });
   }
 

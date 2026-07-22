@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { FirebaseTokenVerifierService } from '@auth';
 import { PrismaModule } from '@database/prisma/prisma.module';
 import { WalletRepositoryPort } from './application/ports';
 import { WalletService } from './application/use-cases';
@@ -12,6 +14,8 @@ import {
   RequestWalletWithdrawalUseCase,
   ListShopWalletWithdrawalsUseCase,
   ApproveWalletWithdrawalUseCase,
+  CompleteWalletWithdrawalUseCase,
+  CancelWalletWithdrawalUseCase,
   RejectWalletWithdrawalUseCase,
   AdjustWalletBalanceUseCase,
   GetWalletReconciliationUseCase,
@@ -22,13 +26,19 @@ import {
 } from './application/use-cases';
 import { WalletRpcController } from './presentation/rpc/wallet.rpc-controller';
 import { PayOSTopUpService } from './infrastructure/payos-top-up.service';
+import { PayoutAccountSecurityService } from './domain';
+import { PayoutAccountService, WithdrawalAuthorizationService } from './application/services';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [ConfigModule, PrismaModule],
   controllers: [WalletRpcController],
   providers: [
     WalletRepository,
     WalletService,
+    FirebaseTokenVerifierService,
+    PayoutAccountSecurityService,
+    WithdrawalAuthorizationService,
+    PayoutAccountService,
     GetMyWalletUseCase,
     GetMyWalletTransactionsUseCase,
     GetShopWalletUseCase,
@@ -37,6 +47,8 @@ import { PayOSTopUpService } from './infrastructure/payos-top-up.service';
     RequestWalletWithdrawalUseCase,
     ListShopWalletWithdrawalsUseCase,
     ApproveWalletWithdrawalUseCase,
+    CompleteWalletWithdrawalUseCase,
+    CancelWalletWithdrawalUseCase,
     RejectWalletWithdrawalUseCase,
     AdjustWalletBalanceUseCase,
     GetWalletReconciliationUseCase,
@@ -47,6 +59,6 @@ import { PayOSTopUpService } from './infrastructure/payos-top-up.service';
     GetPlatformWalletsUseCase,
     { provide: WalletRepositoryPort, useExisting: WalletRepository },
   ],
-  exports: [WalletRepository, WalletService, WalletRepositoryPort, ReconcileShopWalletUseCase, RequestWalletWithdrawalUseCase, ListShopWalletWithdrawalsUseCase, ApproveWalletWithdrawalUseCase, RejectWalletWithdrawalUseCase, AdjustWalletBalanceUseCase, GetWalletReconciliationUseCase],
+  exports: [WalletRepository, WalletService, WalletRepositoryPort, ReconcileShopWalletUseCase, RequestWalletWithdrawalUseCase, ListShopWalletWithdrawalsUseCase, ApproveWalletWithdrawalUseCase, CompleteWalletWithdrawalUseCase, CancelWalletWithdrawalUseCase, RejectWalletWithdrawalUseCase, AdjustWalletBalanceUseCase, GetWalletReconciliationUseCase],
 })
 export class WalletModule {}

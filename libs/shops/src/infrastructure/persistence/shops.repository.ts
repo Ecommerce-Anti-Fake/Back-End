@@ -1094,6 +1094,7 @@ export class ShopsRepository {
     ownerUserId: string;
     reviewStatus: 'approved' | 'rejected';
     reviewNote: string | null;
+    verifiedLegalName?: string | null;
   }) {
     return this.prisma.$transaction(async (tx) => {
       const now = new Date();
@@ -1170,6 +1171,13 @@ export class ShopsRepository {
         },
       });
 
+      if (input.reviewStatus === 'approved' && input.verifiedLegalName) {
+        await tx.shop.update({
+          where: { id: input.shopId },
+          data: { verifiedLegalName: input.verifiedLegalName },
+        });
+      }
+
       return {
         reviewedShopDocumentIds,
         reviewedKyc: true,
@@ -1245,6 +1253,13 @@ export class ShopsRepository {
     return this.prisma.shop.update({
       where: { id: shopId },
       data: { shopStatus },
+    });
+  }
+
+  updateShopVerifiedLegalName(shopId: string, verifiedLegalName: string) {
+    return this.prisma.shop.update({
+      where: { id: shopId },
+      data: { verifiedLegalName },
     });
   }
 

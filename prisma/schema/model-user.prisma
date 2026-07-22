@@ -45,6 +45,11 @@ model User {
   liveSessionComments  LiveSessionComment[] @relation("LiveCommentAuthor")
   hiddenLiveSessionComments LiveSessionComment[] @relation("LiveCommentHiddenBy")
   wallets               Wallet[]
+  payoutAccounts        PayoutAccount[]          @relation("PayoutAccountUserOwner")
+  verifiedPayoutAccounts PayoutAccount[]         @relation("PayoutAccountVerifiedBy")
+  withdrawalAuthorizations WithdrawalAuthorization[]
+  requestedWithdrawals  WalletWithdrawal[]       @relation("WithdrawalRequestedBy")
+  processedWithdrawals  WalletWithdrawal[]       @relation("WithdrawalProcessedBy")
   voucherRedemptions    VoucherRedemption[]
 
   @@map("user")

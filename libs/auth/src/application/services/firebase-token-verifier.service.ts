@@ -9,6 +9,7 @@ export type VerifiedFirebaseToken = {
   emailVerified?: boolean;
   phoneNumber?: string;
   name?: string;
+  authTime?: number;
 };
 
 @Injectable()
@@ -26,6 +27,7 @@ export class FirebaseTokenVerifierService {
         emailVerified: decoded.email_verified,
         phoneNumber: decoded.phone_number,
         name: typeof decoded.name === 'string' ? decoded.name : undefined,
+        authTime: decoded.auth_time,
       };
     } catch {
       throw new UnauthorizedException('Invalid Firebase token');

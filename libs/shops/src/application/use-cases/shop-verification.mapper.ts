@@ -189,6 +189,7 @@ type AdminVerificationDetailRecord = {
   } | null;
   shopStatus: string;
   businessType: string;
+  verifiedLegalName: string | null;
   taxCode: string | null;
   warehouseAddress?: string | null;
   warehouseProvinceCode?: string | null;
@@ -267,6 +268,7 @@ export function toAdminShopVerificationDetailResponse(shop: AdminVerificationDet
       shopName: shop.shopName,
       registrationType: shop.registrationType,
       businessType: shop.businessType,
+      verifiedLegalName: shop.verifiedLegalName,
       taxCode: shop.taxCode,
       status: shop.shopStatus,
       createdAt: shop.createdAt,

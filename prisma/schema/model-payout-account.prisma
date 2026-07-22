@@ -1,0 +1,35 @@
+model PayoutAccount {
+  id                       String                          @id @default(uuid())
+  ownerType                PayoutAccountOwnerType          @map("owner_type")
+  userId                   String?                         @map("user_id")
+  shopId                   String?                         @map("shop_id")
+  bankBin                  String                          @map("bank_bin")
+  bankCode                 String                          @map("bank_code")
+  bankName                 String                          @map("bank_name")
+  accountNumberEncrypted   String                          @map("account_number_encrypted")
+  accountNumberHash        String                          @map("account_number_hash")
+  accountNumberLast4       String                          @map("account_number_last4")
+  accountNumberLength      Int                             @map("account_number_length")
+  declaredAccountHolder    String                          @map("declared_account_holder")
+  resolvedAccountHolder    String?                         @map("resolved_account_holder")
+  verificationStatus       PayoutAccountVerificationStatus @default(PENDING) @map("verification_status")
+  verificationMethod       PayoutAccountVerificationMethod? @map("verification_method")
+  verifiedByUserId         String?                         @map("verified_by_user_id")
+  verifiedAt               DateTime?                       @map("verified_at")
+  rejectionReason          String?                         @map("rejection_reason")
+  availableAfter           DateTime                        @map("available_after")
+  disabledAt               DateTime?                       @map("disabled_at")
+  createdAt                DateTime                        @default(now()) @map("created_at")
+  updatedAt                DateTime                        @updatedAt @map("updated_at")
+
+  user                     User?                           @relation("PayoutAccountUserOwner", fields: [userId], references: [id])
+  shop                     Shop?                           @relation(fields: [shopId], references: [id])
+  verifiedBy               User?                           @relation("PayoutAccountVerifiedBy", fields: [verifiedByUserId], references: [id])
+  withdrawals              WalletWithdrawal[]
+  withdrawalAuthorizations WithdrawalAuthorization[]
+
+  @@unique([userId, bankBin, accountNumberHash])
+  @@unique([shopId, bankBin, accountNumberHash])
+  @@index([ownerType, verificationStatus])
+  @@map("payout_account")
+}

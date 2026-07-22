@@ -175,8 +175,39 @@ enum WalletTransactionType {
 enum WithdrawalStatus {
   PENDING
   APPROVED
+  PROCESSING
   REJECTED
   COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum PayoutAccountOwnerType {
+  USER
+  SHOP
+}
+
+enum PayoutAccountVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  DISABLED
+}
+
+enum PayoutAccountVerificationMethod {
+  MANUAL_BANK_APP
+  PROVIDER
+}
+
+enum WithdrawalAuthorizationChannel {
+  PHONE
+  EMAIL
+}
+
+enum WithdrawalAuthorizationOperation {
+  CREATE_PAYOUT_ACCOUNT
+  DELETE_PAYOUT_ACCOUNT
+  CREATE_WITHDRAWAL
 }
 
 enum WalletTransactionStatus {
