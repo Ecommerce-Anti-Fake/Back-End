@@ -11,9 +11,32 @@ const affiliateProgramArgs = Prisma.validator<Prisma.AffiliateProgramDefaultArgs
   },
 });
 
+const sellerAffiliateProgramArgs = Prisma.validator<Prisma.AffiliateProgramDefaultArgs>()({
+  include: {
+    ownerShop: { select: { shopName: true } },
+    brand: { select: { name: true } },
+    offer: { select: { title: true, modelName: true } },
+    _count: { select: { accounts: true, conversions: true } },
+  },
+});
+
 const affiliateAccountArgs = Prisma.validator<Prisma.AffiliateAccountDefaultArgs>()({
   include: {
-    program: { select: { name: true } },
+    program: {
+      select: {
+        name: true,
+        ownerShopId: true,
+        ownerShop: { select: { shopName: true } },
+        scopeType: true,
+        offerId: true,
+        offer: { select: { title: true } },
+        programStatus: true,
+        tier1Rate: true,
+        tier2Rate: true,
+        commissionHoldDays: true,
+        endedAt: true,
+      },
+    },
   },
 });
 
@@ -33,6 +56,9 @@ const affiliateConversionArgs = Prisma.validator<Prisma.AffiliateConversionDefau
 const affiliatePayoutArgs = Prisma.validator<Prisma.AffiliatePayoutDefaultArgs>()({});
 
 export type AffiliateProgramWithRelations = Prisma.AffiliateProgramGetPayload<typeof affiliateProgramArgs>;
+export type SellerAffiliateProgramWithRelations = Prisma.AffiliateProgramGetPayload<
+  typeof sellerAffiliateProgramArgs
+>;
 export type AffiliateAccountWithRelations = Prisma.AffiliateAccountGetPayload<typeof affiliateAccountArgs>;
 export type AffiliateCodeWithRelations = Prisma.AffiliateCodeGetPayload<typeof affiliateCodeArgs>;
 export type AffiliateConversionWithRelations = Prisma.AffiliateConversionGetPayload<typeof affiliateConversionArgs>;
@@ -185,6 +211,60 @@ export class AffiliateRepository {
         },
       },
     });
+  }
+
+  findSellerPrograms(input: {
+    requesterUserId: string;
+    skip: number;
+    take: number;
+    status?: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED';
+    search?: string;
+  }): Promise<SellerAffiliateProgramWithRelations[]> {
+    return this.prisma.affiliateProgram.findMany({
+      where: this.sellerProgramsWhere(input),
+      orderBy: { createdAt: 'desc' },
+      skip: input.skip,
+      take: input.take,
+      ...sellerAffiliateProgramArgs,
+    });
+  }
+
+  countSellerPrograms(input: {
+    requesterUserId: string;
+    status?: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED';
+    search?: string;
+  }) {
+    return this.prisma.affiliateProgram.count({
+      where: this.sellerProgramsWhere(input),
+    });
+  }
+
+  private sellerProgramsWhere(input: {
+    requesterUserId: string;
+    status?: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED';
+    search?: string;
+  }): Prisma.AffiliateProgramWhereInput {
+    return {
+      ownerShop: { ownerUserId: input.requesterUserId },
+      ...(input.status ? { programStatus: input.status } : {}),
+      ...(input.search
+        ? {
+            OR: [
+              { name: { contains: input.search, mode: 'insensitive' } },
+              {
+                ownerShop: {
+                  shopName: { contains: input.search, mode: 'insensitive' },
+                },
+              },
+              {
+                offer: {
+                  title: { contains: input.search, mode: 'insensitive' },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
   }
 
   findActivePrograms(now: Date, skip: number, take: number) {
@@ -391,6 +471,100 @@ export class AffiliateRepository {
     });
   }
 
+  findOwnedProgramForUpdate(programId: string, requesterUserId: string) {
+    return this.prisma.affiliateProgram.findFirst({
+      where: {
+        id: programId,
+        ownerShop: { ownerUserId: requesterUserId },
+      },
+      select: {
+        id: true,
+        ownerShopId: true,
+        scopeType: true,
+        offerId: true,
+        name: true,
+        programStatus: true,
+        attributionWindowDays: true,
+        tier1Rate: true,
+        tier2Rate: true,
+        startedAt: true,
+        endedAt: true,
+        _count: { select: { accounts: true, conversions: true } },
+      },
+    });
+  }
+
+  updateProgram(
+    programId: string,
+    data: {
+      name?: string;
+      scopeType?: 'SHOP' | 'OFFER';
+      offerId?: string | null;
+      attributionWindowDays?: number;
+      tier1Rate?: number;
+      tier2Rate?: number;
+      startedAt?: Date | null;
+      endedAt?: Date | null;
+      programStatus?: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED';
+    },
+  ): Promise<SellerAffiliateProgramWithRelations> {
+    return this.prisma.affiliateProgram.update({
+      where: { id: programId },
+      data,
+      ...sellerAffiliateProgramArgs,
+    });
+  }
+
+  async getSellerAffiliateSummary(
+    requesterUserId: string,
+    programId: string | null,
+  ) {
+    const programWhere: Prisma.AffiliateProgramWhereInput = {
+      ownerShop: { ownerUserId: requesterUserId },
+      ...(programId ? { id: programId } : {}),
+    };
+    const [
+      programCount,
+      activeProgramCount,
+      memberCount,
+      conversionCount,
+      commissionTotals,
+    ] = await this.prisma.$transaction([
+      this.prisma.affiliateProgram.count({ where: programWhere }),
+      this.prisma.affiliateProgram.count({
+        where: { ...programWhere, programStatus: 'ACTIVE' },
+      }),
+      this.prisma.affiliateAccount.count({
+        where: { program: programWhere },
+      }),
+      this.prisma.affiliateConversion.count({
+        where: { program: programWhere },
+      }),
+      this.prisma.affiliateCommissionLedger.groupBy({
+        by: ['commissionStatus'],
+        where: {
+          conversion: { program: programWhere },
+          beneficiaryType: {
+            in: ['AFFILIATE_TIER_1', 'AFFILIATE_TIER_2'],
+          },
+        },
+        orderBy: { commissionStatus: 'asc' },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    return {
+      programCount,
+      activeProgramCount,
+      memberCount,
+      conversionCount,
+      commissionTotals: commissionTotals.map((item) => ({
+        commissionStatus: item.commissionStatus,
+        amount: item._sum?.amount ?? new Prisma.Decimal(0),
+      })),
+    };
+  }
+
   findProgramMembers(programId: string, skip: number, take: number) {
     return this.prisma.affiliateAccount.findMany({
       where: { programId },
@@ -413,6 +587,76 @@ export class AffiliateRepository {
 
   countProgramMembers(programId: string) {
     return this.prisma.affiliateAccount.count({ where: { programId } });
+  }
+
+  findProgramCommissionEntries(input: {
+    programId: string;
+    skip: number;
+    take: number;
+    status?: 'PENDING' | 'APPROVED' | 'LOCKED' | 'PAID' | 'CANCELLED';
+    tierLevel?: 1 | 2;
+  }) {
+    return this.prisma.affiliateCommissionLedger.findMany({
+      where: this.programCommissionWhere(input),
+      select: {
+        id: true,
+        conversionId: true,
+        beneficiaryAccountId: true,
+        tierLevel: true,
+        amount: true,
+        currency: true,
+        commissionStatus: true,
+        createdAt: true,
+        lockedAt: true,
+        availableAt: true,
+        paidAt: true,
+        payoutId: true,
+        beneficiaryAccount: {
+          select: { user: { select: { displayName: true } } },
+        },
+        conversion: {
+          select: {
+            orderId: true,
+            recordedAt: true,
+            approvedAt: true,
+          },
+        },
+        payout: {
+          select: {
+            payoutStatus: true,
+            externalRef: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: input.skip,
+      take: input.take,
+    });
+  }
+
+  countProgramCommissionEntries(input: {
+    programId: string;
+    status?: 'PENDING' | 'APPROVED' | 'LOCKED' | 'PAID' | 'CANCELLED';
+    tierLevel?: 1 | 2;
+  }) {
+    return this.prisma.affiliateCommissionLedger.count({
+      where: this.programCommissionWhere(input),
+    });
+  }
+
+  private programCommissionWhere(input: {
+    programId: string;
+    status?: 'PENDING' | 'APPROVED' | 'LOCKED' | 'PAID' | 'CANCELLED';
+    tierLevel?: 1 | 2;
+  }): Prisma.AffiliateCommissionLedgerWhereInput {
+    return {
+      conversion: { programId: input.programId },
+      ...(input.status ? { commissionStatus: input.status } : {}),
+      ...(input.tierLevel ? { tierLevel: input.tierLevel } : {}),
+      beneficiaryType: {
+        in: ['AFFILIATE_TIER_1', 'AFFILIATE_TIER_2'],
+      },
+    };
   }
 
   findConversionsByProgram(programId: string): Promise<AffiliateConversionWithRelations[]> {

@@ -22,6 +22,10 @@ import {
   RejectAffiliateConversionMessage,
   UpdateAffiliatePayoutStatusMessage,
   ResolveAffiliateAttributionMessage,
+  SellerAffiliateProgramsLookupMessage,
+  SellerAffiliateSummaryMessage,
+  UpdateAffiliateProgramMessage,
+  AffiliateProgramCommissionsLookupMessage,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
 import { lastValueFrom } from 'rxjs';
@@ -110,6 +114,22 @@ export class AffiliateRpcService {
 
   updatePayoutStatus(payload: UpdateAffiliatePayoutStatusMessage) {
     return this.send(AFFILIATE_MESSAGE_PATTERNS.updatePayoutStatus, payload);
+  }
+
+  findSellerPrograms(payload: SellerAffiliateProgramsLookupMessage) {
+    return this.send(AFFILIATE_MESSAGE_PATTERNS.findSellerPrograms, payload);
+  }
+
+  getSellerSummary(payload: SellerAffiliateSummaryMessage) {
+    return this.send(AFFILIATE_MESSAGE_PATTERNS.getSellerSummary, payload);
+  }
+
+  updateProgram(payload: UpdateAffiliateProgramMessage) {
+    return this.send(AFFILIATE_MESSAGE_PATTERNS.updateProgram, payload);
+  }
+
+  findProgramCommissions(payload: AffiliateProgramCommissionsLookupMessage) {
+    return this.send(AFFILIATE_MESSAGE_PATTERNS.findProgramCommissions, payload);
   }
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {

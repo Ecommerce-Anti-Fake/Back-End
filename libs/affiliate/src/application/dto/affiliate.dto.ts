@@ -9,6 +9,7 @@ import {
   IsString,
   Matches,
   Max,
+  MaxLength,
   Min,
 } from 'class-validator';
 
@@ -30,6 +31,44 @@ export class AffiliatePageQueryDto {
   @Min(1)
   @Max(100)
   pageSize?: number;
+}
+
+export class SellerAffiliateProgramsQueryDto extends AffiliatePageQueryDto {
+  @ApiPropertyOptional({ enum: ['DRAFT', 'ACTIVE', 'PAUSED', 'CLOSED'] })
+  @IsOptional()
+  @IsString()
+  @IsIn(['DRAFT', 'ACTIVE', 'PAUSED', 'CLOSED'])
+  status?: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED';
+
+  @ApiPropertyOptional({ example: 'summer' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
+}
+
+export class SellerAffiliateSummaryQueryDto {
+  @ApiPropertyOptional({ example: 'program-id' })
+  @IsOptional()
+  @IsString()
+  programId?: string;
+}
+
+export class AffiliateProgramCommissionsQueryDto extends AffiliatePageQueryDto {
+  @ApiPropertyOptional({
+    enum: ['PENDING', 'APPROVED', 'LOCKED', 'PAID', 'CANCELLED'],
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(['PENDING', 'APPROVED', 'LOCKED', 'PAID', 'CANCELLED'])
+  status?: 'PENDING' | 'APPROVED' | 'LOCKED' | 'PAID' | 'CANCELLED';
+
+  @ApiPropertyOptional({ enum: [1, 2] })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @IsIn([1, 2])
+  tierLevel?: 1 | 2;
 }
 
 export class AffiliateProgramResponseDto {
@@ -79,12 +118,97 @@ export class CreateAffiliateProgramDto {
   @ApiPropertyOptional({ example: '2026-12-31T23:59:59.000Z' }) @IsOptional() @IsString() endedAt?: string;
 }
 
+export class UpdateAffiliateProgramDto {
+  @ApiPropertyOptional({ example: 'Shop Spring Campaign' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  name?: string;
+
+  @ApiPropertyOptional({ enum: CREATE_AFFILIATE_SCOPE_TYPES })
+  @IsOptional()
+  @IsString()
+  @IsIn(CREATE_AFFILIATE_SCOPE_TYPES)
+  scopeType?: 'SHOP' | 'OFFER';
+
+  @ApiPropertyOptional({ example: 'offer-id', nullable: true })
+  @IsOptional()
+  @IsString()
+  offerId?: string | null;
+
+  @ApiPropertyOptional({ example: 30 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(90)
+  attributionWindowDays?: number;
+
+  @ApiPropertyOptional({ example: 12 })
+  @IsOptional()
+  @Type(() => Number)
+  @Min(0.01)
+  @Max(100)
+  tier1Rate?: number;
+
+  @ApiPropertyOptional({ example: 5 })
+  @IsOptional()
+  @Type(() => Number)
+  @Min(0)
+  @Max(100)
+  tier2Rate?: number;
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsString()
+  startedAt?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @IsString()
+  endedAt?: string | null;
+
+  @ApiPropertyOptional({ enum: ['DRAFT', 'ACTIVE', 'PAUSED', 'CLOSED'] })
+  @IsOptional()
+  @IsString()
+  @IsIn(['DRAFT', 'ACTIVE', 'PAUSED', 'CLOSED'])
+  programStatus?: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED';
+}
+
 export class PaginatedAffiliateProgramResponseDto {
   @ApiProperty({ type: AffiliateProgramResponseDto, isArray: true }) items!: AffiliateProgramResponseDto[];
   @ApiProperty({ example: 1 }) page!: number;
   @ApiProperty({ example: 20 }) pageSize!: number;
   @ApiProperty({ example: 42 }) total!: number;
   @ApiProperty({ example: 3 }) totalPages!: number;
+}
+
+export class SellerAffiliateProgramResponseDto extends AffiliateProgramResponseDto {
+  @ApiProperty({ example: 24 }) memberCount!: number;
+  @ApiProperty({ example: 57 }) conversionCount!: number;
+  @ApiProperty({ example: true }) configurationLocked!: boolean;
+}
+
+export class PaginatedSellerAffiliateProgramResponseDto {
+  @ApiProperty({ type: SellerAffiliateProgramResponseDto, isArray: true })
+  items!: SellerAffiliateProgramResponseDto[];
+  @ApiProperty({ example: 1 }) page!: number;
+  @ApiProperty({ example: 20 }) pageSize!: number;
+  @ApiProperty({ example: 42 }) total!: number;
+  @ApiProperty({ example: 3 }) totalPages!: number;
+}
+
+export class SellerAffiliateSummaryResponseDto {
+  @ApiProperty({ example: 4 }) programCount!: number;
+  @ApiProperty({ example: 3 }) activeProgramCount!: number;
+  @ApiProperty({ example: 28 }) memberCount!: number;
+  @ApiProperty({ example: 41 }) conversionCount!: number;
+  @ApiProperty({ example: '12000.5' }) pendingCommissionAmount!: string;
+  @ApiProperty({ example: '0' }) approvedCommissionAmount!: string;
+  @ApiProperty({ example: '30000' }) lockedCommissionAmount!: string;
+  @ApiProperty({ example: '90000' }) paidCommissionAmount!: string;
+  @ApiProperty({ example: '0' }) cancelledCommissionAmount!: string;
+  @ApiProperty({ example: 'VND' }) currency!: string;
 }
 
 export class ResolveAffiliateAttributionDto {
@@ -101,6 +225,20 @@ export class AffiliateAttributionResponseDto {
   @ApiProperty({ example: '2026-07-29T10:00:00.000Z' }) expiresAt!: Date;
 }
 
+export class AffiliateAccountProgramSummaryResponseDto {
+  @ApiPropertyOptional({ example: 'shop-id', nullable: true }) ownerShopId!: string | null;
+  @ApiPropertyOptional({ example: 'Main Shop', nullable: true }) ownerShopName!: string | null;
+  @ApiProperty({ enum: AFFILIATE_SCOPE_TYPES, example: 'SHOP' })
+  scopeType!: 'PLATFORM' | 'SHOP' | 'BRAND' | 'OFFER';
+  @ApiPropertyOptional({ example: 'offer-id', nullable: true }) offerId!: string | null;
+  @ApiPropertyOptional({ example: 'Offer title', nullable: true }) offerTitle!: string | null;
+  @ApiProperty({ example: 'ACTIVE' }) programStatus!: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED';
+  @ApiProperty({ example: 12 }) tier1Rate!: number;
+  @ApiProperty({ example: 5 }) tier2Rate!: number;
+  @ApiProperty({ example: 7 }) commissionHoldDays!: number;
+  @ApiPropertyOptional({ example: '2026-12-31T23:59:59.000Z', nullable: true }) endedAt!: Date | null;
+}
+
 export class AffiliateAccountResponseDto {
   @ApiProperty({ example: 'account-id' }) id!: string;
   @ApiProperty({ example: 'program-id' }) programId!: string;
@@ -111,6 +249,8 @@ export class AffiliateAccountResponseDto {
   @ApiPropertyOptional({ example: 'parent-1/parent-2', nullable: true }) referralPath!: string | null;
   @ApiProperty({ example: '2026-04-14T10:00:00.000Z' }) joinedAt!: Date;
   @ApiPropertyOptional({ example: '2026-04-14T10:00:00.000Z', nullable: true }) approvedAt!: Date | null;
+  @ApiProperty({ type: AffiliateAccountProgramSummaryResponseDto })
+  program!: AffiliateAccountProgramSummaryResponseDto;
 }
 
 export class AffiliateProgramMemberResponseDto {
@@ -187,6 +327,36 @@ export class AffiliateCommissionEntryResponseDto {
 
 export class PaginatedAffiliateCommissionEntryResponseDto {
   @ApiProperty({ type: AffiliateCommissionEntryResponseDto, isArray: true }) items!: AffiliateCommissionEntryResponseDto[];
+  @ApiProperty({ example: 1 }) page!: number;
+  @ApiProperty({ example: 20 }) pageSize!: number;
+  @ApiProperty({ example: 42 }) total!: number;
+  @ApiProperty({ example: 3 }) totalPages!: number;
+}
+
+export class AffiliateProgramCommissionResponseDto {
+  @ApiProperty({ example: 'commission-id' }) id!: string;
+  @ApiProperty({ example: 'conversion-id' }) conversionId!: string;
+  @ApiPropertyOptional({ example: 'order-id', nullable: true }) orderId!: string | null;
+  @ApiPropertyOptional({ example: 'account-id', nullable: true }) memberAccountId!: string | null;
+  @ApiProperty({ example: 'Nguyen Van A' }) memberDisplayName!: string;
+  @ApiPropertyOptional({ example: 1, nullable: true }) tierLevel!: number | null;
+  @ApiProperty({ example: '12500.25' }) amount!: string;
+  @ApiProperty({ example: 'VND' }) currency!: string;
+  @ApiProperty({ example: 'LOCKED' }) commissionStatus!: string;
+  @ApiProperty({ example: '2026-07-20T00:00:00.000Z' }) recordedAt!: Date;
+  @ApiPropertyOptional({ nullable: true }) approvedAt!: Date | null;
+  @ApiProperty({ example: '2026-07-20T00:00:00.000Z' }) createdAt!: Date;
+  @ApiPropertyOptional({ nullable: true }) lockedAt!: Date | null;
+  @ApiPropertyOptional({ nullable: true }) availableAt!: Date | null;
+  @ApiPropertyOptional({ nullable: true }) paidAt!: Date | null;
+  @ApiPropertyOptional({ nullable: true }) payoutId!: string | null;
+  @ApiPropertyOptional({ nullable: true }) payoutStatus!: string | null;
+  @ApiPropertyOptional({ nullable: true }) externalRef!: string | null;
+}
+
+export class PaginatedAffiliateProgramCommissionResponseDto {
+  @ApiProperty({ type: AffiliateProgramCommissionResponseDto, isArray: true })
+  items!: AffiliateProgramCommissionResponseDto[];
   @ApiProperty({ example: 1 }) page!: number;
   @ApiProperty({ example: 20 }) pageSize!: number;
   @ApiProperty({ example: 42 }) total!: number;

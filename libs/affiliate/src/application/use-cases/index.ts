@@ -19,3 +19,7 @@ export * from './settle-mature-affiliate-commissions.use-case';
 export * from './resolve-affiliate-attribution.use-case';
 export * from './list-active-affiliate-programs.use-case';
 export * from './list-affiliate-program-members.use-case';
+export * from './list-seller-affiliate-programs.use-case';
+export * from './get-seller-affiliate-summary.use-case';
+export * from './update-affiliate-program.use-case';
+export * from './list-affiliate-program-commissions.use-case';

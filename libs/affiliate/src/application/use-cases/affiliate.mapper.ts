@@ -44,6 +44,18 @@ export function toAffiliateAccountResponse(account: AffiliateAccountWithRelation
     referralPath: account.referralPath,
     joinedAt: account.joinedAt,
     approvedAt: account.approvedAt,
+    program: {
+      ownerShopId: account.program.ownerShopId,
+      ownerShopName: account.program.ownerShop?.shopName ?? null,
+      scopeType: account.program.scopeType,
+      offerId: account.program.offerId,
+      offerTitle: account.program.offer?.title ?? null,
+      programStatus: account.program.programStatus,
+      tier1Rate: decimalToNumber(account.program.tier1Rate),
+      tier2Rate: decimalToNumber(account.program.tier2Rate),
+      commissionHoldDays: account.program.commissionHoldDays,
+      endedAt: account.program.endedAt,
+    },
   };
 }
 

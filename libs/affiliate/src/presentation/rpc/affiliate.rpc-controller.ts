@@ -23,6 +23,10 @@ import type {
   RejectAffiliateConversionMessage,
   UpdateAffiliatePayoutStatusMessage,
   ResolveAffiliateAttributionMessage,
+  SellerAffiliateProgramsLookupMessage,
+  SellerAffiliateSummaryMessage,
+  UpdateAffiliateProgramMessage,
+  AffiliateProgramCommissionsLookupMessage,
 } from '@contracts';
 import { throwRpcException } from '@common';
 import {
@@ -45,6 +49,10 @@ import {
   ResolveAffiliateAttributionUseCase,
   ListActiveAffiliateProgramsUseCase,
   ListAffiliateProgramMembersUseCase,
+  ListSellerAffiliateProgramsUseCase,
+  GetSellerAffiliateSummaryUseCase,
+  UpdateAffiliateProgramUseCase,
+  ListAffiliateProgramCommissionsUseCase,
 } from '../../application/use-cases';
 
 @Controller()
@@ -69,7 +77,49 @@ export class AffiliateRpcController {
     private readonly resolveAffiliateAttributionUseCase: ResolveAffiliateAttributionUseCase,
     private readonly listActiveAffiliateProgramsUseCase: ListActiveAffiliateProgramsUseCase,
     private readonly listAffiliateProgramMembersUseCase: ListAffiliateProgramMembersUseCase,
+    private readonly listSellerAffiliateProgramsUseCase: ListSellerAffiliateProgramsUseCase,
+    private readonly getSellerAffiliateSummaryUseCase: GetSellerAffiliateSummaryUseCase,
+    private readonly updateAffiliateProgramUseCase: UpdateAffiliateProgramUseCase,
+    private readonly listAffiliateProgramCommissionsUseCase: ListAffiliateProgramCommissionsUseCase,
   ) {}
+
+  @MessagePattern(AFFILIATE_MESSAGE_PATTERNS.findSellerPrograms)
+  async findSellerPrograms(@Payload() payload: SellerAffiliateProgramsLookupMessage) {
+    try {
+      return await this.listSellerAffiliateProgramsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(AFFILIATE_MESSAGE_PATTERNS.getSellerSummary)
+  async getSellerSummary(@Payload() payload: SellerAffiliateSummaryMessage) {
+    try {
+      return await this.getSellerAffiliateSummaryUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(AFFILIATE_MESSAGE_PATTERNS.updateProgram)
+  async updateProgram(@Payload() payload: UpdateAffiliateProgramMessage) {
+    try {
+      return await this.updateAffiliateProgramUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(AFFILIATE_MESSAGE_PATTERNS.findProgramCommissions)
+  async findProgramCommissions(
+    @Payload() payload: AffiliateProgramCommissionsLookupMessage,
+  ) {
+    try {
+      return await this.listAffiliateProgramCommissionsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
 
   @MessagePattern(AFFILIATE_MESSAGE_PATTERNS.findActivePrograms)
   async findActivePrograms(@Payload() payload: ActiveAffiliateProgramsLookupMessage) {

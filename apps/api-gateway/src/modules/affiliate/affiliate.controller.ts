@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -29,6 +29,14 @@ import {
   RejectAffiliateConversionDto,
   ResolveAffiliateAttributionDto,
   UpdateAffiliatePayoutStatusDto,
+  SellerAffiliateProgramsQueryDto,
+  SellerAffiliateSummaryQueryDto,
+  AffiliateProgramCommissionsQueryDto,
+  UpdateAffiliateProgramDto,
+  PaginatedSellerAffiliateProgramResponseDto,
+  SellerAffiliateProgramResponseDto,
+  SellerAffiliateSummaryResponseDto,
+  PaginatedAffiliateProgramCommissionResponseDto,
 } from '@affiliate';
 import { ActiveUserGuard, CurrentUserId, JwtAuthGuard } from '@security';
 import { AffiliateRpcService } from './affiliate-rpc.service';
@@ -61,6 +69,59 @@ export class AffiliateController {
     return this.affiliateRpcService.findActivePrograms({
       page: query.page ?? 1,
       pageSize: query.pageSize ?? 20,
+    });
+  }
+
+  @ApiOperation({ summary: 'Seller dashboard affiliate programs' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: PaginatedSellerAffiliateProgramResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('seller/programs')
+  findSellerPrograms(
+    @CurrentUserId() requesterUserId: string,
+    @Query() query: SellerAffiliateProgramsQueryDto,
+  ) {
+    return this.affiliateRpcService.findSellerPrograms({
+      requesterUserId,
+      page: query.page ?? 1,
+      pageSize: query.pageSize ?? 20,
+      status: query.status,
+      search: query.search?.trim() || undefined,
+    });
+  }
+
+  @ApiOperation({ summary: 'Seller affiliate all-time KPI summary' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: SellerAffiliateSummaryResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('seller/summary')
+  getSellerSummary(
+    @CurrentUserId() requesterUserId: string,
+    @Query() query: SellerAffiliateSummaryQueryDto,
+  ) {
+    return this.affiliateRpcService.getSellerSummary({
+      requesterUserId,
+      programId: query.programId ?? null,
+    });
+  }
+
+  @ApiOperation({ summary: 'Seller affiliate commission reconciliation' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: PaginatedAffiliateProgramCommissionResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('seller/programs/:programId/commissions')
+  findProgramCommissions(
+    @CurrentUserId() requesterUserId: string,
+    @Param('programId') programId: string,
+    @Query() query: AffiliateProgramCommissionsQueryDto,
+  ) {
+    return this.affiliateRpcService.findProgramCommissions({
+      requesterUserId,
+      programId,
+      page: query.page ?? 1,
+      pageSize: query.pageSize ?? 20,
+      status: query.status,
+      tierLevel: query.tierLevel,
     });
   }
 
@@ -104,6 +165,24 @@ export class AffiliateController {
       rulesJson: dto.rulesJson ?? null,
       startedAt: dto.startedAt ?? null,
       endedAt: dto.endedAt ?? null,
+    });
+  }
+
+  @ApiOperation({ summary: 'Update an owned affiliate program safely' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: SellerAffiliateProgramResponseDto })
+  @ApiBadRequestResponse({ description: 'Program transition or locked configuration is invalid.' })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Patch('programs/:programId')
+  updateProgram(
+    @CurrentUserId() requesterUserId: string,
+    @Param('programId') programId: string,
+    @Body() dto: UpdateAffiliateProgramDto,
+  ) {
+    return this.affiliateRpcService.updateProgram({
+      requesterUserId,
+      programId,
+      ...dto,
     });
   }
 

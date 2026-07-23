@@ -22,6 +22,10 @@ import {
   ResolveAffiliateAttributionUseCase,
   ListActiveAffiliateProgramsUseCase,
   ListAffiliateProgramMembersUseCase,
+  ListSellerAffiliateProgramsUseCase,
+  GetSellerAffiliateSummaryUseCase,
+  UpdateAffiliateProgramUseCase,
+  ListAffiliateProgramCommissionsUseCase,
 } from './application/use-cases';
 import { AffiliateRepository } from './infrastructure/persistence/affiliate.repository';
 import { AffiliateRpcController } from './presentation/rpc/affiliate.rpc-controller';
@@ -52,6 +56,10 @@ import { AffiliateSettlementWorker } from './application/services/affiliate-sett
     ResolveAffiliateAttributionUseCase,
     ListActiveAffiliateProgramsUseCase,
     ListAffiliateProgramMembersUseCase,
+    ListSellerAffiliateProgramsUseCase,
+    GetSellerAffiliateSummaryUseCase,
+    UpdateAffiliateProgramUseCase,
+    ListAffiliateProgramCommissionsUseCase,
     AffiliateSettlementWorker,
   ],
   exports: [
@@ -76,6 +84,10 @@ import { AffiliateSettlementWorker } from './application/services/affiliate-sett
     ResolveAffiliateAttributionUseCase,
     ListActiveAffiliateProgramsUseCase,
     ListAffiliateProgramMembersUseCase,
+    ListSellerAffiliateProgramsUseCase,
+    GetSellerAffiliateSummaryUseCase,
+    UpdateAffiliateProgramUseCase,
+    ListAffiliateProgramCommissionsUseCase,
   ],
 })
 export class AffiliateModule {}

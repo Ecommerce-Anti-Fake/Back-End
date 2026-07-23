@@ -304,6 +304,10 @@ export const AFFILIATE_MESSAGE_PATTERNS = {
   findPayoutsByAccount: 'affiliate.find-payouts-by-account',
   findPayoutsByProgram: 'affiliate.find-payouts-by-program',
   updatePayoutStatus: 'affiliate.update-payout-status',
+  findSellerPrograms: 'affiliate.find-seller-programs',
+  getSellerSummary: 'affiliate.get-seller-summary',
+  updateProgram: 'affiliate.update-program',
+  findProgramCommissions: 'affiliate.find-program-commissions',
 } as const;
 
 export type CurrentUserProfileMessage = {
@@ -1860,4 +1864,40 @@ export type UpdateAffiliatePayoutStatusMessage = {
   requesterUserId: string;
   payoutId: string;
   payoutStatus: 'PROCESSING' | 'PAID' | 'FAILED' | 'CANCELLED';
+};
+
+export type SellerAffiliateProgramsLookupMessage = {
+  requesterUserId: string;
+  page: number;
+  pageSize: number;
+  status?: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED';
+  search?: string;
+};
+
+export type SellerAffiliateSummaryMessage = {
+  requesterUserId: string;
+  programId?: string | null;
+};
+
+export type UpdateAffiliateProgramMessage = {
+  requesterUserId: string;
+  programId: string;
+  name?: string;
+  scopeType?: 'SHOP' | 'OFFER';
+  offerId?: string | null;
+  attributionWindowDays?: number;
+  tier1Rate?: number;
+  tier2Rate?: number;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  programStatus?: 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'CLOSED';
+};
+
+export type AffiliateProgramCommissionsLookupMessage = {
+  requesterUserId: string;
+  programId: string;
+  page: number;
+  pageSize: number;
+  status?: 'PENDING' | 'APPROVED' | 'LOCKED' | 'PAID' | 'CANCELLED';
+  tierLevel?: 1 | 2;
 };
