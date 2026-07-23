@@ -93,13 +93,11 @@ export class AffiliateController {
     return this.affiliateRpcService.createProgram({
       requesterUserId,
       ownerShopId: dto.ownerShopId ?? null,
-      brandId: dto.brandId ?? null,
       offerId: dto.offerId ?? null,
       scopeType: dto.scopeType,
       name: dto.name,
       slug: dto.slug,
       attributionWindowDays: dto.attributionWindowDays,
-      commissionHoldDays: dto.commissionHoldDays,
       commissionModel: dto.commissionModel,
       tier1Rate: dto.tier1Rate,
       tier2Rate: dto.tier2Rate,

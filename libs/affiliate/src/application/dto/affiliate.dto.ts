@@ -13,6 +13,7 @@ import {
 } from 'class-validator';
 
 const AFFILIATE_SCOPE_TYPES = ['PLATFORM', 'SHOP', 'BRAND', 'OFFER'] as const;
+const CREATE_AFFILIATE_SCOPE_TYPES = ['SHOP', 'OFFER'] as const;
 
 export class AffiliatePageQueryDto {
   @ApiPropertyOptional({ example: 1, default: 1 })
@@ -58,16 +59,18 @@ export class AffiliateProgramResponseDto {
 
 export class CreateAffiliateProgramDto {
   @ApiPropertyOptional({ example: 'shop-id' }) @IsOptional() @IsString() ownerShopId?: string;
-  @ApiPropertyOptional({ example: 'brand-id' }) @IsOptional() @IsString() brandId?: string;
   @ApiPropertyOptional({ example: 'offer-id' }) @IsOptional() @IsString() offerId?: string;
-  @ApiProperty({ enum: AFFILIATE_SCOPE_TYPES, example: 'SHOP' })
+  @ApiProperty({ enum: CREATE_AFFILIATE_SCOPE_TYPES, example: 'SHOP' })
   @IsString()
-  @IsIn(AFFILIATE_SCOPE_TYPES)
-  scopeType!: 'PLATFORM' | 'SHOP' | 'BRAND' | 'OFFER';
+  @IsIn(CREATE_AFFILIATE_SCOPE_TYPES)
+  scopeType!: 'SHOP' | 'OFFER';
   @ApiProperty({ example: 'Shop Spring Campaign' }) @IsString() name!: string;
-  @ApiProperty({ example: 'shop-spring-campaign' }) @IsString() @Matches(/^[a-z0-9-]+$/) slug!: string;
+  @ApiPropertyOptional({ example: 'shop-spring-campaign' })
+  @IsOptional()
+  @IsString()
+  @Matches(/^[a-z0-9-]+$/)
+  slug?: string;
   @ApiPropertyOptional({ example: 30 }) @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(90) attributionWindowDays?: number;
-  @ApiPropertyOptional({ example: 7 }) @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(30) commissionHoldDays?: number;
   @ApiPropertyOptional({ example: 'revenue_share' }) @IsOptional() @IsString() commissionModel?: string;
   @ApiProperty({ example: 12 }) @Type(() => Number) @Min(0.01) @Max(100) tier1Rate!: number;
   @ApiProperty({ example: 5 }) @Type(() => Number) @Min(0) @Max(100) tier2Rate!: number;

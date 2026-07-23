@@ -1748,13 +1748,11 @@ export type BatchDocumentsLookupMessage = {
 export type CreateAffiliateProgramMessage = {
   requesterUserId: string;
   ownerShopId?: string | null;
-  brandId?: string | null;
   offerId?: string | null;
-  scopeType: 'PLATFORM' | 'SHOP' | 'BRAND' | 'OFFER';
+  scopeType: 'SHOP' | 'OFFER';
   name: string;
-  slug: string;
+  slug?: string;
   attributionWindowDays?: number;
-  commissionHoldDays?: number;
   commissionModel?: string;
   tier1Rate: number;
   tier2Rate: number;
