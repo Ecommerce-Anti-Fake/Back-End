@@ -61,4 +61,35 @@ describe('CloudflareStreamWebhookController', () => {
       }),
     );
   });
+
+  it('accepts and sanitizes a Cloudflare input error event', async () => {
+    await controller.handleLiveInputWebhook('webhook-secret', {
+      data: {
+        input_id: 'input-1',
+        event_type: 'live_input.errored',
+        updated_at: '2026-07-25T02:00:01.000Z',
+        live_input_errored: {
+          error: {
+            code: 'ERR_GOP_OUT_OF_RANGE',
+            message: 'Invalid stream key secret-stream-key',
+          },
+          video_codec: 'H264',
+          audio_codec: 'AAC',
+        },
+      },
+    });
+
+    expect(rpc.syncLiveProviderEvent).toHaveBeenCalledWith({
+      providerSessionId: 'input-1',
+      eventType: 'live_input.errored',
+      occurredAt: '2026-07-25T02:00:01.000Z',
+      errorCode: 'ERR_GOP_OUT_OF_RANGE',
+      errorMessage: 'Invalid stream key [REDACTED]',
+      videoCodec: 'H264',
+      audioCodec: 'AAC',
+    });
+    expect(JSON.stringify(rpc.syncLiveProviderEvent.mock.calls)).not.toContain(
+      'secret-stream-key',
+    );
+  });
 });

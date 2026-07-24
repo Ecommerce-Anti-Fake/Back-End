@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -29,18 +28,12 @@ export class GetLiveBroadcastContextUseCase {
     ) {
       throw new ForbiddenException('You do not own this live session');
     }
-    if (!session.streamProviderSessionId) {
-      throw new BadRequestException(
-        'Live session has no managed broadcast input',
-      );
-    }
-
     return {
       sessionId: session.id,
       shopId: session.shopId,
       status: session.status,
       streamProvider: session.streamProvider,
-      providerSessionId: session.streamProviderSessionId,
+      providerSessionId: session.streamProviderSessionId ?? null,
     };
   }
 }

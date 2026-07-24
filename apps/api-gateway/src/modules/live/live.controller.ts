@@ -1,9 +1,27 @@
-import { BadRequestException, Body, Controller, Delete, Get, Header, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
-  RealtimeLiveReactionService,
-  RealtimePresenceService,
-} from '@common';
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Header,
+  HttpException,
+  Logger,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
+import { randomUUID } from 'node:crypto';
+import { RealtimeLiveReactionService, RealtimePresenceService } from '@common';
 import type { AuthenticatedUser } from '@contracts';
 import {
   ActiveUserGuard,
@@ -15,6 +33,7 @@ import {
 import {
   CreateLiveCommentDto,
   CreateLiveSessionDto,
+  CreatedLiveSessionResponseDto,
   ListLiveCommentsQueryDto,
   ListLiveSessionsQueryDto,
   LiveCommentResponseDto,
@@ -30,6 +49,8 @@ import { CloudflareStreamService } from './cloudflare-stream.service';
 @ApiTags('Live')
 @Controller()
 export class LiveController {
+  private readonly logger = new Logger(LiveController.name);
+
   constructor(
     private readonly catalogRpcService: CatalogRpcService,
     private readonly liveReactionService: RealtimeLiveReactionService,
@@ -47,7 +68,10 @@ export class LiveController {
   @RateLimit({ profile: 'publicCatalog' })
   @UseGuards(OptionalJwtAuthGuard)
   @Get('live/sessions')
-  listLiveSessions(@Query() query: ListLiveSessionsQueryDto, @CurrentUser() requester?: AuthenticatedUser) {
+  listLiveSessions(
+    @Query() query: ListLiveSessionsQueryDto,
+    @CurrentUser() requester?: AuthenticatedUser,
+  ) {
     return this.catalogRpcService.listLiveSessions({
       requesterUserId: requester?.id ?? null,
       filter: query.filter ?? 'all',
@@ -76,7 +100,8 @@ export class LiveController {
 
   @ApiOperation({ summary: 'Lay aggregate reaction counters cua phien live' })
   @ApiOkResponse({
-    description: 'Tong reaction ephemeral theo type, dung de REST recovery sau reconnect.',
+    description:
+      'Tong reaction ephemeral theo type, dung de REST recovery sau reconnect.',
   })
   @RateLimit({ profile: 'publicCatalog' })
   @Get('live/sessions/:sessionId/reactions')
@@ -116,7 +141,8 @@ export class LiveController {
 
   @ApiOperation({ summary: 'Lay lich su binh luan cua phien live' })
   @ApiOkResponse({
-    description: 'Danh sach comment cua live session, dung cho reconnect/replay.',
+    description:
+      'Danh sach comment cua live session, dung cho reconnect/replay.',
     type: LiveCommentResponseDto,
     isArray: true,
   })
@@ -212,20 +238,27 @@ export class LiveController {
   @ApiBearerAuth('access-token')
   @ApiCreatedResponse({
     description: 'Phien live commerce da duoc tao.',
-    type: LiveSessionResponseDto,
+    type: CreatedLiveSessionResponseDto,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('live/sessions')
   @Header('Cache-Control', 'no-store')
-  async createLiveSession(@CurrentUserId() requesterUserId: string, @Body() dto: CreateLiveSessionDto) {
+  async createLiveSession(
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: CreateLiveSessionDto,
+  ) {
+    const sessionId = randomUUID();
     const provisioned = this.cloudflareStreamService.isConfigured()
       ? await this.cloudflareStreamService.createLiveInput({
           sessionName: `${dto.shopId}: ${dto.title}`,
+          sessionId,
+          shopId: dto.shopId,
         })
       : null;
     let result: unknown;
     try {
       result = await this.catalogRpcService.createLiveSession({
+        sessionId,
         requesterUserId,
         shopId: dto.shopId,
         title: dto.title,
@@ -235,12 +268,10 @@ export class LiveController {
         playbackUrl: provisioned?.playbackUrl ?? dto.playbackUrl ?? null,
         streamProvider: provisioned
           ? 'CLOUDFLARE_STREAM'
-          : dto.streamProvider ?? null,
+          : (dto.streamProvider ?? null),
         streamProviderSessionId:
-          provisioned?.providerSessionId ??
-          dto.streamProviderSessionId ??
-          null,
-        streamIngestUrl: provisioned ? null : dto.streamIngestUrl ?? null,
+          provisioned?.providerSessionId ?? dto.streamProviderSessionId ?? null,
+        streamIngestUrl: provisioned ? null : (dto.streamIngestUrl ?? null),
         streamLatencyTargetMs: dto.streamLatencyTargetMs ?? 8000,
         recordingUrl: dto.recordingUrl ?? null,
         recordingRetentionDays:
@@ -251,16 +282,90 @@ export class LiveController {
         voucherIds: dto.voucherIds ?? [],
       });
     } catch (error) {
-      if (provisioned) {
-        await this.cloudflareStreamService
-          .deleteLiveInput(provisioned.providerSessionId)
-          .catch(() => undefined);
+      if (!provisioned) throw error;
+
+      let context: { providerSessionId?: string | null };
+      try {
+        context = (await this.catalogRpcService.getLiveBroadcastContext({
+          sessionId,
+          requesterUserId,
+        })) as {
+          providerSessionId?: string | null;
+        };
+      } catch (reconciliationError) {
+        if (
+          reconciliationError instanceof HttpException &&
+          reconciliationError.getStatus() === 404
+        ) {
+          try {
+            await this.cloudflareStreamService.deleteLiveInput(
+              provisioned.providerSessionId,
+            );
+          } catch {
+            this.logger.error({
+              metric: 'livestream.cloudflare.cleanup.failed',
+              sessionId,
+              providerSessionId: provisioned.providerSessionId,
+              reason: 'db_create_failed',
+            });
+          }
+        } else {
+          this.logger.error({
+            metric: 'livestream.cloudflare.db_commit.ambiguous',
+            sessionId,
+            providerSessionId: provisioned.providerSessionId,
+            reason: 'reconciliation_unavailable',
+          });
+        }
+        throw error;
       }
-      throw error;
+
+      if (context.providerSessionId !== provisioned.providerSessionId) {
+        this.logger.error({
+          metric: 'livestream.cloudflare.db_commit.ambiguous',
+          sessionId,
+          providerSessionId: provisioned.providerSessionId,
+          reason: 'provider_session_mismatch',
+        });
+        throw error;
+      }
+
+      try {
+        result = await this.catalogRpcService.getLiveSession({
+          sessionId,
+          requesterUserId,
+        });
+      } catch {
+        this.logger.error({
+          metric: 'livestream.cloudflare.db_commit.ambiguous',
+          sessionId,
+          providerSessionId: provisioned.providerSessionId,
+          reason: 'committed_session_unavailable',
+        });
+        throw error;
+      }
+      this.logger.warn({
+        metric: 'livestream.cloudflare.db_commit.recovered',
+        sessionId,
+        providerSessionId: provisioned.providerSessionId,
+      });
     }
-    this.dashboardSseBrokerService.notifyShop(shopIdFromResult(result) ?? dto.shopId, 'live_changed');
+    this.logger.log({
+      metric: 'livestream.cloudflare.db.persisted',
+      sessionId,
+      providerSessionId: provisioned?.providerSessionId,
+    });
+    this.dashboardSseBrokerService.notifyShop(
+      shopIdFromResult(result) ?? dto.shopId,
+      'live_changed',
+    );
 
     if (!provisioned) return result;
+    this.logger.log({
+      metric: 'livestream.cloudflare.credentials.returned',
+      sessionId,
+      providerSessionId: provisioned.providerSessionId,
+    });
     return {
       ...(result as Record<string, unknown>),
       broadcastCredentials: {
@@ -281,15 +386,24 @@ export class LiveController {
     @CurrentUserId() requesterUserId: string,
     @CurrentUser() requester: AuthenticatedUser | undefined,
   ) {
-    const context = await this.catalogRpcService.getLiveBroadcastContext({
+    const context = (await this.catalogRpcService.getLiveBroadcastContext({
       sessionId,
       requesterUserId,
       requesterRole: requester?.role,
-    }) as {
+    })) as {
       streamProvider?: string | null;
-      providerSessionId: string;
+      providerSessionId?: string | null;
+      status?: string;
     };
-    if (context.streamProvider !== 'CLOUDFLARE_STREAM') {
+    if (context.status === 'ENDED' || context.status === 'CANCELLED') {
+      throw new BadRequestException(
+        'Broadcast credentials are unavailable for terminal sessions',
+      );
+    }
+    if (
+      context.streamProvider !== 'CLOUDFLARE_STREAM' ||
+      !context.providerSessionId
+    ) {
       throw new BadRequestException(
         'Broadcast credentials are managed outside Cloudflare Stream',
       );
@@ -320,9 +434,12 @@ export class LiveController {
       requesterRole: requester?.role,
     })) as {
       streamProvider?: string | null;
-      providerSessionId: string;
+      providerSessionId?: string | null;
     };
-    if (context.streamProvider !== 'CLOUDFLARE_STREAM') {
+    if (
+      context.streamProvider !== 'CLOUDFLARE_STREAM' ||
+      !context.providerSessionId
+    ) {
       throw new BadRequestException(
         'Recording is managed outside Cloudflare Stream',
       );
@@ -360,12 +477,31 @@ export class LiveController {
     @CurrentUser() requester: AuthenticatedUser | undefined,
     @Body() dto: UpdateLiveSessionStatusDto,
   ) {
+    const terminalStatus = ['ENDED', 'CANCELLED'].includes(dto.status);
+    const providerContext = terminalStatus
+      ? ((await this.catalogRpcService.getLiveBroadcastContext({
+          sessionId,
+          requesterUserId,
+          requesterRole: requester?.role,
+        })) as {
+          streamProvider?: string | null;
+          providerSessionId?: string | null;
+        })
+      : null;
     const result = await this.catalogRpcService.updateLiveSessionStatus({
       sessionId,
       requesterUserId,
       requesterRole: requester?.role,
       status: dto.status,
     });
+    if (
+      providerContext?.streamProvider === 'CLOUDFLARE_STREAM' &&
+      providerContext.providerSessionId
+    ) {
+      await this.cloudflareStreamService.disableLiveInput(
+        providerContext.providerSessionId,
+      );
+    }
     const shopId = shopIdFromResult(result);
     if (shopId) {
       this.dashboardSseBrokerService.notifyShop(shopId, 'live_changed');

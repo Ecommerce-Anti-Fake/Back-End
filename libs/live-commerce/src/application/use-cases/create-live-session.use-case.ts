@@ -14,6 +14,7 @@ export class CreateLiveSessionUseCase {
   ) {}
 
   async execute(input: {
+    sessionId: string;
     requesterUserId: string;
     shopId: string;
     title: string;
@@ -89,7 +90,10 @@ export class CreateLiveSessionUseCase {
         (offer) =>
           offer.shopId !== input.shopId ||
           offer.offerStatus !== 'active' ||
-          offer.variants.reduce((sum, variant) => sum + variant.availableQuantity, 0) <= 0,
+          offer.variants.reduce(
+            (sum, variant) => sum + variant.availableQuantity,
+            0,
+          ) <= 0,
       );
       if (invalidOffer) {
         throw new BadRequestException(
@@ -129,6 +133,7 @@ export class CreateLiveSessionUseCase {
     }
 
     const session = await this.liveCommerceRepository.createLiveSession({
+      sessionId: input.sessionId,
       shopId: input.shopId,
       title,
       description: input.description?.trim() || null,

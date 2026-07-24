@@ -65,12 +65,16 @@ export class LiveCommerceRepository {
         id: true,
         shopId: true,
         offerStatus: true,
-        variants: { where: { isActive: true }, select: { availableQuantity: true } },
+        variants: {
+          where: { isActive: true },
+          select: { availableQuantity: true },
+        },
       },
     });
   }
 
   createLiveSession(input: {
+    sessionId: string;
     shopId: string;
     title: string;
     description?: string | null;
@@ -89,6 +93,7 @@ export class LiveCommerceRepository {
   }) {
     return this.prisma.liveCommerceSession.create({
       data: {
+        id: input.sessionId,
         shopId: input.shopId,
         title: input.title,
         description: input.description ?? null,
@@ -126,7 +131,7 @@ export class LiveCommerceRepository {
   }
 
   findLiveSessionByProviderId(providerSessionId: string) {
-    return this.prisma.liveCommerceSession.findFirst({
+    return this.prisma.liveCommerceSession.findUnique({
       where: { streamProviderSessionId: providerSessionId },
       include: this.liveSessionInclude(),
     });
@@ -152,6 +157,10 @@ export class LiveCommerceRepository {
     providerStatus: string;
     actualStartedAt?: Date;
     actualEndedAt?: Date;
+    providerEventAt: Date;
+    providerEventType: string;
+    providerErrorCode?: string | null;
+    providerErrorMessage?: string | null;
     recordingUrl?: string;
   }) {
     return this.prisma.liveCommerceSession.update({
@@ -159,6 +168,14 @@ export class LiveCommerceRepository {
       data: {
         ...(input.status ? { status: input.status } : {}),
         providerStatus: input.providerStatus,
+        providerEventAt: input.providerEventAt,
+        providerEventType: input.providerEventType,
+        ...(input.providerErrorCode !== undefined
+          ? { providerErrorCode: input.providerErrorCode }
+          : {}),
+        ...(input.providerErrorMessage !== undefined
+          ? { providerErrorMessage: input.providerErrorMessage }
+          : {}),
         ...(input.actualStartedAt
           ? { actualStartedAt: input.actualStartedAt }
           : {}),

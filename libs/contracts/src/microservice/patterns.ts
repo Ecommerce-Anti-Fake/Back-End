@@ -840,12 +840,18 @@ export type SyncLiveProviderEventMessage = {
   eventType:
     | 'live_input.connected'
     | 'live_input.disconnected'
+    | 'live_input.errored'
     | 'recording.ready';
   occurredAt: string;
   recordingUrl?: string | null;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  videoCodec?: string | null;
+  audioCodec?: string | null;
 };
 
 export type CreateLiveSessionMessage = {
+  sessionId: string;
   requesterUserId: string;
   shopId: string;
   title: string;

@@ -50,4 +50,32 @@ describe('GetLiveBroadcastContextUseCase', () => {
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
+
+  it('returns a nullable provider ID for unmanaged sessions', async () => {
+    repository.findLiveSessionById.mockResolvedValueOnce({
+      id: 'live-1',
+      shopId: 'shop-1',
+      status: 'SCHEDULED',
+      streamProvider: 'HLS_CDN',
+      streamProviderSessionId: null,
+      shop: {
+        shopName: 'Seller Shop',
+        ownerUserId: 'seller-1',
+      },
+    });
+    const useCase = new GetLiveBroadcastContextUseCase(repository as never);
+
+    await expect(
+      useCase.execute({
+        sessionId: 'live-1',
+        requesterUserId: 'seller-1',
+      }),
+    ).resolves.toEqual({
+      sessionId: 'live-1',
+      shopId: 'shop-1',
+      status: 'SCHEDULED',
+      streamProvider: 'HLS_CDN',
+      providerSessionId: null,
+    });
+  });
 });

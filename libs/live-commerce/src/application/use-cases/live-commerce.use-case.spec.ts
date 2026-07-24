@@ -57,6 +57,7 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
     const useCase = new CreateLiveSessionUseCase(repository as never);
 
     const result = await useCase.execute({
+      sessionId: 'live-1',
       requesterUserId: 'seller-user-1',
       shopId: 'shop-1',
       title: 'Live hang chinh hang',
@@ -75,6 +76,7 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
 
     expect(repository.createLiveSession).toHaveBeenCalledWith(
       expect.objectContaining({
+        sessionId: 'live-1',
         shopId: 'shop-1',
         title: 'Live hang chinh hang',
         offerIds: ['offer-1'],
@@ -111,6 +113,7 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
 
     await expect(
       useCase.execute({
+        sessionId: 'live-1',
         requesterUserId: 'seller-user-1',
         shopId: 'shop-1',
         title: 'Live hang chinh hang',
@@ -133,6 +136,7 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
 
     await expect(
       useCase.execute({
+        sessionId: 'live-1',
         requesterUserId: 'seller-user-1',
         shopId: 'shop-1',
         title: 'Live hang chinh hang',
@@ -147,6 +151,7 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
 
     await expect(
       useCase.execute({
+        sessionId: 'live-1',
         requesterUserId: 'other-user',
         shopId: 'shop-1',
         title: 'Live hang chinh hang',

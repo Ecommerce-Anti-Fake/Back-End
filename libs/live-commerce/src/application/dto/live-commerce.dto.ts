@@ -228,3 +228,18 @@ export class LiveSessionResponseDto {
   vouchers!: LiveSessionVoucherResponseDto[];
   @ApiProperty() createdAt!: Date;
 }
+
+export class LiveBroadcastCredentialsResponseDto {
+  @ApiProperty({ example: 'rtmps://live.cloudflare.com:443/live/' })
+  ingestUrl!: string;
+
+  @ApiProperty({
+    description: 'Sensitive OBS stream key. Never persisted or logged.',
+  })
+  streamKey!: string;
+}
+
+export class CreatedLiveSessionResponseDto extends LiveSessionResponseDto {
+  @ApiPropertyOptional({ type: LiveBroadcastCredentialsResponseDto })
+  broadcastCredentials?: LiveBroadcastCredentialsResponseDto;
+}
