@@ -28,6 +28,7 @@ export class CreateLiveSessionUseCase {
     recordingUrl?: string | null;
     recordingRetentionDays?: number | null;
     offerIds?: string[];
+    voucherIds?: string[];
   }) {
     const title = input.title.trim();
     if (!title) {
@@ -97,6 +98,36 @@ export class CreateLiveSessionUseCase {
       }
     }
 
+    const voucherIds = [
+      ...new Set(
+        (input.voucherIds ?? [])
+          .map((voucherId) => voucherId.trim())
+          .filter(Boolean),
+      ),
+    ];
+    if (voucherIds.length) {
+      const vouchers =
+        await this.liveCommerceRepository.findVouchersForLiveSession(
+          voucherIds,
+        );
+      if (vouchers.length !== voucherIds.length) {
+        throw new NotFoundException('One or more live vouchers were not found');
+      }
+      const invalidVoucher = vouchers.find(
+        (voucher) =>
+          voucher.ownerType !== 'SHOP' ||
+          voucher.shopId !== input.shopId ||
+          voucher.status !== 'ACTIVE' ||
+          voucher.startsAt > startAt ||
+          voucher.endsAt < startAt,
+      );
+      if (invalidVoucher) {
+        throw new BadRequestException(
+          'Live vouchers must be active shop vouchers valid at start time',
+        );
+      }
+    }
+
     const session = await this.liveCommerceRepository.createLiveSession({
       shopId: input.shopId,
       title,
@@ -111,6 +142,7 @@ export class CreateLiveSessionUseCase {
       recordingUrl: input.recordingUrl?.trim() || null,
       recordingRetentionDays: input.recordingRetentionDays ?? null,
       offerIds,
+      voucherIds,
       requesterUserId: input.requesterUserId,
     });
 

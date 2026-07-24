@@ -15,6 +15,7 @@ import { CatalogRpcService } from '../offer/catalog-rpc.service';
 type LiveSocketPrincipal = {
   userId: string;
   role: string;
+  authenticated: boolean;
 };
 
 type LiveJoinPayload = {
@@ -79,19 +80,26 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
     const rawToken = socket.handshake.auth?.accessToken || socket.handshake.query?.accessToken;
     const accessToken = Array.isArray(rawToken) ? rawToken[0] : rawToken;
     if (!accessToken || typeof accessToken !== 'string') {
-      throw new Error('Missing access token');
+      return anonymousPrincipal(socket.id);
     }
 
-    const payload = await this.jwtService.verifyAsync<AccessTokenPayload & { type?: string }>(accessToken);
-    const tokenType = payload.typ ?? payload.type;
-    if (!payload.sub || !payload.role || tokenType !== 'access') {
-      throw new Error('Invalid access token');
-    }
+    try {
+      const payload = await this.jwtService.verifyAsync<
+        AccessTokenPayload & { type?: string }
+      >(accessToken);
+      const tokenType = payload.typ ?? payload.type;
+      if (!payload.sub || !payload.role || tokenType !== 'access') {
+        return anonymousPrincipal(socket.id);
+      }
 
-    return {
-      userId: payload.sub,
-      role: payload.role,
-    };
+      return {
+        userId: payload.sub,
+        role: payload.role,
+        authenticated: true,
+      };
+    } catch {
+      return anonymousPrincipal(socket.id);
+    }
   }
 
   async joinLiveSession(socket: Socket, principal: LiveSocketPrincipal, payload: LiveJoinPayload, ack?: LiveAckCallback) {
@@ -125,6 +133,10 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
     const reactionType = normalizeReactionType(payload.reactionType);
     if (!liveSessionId || !reactionType) {
       this.ackError(ack, 'liveSessionId and reactionType are required');
+      return;
+    }
+    if (!principal.authenticated) {
+      this.ackError(ack, 'Authentication required');
       return;
     }
     if (!this.joinedLiveSessions(socket).has(liveSessionId)) {
@@ -161,6 +173,10 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
       this.ackError(ack, 'liveSessionId and body are required');
       return;
     }
+    if (!principal.authenticated) {
+      this.ackError(ack, 'Authentication required');
+      return;
+    }
     if (!this.joinedLiveSessions(socket).has(liveSessionId)) {
       this.ackError(ack, 'Join the live session before sending comments');
       return;
@@ -192,13 +208,7 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
   }
 
   private async handleConnection(socket: Socket) {
-    let principal: LiveSocketPrincipal;
-    try {
-      principal = await this.authenticate(socket);
-    } catch {
-      socket.emit('live:error', { error: 'Unauthorized' });
-      return;
-    }
+    const principal = await this.authenticate(socket);
 
     socket.on('live:join', (payload: LiveJoinPayload, ack?: LiveAckCallback) => {
       void this.joinLiveSession(socket, principal, payload ?? {}, ack);
@@ -227,7 +237,7 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
 
   private async assertCanJoin(liveSessionId: string, principal: LiveSocketPrincipal) {
     const sessions = await this.catalogRpcService.listLiveSessions({
-      requesterUserId: principal.userId,
+      requesterUserId: principal.authenticated ? principal.userId : null,
       filter: 'all',
       q: null,
     });
@@ -263,6 +273,14 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
     current.count += 1;
     return true;
   }
+}
+
+function anonymousPrincipal(socketId: string): LiveSocketPrincipal {
+  return {
+    userId: `anonymous:${socketId}`,
+    role: 'anonymous',
+    authenticated: false,
+  };
 }
 
 function normalizeReactionType(value: string | undefined): LiveReactionType | null {

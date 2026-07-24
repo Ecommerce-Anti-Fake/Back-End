@@ -11,6 +11,9 @@ model LiveCommerceSession {
   streamProviderSessionId String? @map("stream_provider_session_id")
   streamIngestUrl         String? @map("stream_ingest_url")
   streamLatencyTargetMs   Int?    @map("stream_latency_target_ms")
+  providerStatus          String? @map("provider_status")
+  actualStartedAt         DateTime? @map("actual_started_at")
+  actualEndedAt           DateTime? @map("actual_ended_at")
   recordingUrl            String? @map("recording_url")
   recordingRetentionDays  Int?    @map("recording_retention_days")
   createdAt   DateTime          @default(now()) @map("created_at")
@@ -18,7 +21,10 @@ model LiveCommerceSession {
   shop        Shop              @relation(fields: [shopId], references: [id])
   offers      LiveSessionOffer[]
   reminders   LiveSessionReminder[]
+  vouchers    LiveSessionVoucher[]
   comments    LiveSessionComment[]
+  sourceCartItems  CartItem[]  @relation("CartItemLiveSource")
+  sourceOrderItems OrderItem[] @relation("OrderItemLiveSource")
 
   @@index([shopId, startAt])
   @@index([status, startAt])

@@ -4,17 +4,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { LiveCommerceRepository } from '../../infrastructure/persistence/live-commerce.repository';
-import { toLiveCommentResponse } from '../live-commerce.mapper';
 
 @Injectable()
-export class DeleteLiveCommentUseCase {
+export class GetLiveAnalyticsUseCase {
   constructor(
     private readonly liveCommerceRepository: LiveCommerceRepository,
   ) {}
 
   async execute(input: {
     sessionId: string;
-    commentId: string;
     requesterUserId: string;
     requesterRole?: string | null;
   }) {
@@ -30,11 +28,15 @@ export class DeleteLiveCommentUseCase {
       session.shop.ownerUserId !== input.requesterUserId
     ) {
       throw new ForbiddenException(
-        'Only admin or session shop owner can moderate live comments',
+        'Only admin or session shop owner can view live analytics',
       );
     }
 
-    const comment = await this.liveCommerceRepository.deleteLiveComment(input);
-    return toLiveCommentResponse(comment);
+    return {
+      liveSessionId: input.sessionId,
+      ...(await this.liveCommerceRepository.getLiveSessionAnalytics(
+        input.sessionId,
+      )),
+    };
   }
 }

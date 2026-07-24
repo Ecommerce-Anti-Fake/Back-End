@@ -9,6 +9,7 @@ export class LiveCommerceRepository {
     requesterUserId?: string | null;
     filter?: 'all' | 'live' | 'upcoming';
     q?: string | null;
+    shopId?: string | null;
   }) {
     const now = new Date();
     const search = input.q?.trim();
@@ -21,6 +22,7 @@ export class LiveCommerceRepository {
     return this.prisma.liveCommerceSession.findMany({
       where: {
         ...statusWhere,
+        ...(input.shopId ? { shopId: input.shopId } : {}),
         ...(search
           ? {
               OR: [
@@ -29,6 +31,14 @@ export class LiveCommerceRepository {
                   description: {
                     contains: search,
                     mode: 'insensitive' as const,
+                  },
+                },
+                {
+                  shop: {
+                    shopName: {
+                      contains: search,
+                      mode: 'insensitive' as const,
+                    },
                   },
                 },
               ],
@@ -74,6 +84,7 @@ export class LiveCommerceRepository {
     recordingUrl?: string | null;
     recordingRetentionDays?: number | null;
     offerIds: string[];
+    voucherIds: string[];
     requesterUserId: string;
   }) {
     return this.prisma.liveCommerceSession.create({
@@ -96,6 +107,12 @@ export class LiveCommerceRepository {
             sortOrder: index,
           })),
         },
+        vouchers: {
+          create: input.voucherIds.map((voucherId, index) => ({
+            voucherId,
+            sortOrder: index,
+          })),
+        },
       },
       include: this.liveSessionInclude(input.requesterUserId),
     });
@@ -105,6 +122,50 @@ export class LiveCommerceRepository {
     return this.prisma.liveCommerceSession.findUnique({
       where: { id: sessionId },
       include: this.liveSessionInclude(requesterUserId),
+    });
+  }
+
+  findLiveSessionByProviderId(providerSessionId: string) {
+    return this.prisma.liveCommerceSession.findFirst({
+      where: { streamProviderSessionId: providerSessionId },
+      include: this.liveSessionInclude(),
+    });
+  }
+
+  findVouchersForLiveSession(voucherIds: string[]) {
+    return this.prisma.voucher.findMany({
+      where: { id: { in: voucherIds } },
+      select: {
+        id: true,
+        ownerType: true,
+        shopId: true,
+        status: true,
+        startsAt: true,
+        endsAt: true,
+      },
+    });
+  }
+
+  updateLiveProviderState(input: {
+    sessionId: string;
+    status?: 'LIVE' | 'ENDED';
+    providerStatus: string;
+    actualStartedAt?: Date;
+    actualEndedAt?: Date;
+    recordingUrl?: string;
+  }) {
+    return this.prisma.liveCommerceSession.update({
+      where: { id: input.sessionId },
+      data: {
+        ...(input.status ? { status: input.status } : {}),
+        providerStatus: input.providerStatus,
+        ...(input.actualStartedAt
+          ? { actualStartedAt: input.actualStartedAt }
+          : {}),
+        ...(input.actualEndedAt ? { actualEndedAt: input.actualEndedAt } : {}),
+        ...(input.recordingUrl ? { recordingUrl: input.recordingUrl } : {}),
+      },
+      include: this.liveSessionInclude(),
     });
   }
 
@@ -129,6 +190,46 @@ export class LiveCommerceRepository {
       update: {},
     });
     return this.findLiveSessionById(input.sessionId, input.userId);
+  }
+
+  async listLiveReminderUserIds(sessionId: string) {
+    const reminders = await this.prisma.liveSessionReminder.findMany({
+      where: { sessionId },
+      select: { userId: true },
+    });
+    return reminders.map((reminder) => reminder.userId);
+  }
+
+  async getLiveSessionAnalytics(sessionId: string) {
+    const [reminderCount, commentCount, commerceRows] = await Promise.all([
+      this.prisma.liveSessionReminder.count({ where: { sessionId } }),
+      this.prisma.liveSessionComment.count({ where: { sessionId } }),
+      this.prisma.$queryRaw<
+        Array<{
+          conversion_count: bigint;
+          units_sold: bigint;
+          gross_revenue: unknown;
+        }>
+      >`
+        SELECT
+          COUNT(DISTINCT oi."order_id")::bigint AS conversion_count,
+          COALESCE(SUM(oi."quantity"), 0)::bigint AS units_sold,
+          COALESCE(SUM(oi."unit_price" * oi."quantity"), 0) AS gross_revenue
+        FROM "order_item" oi
+        INNER JOIN "order" o ON o."id" = oi."order_id"
+        WHERE oi."source_live_session_id" = ${sessionId}
+          AND o."order_status" NOT IN ('cancelled', 'failed', 'refunded')
+      `,
+    ]);
+    const commerce = commerceRows[0];
+
+    return {
+      reminderCount,
+      commentCount,
+      conversionCount: Number(commerce?.conversion_count ?? 0),
+      unitsSold: Number(commerce?.units_sold ?? 0),
+      grossRevenue: Number(commerce?.gross_revenue ?? 0),
+    };
   }
 
   listLiveComments(input: {
@@ -210,7 +311,7 @@ export class LiveCommerceRepository {
 
   private liveSessionInclude(requesterUserId?: string | null) {
     return {
-      shop: { select: { shopName: true } },
+      shop: { select: { shopName: true, ownerUserId: true } },
       offers: {
         orderBy: { sortOrder: 'asc' as const },
         include: {
@@ -227,6 +328,10 @@ export class LiveCommerceRepository {
             },
           },
         },
+      },
+      vouchers: {
+        orderBy: { sortOrder: 'asc' as const },
+        include: { voucher: true },
       },
       reminders: requesterUserId
         ? { where: { userId: requesterUserId } }

@@ -12,6 +12,7 @@ export class ListLiveSessionsUseCase {
     requesterUserId?: string | null;
     filter?: 'all' | 'live' | 'upcoming';
     q?: string | null;
+    shopId?: string | null;
   }) {
     const sessions = await this.liveCommerceRepository.listLiveSessions(input);
     return sessions.map((session) =>

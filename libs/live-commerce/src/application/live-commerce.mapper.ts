@@ -29,6 +29,9 @@ type LiveSessionWithRelations = {
   streamProviderSessionId?: string | null;
   streamIngestUrl?: string | null;
   streamLatencyTargetMs?: number | null;
+  providerStatus?: string | null;
+  actualStartedAt?: Date | null;
+  actualEndedAt?: Date | null;
   recordingUrl?: string | null;
   recordingRetentionDays?: number | null;
   createdAt: Date;
@@ -44,6 +47,21 @@ type LiveSessionWithRelations = {
         fileUrl?: string | null;
         mediaAsset?: { secureUrl?: string | null } | null;
       }>;
+    };
+  }>;
+  vouchers?: Array<{
+    voucher: {
+      id: string;
+      code: string;
+      name: string;
+      discountType: string;
+      percentage?: Prisma.Decimal | number | string | null;
+      fixedAmount?: Prisma.Decimal | number | string | null;
+      maxDiscountAmount?: Prisma.Decimal | number | string | null;
+      minOrderAmount: Prisma.Decimal | number | string;
+      startsAt: Date;
+      endsAt: Date;
+      status: string;
     };
   }>;
   reminders?: Array<{ userId: string }>;
@@ -65,9 +83,10 @@ export function toLiveSessionResponse(
     status: session.status,
     playbackUrl: session.playbackUrl,
     streamProvider: session.streamProvider ?? null,
-    streamProviderSessionId: session.streamProviderSessionId ?? null,
-    streamIngestUrl: session.streamIngestUrl ?? null,
     streamLatencyTargetMs: session.streamLatencyTargetMs ?? null,
+    providerStatus: session.providerStatus ?? null,
+    actualStartedAt: session.actualStartedAt ?? null,
+    actualEndedAt: session.actualEndedAt ?? null,
     recordingUrl: session.recordingUrl ?? null,
     recordingRetentionDays: session.recordingRetentionDays ?? null,
     reminderCount: session._count?.reminders ?? session.reminders?.length ?? 0,
@@ -97,6 +116,20 @@ export function toLiveSessionResponse(
           null,
       };
     }),
+    vouchers: (session.vouchers ?? [])
+      .filter(({ voucher }) => voucher.status === 'ACTIVE')
+      .map(({ voucher }) => ({
+        voucherId: voucher.id,
+        code: voucher.code,
+        name: voucher.name,
+        discountType: voucher.discountType,
+        percentage: decimalToNumber(voucher.percentage),
+        fixedAmount: decimalToNumber(voucher.fixedAmount),
+        maxDiscountAmount: decimalToNumber(voucher.maxDiscountAmount),
+        minOrderAmount: decimalToNumber(voucher.minOrderAmount),
+        startsAt: voucher.startsAt,
+        endsAt: voucher.endsAt,
+      })),
     createdAt: session.createdAt,
   };
 }

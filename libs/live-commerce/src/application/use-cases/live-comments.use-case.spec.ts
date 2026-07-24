@@ -38,6 +38,24 @@ describe('live comment use cases in LiveCommerceModule', () => {
     expect(result[0].id).toBe('comment-1');
   });
 
+  it('lets the shop owner include hidden comments for moderation', async () => {
+    repository.findLiveSessionById.mockResolvedValue(
+      liveSession({ ownerUserId: 'seller-1' }),
+    );
+    const useCase = new ListLiveCommentsUseCase(repository as never);
+
+    await useCase.execute({
+      sessionId: 'live-1',
+      requesterUserId: 'seller-1',
+      requesterRole: 'seller',
+      includeHidden: true,
+    });
+
+    expect(repository.listLiveComments).toHaveBeenCalledWith(
+      expect.objectContaining({ includeHidden: true }),
+    );
+  });
+
   it('creates comments only while session is live and forwards idempotency key', async () => {
     const useCase = new CreateLiveCommentUseCase(repository as never);
 
@@ -106,12 +124,32 @@ describe('live comment use cases in LiveCommerceModule', () => {
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
+
+  it('allows the session shop owner to moderate comments', async () => {
+    repository.findLiveSessionById.mockResolvedValue(
+      liveSession({ ownerUserId: 'seller-1' }),
+    );
+    const useCase = new UpdateLiveCommentVisibilityUseCase(repository as never);
+
+    await useCase.execute({
+      sessionId: 'live-1',
+      commentId: 'comment-1',
+      requesterUserId: 'seller-1',
+      requesterRole: 'seller',
+      visibility: 'HIDDEN',
+    });
+
+    expect(repository.updateLiveCommentVisibility).toHaveBeenCalled();
+  });
 });
 
-function liveSession(input: { status?: string } = {}) {
+function liveSession(
+  input: { status?: string; ownerUserId?: string } = {},
+) {
   return {
     id: 'live-1',
     status: input.status ?? 'LIVE',
+    shop: { ownerUserId: input.ownerUserId ?? 'other-seller' },
   };
 }
 

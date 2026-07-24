@@ -22,6 +22,7 @@ model Voucher {
   shop                Shop?               @relation(fields: [shopId], references: [id])
   redemptions         VoucherRedemption[]
   allocations         OrderVoucherAllocation[]
+  liveSessions        LiveSessionVoucher[]
 
   @@unique([ownerType, shopId, code])
   @@index([ownerType, status, startsAt, endsAt])

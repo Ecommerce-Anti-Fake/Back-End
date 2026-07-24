@@ -32,6 +32,7 @@ describe('OrdersRepository', () => {
 
   it('upserts cart items by cart, offer, and variant', async () => {
     const prisma = {
+      $executeRaw: jest.fn(),
       cart: {
         findUnique: jest.fn().mockResolvedValueOnce(createActiveCart()).mockResolvedValueOnce(createActiveCart()),
       },
@@ -46,7 +47,12 @@ describe('OrdersRepository', () => {
     await repository.upsertCartItem(createCartUpsertInput({ variantId: 'variant-1' }));
 
     expect(prisma.cartItem.findFirst).toHaveBeenCalledWith({
-      where: { cartId: 'cart-1', offerId: 'offer-1', variantId: 'variant-1' },
+      where: {
+        cartId: 'cart-1',
+        offerId: 'offer-1',
+        variantId: 'variant-1',
+        sourceLiveSessionId: null,
+      },
       select: { id: true, quantity: true },
     });
     expect(prisma.cartItem.update).toHaveBeenCalledWith(
@@ -60,6 +66,7 @@ describe('OrdersRepository', () => {
 
   it('creates a new cart item when the same offer uses a different variant', async () => {
     const prisma = {
+      $executeRaw: jest.fn(),
       cart: {
         findUnique: jest.fn().mockResolvedValueOnce(createActiveCart()).mockResolvedValueOnce(createActiveCart()),
       },
@@ -86,6 +93,7 @@ describe('OrdersRepository', () => {
 
   it('rejects adding to an existing cart variant when cumulative quantity exceeds stock', async () => {
     const prisma = {
+      $executeRaw: jest.fn(),
       cart: {
         findUnique: jest.fn().mockResolvedValueOnce(createActiveCart()),
       },
@@ -219,7 +227,7 @@ describe('OrdersRepository', () => {
   it('should lock offer inventory rows before decrementing stock', async () => {
     const tx = {
       $queryRaw: jest.fn().mockResolvedValue([]),
-      offer: {
+      offerVariant: {
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     };
@@ -229,13 +237,18 @@ describe('OrdersRepository', () => {
     const repository = new OrdersRepository(prisma as never);
 
     await repository.lockOfferInventoryRows(tx as never, 'offer-1');
-    await repository.decrementOfferAvailableQuantity(tx as never, 'offer-1', 1);
+    await repository.decrementOfferAvailableQuantity(
+      tx as never,
+      'offer-1',
+      'variant-1',
+      1,
+    );
 
     expect(tx.$queryRaw).toHaveBeenCalledTimes(3);
-    expect(tx.offer.updateMany).toHaveBeenCalledTimes(1);
-    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(tx.offer.updateMany.mock.invocationCallOrder[0]);
-    expect(tx.$queryRaw.mock.invocationCallOrder[1]).toBeLessThan(tx.offer.updateMany.mock.invocationCallOrder[0]);
-    expect(tx.$queryRaw.mock.invocationCallOrder[2]).toBeLessThan(tx.offer.updateMany.mock.invocationCallOrder[0]);
+    expect(tx.offerVariant.updateMany).toHaveBeenCalledTimes(1);
+    expect(tx.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(tx.offerVariant.updateMany.mock.invocationCallOrder[0]);
+    expect(tx.$queryRaw.mock.invocationCallOrder[1]).toBeLessThan(tx.offerVariant.updateMany.mock.invocationCallOrder[0]);
+    expect(tx.$queryRaw.mock.invocationCallOrder[2]).toBeLessThan(tx.offerVariant.updateMany.mock.invocationCallOrder[0]);
   });
 
   it('should reject fulfillment allocation when batch stock is insufficient', async () => {

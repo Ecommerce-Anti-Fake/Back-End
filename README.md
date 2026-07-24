@@ -159,6 +159,21 @@ RT8 livestream video pilot:
 - Provider credentials, stream keys, and CDN secrets must stay in the provider console or deployment secret manager. Do not commit them to env examples, seed data, docs, or Prisma migrations.
 - Recording retention for the pilot defaults to short-lived external provider retention; comments remain the canonical moderation/dispute replay log in PostgreSQL.
 
+Full Cloudflare Stream shop livestream (2026-07-24):
+
+- Configure `CLOUDFLARE_STREAM_ACCOUNT_ID`,
+  `CLOUDFLARE_STREAM_API_TOKEN`, `CLOUDFLARE_STREAM_CUSTOMER_CODE`, and
+  `CLOUDFLARE_STREAM_LIVE_WEBHOOK_SECRET` in the deployment secret manager.
+- Optional `CLOUDFLARE_STREAM_ALLOWED_ORIGINS` is comma-separated;
+  `LIVE_RECORDING_RETENTION_DAYS` defaults to and cannot be lower than `30`.
+- Configure the Cloudflare Stream Live Input notification to call
+  `/api/webhooks/cloudflare/stream/live-input` with `cf-webhook-auth` matching
+  the configured live webhook secret.
+- Stream keys are returned only by authenticated no-store seller endpoints and
+  are never persisted.
+- Apply the provider-lifecycle, live-attribution, and live-voucher migrations
+  before restarting API gateway, catalog, orders, and users services.
+
 ## Production Observability
 
 Task 15 gateway observability is intentionally provider-neutral:

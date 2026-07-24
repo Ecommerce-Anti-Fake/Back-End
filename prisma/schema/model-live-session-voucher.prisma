@@ -1,0 +1,12 @@
+model LiveSessionVoucher {
+  id        String              @id @default(uuid())
+  sessionId String              @map("session_id")
+  voucherId String              @map("voucher_id")
+  sortOrder Int                 @default(0) @map("sort_order")
+  session   LiveCommerceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  voucher   Voucher             @relation(fields: [voucherId], references: [id])
+
+  @@unique([sessionId, voucherId])
+  @@index([voucherId])
+  @@map("live_session_voucher")
+}

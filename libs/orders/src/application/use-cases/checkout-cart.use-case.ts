@@ -211,6 +211,7 @@ export class CheckoutCartUseCase {
         parcelHeightCm: hasCompleteParcel ? parcels.reduce((total, parcel) => total + Number(parcel.height) * parcel.quantity, 0) : null,
         items: shopItems.map((item) => ({
           sourceCartItemId: item.id,
+          sourceLiveSessionId: item.sourceLiveSessionId ?? null,
           offerId: item.offerId,
           variantId: item.variantId ?? null,
           offerTitleSnapshot: item.offerTitleSnapshot,

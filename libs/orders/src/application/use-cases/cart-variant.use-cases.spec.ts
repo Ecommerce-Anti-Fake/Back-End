@@ -6,6 +6,7 @@ describe('cart variant use cases', () => {
   let ordersRepository: {
     findOfferForOrdering: jest.Mock;
     findOfferVariantForCart: jest.Mock;
+    findLiveSessionOfferForAttribution: jest.Mock;
     upsertCartItem: jest.Mock;
     findCartItemById: jest.Mock;
     updateCartItemQuantity: jest.Mock;
@@ -15,10 +16,66 @@ describe('cart variant use cases', () => {
     ordersRepository = {
       findOfferForOrdering: jest.fn(),
       findOfferVariantForCart: jest.fn(),
+      findLiveSessionOfferForAttribution: jest.fn(),
       upsertCartItem: jest.fn(),
       findCartItemById: jest.fn(),
       updateCartItemQuantity: jest.fn(),
     };
+  });
+
+  it('persists a valid live-session source with the cart item', async () => {
+    const useCase = new AddCartItemUseCase(ordersRepository as never);
+    ordersRepository.findOfferForOrdering.mockResolvedValue(
+      createOffer({ hasVariants: true }),
+    );
+    ordersRepository.findOfferVariantForCart.mockResolvedValue(
+      createVariant({ price: 120000, availableQuantity: 5 }),
+    );
+    ordersRepository.findLiveSessionOfferForAttribution.mockResolvedValue({
+      sessionId: 'live-1',
+      offerId: 'offer-1',
+      session: { status: 'LIVE' },
+    });
+    ordersRepository.upsertCartItem.mockResolvedValue(createCart());
+
+    await useCase.execute({
+      buyerUserId: 'buyer-1',
+      offerId: 'offer-1',
+      variantId: 'variant-1',
+      quantity: 1,
+      sourceLiveSessionId: 'live-1',
+    });
+
+    expect(
+      ordersRepository.findLiveSessionOfferForAttribution,
+    ).toHaveBeenCalledWith({
+      sessionId: 'live-1',
+      offerId: 'offer-1',
+    });
+    expect(ordersRepository.upsertCartItem).toHaveBeenCalledWith(
+      expect.objectContaining({ sourceLiveSessionId: 'live-1' }),
+    );
+  });
+
+  it('rejects a live-session source that did not feature the offer', async () => {
+    const useCase = new AddCartItemUseCase(ordersRepository as never);
+    ordersRepository.findOfferForOrdering.mockResolvedValue(
+      createOffer({ hasVariants: true }),
+    );
+    ordersRepository.findOfferVariantForCart.mockResolvedValue(
+      createVariant({ price: 120000, availableQuantity: 5 }),
+    );
+    ordersRepository.findLiveSessionOfferForAttribution.mockResolvedValue(null);
+
+    await expect(
+      useCase.execute({
+        buyerUserId: 'buyer-1',
+        offerId: 'offer-1',
+        variantId: 'variant-1',
+        quantity: 1,
+        sourceLiveSessionId: 'live-1',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('adds a cart item with a selected active variant and snapshots variant price', async () => {

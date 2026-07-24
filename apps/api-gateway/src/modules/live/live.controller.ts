@@ -1,8 +1,17 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Header, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { RealtimeLiveReactionService } from '@common';
+import {
+  RealtimeLiveReactionService,
+  RealtimePresenceService,
+} from '@common';
 import type { AuthenticatedUser } from '@contracts';
-import { ActiveUserGuard, CurrentUser, CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@security';
+import {
+  ActiveUserGuard,
+  CurrentUser,
+  CurrentUserId,
+  JwtAuthGuard,
+  OptionalJwtAuthGuard,
+} from '@security';
 import {
   CreateLiveCommentDto,
   CreateLiveSessionDto,
@@ -16,6 +25,7 @@ import {
 import { RateLimit } from '../../observability';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
+import { CloudflareStreamService } from './cloudflare-stream.service';
 
 @ApiTags('Live')
 @Controller()
@@ -23,7 +33,9 @@ export class LiveController {
   constructor(
     private readonly catalogRpcService: CatalogRpcService,
     private readonly liveReactionService: RealtimeLiveReactionService,
+    private readonly presenceService: RealtimePresenceService,
     private readonly dashboardSseBrokerService: DashboardSseBrokerService,
+    private readonly cloudflareStreamService: CloudflareStreamService,
   ) {}
 
   @ApiOperation({ summary: 'Lay danh sach phien live commerce' })
@@ -33,12 +45,32 @@ export class LiveController {
     isArray: true,
   })
   @RateLimit({ profile: 'publicCatalog' })
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('live/sessions')
   listLiveSessions(@Query() query: ListLiveSessionsQueryDto, @CurrentUser() requester?: AuthenticatedUser) {
     return this.catalogRpcService.listLiveSessions({
       requesterUserId: requester?.id ?? null,
       filter: query.filter ?? 'all',
       q: query.q ?? null,
+      shopId: query.shopId ?? null,
+    });
+  }
+
+  @ApiOperation({ summary: 'Lay chi tiet phien live commerce' })
+  @ApiOkResponse({
+    description: 'Chi tiet phien live commerce cong khai.',
+    type: LiveSessionResponseDto,
+  })
+  @RateLimit({ profile: 'publicCatalog' })
+  @UseGuards(OptionalJwtAuthGuard)
+  @Get('live/sessions/:sessionId')
+  getLiveSession(
+    @Param('sessionId') sessionId: string,
+    @CurrentUser() requester?: AuthenticatedUser,
+  ) {
+    return this.catalogRpcService.getLiveSession({
+      sessionId,
+      requesterUserId: requester?.id ?? null,
     });
   }
 
@@ -52,6 +84,36 @@ export class LiveController {
     return this.liveReactionService.getAggregate(sessionId);
   }
 
+  @ApiOperation({ summary: 'Seller xem analytics cua phien livestream' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description:
+      'Current viewers, interactions, reminders and attributed commerce.',
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('live/sessions/:sessionId/analytics')
+  async getLiveAnalytics(
+    @Param('sessionId') sessionId: string,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester: AuthenticatedUser | undefined,
+  ) {
+    const [durable, currentViewers, reactions] = await Promise.all([
+      this.catalogRpcService.getLiveAnalytics({
+        sessionId,
+        requesterUserId,
+        requesterRole: requester?.role,
+      }),
+      this.presenceService.countLiveViewers(sessionId),
+      this.liveReactionService.getAggregate(sessionId),
+    ]);
+
+    return {
+      ...(durable as Record<string, unknown>),
+      currentViewers,
+      reactions,
+    };
+  }
+
   @ApiOperation({ summary: 'Lay lich su binh luan cua phien live' })
   @ApiOkResponse({
     description: 'Danh sach comment cua live session, dung cho reconnect/replay.',
@@ -59,6 +121,7 @@ export class LiveController {
     isArray: true,
   })
   @RateLimit({ profile: 'publicCatalog' })
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('live/sessions/:sessionId/comments')
   listLiveComments(
     @Param('sessionId') sessionId: string,
@@ -72,6 +135,7 @@ export class LiveController {
       cursor: query.cursor ?? null,
       since: query.since ?? null,
       pageSize: query.pageSize ?? null,
+      includeHidden: query.includeHidden === 'true',
     });
   }
 
@@ -98,14 +162,13 @@ export class LiveController {
     });
   }
 
-  @ApiOperation({ summary: 'Admin an/hien binh luan live' })
+  @ApiOperation({ summary: 'Admin hoac chu shop an/hien binh luan live' })
   @ApiBearerAuth('access-token')
   @ApiOkResponse({
     description: 'Comment live sau khi cap nhat hien thi.',
     type: LiveCommentResponseDto,
   })
-  @Roles('admin')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Patch('live/sessions/:sessionId/comments/:commentId/visibility')
   updateLiveCommentVisibility(
     @Param('sessionId') sessionId: string,
@@ -123,14 +186,13 @@ export class LiveController {
     });
   }
 
-  @ApiOperation({ summary: 'Admin xoa binh luan live' })
+  @ApiOperation({ summary: 'Admin hoac chu shop xoa binh luan live' })
   @ApiBearerAuth('access-token')
   @ApiOkResponse({
     description: 'Comment live da bi xoa.',
     type: LiveCommentResponseDto,
   })
-  @Roles('admin')
-  @UseGuards(JwtAuthGuard, ActiveUserGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Delete('live/sessions/:sessionId/comments/:commentId')
   deleteLiveComment(
     @Param('sessionId') sessionId: string,
@@ -154,26 +216,134 @@ export class LiveController {
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('live/sessions')
+  @Header('Cache-Control', 'no-store')
   async createLiveSession(@CurrentUserId() requesterUserId: string, @Body() dto: CreateLiveSessionDto) {
-    const result = await this.catalogRpcService.createLiveSession({
-      requesterUserId,
-      shopId: dto.shopId,
-      title: dto.title,
-      description: dto.description ?? null,
-      coverUrl: dto.coverUrl ?? null,
-      startAt: dto.startAt,
-      playbackUrl: dto.playbackUrl ?? null,
-      streamProvider: dto.streamProvider ?? null,
-      streamProviderSessionId: dto.streamProviderSessionId ?? null,
-      streamIngestUrl: dto.streamIngestUrl ?? null,
-      streamLatencyTargetMs: dto.streamLatencyTargetMs ?? null,
-      recordingUrl: dto.recordingUrl ?? null,
-      recordingRetentionDays: dto.recordingRetentionDays ?? null,
-      offerIds: dto.offerIds ?? [],
-    });
+    const provisioned = this.cloudflareStreamService.isConfigured()
+      ? await this.cloudflareStreamService.createLiveInput({
+          sessionName: `${dto.shopId}: ${dto.title}`,
+        })
+      : null;
+    let result: unknown;
+    try {
+      result = await this.catalogRpcService.createLiveSession({
+        requesterUserId,
+        shopId: dto.shopId,
+        title: dto.title,
+        description: dto.description ?? null,
+        coverUrl: dto.coverUrl ?? null,
+        startAt: dto.startAt,
+        playbackUrl: provisioned?.playbackUrl ?? dto.playbackUrl ?? null,
+        streamProvider: provisioned
+          ? 'CLOUDFLARE_STREAM'
+          : dto.streamProvider ?? null,
+        streamProviderSessionId:
+          provisioned?.providerSessionId ??
+          dto.streamProviderSessionId ??
+          null,
+        streamIngestUrl: provisioned ? null : dto.streamIngestUrl ?? null,
+        streamLatencyTargetMs: dto.streamLatencyTargetMs ?? 8000,
+        recordingUrl: dto.recordingUrl ?? null,
+        recordingRetentionDays:
+          provisioned?.recordingRetentionDays ??
+          dto.recordingRetentionDays ??
+          null,
+        offerIds: dto.offerIds ?? [],
+        voucherIds: dto.voucherIds ?? [],
+      });
+    } catch (error) {
+      if (provisioned) {
+        await this.cloudflareStreamService
+          .deleteLiveInput(provisioned.providerSessionId)
+          .catch(() => undefined);
+      }
+      throw error;
+    }
     this.dashboardSseBrokerService.notifyShop(shopIdFromResult(result) ?? dto.shopId, 'live_changed');
 
-    return result;
+    if (!provisioned) return result;
+    return {
+      ...(result as Record<string, unknown>),
+      broadcastCredentials: {
+        ingestUrl: provisioned.ingestUrl,
+        streamKey: provisioned.streamKey,
+      },
+    };
+  }
+
+  @ApiOperation({ summary: 'Lay cau hinh OBS cua phien live do seller so huu' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ description: 'RTMPS server va stream key cho OBS.' })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('live/sessions/:sessionId/broadcast-credentials')
+  @Header('Cache-Control', 'no-store')
+  async getBroadcastCredentials(
+    @Param('sessionId') sessionId: string,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester: AuthenticatedUser | undefined,
+  ) {
+    const context = await this.catalogRpcService.getLiveBroadcastContext({
+      sessionId,
+      requesterUserId,
+      requesterRole: requester?.role,
+    }) as {
+      streamProvider?: string | null;
+      providerSessionId: string;
+    };
+    if (context.streamProvider !== 'CLOUDFLARE_STREAM') {
+      throw new BadRequestException(
+        'Broadcast credentials are managed outside Cloudflare Stream',
+      );
+    }
+    const credentials =
+      await this.cloudflareStreamService.getBroadcastCredentials(
+        context.providerSessionId,
+      );
+    return {
+      ingestUrl: credentials.ingestUrl,
+      streamKey: credentials.streamKey,
+    };
+  }
+
+  @ApiOperation({ summary: 'Kiem tra va gan ban ghi replay tu Cloudflare' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ description: 'Trang thai san sang cua ban ghi replay.' })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('live/sessions/:sessionId/recording/refresh')
+  async refreshLiveRecording(
+    @Param('sessionId') sessionId: string,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester: AuthenticatedUser | undefined,
+  ) {
+    const context = (await this.catalogRpcService.getLiveBroadcastContext({
+      sessionId,
+      requesterUserId,
+      requesterRole: requester?.role,
+    })) as {
+      streamProvider?: string | null;
+      providerSessionId: string;
+    };
+    if (context.streamProvider !== 'CLOUDFLARE_STREAM') {
+      throw new BadRequestException(
+        'Recording is managed outside Cloudflare Stream',
+      );
+    }
+    const recording =
+      await this.cloudflareStreamService.getLatestReadyRecording(
+        context.providerSessionId,
+      );
+    if (!recording) return { ready: false };
+
+    const session = await this.catalogRpcService.syncLiveProviderEvent({
+      providerSessionId: context.providerSessionId,
+      eventType: 'recording.ready',
+      occurredAt: new Date().toISOString(),
+      recordingUrl: recording.recordingUrl,
+    });
+    const shopId = shopIdFromResult(session);
+    if (shopId) {
+      this.dashboardSseBrokerService.notifyShop(shopId, 'live_changed');
+    }
+    return { ready: true, recordingUrl: recording.recordingUrl };
   }
 
   @ApiOperation({ summary: 'Cap nhat trang thai phien live commerce' })

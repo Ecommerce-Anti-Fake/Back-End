@@ -54,6 +54,7 @@ export class CartController {
       buyerUserId,
       offerId: dto.offerId,
       variantId: dto.variantId ?? null,
+      sourceLiveSessionId: dto.sourceLiveSessionId ?? null,
       quantity: dto.quantity,
     });
     return { success: true };

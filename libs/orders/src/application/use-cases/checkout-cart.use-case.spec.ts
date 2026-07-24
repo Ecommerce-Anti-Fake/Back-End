@@ -96,7 +96,12 @@ describe('CheckoutCartUseCase', () => {
         groups: expect.arrayContaining([
           expect.objectContaining({
             shopId: 'shop-1',
-            items: [expect.objectContaining({ sourceCartItemId: 'cart-item-1' })],
+            items: [
+              expect.objectContaining({
+                sourceCartItemId: 'cart-item-1',
+                sourceLiveSessionId: 'live-1',
+              }),
+            ],
           }),
           expect.objectContaining({
             shopId: 'shop-2',
@@ -176,6 +181,7 @@ describe('CheckoutCartUseCase', () => {
     return {
       id,
       offerId,
+      sourceLiveSessionId: id === 'cart-item-1' ? 'live-1' : null,
       variantId: `${offerId}-variant`,
       quantity,
       offerTitleSnapshot: offerId,

@@ -6,7 +6,13 @@ import { toCartResponse } from './orders.mapper';
 export class AddCartItemUseCase {
   constructor(private readonly ordersRepository: OrdersRepository) {}
 
-  async execute(input: { buyerUserId: string; offerId: string; variantId?: string | null; quantity: number }) {
+  async execute(input: {
+    buyerUserId: string;
+    offerId: string;
+    variantId?: string | null;
+    sourceLiveSessionId?: string | null;
+    quantity: number;
+  }) {
     if (input.quantity < 1) {
       throw new BadRequestException('Quantity must be greater than zero');
     }
@@ -46,6 +52,20 @@ export class AddCartItemUseCase {
       throw new BadRequestException('Quantity exceeds available stock');
     }
 
+    const sourceLiveSessionId = input.sourceLiveSessionId?.trim() || null;
+    if (sourceLiveSessionId) {
+      const featuredOffer =
+        await this.ordersRepository.findLiveSessionOfferForAttribution({
+          sessionId: sourceLiveSessionId,
+          offerId: offer.id,
+        });
+      if (!featuredOffer || featuredOffer.session.status === 'CANCELLED') {
+        throw new BadRequestException(
+          'Live session source is invalid for this offer',
+        );
+      }
+    }
+
     const cart = await this.ordersRepository.upsertCartItem({
       buyerUserId: input.buyerUserId,
       offerId: offer.id,
@@ -56,6 +76,7 @@ export class AddCartItemUseCase {
       unitPriceSnapshot: Number(variant.price.toString()),
       currencySnapshot: offer.currency,
       shopNameSnapshot: offer.shop.shopName,
+      sourceLiveSessionId,
     });
 
     return toCartResponse(cart);

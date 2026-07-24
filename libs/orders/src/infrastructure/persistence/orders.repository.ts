@@ -486,6 +486,7 @@ export type CreateAggregateOrderRecordInput = {
     parcelHeightCm: number | null;
     items: Array<{
       sourceCartItemId: string;
+      sourceLiveSessionId?: string | null;
       offerId: string;
       variantId?: string | null;
       offerTitleSnapshot: string;
@@ -823,6 +824,21 @@ export class OrdersRepository {
     return this.findOfferForOrdering(offerId);
   }
 
+  findLiveSessionOfferForAttribution(input: {
+    sessionId: string;
+    offerId: string;
+  }) {
+    return this.prisma.liveSessionOffer.findUnique({
+      where: {
+        sessionId_offerId: {
+          sessionId: input.sessionId,
+          offerId: input.offerId,
+        },
+      },
+      include: { session: { select: { status: true } } },
+    });
+  }
+
   findDefaultAddressByUserId(userId: string) {
     return this.prisma.userAddress.findFirst({
       where: {
@@ -843,16 +859,18 @@ export class OrdersRepository {
     unitPriceSnapshot: number;
     currencySnapshot: string;
     shopNameSnapshot: string;
+    sourceLiveSessionId?: string | null;
   }): Promise<CartWithItems> {
     const cart = await this.getOrCreateActiveCart(input.buyerUserId);
 
-    await this.prisma.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${cart.id}:${input.offerId}:${input.variantId ?? 'offer'}`}))`;
+    await this.prisma.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${cart.id}:${input.offerId}:${input.variantId ?? 'offer'}:${input.sourceLiveSessionId ?? 'direct'}`}))`;
 
     const existingItem = await this.prisma.cartItem.findFirst({
       where: {
         cartId: cart.id,
         offerId: input.offerId,
         variantId: input.variantId ?? null,
+        sourceLiveSessionId: input.sourceLiveSessionId ?? null,
       },
       select: { id: true, quantity: true },
     });
@@ -871,6 +889,7 @@ export class OrdersRepository {
           unitPriceSnapshot: input.unitPriceSnapshot,
           currencySnapshot: input.currencySnapshot,
           shopNameSnapshot: input.shopNameSnapshot,
+          sourceLiveSessionId: input.sourceLiveSessionId ?? null,
         },
       });
     } else {
@@ -884,6 +903,7 @@ export class OrdersRepository {
           unitPriceSnapshot: input.unitPriceSnapshot,
           currencySnapshot: input.currencySnapshot,
           shopNameSnapshot: input.shopNameSnapshot,
+          sourceLiveSessionId: input.sourceLiveSessionId ?? null,
         },
       });
     }
@@ -1236,6 +1256,7 @@ export class OrdersRepository {
             group.items.map((item) => ({
               orderShopGroupId: group.id,
               sourceCartItemId: item.sourceCartItemId,
+              sourceLiveSessionId: item.sourceLiveSessionId ?? null,
               offerId: item.offerId,
               variantId: item.variantId ?? null,
               offerTitleSnapshot: item.offerTitleSnapshot,

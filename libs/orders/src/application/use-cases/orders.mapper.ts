@@ -432,6 +432,7 @@ function toCartItemResponse(item: CartWithItems['items'][number]) {
     id: item.id,
     offerId: item.offerId,
     variantId: item.variantId ?? null,
+    sourceLiveSessionId: item.sourceLiveSessionId ?? null,
     variantSku: item.variant?.sku ?? null,
     offerTitleSnapshot: item.offerTitleSnapshot,
     thumbnailUrl: thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,

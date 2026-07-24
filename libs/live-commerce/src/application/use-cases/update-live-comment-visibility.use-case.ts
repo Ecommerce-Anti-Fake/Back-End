@@ -19,16 +19,20 @@ export class UpdateLiveCommentVisibilityUseCase {
     requesterRole?: string | null;
     visibility: 'PUBLIC' | 'HIDDEN';
   }) {
-    if (input.requesterRole !== 'admin') {
-      throw new ForbiddenException('Only admin can moderate live comments');
-    }
-
     const session = await this.liveCommerceRepository.findLiveSessionById(
       input.sessionId,
       input.requesterUserId,
     );
     if (!session) {
       throw new NotFoundException('Live session not found');
+    }
+    if (
+      input.requesterRole !== 'admin' &&
+      session.shop.ownerUserId !== input.requesterUserId
+    ) {
+      throw new ForbiddenException(
+        'Only admin or session shop owner can moderate live comments',
+      );
     }
 
     const comment =

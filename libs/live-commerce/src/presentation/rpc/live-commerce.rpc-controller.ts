@@ -6,6 +6,10 @@ import type {
   CreateLiveCommentMessage,
   CreateLiveSessionMessage,
   DeleteLiveCommentMessage,
+  GetLiveSessionMessage,
+  GetLiveBroadcastContextMessage,
+  GetLiveAnalyticsMessage,
+  SyncLiveProviderEventMessage,
   LiveSessionLookupMessage,
   ListLiveCommentsMessage,
   ListLiveSessionsMessage,
@@ -16,6 +20,10 @@ import {
   CreateLiveCommentUseCase,
   CreateLiveSessionUseCase,
   DeleteLiveCommentUseCase,
+  GetLiveSessionUseCase,
+  GetLiveBroadcastContextUseCase,
+  GetLiveAnalyticsUseCase,
+  SyncLiveProviderEventUseCase,
   ListLiveCommentsUseCase,
   ListLiveSessionsUseCase,
   RemindLiveSessionUseCase,
@@ -27,6 +35,10 @@ import {
 export class LiveCommerceRpcController {
   constructor(
     private readonly listLiveSessionsUseCase: ListLiveSessionsUseCase,
+    private readonly getLiveSessionUseCase: GetLiveSessionUseCase,
+    private readonly getLiveBroadcastContextUseCase: GetLiveBroadcastContextUseCase,
+    private readonly getLiveAnalyticsUseCase: GetLiveAnalyticsUseCase,
+    private readonly syncLiveProviderEventUseCase: SyncLiveProviderEventUseCase,
     private readonly createLiveSessionUseCase: CreateLiveSessionUseCase,
     private readonly updateLiveSessionStatusUseCase: UpdateLiveSessionStatusUseCase,
     private readonly remindLiveSessionUseCase: RemindLiveSessionUseCase,
@@ -40,6 +52,42 @@ export class LiveCommerceRpcController {
   async listLiveSessions(@Payload() payload: ListLiveSessionsMessage) {
     try {
       return await this.listLiveSessionsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.getLiveSession)
+  async getLiveSession(@Payload() payload: GetLiveSessionMessage) {
+    try {
+      return await this.getLiveSessionUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.getLiveBroadcastContext)
+  async getLiveBroadcastContext(
+    @Payload() payload: GetLiveBroadcastContextMessage,
+  ) {
+    try {
+      return await this.getLiveBroadcastContextUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.getLiveAnalytics)
+  async getLiveAnalytics(@Payload() payload: GetLiveAnalyticsMessage) {
+    try {
+      return await this.getLiveAnalyticsUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.syncLiveProviderEvent)
+  async syncLiveProviderEvent(
+    @Payload() payload: SyncLiveProviderEventMessage,
+  ) {
+    try {
+      return await this.syncLiveProviderEventUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

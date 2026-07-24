@@ -34,8 +34,11 @@ export class ListLiveCommentsUseCase {
       throw new BadRequestException('since is invalid');
     }
 
-    const includeHidden =
-      input.requesterRole === 'admin' && Boolean(input.includeHidden);
+    const canModerate =
+      input.requesterRole === 'admin' ||
+      (Boolean(input.requesterUserId) &&
+        session.shop.ownerUserId === input.requesterUserId);
+    const includeHidden = canModerate && Boolean(input.includeHidden);
     const comments = await this.liveCommerceRepository.listLiveComments({
       sessionId: input.sessionId,
       cursor: input.cursor ?? null,

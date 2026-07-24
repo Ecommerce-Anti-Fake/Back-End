@@ -30,6 +30,11 @@ export class ListLiveSessionsQueryDto {
   @IsOptional()
   @IsString()
   q?: string;
+
+  @ApiPropertyOptional({ example: 'shop-id' })
+  @IsOptional()
+  @IsString()
+  shopId?: string;
 }
 
 export class CreateLiveSessionDto {
@@ -106,6 +111,16 @@ export class CreateLiveSessionDto {
   @IsArray()
   @IsString({ each: true })
   offerIds?: string[];
+
+  @ApiPropertyOptional({
+    example: ['voucher-id-1'],
+    isArray: true,
+    description: 'Active shop vouchers valid when the livestream starts.',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  voucherIds?: string[];
 }
 
 export class UpdateLiveSessionStatusDto {
@@ -162,6 +177,19 @@ export class LiveSessionOfferResponseDto {
   @ApiPropertyOptional() thumbnailUrl?: string | null;
 }
 
+export class LiveSessionVoucherResponseDto {
+  @ApiProperty() voucherId!: string;
+  @ApiProperty() code!: string;
+  @ApiProperty() name!: string;
+  @ApiProperty() discountType!: string;
+  @ApiPropertyOptional() percentage?: number | null;
+  @ApiPropertyOptional() fixedAmount?: number | null;
+  @ApiPropertyOptional() maxDiscountAmount?: number | null;
+  @ApiProperty() minOrderAmount!: number;
+  @ApiProperty() startsAt!: Date;
+  @ApiProperty() endsAt!: Date;
+}
+
 export class LiveCommentResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() sessionId!: string;
@@ -186,14 +214,17 @@ export class LiveSessionResponseDto {
   @ApiProperty({ enum: LIVE_SESSION_STATUSES }) status!: string;
   @ApiPropertyOptional() playbackUrl?: string | null;
   @ApiPropertyOptional() streamProvider?: string | null;
-  @ApiPropertyOptional() streamProviderSessionId?: string | null;
-  @ApiPropertyOptional() streamIngestUrl?: string | null;
   @ApiPropertyOptional() streamLatencyTargetMs?: number | null;
+  @ApiPropertyOptional() providerStatus?: string | null;
+  @ApiPropertyOptional() actualStartedAt?: Date | null;
+  @ApiPropertyOptional() actualEndedAt?: Date | null;
   @ApiPropertyOptional() recordingUrl?: string | null;
   @ApiPropertyOptional() recordingRetentionDays?: number | null;
   @ApiProperty() reminderCount!: number;
   @ApiProperty() viewerHasReminder!: boolean;
   @ApiProperty({ type: LiveSessionOfferResponseDto, isArray: true })
   offers!: LiveSessionOfferResponseDto[];
+  @ApiProperty({ type: LiveSessionVoucherResponseDto, isArray: true })
+  vouchers!: LiveSessionVoucherResponseDto[];
   @ApiProperty() createdAt!: Date;
 }

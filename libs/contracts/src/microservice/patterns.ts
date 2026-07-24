@@ -157,6 +157,10 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   shareSocialPost: 'products.share-social-post',
   updateSocialPostVisibility: 'products.update-social-post-visibility',
   listLiveSessions: 'products.list-live-sessions',
+  getLiveSession: 'products.get-live-session',
+  getLiveBroadcastContext: 'products.get-live-broadcast-context',
+  getLiveAnalytics: 'products.get-live-analytics',
+  syncLiveProviderEvent: 'products.sync-live-provider-event',
   createLiveSession: 'products.create-live-session',
   updateLiveSessionStatus: 'products.update-live-session-status',
   remindLiveSession: 'products.remind-live-session',
@@ -815,6 +819,30 @@ export type ListLiveSessionsMessage = {
   requesterUserId?: string | null;
   filter?: 'all' | 'live' | 'upcoming';
   q?: string | null;
+  shopId?: string | null;
+};
+
+export type GetLiveSessionMessage = {
+  sessionId: string;
+  requesterUserId?: string | null;
+};
+
+export type GetLiveBroadcastContextMessage = {
+  sessionId: string;
+  requesterUserId: string;
+  requesterRole?: string | null;
+};
+
+export type GetLiveAnalyticsMessage = GetLiveBroadcastContextMessage;
+
+export type SyncLiveProviderEventMessage = {
+  providerSessionId: string;
+  eventType:
+    | 'live_input.connected'
+    | 'live_input.disconnected'
+    | 'recording.ready';
+  occurredAt: string;
+  recordingUrl?: string | null;
 };
 
 export type CreateLiveSessionMessage = {
@@ -832,6 +860,7 @@ export type CreateLiveSessionMessage = {
   recordingUrl?: string | null;
   recordingRetentionDays?: number | null;
   offerIds?: string[];
+  voucherIds?: string[];
 };
 
 export type LiveSessionLookupMessage = {
@@ -1108,6 +1137,7 @@ export type AddCartItemMessage = {
   buyerUserId: string;
   offerId: string;
   variantId?: string | null;
+  sourceLiveSessionId?: string | null;
   quantity: number;
 };
 

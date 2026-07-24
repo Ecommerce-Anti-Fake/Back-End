@@ -8,6 +8,7 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
   const repository = {
     findShopForLiveSession: jest.fn(),
     findOffersForLiveSession: jest.fn(),
+    findVouchersForLiveSession: jest.fn(),
     createLiveSession: jest.fn(),
     listLiveSessions: jest.fn(),
     findLiveSessionById: jest.fn(),
@@ -28,7 +29,17 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
         id: 'offer-1',
         shopId: 'shop-1',
         offerStatus: 'active',
-        availableQuantity: 10,
+        variants: [{ availableQuantity: 10 }],
+      },
+    ]);
+    repository.findVouchersForLiveSession.mockResolvedValue([
+      {
+        id: 'voucher-1',
+        ownerType: 'SHOP',
+        shopId: 'shop-1',
+        status: 'ACTIVE',
+        startsAt: new Date('2026-06-01T00:00:00.000Z'),
+        endsAt: new Date('2026-06-03T00:00:00.000Z'),
       },
     ]);
     repository.createLiveSession.mockResolvedValue(liveSession());
@@ -59,6 +70,7 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
       recordingUrl: 'https://cdn.example.com/recordings/live-1.m3u8',
       recordingRetentionDays: 30,
       offerIds: ['offer-1'],
+      voucherIds: ['voucher-1'],
     });
 
     expect(repository.createLiveSession).toHaveBeenCalledWith(
@@ -66,6 +78,7 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
         shopId: 'shop-1',
         title: 'Live hang chinh hang',
         offerIds: ['offer-1'],
+        voucherIds: ['voucher-1'],
         requesterUserId: 'seller-user-1',
         streamProvider: 'HLS_CDN',
         streamProviderSessionId: 'provider-live-1',
@@ -77,9 +90,34 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
       id: 'live-1',
       status: 'SCHEDULED',
       streamProvider: 'HLS_CDN',
-      streamProviderSessionId: 'provider-live-1',
       offers: [expect.objectContaining({ offerId: 'offer-1' })],
     });
+    expect(result).not.toHaveProperty('streamProviderSessionId');
+    expect(result).not.toHaveProperty('streamIngestUrl');
+  });
+
+  it('rejects vouchers that are not active shop vouchers at live time', async () => {
+    const useCase = new CreateLiveSessionUseCase(repository as never);
+    repository.findVouchersForLiveSession.mockResolvedValueOnce([
+      {
+        id: 'voucher-1',
+        ownerType: 'SHOP',
+        shopId: 'other-shop',
+        status: 'ACTIVE',
+        startsAt: new Date('2026-06-01T00:00:00.000Z'),
+        endsAt: new Date('2026-06-03T00:00:00.000Z'),
+      },
+    ]);
+
+    await expect(
+      useCase.execute({
+        requesterUserId: 'seller-user-1',
+        shopId: 'shop-1',
+        title: 'Live hang chinh hang',
+        startAt: '2026-06-02T13:00:00.000Z',
+        voucherIds: ['voucher-1'],
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('rejects live offers that do not belong to the seller shop or have no stock', async () => {
@@ -89,7 +127,7 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
         id: 'offer-1',
         shopId: 'other-shop',
         offerStatus: 'active',
-        availableQuantity: 10,
+        variants: [{ availableQuantity: 10 }],
       },
     ]);
 
@@ -205,10 +243,26 @@ function liveSession(overrides: Record<string, unknown> = {}) {
         offer: {
           id: 'offer-1',
           title: 'San pham 1',
-          price: 100000,
           currency: 'VND',
-          availableQuantity: 10,
+          variants: [{ price: 100000, availableQuantity: 10 }],
           media: [],
+        },
+      },
+    ],
+    vouchers: [
+      {
+        voucher: {
+          id: 'voucher-1',
+          code: 'LIVE10',
+          name: 'Giam 10%',
+          discountType: 'PERCENTAGE',
+          percentage: 10,
+          fixedAmount: null,
+          maxDiscountAmount: 50000,
+          minOrderAmount: 100000,
+          startsAt: new Date('2026-06-01T00:00:00.000Z'),
+          endsAt: new Date('2026-06-03T00:00:00.000Z'),
+          status: 'ACTIVE',
         },
       },
     ],

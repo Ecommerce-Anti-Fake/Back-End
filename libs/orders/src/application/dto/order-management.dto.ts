@@ -126,6 +126,9 @@ export class CartItemResponseDto {
   @ApiPropertyOptional({ example: 'variant-id', nullable: true })
   variantId!: string | null;
 
+  @ApiPropertyOptional({ example: 'live-session-id', nullable: true })
+  sourceLiveSessionId!: string | null;
+
   @ApiPropertyOptional({ example: 'AO-DEN-M', nullable: true })
   variantSku!: string | null;
 
@@ -1803,6 +1806,14 @@ export class AddCartItemDto {
   @IsOptional()
   @IsString()
   variantId?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'live-session-id',
+    description: 'Livestream that featured this offer.',
+  })
+  @IsOptional()
+  @IsString()
+  sourceLiveSessionId?: string | null;
 
   @ApiProperty({ example: 2 })
   @Type(() => Number)
