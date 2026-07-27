@@ -1,4 +1,5 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import {
   PRESENCE_HEARTBEAT_INTERVAL_MS,
@@ -9,6 +10,7 @@ import {
 } from '@common';
 import type { AccessTokenPayload } from '@contracts';
 import { Server, Socket } from 'socket.io';
+import { resolveAllowedOrigins } from '../../bootstrap-http';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 import { LiveReactionsRealtimeService } from './live-reactions-realtime.service';
 
@@ -65,6 +67,7 @@ export class ChatRealtimeService implements OnModuleDestroy {
     private readonly redisRealtimeConfigService: RedisRealtimeConfigService,
     private readonly presenceService: RealtimePresenceService,
     private readonly liveReactionsRealtimeService: LiveReactionsRealtimeService,
+    private readonly configService: ConfigService,
   ) {}
 
   async bind(httpServer: unknown) {
@@ -78,7 +81,7 @@ export class ChatRealtimeService implements OnModuleDestroy {
     const io = new Server(httpServer as never, {
       path: '/api/socket.io',
       cors: {
-        origin: true,
+        origin: resolveAllowedOrigins(this.configService),
         credentials: true,
       },
     });

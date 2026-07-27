@@ -7,7 +7,7 @@ describe('PaymentController', () => {
       {} as never,
       {} as never,
       new ConfigService({
-        FRONTEND_URL: 'https://anti-fake-alpha.vercel.app',
+        FRONTEND_URL: 'https://antifake.io.vn',
       }),
     );
     const response = { redirect: jest.fn() };
@@ -16,7 +16,7 @@ describe('PaymentController', () => {
 
     expect(response.redirect).toHaveBeenCalledWith(
       302,
-      'https://anti-fake-alpha.vercel.app/payment-success',
+      'https://antifake.io.vn/payment-success',
     );
   });
 });

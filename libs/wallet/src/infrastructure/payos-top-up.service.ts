@@ -78,8 +78,24 @@ export class PayOSTopUpService {
     const configured = this.configService.get<string>(envName)?.trim();
     if (configured) return configured;
     const frontendUrl = this.configService.get<string>('FRONTEND_URL')?.trim() || 'http://localhost:5173';
-    const backendUrl = this.configService.get<string>('BACKEND_PUBLIC_URL')?.trim() || this.configService.get<string>('API_PUBLIC_URL')?.trim() || this.configService.get<string>('RENDER_EXTERNAL_URL')?.trim();
-    return fallbackPath.startsWith('/api/') && backendUrl ? `${backendUrl.replace(/\/$/, '')}${fallbackPath}` : `${frontendUrl.replace(/\/$/, '')}${fallbackPath}`;
+    if (!fallbackPath.startsWith('/api/')) {
+      return `${frontendUrl.replace(/\/$/, '')}${fallbackPath}`;
+    }
+
+    const backendUrl =
+      this.configService.get<string>('BACKEND_PUBLIC_URL')?.trim() ||
+      this.configService.get<string>('API_PUBLIC_URL')?.trim();
+    if (backendUrl) {
+      return `${backendUrl.replace(/\/$/, '')}${fallbackPath}`;
+    }
+
+    if (this.configService.get<string>('NODE_ENV')?.trim() === 'production') {
+      throw new ServiceUnavailableException(
+        'BACKEND_PUBLIC_URL must be configured in production',
+      );
+    }
+
+    return `http://localhost:3001${fallbackPath}`;
   }
 
   private signObject(data: Record<string, unknown>, checksumKey: string) {

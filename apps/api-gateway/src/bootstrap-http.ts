@@ -4,17 +4,18 @@ import { json, urlencoded } from 'express';
 
 const DEFAULT_BODY_LIMIT = '5mb';
 
-const DEFAULT_ALLOWED_ORIGINS = [
+const DEVELOPMENT_ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:5173',
   'http://192.168.1.133:5173',
   'http://192.168.1.161:5173',
-  'https://anti-fake-alpha.vercel.app',
+];
+
+const PRODUCTION_ALLOWED_ORIGINS = [
   'https://antifake.io.vn',
   'https://www.antifake.io.vn',
   'https://api.antifake.io.vn',
-  'https://ecommerce-anti-fake-back-end.onrender.com',
 ];
 
 function parseOriginList(value?: string) {
@@ -24,20 +25,24 @@ function parseOriginList(value?: string) {
     .filter(Boolean);
 }
 
-function getAllowedOrigins(configService: ConfigService) {
-  return new Set([
-    ...DEFAULT_ALLOWED_ORIGINS,
+export function resolveAllowedOrigins(configService: ConfigService) {
+  const isProduction =
+    configService.get<string>('NODE_ENV')?.trim() === 'production';
+
+  return Array.from(new Set([
+    ...PRODUCTION_ALLOWED_ORIGINS,
+    ...(isProduction ? [] : DEVELOPMENT_ALLOWED_ORIGINS),
     ...parseOriginList(configService.get<string>('CORS_ALLOWED_ORIGINS')),
     ...parseOriginList(configService.get<string>('CORS_ORIGIN')),
     ...parseOriginList(configService.get<string>('FRONTEND_URL')),
-  ]);
+  ]));
 }
 
 export function configureHttpCors(
   app: INestApplication,
   configService: ConfigService,
 ) {
-  const allowedOrigins = getAllowedOrigins(configService);
+  const allowedOrigins = new Set(resolveAllowedOrigins(configService));
 
   app.enableCors({
     origin: (origin, callback) => {

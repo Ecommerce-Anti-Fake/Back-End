@@ -137,12 +137,25 @@ export class PayOSPaymentService {
       return configured;
     }
 
-    const backendUrl =
-      this.configService.get<string>('BACKEND_PUBLIC_URL')?.trim() ||
-      this.configService.get<string>('API_PUBLIC_URL')?.trim() ||
-      this.configService.get<string>('RENDER_EXTERNAL_URL')?.trim() ||
-      'https://ecommerce-anti-fake-back-end.onrender.com';
+    const backendUrl = this.resolveBackendPublicUrl();
     return `${backendUrl.replace(/\/$/, '')}/api/orders/payos/return`;
+  }
+
+  private resolveBackendPublicUrl() {
+    const configured =
+      this.configService.get<string>('BACKEND_PUBLIC_URL')?.trim() ||
+      this.configService.get<string>('API_PUBLIC_URL')?.trim();
+    if (configured) {
+      return configured;
+    }
+
+    if (this.configService.get<string>('NODE_ENV')?.trim() === 'production') {
+      throw new ServiceUnavailableException(
+        'BACKEND_PUBLIC_URL must be configured in production',
+      );
+    }
+
+    return 'http://localhost:3001';
   }
 
   private normalizeDescription(description: string, orderId: string) {

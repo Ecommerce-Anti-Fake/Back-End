@@ -3,13 +3,16 @@ import { ConfigService } from '@nestjs/config';
 import { configureHttpBodyParser, configureHttpCors, configureRootSwaggerRedirect } from './bootstrap-http';
 
 describe('configureHttpCors', () => {
+  const createConfigService = (values: Record<string, string> = {}) =>
+    ({
+      get: jest.fn((key: string) => values[key]),
+    }) as unknown as ConfigService;
+
   it('allows Swagger UI requests from the local gateway origin', () => {
     const app = {
       enableCors: jest.fn(),
     };
-    const configService = {
-      get: jest.fn(),
-    } as unknown as ConfigService;
+    const configService = createConfigService({ NODE_ENV: 'development' });
 
     configureHttpCors(app as never, configService);
 
@@ -21,49 +24,47 @@ describe('configureHttpCors', () => {
     expect(callback).toHaveBeenCalledWith(null, true);
   });
 
-  it('allows requests from the production API gateway origin', () => {
+  it.each([
+    'https://antifake.io.vn',
+    'https://www.antifake.io.vn',
+    'https://api.antifake.io.vn',
+  ])('allows the production origin %s', (origin) => {
     const app = {
       enableCors: jest.fn(),
     };
-    const configService = {
-      get: jest.fn(),
-    } as unknown as ConfigService;
+    const configService = createConfigService({ NODE_ENV: 'production' });
 
     configureHttpCors(app as never, configService);
 
     const corsOptions = app.enableCors.mock.calls[0][0];
     const callback = jest.fn();
 
-    corsOptions.origin('https://api.antifake.io.vn', callback);
+    corsOptions.origin(origin, callback);
 
     expect(callback).toHaveBeenCalledWith(null, true);
   });
 
-  it('allows requests from the Vercel alpha frontend origin', () => {
+  it('denies legacy Vercel origins in production', () => {
     const app = {
       enableCors: jest.fn(),
     };
-    const configService = {
-      get: jest.fn(),
-    } as unknown as ConfigService;
+    const configService = createConfigService({ NODE_ENV: 'production' });
 
     configureHttpCors(app as never, configService);
 
     const corsOptions = app.enableCors.mock.calls[0][0];
     const callback = jest.fn();
 
-    corsOptions.origin('https://anti-fake-alpha.vercel.app', callback);
+    corsOptions.origin('https://legacy-frontend.example', callback);
 
-    expect(callback).toHaveBeenCalledWith(null, true);
+    expect(callback).toHaveBeenCalledWith(null, false);
   });
 
-  it('allows LAN Vite dev requests against the production API', () => {
+  it('denies LAN Vite origins in production', () => {
     const app = {
       enableCors: jest.fn(),
     };
-    const configService = {
-      get: jest.fn(),
-    } as unknown as ConfigService;
+    const configService = createConfigService({ NODE_ENV: 'production' });
 
     configureHttpCors(app as never, configService);
 
@@ -72,6 +73,25 @@ describe('configureHttpCors', () => {
 
     corsOptions.origin('http://192.168.1.133:5173', callback);
 
+    expect(callback).toHaveBeenCalledWith(null, false);
+  });
+
+  it('allows an explicit production origin from CORS_ALLOWED_ORIGINS', () => {
+    const app = {
+      enableCors: jest.fn(),
+    };
+    const configService = createConfigService({
+      NODE_ENV: 'production',
+      CORS_ALLOWED_ORIGINS: 'https://staging.antifake.io.vn',
+    });
+
+    configureHttpCors(app as never, configService);
+
+    const corsOptions = app.enableCors.mock.calls[0][0];
+    const callback = jest.fn();
+
+    corsOptions.origin('https://staging.antifake.io.vn', callback);
+
     expect(callback).toHaveBeenCalledWith(null, true);
   });
 
@@ -79,9 +99,7 @@ describe('configureHttpCors', () => {
     const app = {
       enableCors: jest.fn(),
     };
-    const configService = {
-      get: jest.fn(),
-    } as unknown as ConfigService;
+    const configService = createConfigService({ NODE_ENV: 'production' });
 
     configureHttpCors(app as never, configService);
 

@@ -9,6 +9,7 @@ describe('PayOSPaymentService', () => {
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(Date.parse('2026-07-10T00:00:00.000Z'));
     jest.spyOn(Math, 'random').mockReturnValue(0.123);
+    fetchMock.mockReset();
     fetchMock.mockResolvedValue({
       ok: true,
       json: jest.fn().mockResolvedValue({
@@ -27,7 +28,8 @@ describe('PayOSPaymentService', () => {
         PAYOS_API_KEY: 'api-key',
         PAYOS_CHECKSUM_KEY: 'checksum-key',
         PAYOS_API_BASE_URL: 'https://payos.test',
-        FRONTEND_URL: 'https://anti-fake-alpha.vercel.app',
+        NODE_ENV: 'production',
+        FRONTEND_URL: 'https://antifake.io.vn',
         BACKEND_PUBLIC_URL: 'https://api.antifake.test',
       }),
     );
@@ -52,6 +54,32 @@ describe('PayOSPaymentService', () => {
 
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.returnUrl).toBe('https://api.antifake.test/api/orders/payos/return');
-    expect(body.cancelUrl).toBe('https://anti-fake-alpha.vercel.app/checkout/cancel/order-1');
+    expect(body.cancelUrl).toBe('https://antifake.io.vn/checkout/cancel/order-1');
+  });
+
+  it('rejects a production return URL when only the legacy Render URL exists', async () => {
+    service = new PayOSPaymentService(
+      new ConfigService({
+        PAYOS_CLIENT_ID: 'client-id',
+        PAYOS_API_KEY: 'api-key',
+        PAYOS_CHECKSUM_KEY: 'checksum-key',
+        PAYOS_API_BASE_URL: 'https://payos.test',
+        NODE_ENV: 'production',
+        FRONTEND_URL: 'https://antifake.io.vn',
+        RENDER_EXTERNAL_URL: 'https://legacy-platform.example',
+      }),
+    );
+
+    await expect(
+      service.createPaymentLink({
+        orderId: 'order-1',
+        amount: 100000,
+        description: 'DHorder1',
+        buyerName: 'Buyer',
+        buyerPhone: '0900000000',
+        itemName: 'Offer',
+        quantity: 1,
+      }),
+    ).rejects.toThrow('BACKEND_PUBLIC_URL');
   });
 });
