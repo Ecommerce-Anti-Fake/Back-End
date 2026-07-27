@@ -272,6 +272,7 @@ export class LiveController {
         streamProviderSessionId:
           provisioned?.providerSessionId ?? dto.streamProviderSessionId ?? null,
         streamIngestUrl: provisioned ? null : (dto.streamIngestUrl ?? null),
+        providerStatus: provisioned ? 'PROVISIONED' : null,
         streamLatencyTargetMs: dto.streamLatencyTargetMs ?? 8000,
         recordingUrl: dto.recordingUrl ?? null,
         recordingRetentionDays:
@@ -373,6 +374,60 @@ export class LiveController {
         streamKey: provisioned.streamKey,
       },
     };
+  }
+
+  @ApiOperation({ summary: 'Chuan bi phien Cloudflare va cho OBS ket noi' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({
+    description: 'Phien dang cho webhook Cloudflare xac nhan ket noi.',
+    type: LiveSessionResponseDto,
+  })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('live/sessions/:sessionId/start')
+  async startLiveSession(
+    @Param('sessionId') sessionId: string,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester: AuthenticatedUser | undefined,
+  ) {
+    const context = (await this.catalogRpcService.getLiveBroadcastContext({
+      sessionId,
+      requesterUserId,
+      requesterRole: requester?.role,
+    })) as {
+      streamProvider?: string | null;
+      providerSessionId?: string | null;
+      status?: string;
+    };
+    if (context.status === 'ENDED' || context.status === 'CANCELLED') {
+      throw new BadRequestException('Terminal live sessions cannot be started');
+    }
+    if (
+      context.streamProvider !== 'CLOUDFLARE_STREAM' ||
+      !context.providerSessionId
+    ) {
+      throw new BadRequestException(
+        'Live session is not managed by Cloudflare Stream',
+      );
+    }
+
+    await this.cloudflareStreamService.getBroadcastCredentials(
+      context.providerSessionId,
+    );
+    const result = await this.catalogRpcService.startLiveSession({
+      sessionId,
+      requesterUserId,
+      requesterRole: requester?.role,
+    });
+    this.logger.log({
+      metric: 'livestream.cloudflare.starting',
+      sessionId,
+      providerSessionId: context.providerSessionId,
+    });
+    const shopId = shopIdFromResult(result);
+    if (shopId) {
+      this.dashboardSseBrokerService.notifyShop(shopId, 'live_changed');
+    }
+    return result;
   }
 
   @ApiOperation({ summary: 'Lay cau hinh OBS cua phien live do seller so huu' })

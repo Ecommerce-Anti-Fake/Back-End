@@ -65,6 +65,17 @@ export class RequestWalletWithdrawalUseCase {
       return this.toResponse(existing);
     }
 
+    if (input.shopId) {
+      const outstandingCodObligations = await tx.codShopSettlement.count({
+        where: { shopId: input.shopId, status: 'OUTSTANDING' },
+      });
+      if (outstandingCodObligations > 0) {
+        throw new BadRequestException(
+          'Outstanding COD obligations must be paid before withdrawing',
+        );
+      }
+    }
+
     const payoutAccount = await tx.payoutAccount.findUnique({ where: { id: input.payoutAccountId } });
     if (!payoutAccount || payoutAccount.disabledAt) throw new NotFoundException('Payout account not found');
     const ownsAccount = input.shopId

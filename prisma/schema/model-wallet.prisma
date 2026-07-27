@@ -20,6 +20,7 @@ model Wallet {
   withdrawals      WalletWithdrawal[]
   withdrawalAuthorizations WithdrawalAuthorization[]
   topUps           WalletTopUp[]
+  codShopSettlements CodShopSettlement[]
 
   @@unique([userId, currency])
   @@unique([shopId, currency])

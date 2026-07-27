@@ -8,7 +8,7 @@ describe('GetShopWalletUseCase', () => {
       canAccessShopWallet: jest.fn().mockResolvedValue(false),
       findOrCreateShopWallet: jest.fn(),
     } as any;
-    const useCase = new GetShopWalletUseCase(walletService);
+    const useCase = new GetShopWalletUseCase(walletService, {} as never);
 
     await expect(
       useCase.execute('shop-1', 'user-1', 'user'),
@@ -36,11 +36,24 @@ describe('GetShopWalletUseCase', () => {
         updatedAt: new Date(),
       }),
     } as any;
-    const result = await new GetShopWalletUseCase(walletService).execute(
+    const codSettlement = {
+      getShopSummary: jest.fn().mockResolvedValue({
+        codAmountDue: '25000.00',
+        hasCodDebt: true,
+        hasOverdueCodDebt: false,
+        nextCodDebtDueAt: new Date('2026-07-30T06:00:00.000Z'),
+      }),
+    };
+    const result = await new GetShopWalletUseCase(walletService, codSettlement as never).execute(
       'shop-1',
       'owner-1',
       'user',
     );
     expect(result.availableBalance).toBe('12.50');
+    expect(result).toMatchObject({
+      codAmountDue: '25000.00',
+      hasCodDebt: true,
+      hasOverdueCodDebt: false,
+    });
   });
 });

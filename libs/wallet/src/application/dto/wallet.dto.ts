@@ -46,6 +46,11 @@ export class WalletTopUpResponseDto {
   @ApiProperty({ type: String }) amount!: string;
   @ApiProperty() currency!: string;
   @ApiProperty() status!: string;
+  @ApiPropertyOptional({ type: String }) codAmountDue?: string;
+  @ApiPropertyOptional({ type: String }) requiredTopUpAmount?: string;
+  @ApiPropertyOptional() hasCodDebt?: boolean;
+  @ApiPropertyOptional() hasOverdueCodDebt?: boolean;
+  @ApiPropertyOptional({ nullable: true }) nextCodDebtDueAt?: Date | null;
 }
 
 export class WalletLedgerEntryResponseDto {
@@ -114,29 +119,23 @@ export class WalletWithdrawalResponseDto {
 }
 
 export class CreatePayoutAccountDto {
-  @ApiProperty({ example: '970436' })
-  @Matches(/^\d{6}$/)
-  bankBin!: string;
-
-  @ApiProperty({ example: 'VCB' })
-  @Matches(/^[A-Za-z0-9]{2,20}$/)
-  bankCode!: string;
-
-  @ApiProperty({ example: 'Vietcombank' })
+  @ApiProperty({ description: 'Phiên tra cứu ngân hàng còn hiệu lực' })
   @IsString() @IsNotEmpty() @MaxLength(100)
-  bankName!: string;
-
-  @ApiProperty({ example: '0123456789' })
-  @Matches(/^\d{6,20}$/)
-  accountNumber!: string;
-
-  @ApiProperty({ example: 'NGUYEN VAN A' })
-  @IsString() @IsNotEmpty() @MaxLength(150)
-  accountHolder!: string;
+  verificationId!: string;
 
   @ApiProperty()
   @IsString() @IsNotEmpty() @MaxLength(200)
   authorizationToken!: string;
+}
+
+export class VerifyBankAccountDto {
+  @ApiProperty({ example: '970436' })
+  @Matches(/^\d{6}$/)
+  bankBin!: string;
+
+  @ApiProperty({ example: '0123456789' })
+  @Matches(/^\d{6,19}$/)
+  accountNumber!: string;
 }
 
 export class PayoutAccountResponseDto {
@@ -174,11 +173,7 @@ export class CreateWithdrawalAuthorizationChallengeDto {
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(100) shopId?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(100) payoutAccountId?: string;
   @ApiPropertyOptional() @IsOptional() @IsDecimal({ decimal_digits: '0,2' }) amount?: string;
-  @ApiPropertyOptional() @IsOptional() @Matches(/^\d{6}$/) bankBin?: string;
-  @ApiPropertyOptional() @IsOptional() @Matches(/^[A-Za-z0-9]{2,20}$/) bankCode?: string;
-  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(100) bankName?: string;
-  @ApiPropertyOptional() @IsOptional() @Matches(/^\d{6,20}$/) accountNumber?: string;
-  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(150) accountHolder?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(100) bankAccountVerificationId?: string;
 }
 
 export class VerifyWithdrawalAuthorizationChallengeDto {

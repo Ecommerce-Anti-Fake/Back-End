@@ -2,15 +2,40 @@ import { PayoutAccountSecurityService } from '../../domain';
 import { PayoutAccountService } from './payout-account.service';
 
 describe('PayoutAccountService', () => {
-  const now = new Date('2026-07-22T05:00:00.000Z');
+  const now = new Date('2026-07-27T05:00:00.000Z');
+  const verification = {
+    id: 'verification-1',
+    userId: 'user-1',
+    shopId: 'shop-1',
+    bankBin: '970436',
+    bankCode: 'VCB',
+    bankName: 'Ngân hàng TMCP Ngoại thương Việt Nam',
+    bankShortName: 'Vietcombank',
+    bankLogo: null,
+    accountNumberEncrypted: 'encrypted-account',
+    accountNumberHash: 'account-hash',
+    accountNumberLast4: '6789',
+    accountNumberLength: 10,
+    accountHolder: 'TRAN VAN B',
+    provider: 'VIETQR',
+    expiresAt: new Date('2026-07-27T05:10:00.000Z'),
+    consumedAt: null,
+    createdAt: now,
+  };
   const tx = {
-    payoutAccount: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+    bankAccountVerification: {
+      findUnique: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    payoutAccount: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
     auditLog: { create: jest.fn() },
   };
   const prisma = {
     $transaction: jest.fn(),
-    shop: { findUnique: jest.fn() },
-    user: { findUnique: jest.fn() },
     payoutAccount: { findUnique: jest.fn(), findMany: jest.fn() },
   };
   const walletService = {
@@ -22,101 +47,140 @@ describe('PayoutAccountService', () => {
   const security = new PayoutAccountSecurityService({
     get: jest.fn(() => '33'.repeat(32)),
   } as never);
-  const shop = {
-    id: 'shop-1', ownerUserId: 'user-1', businessType: 'HOUSEHOLD', verifiedLegalName: null,
-    shopStatus: 'verified',
-    owner: { kyc: { fullName: 'NGUYỄN VĂN A', verificationStatus: 'approved', verifiedAt: now } },
-  };
 
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers().setSystemTime(now.getTime());
     prisma.$transaction.mockImplementation((callback: (client: typeof tx) => unknown) => callback(tx));
-    prisma.shop.findUnique.mockResolvedValue(shop);
     walletService.canAccessShopWallet.mockResolvedValue(true);
     walletService.findOrCreateShopWallet.mockResolvedValue({ id: 'wallet-1', shopId: 'shop-1' });
+    walletService.findOrCreateUserWallet.mockResolvedValue({ id: 'wallet-user-1', userId: 'user-1' });
+    tx.bankAccountVerification.findUnique.mockResolvedValue(verification);
+    tx.bankAccountVerification.updateMany.mockResolvedValue({ count: 1 });
     tx.payoutAccount.findFirst.mockResolvedValue(null);
     tx.payoutAccount.create.mockImplementation(({ data }: { data: Record<string, unknown> }) => ({
-      id: 'payout-1', ...data, resolvedAccountHolder: null, verificationStatus: 'PENDING',
-      verificationMethod: null, verifiedAt: null, disabledAt: null, createdAt: now, updatedAt: now,
-    }));
-    tx.payoutAccount.update.mockImplementation(({ data }: { data: Record<string, unknown> }) => ({
-      id: 'payout-1', ownerType: 'SHOP', shopId: 'shop-1', userId: null,
-      bankBin: '970436', bankCode: 'VCB', bankName: 'Vietcombank',
-      accountNumberEncrypted: 'encrypted', accountNumberHash: 'hash', accountNumberLast4: '6789',
-      accountNumberLength: 10, declaredAccountHolder: 'NGUYEN VAN A', availableAfter: now,
-      verificationStatus: 'PENDING', verificationMethod: null, verifiedAt: null,
-      rejectionReason: null, disabledAt: null, createdAt: now, updatedAt: now, ...data,
+      id: 'payout-1',
+      ...data,
+      rejectionReason: null,
+      disabledAt: null,
+      createdAt: now,
+      updatedAt: now,
     }));
   });
 
   afterEach(() => jest.useRealTimers());
 
-  it('creates an encrypted pending account for the approved KYC owner with a 24-hour cooldown', async () => {
+  it('creates a provider-verified account without KYC holder-name matching', async () => {
     const service = new PayoutAccountService(
-      prisma as never, walletService as never, authorization as never, security,
+      prisma as never,
+      walletService as never,
+      authorization as never,
+      security,
     );
 
     const result = await service.create({
-      userId: 'user-1', requesterRole: 'user', shopId: 'shop-1', authorizationToken: 'one-time-token',
-      bankBin: '970436', bankCode: 'VCB', bankName: 'Vietcombank', accountNumber: '0123456789',
-      accountHolder: 'Nguyen Van A',
+      userId: 'user-1',
+      requesterRole: 'user',
+      shopId: 'shop-1',
+      authorizationToken: 'one-time-token',
+      verificationId: 'verification-1',
     });
 
-    expect(authorization.consumeInTransaction).toHaveBeenCalledWith(tx, expect.objectContaining({
-      operation: 'CREATE_PAYOUT_ACCOUNT', walletId: 'wallet-1', userId: 'user-1',
-    }));
-    const createdData = tx.payoutAccount.create.mock.calls[0][0].data;
-    expect(createdData.accountNumberEncrypted).not.toContain('0123456789');
-    expect(createdData.availableAfter).toEqual(new Date('2026-07-23T05:00:00.000Z'));
-    expect(result.accountNumberMasked).toBe('******6789');
-    expect(result).not.toHaveProperty('accountNumberEncrypted');
-  });
-
-  it('rejects a declared holder that differs from the KYC owner', async () => {
-    const service = new PayoutAccountService(
-      prisma as never, walletService as never, authorization as never, security,
-    );
-
-    await expect(service.create({
-      userId: 'user-1', requesterRole: 'user', shopId: 'shop-1', authorizationToken: 'token',
-      bankBin: '970436', bankCode: 'VCB', bankName: 'Vietcombank', accountNumber: '0123456789',
-      accountHolder: 'TRAN VAN B',
-    })).rejects.toThrow('Payout account holder must match the verified owner');
-    expect(prisma.$transaction).not.toHaveBeenCalled();
-  });
-
-  it('requires a verified legal name for a company account', async () => {
-    prisma.shop.findUnique.mockResolvedValueOnce({ ...shop, businessType: 'COMPANY', verifiedLegalName: null });
-    const service = new PayoutAccountService(
-      prisma as never, walletService as never, authorization as never, security,
-    );
-
-    await expect(service.create({
-      userId: 'user-1', requesterRole: 'user', shopId: 'shop-1', authorizationToken: 'token',
-      bankBin: '970436', bankCode: 'VCB', bankName: 'Vietcombank', accountNumber: '0123456789',
-      accountHolder: 'CONG TY ABC',
-    })).rejects.toThrow('Company legal name must be verified before adding a payout account');
-  });
-
-  it('manually verifies only the beneficiary name matching the verified owner', async () => {
-    prisma.payoutAccount.findUnique.mockResolvedValue({
-      id: 'payout-1', shopId: 'shop-1', userId: null, verificationStatus: 'PENDING', disabledAt: null,
+    expect(authorization.consumeInTransaction).toHaveBeenCalledWith(tx, {
+      authorizationToken: 'one-time-token',
+      userId: 'user-1',
+      walletId: 'wallet-1',
+      operation: 'CREATE_PAYOUT_ACCOUNT',
+      payload: { bankAccountVerificationId: 'verification-1' },
     });
-    const service = new PayoutAccountService(
-      prisma as never, walletService as never, authorization as never, security,
-    );
-
-    await service.verifyManually({
-      payoutAccountId: 'payout-1', adminUserId: 'admin-1', resolvedAccountHolder: 'NGUYEN VAN A',
-    });
-
-    expect(tx.payoutAccount.update).toHaveBeenCalledWith({
-      where: { id: 'payout-1' },
+    expect(tx.payoutAccount.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
-        verificationStatus: 'VERIFIED', verificationMethod: 'MANUAL_BANK_APP',
-        verifiedByUserId: 'admin-1', resolvedAccountHolder: 'NGUYEN VAN A',
+        ownerType: 'SHOP',
+        shopId: 'shop-1',
+        accountNumberEncrypted: 'encrypted-account',
+        declaredAccountHolder: 'TRAN VAN B',
+        resolvedAccountHolder: 'TRAN VAN B',
+        verificationStatus: 'VERIFIED',
+        verificationMethod: 'PROVIDER',
+        verifiedAt: now,
+        availableAfter: new Date('2026-07-28T05:00:00.000Z'),
       }),
+    });
+    expect(tx.bankAccountVerification.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'verification-1',
+        consumedAt: null,
+        expiresAt: { gt: now },
+      },
+      data: { consumedAt: now },
+    });
+    expect(result.accountNumberMasked).toBe('******6789');
+    expect(result.accountHolder).toBe('TRAN VAN B');
+  });
+
+  it('rejects an expired or already-consumed verification session', async () => {
+    tx.bankAccountVerification.findUnique.mockResolvedValueOnce({
+      ...verification,
+      expiresAt: new Date('2026-07-27T04:59:59.000Z'),
+    });
+    const service = new PayoutAccountService(
+      prisma as never,
+      walletService as never,
+      authorization as never,
+      security,
+    );
+
+    await expect(service.create({
+      userId: 'user-1',
+      requesterRole: 'user',
+      shopId: 'shop-1',
+      authorizationToken: 'token',
+      verificationId: 'verification-1',
+    })).rejects.toThrow('Bank account verification has expired');
+    expect(tx.payoutAccount.create).not.toHaveBeenCalled();
+  });
+
+  it('manually verifies a legacy account without comparing it to KYC', async () => {
+    prisma.payoutAccount.findUnique.mockResolvedValue({
+      id: 'payout-1',
+      shopId: 'shop-1',
+      userId: null,
+      verificationStatus: 'PENDING',
+      disabledAt: null,
+    });
+    tx.payoutAccount.update.mockResolvedValue({
+      id: 'payout-1',
+      ownerType: 'SHOP',
+      shopId: 'shop-1',
+      userId: null,
+      bankBin: '970436',
+      bankCode: 'VCB',
+      bankName: 'Vietcombank',
+      accountNumberLast4: '6789',
+      accountNumberLength: 10,
+      declaredAccountHolder: 'OLD NAME',
+      resolvedAccountHolder: 'THIRD PARTY NAME',
+      verificationStatus: 'VERIFIED',
+      verificationMethod: 'MANUAL_BANK_APP',
+      availableAfter: now,
+      verifiedAt: now,
+      rejectionReason: null,
+      createdAt: now,
+    });
+    const service = new PayoutAccountService(
+      prisma as never,
+      walletService as never,
+      authorization as never,
+      security,
+    );
+
+    await expect(service.verifyManually({
+      payoutAccountId: 'payout-1',
+      adminUserId: 'admin-1',
+      resolvedAccountHolder: 'THIRD PARTY NAME',
+    })).resolves.toMatchObject({
+      resolvedAccountHolder: 'THIRD PARTY NAME',
+      verificationStatus: 'VERIFIED',
     });
   });
 });

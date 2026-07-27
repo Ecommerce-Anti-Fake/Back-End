@@ -35,10 +35,12 @@ export class CompleteOrderUseCase {
       throw new BadRequestException('Cannot complete order while an open dispute exists');
     }
 
-    await this.releaseEscrowUseCase.execute({
-      orderId: order.id,
-      actorUserId: input.requesterUserId,
-    });
+    if (order.paymentIntent?.paymentMethod !== 'COD') {
+      await this.releaseEscrowUseCase.execute({
+        orderId: order.id,
+        actorUserId: input.requesterUserId,
+      });
+    }
     const updatedOrder = await this.ordersRepository.completeOrder({
       id: order.id,
       actorUserId: input.requesterUserId,

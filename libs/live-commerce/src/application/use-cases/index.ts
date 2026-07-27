@@ -7,6 +7,7 @@ export * from './get-live-analytics.use-case';
 export * from './list-live-comments.use-case';
 export * from './list-live-sessions.use-case';
 export * from './remind-live-session.use-case';
+export * from './start-live-session.use-case';
 export * from './sync-live-provider-event.use-case';
 export * from './update-live-comment-visibility.use-case';
 export * from './update-live-session-status.use-case';

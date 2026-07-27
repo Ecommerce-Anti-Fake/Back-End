@@ -31,6 +31,7 @@ model OrderShopGroup {
   items                  OrderItem[]
   voucherAllocations     OrderVoucherAllocation[]
   refundAllocations      OrderRefundShopGroup[]
+  codSettlement          CodShopSettlement?
 
   @@unique([orderId, shopId])
   @@index([shopId, fulfillmentStatus])

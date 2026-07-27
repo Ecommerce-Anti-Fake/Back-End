@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { ShippingCarrierAdapterService } from '../services';
 import { SyncOrderShippingStatusUseCase } from './sync-order-shipping-status.use-case';
+import { UpdateOrderFulfillmentUseCase } from './update-order-fulfillment.use-case';
 
 describe('SyncOrderShippingStatusUseCase', () => {
   let useCase: SyncOrderShippingStatusUseCase;
@@ -16,6 +17,9 @@ describe('SyncOrderShippingStatusUseCase', () => {
   const shippingCarrierAdapterMock = {
     trackShipment: jest.fn(),
   };
+  const updateOrderFulfillmentMock = {
+    execute: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -25,6 +29,7 @@ describe('SyncOrderShippingStatusUseCase', () => {
         SyncOrderShippingStatusUseCase,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
         { provide: ShippingCarrierAdapterService, useValue: shippingCarrierAdapterMock },
+        { provide: UpdateOrderFulfillmentUseCase, useValue: updateOrderFulfillmentMock },
       ],
     }).compile();
 
@@ -38,7 +43,7 @@ describe('SyncOrderShippingStatusUseCase', () => {
       providerStatus: 'delivered',
       fulfillmentStatus: 'DELIVERED',
     });
-    ordersRepositoryMock.updateFulfillmentStatus.mockResolvedValueOnce({
+    updateOrderFulfillmentMock.execute.mockResolvedValueOnce({
       ...order,
       fulfillmentStatus: 'DELIVERED',
     });
@@ -63,14 +68,12 @@ describe('SyncOrderShippingStatusUseCase', () => {
         }),
       }),
     );
-    expect(ordersRepositoryMock.updateFulfillmentStatus).toHaveBeenCalledWith('order-1', 'DELIVERED');
-    expect(ordersRepositoryMock.createNotification).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: 'buyer-user-1',
-        notificationType: 'ORDER_FULFILLMENT',
-        targetId: 'order-1',
-      }),
-    );
+    expect(updateOrderFulfillmentMock.execute).toHaveBeenCalledWith({
+      id: 'order-1',
+      requesterUserId: 'seller-user-1',
+      fulfillmentStatus: 'DELIVERED',
+    });
+    expect(ordersRepositoryMock.updateFulfillmentStatus).not.toHaveBeenCalled();
     expect(result).toMatchObject({
       id: 'order-1',
       fulfillmentStatus: 'DELIVERED',

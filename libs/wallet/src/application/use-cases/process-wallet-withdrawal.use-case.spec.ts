@@ -11,6 +11,7 @@ describe('Process wallet withdrawal', () => {
   const prisma = { $transaction: jest.fn() };
   const walletRepository = {
     findWithdrawalInTransaction: jest.fn(),
+    findShopWalletInTransaction: jest.fn(),
     executeTransactionInTransaction: jest.fn(),
   };
   const walletService = { canAccessShopWallet: jest.fn() };
@@ -22,6 +23,7 @@ describe('Process wallet withdrawal', () => {
     jest.resetAllMocks();
     prisma.$transaction.mockImplementation((callback: (client: typeof tx) => unknown) => callback(tx));
     walletRepository.findWithdrawalInTransaction.mockResolvedValue(withdrawal);
+    walletRepository.findShopWalletInTransaction.mockResolvedValue({ id: 'wallet-1' });
     walletRepository.executeTransactionInTransaction.mockResolvedValue({ id: 'transaction-1' });
     walletService.canAccessShopWallet.mockResolvedValue(true);
     tx.walletWithdrawal.update.mockResolvedValue({ ...withdrawal, status: 'APPROVED' });
@@ -99,6 +101,23 @@ describe('Process wallet withdrawal', () => {
     expect(tx.walletWithdrawal.update).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ status: 'CANCELLED', cancelledAt: expect.any(Date) }),
     }));
+  });
+
+  it('does not let one shop cancel another shop withdrawal by id', async () => {
+    walletRepository.findShopWalletInTransaction.mockResolvedValueOnce({ id: 'wallet-other' });
+    const useCase = new CancelWalletWithdrawalUseCase(
+      prisma as never,
+      walletService as never,
+      walletRepository as never,
+    );
+
+    await expect(useCase.execute({
+      id: 'withdrawal-1',
+      shopId: 'shop-other',
+      requesterUserId: 'owner-other',
+      requesterRole: 'user',
+    })).rejects.toThrow('Withdrawal does not belong to this shop wallet');
+    expect(walletRepository.executeTransactionInTransaction).not.toHaveBeenCalled();
   });
 
   it('rejects already processed withdrawals', async () => {

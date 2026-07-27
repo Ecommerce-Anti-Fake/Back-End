@@ -67,6 +67,12 @@ describe('LiveController routes', () => {
     expect(
       Reflect.getMetadata(
         PATH_METADATA,
+        LiveController.prototype.startLiveSession,
+      ),
+    ).toBe('live/sessions/:sessionId/start');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
         LiveController.prototype.getBroadcastCredentials,
       ),
     ).toBe('live/sessions/:sessionId/broadcast-credentials');
@@ -133,6 +139,7 @@ describe('LiveController routes', () => {
         shopId: 'shop-1',
         streamProvider: 'CLOUDFLARE_STREAM',
         streamProviderSessionId: 'input-1',
+        providerStatus: 'PROVISIONED',
         playbackUrl:
           'https://customer-code.cloudflarestream.com/input-1/iframe',
         streamIngestUrl: null,
@@ -150,6 +157,53 @@ describe('LiveController routes', () => {
         ingestUrl: 'rtmps://live.cloudflare.com:443/live/',
         streamKey: 'secret-stream-key',
       },
+    });
+  });
+
+  it('marks the provider as starting without setting the commerce session live', async () => {
+    const catalogRpcService = {
+      getLiveBroadcastContext: jest.fn().mockResolvedValue({
+        sessionId: 'live-1',
+        shopId: 'shop-1',
+        status: 'SCHEDULED',
+        streamProvider: 'CLOUDFLARE_STREAM',
+        providerSessionId: 'input-1',
+      }),
+      startLiveSession: jest.fn().mockResolvedValue({
+        id: 'live-1',
+        shopId: 'shop-1',
+        status: 'SCHEDULED',
+        providerStatus: 'STARTING',
+      }),
+    };
+    const cloudflareStreamService = {
+      getBroadcastCredentials: jest.fn().mockResolvedValue({
+        enabled: true,
+      }),
+    };
+    const controller = new LiveController(
+      catalogRpcService as never,
+      {} as never,
+      {} as never,
+      { notifyShop: jest.fn() } as never,
+      cloudflareStreamService as never,
+    );
+
+    await expect(
+      controller.startLiveSession('live-1', 'seller-1', {
+        role: 'seller',
+      } as never),
+    ).resolves.toMatchObject({
+      status: 'SCHEDULED',
+      providerStatus: 'STARTING',
+    });
+    expect(
+      cloudflareStreamService.getBroadcastCredentials,
+    ).toHaveBeenCalledWith('input-1');
+    expect(catalogRpcService.startLiveSession).toHaveBeenCalledWith({
+      sessionId: 'live-1',
+      requesterUserId: 'seller-1',
+      requesterRole: 'seller',
     });
   });
 

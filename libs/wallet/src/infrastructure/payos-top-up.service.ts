@@ -16,6 +16,7 @@ export class PayOSTopUpService {
   async createPaymentLink(input: {
     amount: Prisma.Decimal | string | number;
     idempotencyKey: string;
+    destination?: 'USER' | 'SHOP';
     returnUrl?: string | null;
     cancelUrl?: string | null;
   }): Promise<WalletTopUpPaymentLink> {
@@ -26,8 +27,16 @@ export class PayOSTopUpService {
 
     const credentials = this.getCredentials();
     const orderCode = String(Date.now() * 1000 + Math.floor(Math.random() * 1000));
-    const returnUrl = input.returnUrl?.trim() || this.resolveUrl('PAYOS_WALLET_RETURN_URL', '/api/wallet/top-ups/payos/return');
-    const cancelUrl = input.cancelUrl?.trim() || this.resolveUrl('PAYOS_WALLET_CANCEL_URL', '/profile/wallet');
+    const returnUrl = input.returnUrl?.trim() || (
+      input.destination === 'SHOP'
+        ? this.resolveUrl('PAYOS_SHOP_WALLET_RETURN_URL', '/seller/wallet?topUp=returned')
+        : this.resolveUrl('PAYOS_WALLET_RETURN_URL', '/api/wallet/top-ups/payos/return')
+    );
+    const cancelUrl = input.cancelUrl?.trim() || (
+      input.destination === 'SHOP'
+        ? this.resolveUrl('PAYOS_SHOP_WALLET_CANCEL_URL', '/seller/wallet')
+        : this.resolveUrl('PAYOS_WALLET_CANCEL_URL', '/profile/wallet')
+    );
     const description = `Nap vi ${input.idempotencyKey.replace(/[^a-zA-Z0-9]/g, '').slice(-4) || 'user'}`.slice(0, 9);
     const signaturePayload = { amount, cancelUrl, description, orderCode: Number(orderCode), returnUrl };
     const body = {

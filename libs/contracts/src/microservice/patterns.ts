@@ -87,6 +87,8 @@ export const SHOPS_MESSAGE_PATTERNS = {
 } as const;
 
 export const WALLET_MESSAGE_PATTERNS = {
+  listBanks: 'wallet.list-banks',
+  verifyBankAccount: 'wallet.verify-bank-account',
   getMyWallet: 'wallet.get-my-wallet',
   getMyWalletTransactions: 'wallet.get-my-wallet-transactions',
   getShopWallet: 'wallet.get-shop-wallet',
@@ -94,6 +96,8 @@ export const WALLET_MESSAGE_PATTERNS = {
   requestShopWalletWithdrawal: 'wallet.request-shop-wallet-withdrawal',
   requestUserWalletWithdrawal: 'wallet.request-user-wallet-withdrawal',
   listShopWalletWithdrawals: 'wallet.list-shop-wallet-withdrawals',
+  listShopCodSettlements: 'wallet.list-shop-cod-settlements',
+  listUserWalletWithdrawals: 'wallet.list-user-wallet-withdrawals',
   approveWalletWithdrawal: 'wallet.approve-withdrawal',
   completeWalletWithdrawal: 'wallet.complete-withdrawal',
   cancelWalletWithdrawal: 'wallet.cancel-withdrawal',
@@ -113,6 +117,7 @@ export const WALLET_MESSAGE_PATTERNS = {
   adjustWalletBalance: 'wallet.adjust-wallet-balance',
   getWalletReconciliation: 'wallet.get-wallet-reconciliation',
   createWalletTopUp: 'wallet.create-top-up',
+  createShopWalletTopUp: 'wallet.create-shop-top-up',
   handleWalletTopUpWebhook: 'wallet.handle-top-up-webhook',
   getPlatformWallets: 'wallet.get-platform-wallets',
   listAdminWalletWithdrawals: 'wallet.list-admin-withdrawals',
@@ -162,6 +167,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   getLiveAnalytics: 'products.get-live-analytics',
   syncLiveProviderEvent: 'products.sync-live-provider-event',
   createLiveSession: 'products.create-live-session',
+  startLiveSession: 'products.start-live-session',
   updateLiveSessionStatus: 'products.update-live-session-status',
   remindLiveSession: 'products.remind-live-session',
   listLiveComments: 'products.list-live-comments',
@@ -862,6 +868,7 @@ export type CreateLiveSessionMessage = {
   streamProvider?: string | null;
   streamProviderSessionId?: string | null;
   streamIngestUrl?: string | null;
+  providerStatus?: string | null;
   streamLatencyTargetMs?: number | null;
   recordingUrl?: string | null;
   recordingRetentionDays?: number | null;
@@ -876,7 +883,7 @@ export type LiveSessionLookupMessage = {
 };
 
 export type UpdateLiveSessionStatusMessage = LiveSessionLookupMessage & {
-  status: 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED';
+  status: 'ENDED' | 'CANCELLED';
 };
 
 export type ListLiveCommentsMessage = {

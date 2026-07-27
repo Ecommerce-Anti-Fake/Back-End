@@ -1,0 +1,27 @@
+model BankAccountVerification {
+  id                     String    @id @default(uuid())
+  userId                 String    @map("user_id")
+  shopId                 String?   @map("shop_id")
+  bankBin                String    @map("bank_bin")
+  bankCode               String    @map("bank_code")
+  bankName               String    @map("bank_name")
+  bankShortName          String    @map("bank_short_name")
+  bankLogo               String?   @map("bank_logo")
+  accountNumberEncrypted String    @map("account_number_encrypted")
+  accountNumberHash      String    @map("account_number_hash")
+  accountNumberLast4     String    @map("account_number_last4")
+  accountNumberLength    Int       @map("account_number_length")
+  accountHolder          String    @map("account_holder")
+  provider               String
+  expiresAt              DateTime  @map("expires_at")
+  consumedAt             DateTime? @map("consumed_at")
+  createdAt              DateTime  @default(now()) @map("created_at")
+
+  user                   User      @relation(fields: [userId], references: [id])
+  shop                   Shop?     @relation(fields: [shopId], references: [id])
+
+  @@index([userId, expiresAt])
+  @@index([shopId, expiresAt])
+  @@index([accountNumberHash])
+  @@map("bank_account_verification")
+}

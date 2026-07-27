@@ -27,6 +27,7 @@ import {
   ListLiveCommentsUseCase,
   ListLiveSessionsUseCase,
   RemindLiveSessionUseCase,
+  StartLiveSessionUseCase,
   UpdateLiveCommentVisibilityUseCase,
   UpdateLiveSessionStatusUseCase,
 } from '../../application/use-cases';
@@ -40,6 +41,7 @@ export class LiveCommerceRpcController {
     private readonly getLiveAnalyticsUseCase: GetLiveAnalyticsUseCase,
     private readonly syncLiveProviderEventUseCase: SyncLiveProviderEventUseCase,
     private readonly createLiveSessionUseCase: CreateLiveSessionUseCase,
+    private readonly startLiveSessionUseCase: StartLiveSessionUseCase,
     private readonly updateLiveSessionStatusUseCase: UpdateLiveSessionStatusUseCase,
     private readonly remindLiveSessionUseCase: RemindLiveSessionUseCase,
     private readonly listLiveCommentsUseCase: ListLiveCommentsUseCase,
@@ -96,6 +98,14 @@ export class LiveCommerceRpcController {
   async createLiveSession(@Payload() payload: CreateLiveSessionMessage) {
     try {
       return await this.createLiveSessionUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.startLiveSession)
+  async startLiveSession(@Payload() payload: LiveSessionLookupMessage) {
+    try {
+      return await this.startLiveSessionUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

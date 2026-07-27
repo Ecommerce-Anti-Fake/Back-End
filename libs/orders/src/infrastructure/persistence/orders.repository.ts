@@ -1190,7 +1190,7 @@ export class OrdersRepository {
         },
         escrow: {
           create: {
-            escrowStatus: 'PENDING',
+            escrowStatus: data.paymentMethod === 'COD' ? 'NOT_APPLICABLE' : 'PENDING',
             heldAmount: 0,
           },
         },
@@ -1279,7 +1279,7 @@ export class OrdersRepository {
         },
         escrow: {
           create: {
-            escrowStatus: 'PENDING',
+            escrowStatus: data.paymentMethod === 'COD' ? 'NOT_APPLICABLE' : 'PENDING',
             heldAmount: 0,
           },
         },
@@ -3076,7 +3076,6 @@ export class OrdersRepository {
     input: { id: string; actorUserId: string; providerRef: string | null },
   ): Promise<OrderWithRelations> {
       const now = new Date();
-      const heldAmount = await this.getOrderPayableAmount(tx, input.id);
       const paymentIntent = await tx.paymentIntent.findUnique({
         where: { orderId: input.id },
         select: {
@@ -3097,13 +3096,16 @@ export class OrdersRepository {
         return tx.order.findUniqueOrThrow({ where: { id: input.id }, ...orderWithRelationsArgs });
       }
 
-      await this.updateEscrowStatusWithAudit(tx, {
-        orderId: input.id,
-        actorUserId: input.actorUserId,
-        escrowStatus: 'HELD',
-        heldAmount,
-        note: `Escrow held after payment moved from ${fromStatus} to PAID`,
-      });
+      if (paymentIntent?.paymentMethod !== 'COD') {
+        const heldAmount = await this.getOrderPayableAmount(tx, input.id);
+        await this.updateEscrowStatusWithAudit(tx, {
+          orderId: input.id,
+          actorUserId: input.actorUserId,
+          escrowStatus: 'HELD',
+          heldAmount,
+          note: `Escrow held after payment moved from ${fromStatus} to PAID`,
+        });
+      }
       await tx.voucherRedemption.updateMany({
         where: { orderId: input.id, status: 'RESERVED' },
         data: { status: 'USED' },
@@ -3143,7 +3145,7 @@ export class OrdersRepository {
         where: { id: input.id },
         data: {
           orderStatus: 'paid',
-          fulfillmentStatus: 'PENDING',
+          ...(paymentIntent?.paymentMethod === 'COD' ? {} : { fulfillmentStatus: 'PENDING' }),
         },
         ...orderWithRelationsArgs,
       });
@@ -3930,14 +3932,15 @@ export class OrdersRepository {
       select: { fulfillmentStatus: true },
     });
     const statuses = groups.map((group) => group.fulfillmentStatus);
+    const activeStatuses = statuses.filter((status) => status !== 'CANCELLED');
     const fulfillmentStatus =
-      statuses.length > 0 && statuses.every((status) => status === 'DELIVERED')
+      activeStatuses.length > 0 && activeStatuses.every((status) => status === 'DELIVERED')
         ? 'DELIVERED'
-        : statuses.some((status) => status === 'SHIPPING')
+        : activeStatuses.some((status) => status === 'SHIPPING')
           ? 'SHIPPING'
-          : statuses.some((status) => status === 'PROCESSING')
+          : activeStatuses.some((status) => status === 'PROCESSING')
             ? 'PROCESSING'
-            : statuses.length > 0 && statuses.every((status) => status === 'CANCELLED')
+            : statuses.length > 0 && activeStatuses.length === 0
               ? 'CANCELLED'
               : 'PENDING';
     await tx.order.update({

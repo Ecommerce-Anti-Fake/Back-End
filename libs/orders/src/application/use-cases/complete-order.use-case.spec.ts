@@ -53,6 +53,34 @@ describe('CompleteOrderUseCase', () => {
     });
   });
 
+  it('completes COD without releasing an escrow that does not exist', async () => {
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(
+      createOrderRecord({ paymentMethod: 'COD', escrowStatus: 'NOT_APPLICABLE' }),
+    );
+    ordersRepositoryMock.completeOrder.mockResolvedValueOnce(
+      createOrderRecord({
+        orderStatus: 'completed',
+        paymentMethod: 'COD',
+        escrowStatus: 'NOT_APPLICABLE',
+      }),
+    );
+
+    const result = await useCase.execute({
+      id: 'order-1',
+      requesterUserId: 'seller-user-1',
+    });
+
+    expect(ordersRepositoryMock.releaseEscrow).not.toHaveBeenCalled();
+    expect(ordersRepositoryMock.completeOrder).toHaveBeenCalledWith({
+      id: 'order-1',
+      actorUserId: 'seller-user-1',
+    });
+    expect(result).toMatchObject({
+      orderStatus: 'completed',
+      escrowStatus: 'NOT_APPLICABLE',
+    });
+  });
+
   it('should reject completing an order before it is delivered', async () => {
     ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord({ fulfillmentStatus: 'SHIPPING' }));
 
@@ -94,6 +122,7 @@ function createOrderRecord(overrides?: {
   escrowStatus?: string;
   fulfillmentStatus?: string;
   disputes?: Array<{ id: string; disputeStatus: string }>;
+  paymentMethod?: string;
 }) {
   return {
     id: 'order-1',
@@ -118,7 +147,7 @@ function createOrderRecord(overrides?: {
     paymentIntent: {
       id: 'payment-1',
       orderId: 'order-1',
-      paymentMethod: 'manual_confirmation',
+      paymentMethod: overrides?.paymentMethod ?? 'manual_confirmation',
       paymentStatus: 'PAID',
       amount: new Prisma.Decimal(100),
       providerRef: null,

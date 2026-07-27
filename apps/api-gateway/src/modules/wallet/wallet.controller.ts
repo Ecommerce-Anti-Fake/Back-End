@@ -15,6 +15,7 @@ import {
   PayoutAccountResponseDto,
   ReasonDto,
   VerifyPayoutAccountDto,
+  VerifyBankAccountDto,
   VerifyWithdrawalAuthorizationChallengeDto,
   WalletReconciliationQueryDto,
   WalletResponseDto,
@@ -24,6 +25,7 @@ import {
   WalletWithdrawalsQueryDto,
 } from '@wallet';
 import { WalletRpcService } from './wallet-rpc.service';
+import { RateLimit } from '../../observability';
 
 @ApiTags('Wallet')
 @ApiBearerAuth('access-token')
@@ -31,6 +33,12 @@ import { WalletRpcService } from './wallet-rpc.service';
 @Controller()
 export class WalletController {
   constructor(private readonly walletRpcService: WalletRpcService) {}
+
+  @ApiOperation({ summary: 'Lấy danh sách ngân hàng hỗ trợ tra cứu tài khoản' })
+  @Get('wallet/banks')
+  listBanks() {
+    return this.walletRpcService.listBanks();
+  }
 
   @ApiOperation({ summary: 'Lấy ví VND của người dùng hiện tại' })
   @ApiOkResponse({ type: WalletResponseDto })
@@ -71,6 +79,21 @@ export class WalletController {
     return this.walletRpcService.createPayoutAccount({ userId, requesterRole: user?.role ?? 'user', ...body });
   }
 
+  @ApiOperation({ summary: 'Tra cứu tên chủ tài khoản ngân hàng của người dùng' })
+  @RateLimit({ profile: 'auth', limit: 10 })
+  @Post('wallet/me/payout-account-verifications')
+  verifyMyBankAccount(
+    @CurrentUserId() userId: string,
+    @CurrentUser() user: AuthenticatedUser | undefined,
+    @Body() body: VerifyBankAccountDto,
+  ) {
+    return this.walletRpcService.verifyBankAccount({
+      userId,
+      requesterRole: user?.role ?? 'user',
+      ...body,
+    });
+  }
+
   @ApiOperation({ summary: 'Vô hiệu hóa tài khoản nhận tiền của người dùng' })
   @Delete('wallet/me/payout-accounts/:id')
   disableMyPayoutAccount(
@@ -97,7 +120,29 @@ export class WalletController {
     });
   }
 
+  @ApiOperation({ summary: 'Lấy danh sách yêu cầu rút tiền của người dùng' })
+  @ApiOkResponse({ type: WalletWithdrawalResponseDto, isArray: true })
+  @Get('wallet/me/withdrawals')
+  listMyWalletWithdrawals(@CurrentUserId() userId: string) {
+    return this.walletRpcService.listUserWalletWithdrawals({ userId });
+  }
+
+  @ApiOperation({ summary: 'Hủy yêu cầu rút tiền đang chờ của người dùng' })
+  @Post('wallet/me/withdrawals/:id/cancel')
+  cancelMyWalletWithdrawal(
+    @Param('id') id: string,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester?: AuthenticatedUser,
+  ) {
+    return this.walletRpcService.cancelWalletWithdrawal({
+      id,
+      requesterUserId,
+      requesterRole: requester?.role ?? 'user',
+    });
+  }
+
   @ApiOperation({ summary: 'Tạo thử thách xác thực Firebase cho thao tác rút tiền' })
+  @RateLimit({ profile: 'auth', limit: 10 })
   @Post('wallet/withdrawal-authorizations/challenges')
   createWithdrawalAuthorizationChallenge(
     @CurrentUserId() userId: string,
@@ -167,6 +212,41 @@ export class WalletController {
     return this.walletRpcService.createPayoutAccount({ shopId, userId, requesterRole: user?.role ?? 'user', ...body });
   }
 
+  @ApiOperation({ summary: 'Tra cứu tên chủ tài khoản ngân hàng của shop' })
+  @RateLimit({ profile: 'auth', limit: 10 })
+  @Post('shops/:shopId/wallet/payout-account-verifications')
+  verifyShopBankAccount(
+    @Param('shopId') shopId: string,
+    @CurrentUserId() userId: string,
+    @CurrentUser() user: AuthenticatedUser | undefined,
+    @Body() body: VerifyBankAccountDto,
+  ) {
+    return this.walletRpcService.verifyBankAccount({
+      shopId,
+      userId,
+      requesterRole: user?.role ?? 'user',
+      ...body,
+    });
+  }
+
+  @ApiOperation({ summary: 'Tạo liên kết nạp tiền vào ví shop' })
+  @ApiOkResponse({ type: WalletTopUpResponseDto })
+  @Post('shops/:shopId/wallet/top-ups')
+  createShopWalletTopUp(
+    @Param('shopId') shopId: string,
+    @CurrentUserId() userId: string,
+    @CurrentUser() user: AuthenticatedUser | undefined,
+    @Body() body: CreateWalletTopUpDto,
+  ) {
+    return this.walletRpcService.createShopWalletTopUp({
+      shopId,
+      userId,
+      requesterRole: user?.role ?? 'user',
+      amount: body.amount,
+      idempotencyKey: body.idempotencyKey ?? '',
+    });
+  }
+
   @ApiOperation({ summary: 'Vô hiệu hóa tài khoản nhận tiền của shop' })
   @Delete('shops/:shopId/wallet/payout-accounts/:id')
   disableShopPayoutAccount(
@@ -205,6 +285,20 @@ export class WalletController {
   ) {
     return this.walletRpcService.listShopWalletWithdrawals({
       shopId, requesterUserId, requesterRole: requester?.role ?? 'user',
+    });
+  }
+
+  @ApiOperation({ summary: 'Lấy danh sách nghĩa vụ COD của shop' })
+  @Get('shops/:shopId/wallet/cod-settlements')
+  listShopCodSettlements(
+    @Param('shopId') shopId: string,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester?: AuthenticatedUser,
+  ) {
+    return this.walletRpcService.listShopCodSettlements({
+      shopId,
+      requesterUserId,
+      requesterRole: requester?.role ?? 'user',
     });
   }
 

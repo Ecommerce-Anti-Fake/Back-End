@@ -76,6 +76,8 @@ export class CloudflareStreamService implements OnModuleInit {
     const retentionDays = this.retentionDays();
     this.logger.log({
       metric: 'livestream.cloudflare.create.start',
+      sessionId: input.sessionId,
+      shopId: input.shopId,
       accountFingerprint: fingerprint(this.accountId()),
     });
     const liveInput = await this.requestLiveInput(
@@ -105,6 +107,7 @@ export class CloudflareStreamService implements OnModuleInit {
     if (!liveInput.enabled) {
       this.logger.error({
         metric: 'livestream.cloudflare.create.disabled',
+        sessionId: input.sessionId,
         providerSessionId: liveInput.uid,
         accountFingerprint: fingerprint(this.accountId()),
       });
@@ -114,6 +117,8 @@ export class CloudflareStreamService implements OnModuleInit {
     }
     this.logger.log({
       metric: 'livestream.cloudflare.create.success',
+      sessionId: input.sessionId,
+      shopId: input.shopId,
       providerSessionId: liveInput.uid,
       enabled: liveInput.enabled,
       providerStatus: liveInput.status,

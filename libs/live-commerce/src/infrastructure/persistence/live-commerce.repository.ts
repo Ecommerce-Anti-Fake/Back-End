@@ -84,6 +84,7 @@ export class LiveCommerceRepository {
     streamProvider?: string | null;
     streamProviderSessionId?: string | null;
     streamIngestUrl?: string | null;
+    providerStatus?: string | null;
     streamLatencyTargetMs?: number | null;
     recordingUrl?: string | null;
     recordingRetentionDays?: number | null;
@@ -103,6 +104,7 @@ export class LiveCommerceRepository {
         streamProvider: input.streamProvider ?? null,
         streamProviderSessionId: input.streamProviderSessionId ?? null,
         streamIngestUrl: input.streamIngestUrl ?? null,
+        providerStatus: input.providerStatus ?? null,
         streamLatencyTargetMs: input.streamLatencyTargetMs ?? null,
         recordingUrl: input.recordingUrl ?? null,
         recordingRetentionDays: input.recordingRetentionDays ?? null,
@@ -188,14 +190,36 @@ export class LiveCommerceRepository {
 
   updateLiveSessionStatus(input: {
     sessionId: string;
-    status: 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED';
+    status: 'ENDED' | 'CANCELLED';
     requesterUserId: string;
+    actualEndedAt?: Date;
   }) {
     return this.prisma.liveCommerceSession.update({
       where: { id: input.sessionId },
-      data: { status: input.status },
+      data: {
+        status: input.status,
+        ...(input.actualEndedAt ? { actualEndedAt: input.actualEndedAt } : {}),
+      },
       include: this.liveSessionInclude(input.requesterUserId),
     });
+  }
+
+  async markLiveSessionStarting(input: {
+    sessionId: string;
+    requesterUserId: string;
+  }) {
+    await this.prisma.liveCommerceSession.updateMany({
+      where: {
+        id: input.sessionId,
+        status: 'SCHEDULED',
+      },
+      data: {
+        providerStatus: 'STARTING',
+        providerErrorCode: null,
+        providerErrorMessage: null,
+      },
+    });
+    return this.findLiveSessionById(input.sessionId, input.requesterUserId);
   }
 
   async remindLiveSession(input: { sessionId: string; userId: string }) {

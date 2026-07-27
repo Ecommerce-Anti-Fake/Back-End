@@ -20,11 +20,7 @@ import { WalletService } from '../use-cases/wallet.service';
 
 type AuthorizationPayload = {
   amount?: string;
-  bankBin?: string;
-  bankCode?: string;
-  bankName?: string;
-  accountNumber?: string;
-  accountHolder?: string;
+  bankAccountVerificationId?: string;
 };
 
 export type CreateWithdrawalAuthorizationInput = AuthorizationPayload & {
@@ -86,6 +82,7 @@ export class WithdrawalAuthorizationService {
     }
 
     const payload = this.normalizePayload(input);
+    await this.assertBankAccountVerificationAccess(input, payload);
     this.assertOperationPayload(input.operation, input.payoutAccountId, payload);
     const expiresAt = new Date(now.getTime() + 5 * 60_000);
     const challenge = await this.prisma.withdrawalAuthorization.create({
@@ -202,11 +199,9 @@ export class WithdrawalAuthorizationService {
   private normalizePayload(payload: AuthorizationPayload): AuthorizationPayload {
     return {
       ...(payload.amount !== undefined ? { amount: new Prisma.Decimal(payload.amount).toFixed(2) } : {}),
-      ...(payload.bankBin !== undefined ? { bankBin: payload.bankBin.trim() } : {}),
-      ...(payload.bankCode !== undefined ? { bankCode: payload.bankCode.trim().toUpperCase() } : {}),
-      ...(payload.bankName !== undefined ? { bankName: payload.bankName.trim() } : {}),
-      ...(payload.accountNumber !== undefined ? { accountNumber: this.security.normalizeAccountNumber(payload.accountNumber) } : {}),
-      ...(payload.accountHolder !== undefined ? { accountHolder: this.security.normalizeHolderName(payload.accountHolder) } : {}),
+      ...(payload.bankAccountVerificationId !== undefined
+        ? { bankAccountVerificationId: payload.bankAccountVerificationId.trim() }
+        : {}),
     };
   }
 
@@ -228,11 +223,32 @@ export class WithdrawalAuthorizationService {
       throw new BadRequestException('Withdrawal authorization requires payout account and amount');
     }
     if (operation === 'CREATE_PAYOUT_ACCOUNT') {
-      const required = [payload.bankBin, payload.bankCode, payload.bankName, payload.accountNumber, payload.accountHolder];
-      if (required.some((value) => !value)) throw new BadRequestException('Payout account authorization is incomplete');
+      if (!payload.bankAccountVerificationId) {
+        throw new BadRequestException('Bank account verification is required');
+      }
     }
     if (operation === 'DELETE_PAYOUT_ACCOUNT' && !payoutAccountId) {
       throw new BadRequestException('Payout account is required');
+    }
+  }
+
+  private async assertBankAccountVerificationAccess(
+    input: CreateWithdrawalAuthorizationInput,
+    payload: AuthorizationPayload,
+  ) {
+    if (input.operation !== 'CREATE_PAYOUT_ACCOUNT' || !payload.bankAccountVerificationId) return;
+    const verification = await this.prisma.bankAccountVerification.findUnique({
+      where: { id: payload.bankAccountVerificationId },
+      select: { userId: true, shopId: true, expiresAt: true, consumedAt: true },
+    });
+    const ownsVerification =
+      verification?.userId === input.userId &&
+      (input.shopId ? verification.shopId === input.shopId : verification.shopId === null);
+    if (!verification || !ownsVerification) {
+      throw new ForbiddenException('Bank account verification does not belong to this wallet owner');
+    }
+    if (verification.consumedAt || verification.expiresAt <= new Date()) {
+      throw new BadRequestException('Bank account verification has expired or was already used');
     }
   }
 

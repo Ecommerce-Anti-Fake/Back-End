@@ -329,6 +329,10 @@ export class CatalogRpcService {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.createLiveSession, payload);
   }
 
+  startLiveSession(payload: LiveSessionLookupMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.startLiveSession, payload);
+  }
+
   updateLiveSessionStatus(payload: UpdateLiveSessionStatusMessage) {
     return this.send(
       PRODUCTS_MESSAGE_PATTERNS.updateLiveSessionStatus,

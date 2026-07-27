@@ -25,6 +25,7 @@ export class CreateLiveSessionUseCase {
     streamProvider?: string | null;
     streamProviderSessionId?: string | null;
     streamIngestUrl?: string | null;
+    providerStatus?: string | null;
     streamLatencyTargetMs?: number | null;
     recordingUrl?: string | null;
     recordingRetentionDays?: number | null;
@@ -143,6 +144,7 @@ export class CreateLiveSessionUseCase {
       streamProvider: input.streamProvider?.trim() || 'HLS_CDN',
       streamProviderSessionId: input.streamProviderSessionId?.trim() || null,
       streamIngestUrl: input.streamIngestUrl?.trim() || null,
+      providerStatus: input.providerStatus?.trim() || null,
       streamLatencyTargetMs: input.streamLatencyTargetMs ?? null,
       recordingUrl: input.recordingUrl?.trim() || null,
       recordingRetentionDays: input.recordingRetentionDays ?? null,

@@ -17,6 +17,7 @@ const LIVE_SESSION_STATUSES = [
   'ENDED',
   'CANCELLED',
 ] as const;
+const LIVE_SESSION_MUTATION_STATUSES = ['ENDED', 'CANCELLED'] as const;
 const LIVE_SESSION_FILTERS = ['all', 'live', 'upcoming'] as const;
 const CONTENT_VISIBILITIES = ['PUBLIC', 'HIDDEN'] as const;
 
@@ -124,9 +125,9 @@ export class CreateLiveSessionDto {
 }
 
 export class UpdateLiveSessionStatusDto {
-  @ApiProperty({ enum: LIVE_SESSION_STATUSES, example: 'LIVE' })
-  @IsIn(LIVE_SESSION_STATUSES)
-  status!: (typeof LIVE_SESSION_STATUSES)[number];
+  @ApiProperty({ enum: LIVE_SESSION_MUTATION_STATUSES, example: 'ENDED' })
+  @IsIn(LIVE_SESSION_MUTATION_STATUSES)
+  status!: (typeof LIVE_SESSION_MUTATION_STATUSES)[number];
 }
 
 export class ListLiveCommentsQueryDto {

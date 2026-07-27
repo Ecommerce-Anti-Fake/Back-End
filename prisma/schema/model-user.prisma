@@ -50,6 +50,7 @@ model User {
   liveSessionComments  LiveSessionComment[] @relation("LiveCommentAuthor")
   hiddenLiveSessionComments LiveSessionComment[] @relation("LiveCommentHiddenBy")
   wallets               Wallet[]
+  bankAccountVerifications BankAccountVerification[]
   payoutAccounts        PayoutAccount[]          @relation("PayoutAccountUserOwner")
   verifiedPayoutAccounts PayoutAccount[]         @relation("PayoutAccountVerifiedBy")
   withdrawalAuthorizations WithdrawalAuthorization[]

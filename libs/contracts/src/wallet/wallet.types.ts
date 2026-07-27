@@ -48,11 +48,12 @@ export interface PayoutAccountOwnerMessage {
 
 export interface PayoutAccountCreateMessage extends PayoutAccountOwnerMessage {
   authorizationToken: string;
+  verificationId: string;
+}
+
+export interface BankAccountVerificationMessage extends PayoutAccountOwnerMessage {
   bankBin: string;
-  bankCode: string;
-  bankName: string;
   accountNumber: string;
-  accountHolder: string;
 }
 
 export interface PayoutAccountDisableMessage extends PayoutAccountOwnerMessage {
@@ -65,11 +66,7 @@ export interface WithdrawalAuthorizationChallengeMessage extends PayoutAccountOw
   channel: 'PHONE' | 'EMAIL';
   payoutAccountId?: string;
   amount?: string;
-  bankBin?: string;
-  bankCode?: string;
-  bankName?: string;
-  accountNumber?: string;
-  accountHolder?: string;
+  bankAccountVerificationId?: string;
 }
 
 export interface WithdrawalAuthorizationVerifyMessage {
@@ -80,6 +77,8 @@ export interface WithdrawalAuthorizationVerifyMessage {
 
 export interface WalletTopUpCreateMessage {
   userId: string;
+  requesterRole?: string;
+  shopId?: string;
   amount: string;
   idempotencyKey: string;
 }

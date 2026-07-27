@@ -160,21 +160,47 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
-  it('allows scheduled sessions to move live', async () => {
+  it('rejects seller attempts to mark a scheduled session live before the provider connects', async () => {
     const useCase = new UpdateLiveSessionStatusUseCase(repository as never);
 
-    const result = await useCase.execute({
-      sessionId: 'live-1',
-      requesterUserId: 'seller-user-1',
-      status: 'LIVE',
-    });
+    await expect(
+      useCase.execute({
+        sessionId: 'live-1',
+        requesterUserId: 'seller-user-1',
+        status: 'LIVE' as never,
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(repository.updateLiveSessionStatus).not.toHaveBeenCalled();
+  });
 
+  it('records the actual end time when a live session is ended', async () => {
+    const useCase = new UpdateLiveSessionStatusUseCase(repository as never);
+    repository.findLiveSessionById.mockResolvedValueOnce(
+      liveSession({ status: 'LIVE' }),
+    );
+    repository.updateLiveSessionStatus.mockResolvedValueOnce(
+      liveSession({
+        status: 'ENDED',
+        actualEndedAt: new Date('2026-06-02T14:00:00.000Z'),
+      }),
+    );
+
+    await expect(
+      useCase.execute({
+        sessionId: 'live-1',
+        requesterUserId: 'seller-user-1',
+        status: 'ENDED',
+      }),
+    ).resolves.toMatchObject({
+      status: 'ENDED',
+      actualEndedAt: new Date('2026-06-02T14:00:00.000Z'),
+    });
     expect(repository.updateLiveSessionStatus).toHaveBeenCalledWith({
       sessionId: 'live-1',
       requesterUserId: 'seller-user-1',
-      status: 'LIVE',
+      status: 'ENDED',
+      actualEndedAt: expect.any(Date) as Date,
     });
-    expect(result.status).toBe('LIVE');
   });
 
   it('lists live sessions with filter and search input', async () => {
@@ -204,7 +230,7 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
       useCase.execute({
         sessionId: 'live-1',
         requesterUserId: 'seller-user-1',
-        status: 'LIVE',
+        status: 'LIVE' as never,
       }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });

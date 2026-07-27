@@ -1,0 +1,27 @@
+model CodShopSettlement {
+  id                   String                  @id @default(uuid())
+  orderId              String                  @map("order_id")
+  orderShopGroupId     String                  @unique @map("order_shop_group_id")
+  shopId               String                  @map("shop_id")
+  walletId             String                  @map("wallet_id")
+  platformFeeAmount    Decimal                 @map("platform_fee_amount") @db.Decimal(18, 2)
+  affiliateAmount      Decimal                 @default(0) @map("affiliate_amount") @db.Decimal(18, 2)
+  obligationAmount     Decimal                 @map("obligation_amount") @db.Decimal(18, 2)
+  settledAmount        Decimal                 @default(0) @map("settled_amount") @db.Decimal(18, 2)
+  status               CodShopSettlementStatus @default(PENDING)
+  dueAt                DateTime?               @map("due_at")
+  settledAt            DateTime?               @map("settled_at")
+  reversedAt           DateTime?               @map("reversed_at")
+  createdAt            DateTime                @default(now()) @map("created_at")
+  updatedAt            DateTime                @updatedAt @map("updated_at")
+
+  order                Order                   @relation(fields: [orderId], references: [id])
+  orderShopGroup       OrderShopGroup          @relation(fields: [orderShopGroupId], references: [id])
+  shop                 Shop                    @relation(fields: [shopId], references: [id])
+  wallet               Wallet                  @relation(fields: [walletId], references: [id])
+
+  @@index([shopId, status, dueAt])
+  @@index([walletId, status, createdAt])
+  @@index([orderId])
+  @@map("cod_shop_settlement")
+}

@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
+import { CodShopSettlementService } from '@wallet';
 import { OrderReversalService } from '../services';
 import { toOrderResponse } from './orders.mapper';
 
@@ -11,6 +12,7 @@ export class UpdateOrderFulfillmentUseCase {
   constructor(
     private readonly ordersRepository: OrdersRepository,
     private readonly orderReversalService: OrderReversalService,
+    private readonly codShopSettlementService: CodShopSettlementService,
   ) {}
 
   async execute(input: {
@@ -46,6 +48,12 @@ export class UpdateOrderFulfillmentUseCase {
       }
       if (!isPaymentReady) {
         throw new BadRequestException('Only paid orders or COD orders can be processed');
+      }
+      if (order.paymentIntent?.paymentMethod === 'COD' && shopGroup) {
+        await this.codShopSettlementService.prepare({
+          orderShopGroupId: shopGroup.id,
+          actorUserId: input.requesterUserId,
+        });
       }
       const updatedOrder = shopGroup
         ? await this.ordersRepository.updateShopGroupFulfillmentStatus({
@@ -93,20 +101,32 @@ export class UpdateOrderFulfillmentUseCase {
       }
 
       const paymentMethod = order.paymentIntent?.paymentMethod;
-      let paidOrder = order;
+      if (paymentMethod !== 'COD' && order.orderStatus !== 'paid') {
+        throw new BadRequestException('Only paid orders can be delivered');
+      }
 
-      if (order.orderStatus === 'pending' && paymentMethod === 'COD') {
-        paidOrder = await this.ordersRepository.markOrderPaid({
+      if (paymentMethod === 'COD' && shopGroup) {
+        await this.codShopSettlementService.activate({
+          orderShopGroupId: shopGroup.id,
+          actorUserId: input.requesterUserId,
+        });
+      }
+      const isFinalCodDelivery =
+        paymentMethod === 'COD' &&
+        order.orderStatus === 'pending' &&
+        (
+          !shopGroup ||
+          (order.shopGroups ?? [])
+            .filter((group) => group.id !== shopGroup.id && group.fulfillmentStatus !== 'CANCELLED')
+            .every((group) => group.fulfillmentStatus === 'DELIVERED')
+        );
+      if (isFinalCodDelivery) {
+        await this.ordersRepository.markOrderPaid({
           id: order.id,
           actorUserId: input.requesterUserId,
           providerRef: `COD-${order.id.slice(0, 8)}`,
         });
       }
-
-      if (paidOrder.orderStatus !== 'paid') {
-        throw new BadRequestException('Only paid orders can be delivered');
-      }
-
       const updatedOrder = shopGroup
         ? await this.ordersRepository.updateShopGroupFulfillmentStatus({
             orderId: order.id,

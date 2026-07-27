@@ -8,16 +8,22 @@ import {
   OrderWithRelations,
 } from '../../infrastructure/persistence/orders.repository';
 import { OrderInventoryService } from './order-inventory.service';
+import { CodShopSettlementService } from '@wallet';
 
 @Injectable()
 export class OrderPlacementService {
   constructor(
     private readonly ordersRepository: OrdersRepository,
     private readonly orderInventoryService: OrderInventoryService,
+    private readonly codShopSettlementService: CodShopSettlementService,
   ) {}
 
   createOrder(input: { order: CreateOrderRecordInput; affiliateAttribution?: AffiliateAttributionInput }): Promise<OrderWithRelations> {
     return this.ordersRepository.withSerializableTransaction(async (tx) => {
+      await this.codShopSettlementService.assertShopsCanReceiveOrdersInTransaction(
+        tx,
+        [input.order.shopId],
+      );
       const batchAllocations = await this.orderInventoryService.reserveForOrder(tx, {
         offerId: input.order.item.offerId,
         variantId: input.order.item.variantId!,
@@ -73,6 +79,10 @@ export class OrderPlacementService {
       affiliateAttribution?: AffiliateAttributionInput;
     },
   ): Promise<OrderWithRelations> {
+      await this.codShopSettlementService.assertShopsCanReceiveOrdersInTransaction(
+        tx,
+        input.groups.map((group) => group.shopId),
+      );
       const groups: CreateAggregateOrderRecordInput['groups'] = [];
       for (const group of input.groups) {
         const items: CreateAggregateOrderRecordInput['groups'][number]['items'] = [];

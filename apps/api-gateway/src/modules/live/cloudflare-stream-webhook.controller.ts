@@ -60,8 +60,34 @@ export class CloudflareStreamWebhookController {
     @Headers('cf-webhook-auth') webhookSecret: string | undefined,
     @Body() payload: CloudflareLiveInputWebhook,
   ) {
-    this.assertWebhookSecret(webhookSecret);
-    const event = parseLiveInputEvent(payload);
+    this.logger.log({
+      metric: 'livestream.cloudflare.webhook.attempt',
+      hasWebhookAuth: Boolean(webhookSecret),
+      providerSessionId: providerTextHint(payload?.data?.input_id),
+      eventType: providerTextHint(payload?.data?.event_type),
+    });
+    try {
+      this.assertWebhookSecret(webhookSecret);
+    } catch (error) {
+      this.logger.warn({
+        metric: 'livestream.cloudflare.webhook.auth_rejected',
+        hasWebhookAuth: Boolean(webhookSecret),
+      });
+      throw error;
+    }
+
+    let event: ParsedLiveInputEvent;
+    try {
+      event = parseLiveInputEvent(payload);
+    } catch (error) {
+      this.logger.warn({
+        metric: 'livestream.cloudflare.webhook.payload_rejected',
+        providerSessionId: providerTextHint(payload?.data?.input_id),
+        eventType: providerTextHint(payload?.data?.event_type),
+        errorType: error instanceof Error ? error.name : 'UnknownError',
+      });
+      throw error;
+    }
     this.logger.log({
       metric: 'livestream.cloudflare.webhook.received',
       providerSessionId: event.providerSessionId,
@@ -72,7 +98,18 @@ export class CloudflareStreamWebhookController {
       videoCodec: event.videoCodec,
       audioCodec: event.audioCodec,
     });
-    const result = await this.catalogRpcService.syncLiveProviderEvent(event);
+    let result: unknown;
+    try {
+      result = await this.catalogRpcService.syncLiveProviderEvent(event);
+    } catch (error) {
+      this.logger.error({
+        metric: 'livestream.cloudflare.webhook.rpc_failed',
+        providerSessionId: event.providerSessionId,
+        eventType: event.eventType,
+        errorType: error instanceof Error ? error.name : 'UnknownError',
+      });
+      throw error;
+    }
     if (isUnmatchedProviderEvent(result)) {
       this.logger.warn({
         metric: 'livestream.cloudflare.webhook.unmatched',
@@ -207,6 +244,12 @@ function shopIdFromUnknown(value: unknown) {
 function optionalProviderText(value: unknown, maxLength: number) {
   return typeof value === 'string'
     ? sanitizeProviderText(value, maxLength)
+    : undefined;
+}
+
+function providerTextHint(value: unknown) {
+  return typeof value === 'string'
+    ? sanitizeProviderText(value, 128)
     : undefined;
 }
 

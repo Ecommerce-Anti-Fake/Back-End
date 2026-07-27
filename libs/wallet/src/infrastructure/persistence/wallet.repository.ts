@@ -358,6 +358,12 @@ export class WalletRepository extends WalletRepositoryPort {
     });
   }
 
+  findUserWallet(userId: string, currency = 'VND') {
+    return this.prisma.wallet.findUnique({
+      where: { userId_currency: { userId, currency } },
+    });
+  }
+
   async listAllWithdrawals(page = 1, pageSize = 20, status?: string) {
     const safePage = Math.max(1, page);
     const safePageSize = Math.min(100, Math.max(1, pageSize));

@@ -8,7 +8,7 @@ import { LiveCommerceRepository } from '../../infrastructure/persistence/live-co
 import { toLiveSessionResponse } from '../live-commerce.mapper';
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
-  SCHEDULED: ['LIVE', 'CANCELLED'],
+  SCHEDULED: ['CANCELLED'],
   LIVE: ['ENDED', 'CANCELLED'],
   ENDED: [],
   CANCELLED: [],
@@ -24,7 +24,7 @@ export class UpdateLiveSessionStatusUseCase {
     sessionId: string;
     requesterUserId: string;
     requesterRole?: string | null;
-    status: 'SCHEDULED' | 'LIVE' | 'ENDED' | 'CANCELLED';
+    status: 'ENDED' | 'CANCELLED';
   }) {
     const session = await this.liveCommerceRepository.findLiveSessionById(
       input.sessionId,
@@ -64,6 +64,7 @@ export class UpdateLiveSessionStatusUseCase {
         sessionId: input.sessionId,
         requesterUserId: input.requesterUserId,
         status: input.status,
+        ...(input.status === 'ENDED' ? { actualEndedAt: new Date() } : {}),
       });
     return toLiveSessionResponse(updatedSession, input.requesterUserId);
   }

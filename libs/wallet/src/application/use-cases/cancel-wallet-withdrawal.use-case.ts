@@ -29,6 +29,16 @@ export class CancelWalletWithdrawalUseCase {
   ) {
     const withdrawal = await this.walletRepository.findWithdrawalInTransaction(tx, input.id);
     if (!withdrawal) throw new NotFoundException('Withdrawal not found');
+    if (input.shopId) {
+      const shopWallet = await this.walletRepository.findShopWalletInTransaction(
+        tx,
+        input.shopId,
+        'VND',
+      );
+      if (!shopWallet || shopWallet.id !== withdrawal.walletId) {
+        throw new ForbiddenException('Withdrawal does not belong to this shop wallet');
+      }
+    }
     if (!input.shopId && withdrawal.requestedByUserId !== input.requesterUserId) {
       throw new ForbiddenException('Withdrawal does not belong to the current user');
     }

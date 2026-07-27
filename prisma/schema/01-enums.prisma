@@ -229,6 +229,13 @@ enum WalletTopUpStatus {
   EXPIRED
 }
 
+enum CodShopSettlementStatus {
+  PENDING
+  OUTSTANDING
+  SETTLED
+  REVERSED
+}
+
 enum WalletEntryDirection {
   DEBIT
   CREDIT

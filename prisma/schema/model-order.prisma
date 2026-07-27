@@ -45,6 +45,7 @@ model Order {
   reviews                 Review[]
   affiliateConversion     AffiliateConversion?
   refunds                 OrderRefund[]
+  codShopSettlements      CodShopSettlement[]
   sourceSupplyBatches     SupplyBatch[]        @relation("SupplyBatchSourceOrder")
 
   @@index([buyerUserId])

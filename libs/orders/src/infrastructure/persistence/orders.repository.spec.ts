@@ -673,6 +673,37 @@ describe('OrdersRepository', () => {
     ).rejects.toThrow('Order shop group not found');
   });
 
+  it('treats cancelled shop groups as inactive when the remaining groups are delivered', async () => {
+    const deliveredOrder = { id: 'order-1', fulfillmentStatus: 'DELIVERED' };
+    const tx = {
+      orderShopGroup: {
+        update: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([
+          { fulfillmentStatus: 'DELIVERED' },
+          { fulfillmentStatus: 'CANCELLED' },
+        ]),
+      },
+      order: {
+        update: jest.fn(),
+        findUniqueOrThrow: jest.fn().mockResolvedValue(deliveredOrder),
+      },
+    };
+    const repository = new OrdersRepository({
+      $transaction: jest.fn((callback) => callback(tx)),
+    } as never);
+
+    await expect(repository.updateShopGroupFulfillmentStatus({
+      orderId: 'order-1',
+      groupId: 'group-1',
+      fulfillmentStatus: 'DELIVERED',
+    })).resolves.toBe(deliveredOrder);
+
+    expect(tx.order.update).toHaveBeenCalledWith({
+      where: { id: 'order-1' },
+      data: { fulfillmentStatus: 'DELIVERED' },
+    });
+  });
+
   it('should create payment audit row when cancelling or refunding payment status', async () => {
     const tx = {
       paymentIntent: {
@@ -732,6 +763,42 @@ describe('OrdersRepository', () => {
       { targetType: 'SHOP', targetId: 'shop-1' },
       { targetType: 'SHOP', targetId: 'shop-2' },
     ]);
+  });
+
+  it('marks COD paid without creating escrow or resetting delivered fulfillment', async () => {
+    const deliveredOrder = {
+      id: 'order-1',
+      orderStatus: 'paid',
+      fulfillmentStatus: 'DELIVERED',
+    };
+    const tx = {
+      paymentIntent: {
+        findUnique: jest.fn().mockResolvedValue({
+          paymentMethod: 'COD',
+          paymentStatus: 'PENDING',
+        }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      voucherRedemption: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+      auditLog: { create: jest.fn().mockResolvedValue({ id: 'audit-1' }) },
+      orderItem: { findMany: jest.fn().mockResolvedValue([]) },
+      cartItem: { deleteMany: jest.fn() },
+      order: { update: jest.fn().mockResolvedValue(deliveredOrder) },
+    };
+    const repository = new OrdersRepository({} as never);
+    const updateEscrow = jest.spyOn(repository, 'updateEscrowStatusWithAudit');
+
+    await expect(repository.markOrderPaidInTransaction(tx as never, {
+      id: 'order-1',
+      actorUserId: 'seller-user-1',
+      providerRef: 'COD-order-1',
+    })).resolves.toBe(deliveredOrder);
+
+    expect(updateEscrow).not.toHaveBeenCalled();
+    expect(tx.order.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'order-1' },
+      data: { orderStatus: 'paid' },
+    }));
   });
 });
 

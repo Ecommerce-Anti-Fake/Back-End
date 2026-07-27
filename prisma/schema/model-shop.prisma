@@ -36,6 +36,8 @@ model Shop {
   socialPosts                SocialPost[]
   liveSessions               LiveCommerceSession[]
   wallets                    Wallet[]
+  bankAccountVerifications   BankAccountVerification[]
+  codShopSettlements         CodShopSettlement[]
   payoutAccounts             PayoutAccount[]
   vouchers                   Voucher[]
 

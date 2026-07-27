@@ -2,12 +2,14 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { ShippingCarrierAdapterService } from '../services';
 import { toOrderResponse } from './orders.mapper';
+import { UpdateOrderFulfillmentUseCase } from './update-order-fulfillment.use-case';
 
 @Injectable()
 export class SyncOrderShippingStatusUseCase {
   constructor(
     private readonly ordersRepository: OrdersRepository,
     private readonly shippingCarrierAdapterService: ShippingCarrierAdapterService,
+    private readonly updateOrderFulfillmentUseCase: UpdateOrderFulfillmentUseCase,
   ) {}
 
   async execute(input: { id: string; requesterUserId: string }) {
@@ -59,6 +61,13 @@ export class SyncOrderShippingStatusUseCase {
 
     if (nextFulfillmentStatus === currentFulfillmentStatus) {
       return toOrderResponse(order);
+    }
+    if (nextFulfillmentStatus === 'DELIVERED') {
+      return this.updateOrderFulfillmentUseCase.execute({
+        id: order.id,
+        requesterUserId: input.requesterUserId,
+        fulfillmentStatus: 'DELIVERED',
+      });
     }
 
     const updatedOrder = shopGroup

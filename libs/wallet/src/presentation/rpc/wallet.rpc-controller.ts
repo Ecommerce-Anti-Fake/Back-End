@@ -4,6 +4,7 @@ import { throwRpcException } from '@common';
 import { WALLET_MESSAGE_PATTERNS } from '@contracts';
 import type {
   MyWalletLookupMessage,
+  BankAccountVerificationMessage,
   PayoutAccountCreateMessage,
   PayoutAccountDisableMessage,
   PayoutAccountOwnerMessage,
@@ -33,10 +34,12 @@ import {
   HandleWalletTopUpWebhookUseCase,
   ListAdminWalletWithdrawalsUseCase,
   ListShopWalletWithdrawalsUseCase,
+  ListUserWalletWithdrawalsUseCase,
+  ListShopCodSettlementsUseCase,
   RejectWalletWithdrawalUseCase,
   RequestWalletWithdrawalUseCase,
 } from '../../application/use-cases';
-import { PayoutAccountService, WithdrawalAuthorizationService } from '../../application/services';
+import { BankAccountVerificationService, PayoutAccountService, WithdrawalAuthorizationService } from '../../application/services';
 
 @Controller()
 export class WalletRpcController {
@@ -47,11 +50,14 @@ export class WalletRpcController {
     private readonly getShopWalletTransactionsUseCase: GetShopWalletTransactionsUseCase,
     private readonly requestWalletWithdrawalUseCase: RequestWalletWithdrawalUseCase,
     private readonly listShopWalletWithdrawalsUseCase: ListShopWalletWithdrawalsUseCase,
+    private readonly listUserWalletWithdrawalsUseCase: ListUserWalletWithdrawalsUseCase,
+    private readonly listShopCodSettlementsUseCase: ListShopCodSettlementsUseCase,
     private readonly approveWalletWithdrawalUseCase: ApproveWalletWithdrawalUseCase,
     private readonly cancelWalletWithdrawalUseCase: CancelWalletWithdrawalUseCase,
     private readonly completeWalletWithdrawalUseCase: CompleteWalletWithdrawalUseCase,
     private readonly rejectWalletWithdrawalUseCase: RejectWalletWithdrawalUseCase,
     private readonly payoutAccountService: PayoutAccountService,
+    private readonly bankAccountVerificationService: BankAccountVerificationService,
     private readonly withdrawalAuthorizationService: WithdrawalAuthorizationService,
     private readonly adjustWalletBalanceUseCase: AdjustWalletBalanceUseCase,
     private readonly getWalletReconciliationUseCase: GetWalletReconciliationUseCase,
@@ -60,6 +66,16 @@ export class WalletRpcController {
     private readonly listAdminWalletWithdrawalsUseCase: ListAdminWalletWithdrawalsUseCase,
     private readonly getPlatformWalletsUseCase: GetPlatformWalletsUseCase,
   ) {}
+
+  @MessagePattern(WALLET_MESSAGE_PATTERNS.listBanks)
+  async listBanks() {
+    return this.run(() => this.bankAccountVerificationService.listBanks());
+  }
+
+  @MessagePattern(WALLET_MESSAGE_PATTERNS.verifyBankAccount)
+  async verifyBankAccount(@Payload() payload: BankAccountVerificationMessage) {
+    return this.run(() => this.bankAccountVerificationService.verify(payload));
+  }
 
   @MessagePattern(WALLET_MESSAGE_PATTERNS.getMyWallet)
   async getMyWallet(@Payload() payload: MyWalletLookupMessage) {
@@ -96,6 +112,16 @@ export class WalletRpcController {
   @MessagePattern(WALLET_MESSAGE_PATTERNS.listShopWalletWithdrawals)
   async listShopWalletWithdrawals(@Payload() payload: ShopWalletLookupMessage) {
     return this.run(() => this.listShopWalletWithdrawalsUseCase.execute(payload));
+  }
+
+  @MessagePattern(WALLET_MESSAGE_PATTERNS.listUserWalletWithdrawals)
+  async listUserWalletWithdrawals(@Payload() payload: MyWalletLookupMessage) {
+    return this.run(() => this.listUserWalletWithdrawalsUseCase.execute(payload));
+  }
+
+  @MessagePattern(WALLET_MESSAGE_PATTERNS.listShopCodSettlements)
+  async listShopCodSettlements(@Payload() payload: ShopWalletLookupMessage) {
+    return this.run(() => this.listShopCodSettlementsUseCase.execute(payload));
   }
 
   @MessagePattern(WALLET_MESSAGE_PATTERNS.approveWalletWithdrawal)
@@ -179,6 +205,11 @@ export class WalletRpcController {
 
   @MessagePattern(WALLET_MESSAGE_PATTERNS.createWalletTopUp)
   async createWalletTopUp(@Payload() payload: WalletTopUpCreateMessage) {
+    return this.run(() => this.createWalletTopUpUseCase.execute(payload));
+  }
+
+  @MessagePattern(WALLET_MESSAGE_PATTERNS.createShopWalletTopUp)
+  async createShopWalletTopUp(@Payload() payload: WalletTopUpCreateMessage) {
     return this.run(() => this.createWalletTopUpUseCase.execute(payload));
   }
 

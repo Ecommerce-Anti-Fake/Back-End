@@ -13,6 +13,8 @@ import {
   ReconcileShopWalletUseCase,
   RequestWalletWithdrawalUseCase,
   ListShopWalletWithdrawalsUseCase,
+  ListUserWalletWithdrawalsUseCase,
+  ListShopCodSettlementsUseCase,
   ApproveWalletWithdrawalUseCase,
   CompleteWalletWithdrawalUseCase,
   CancelWalletWithdrawalUseCase,
@@ -27,7 +29,8 @@ import {
 import { WalletRpcController } from './presentation/rpc/wallet.rpc-controller';
 import { PayOSTopUpService } from './infrastructure/payos-top-up.service';
 import { PayoutAccountSecurityService } from './domain';
-import { PayoutAccountService, WithdrawalAuthorizationService } from './application/services';
+import { BankAccountVerificationService, CodShopSettlementService, PayoutAccountService, WithdrawalAuthorizationService } from './application/services';
+import { VietQrBankAccountLookupService } from './infrastructure/vietqr-bank-account-lookup.service';
 
 @Module({
   imports: [ConfigModule, PrismaModule],
@@ -39,6 +42,9 @@ import { PayoutAccountService, WithdrawalAuthorizationService } from './applicat
     PayoutAccountSecurityService,
     WithdrawalAuthorizationService,
     PayoutAccountService,
+    BankAccountVerificationService,
+    CodShopSettlementService,
+    VietQrBankAccountLookupService,
     GetMyWalletUseCase,
     GetMyWalletTransactionsUseCase,
     GetShopWalletUseCase,
@@ -46,6 +52,8 @@ import { PayoutAccountService, WithdrawalAuthorizationService } from './applicat
     ReconcileShopWalletUseCase,
     RequestWalletWithdrawalUseCase,
     ListShopWalletWithdrawalsUseCase,
+    ListUserWalletWithdrawalsUseCase,
+    ListShopCodSettlementsUseCase,
     ApproveWalletWithdrawalUseCase,
     CompleteWalletWithdrawalUseCase,
     CancelWalletWithdrawalUseCase,
@@ -59,6 +67,6 @@ import { PayoutAccountService, WithdrawalAuthorizationService } from './applicat
     GetPlatformWalletsUseCase,
     { provide: WalletRepositoryPort, useExisting: WalletRepository },
   ],
-  exports: [WalletRepository, WalletService, WalletRepositoryPort, ReconcileShopWalletUseCase, RequestWalletWithdrawalUseCase, ListShopWalletWithdrawalsUseCase, ApproveWalletWithdrawalUseCase, CompleteWalletWithdrawalUseCase, CancelWalletWithdrawalUseCase, RejectWalletWithdrawalUseCase, AdjustWalletBalanceUseCase, GetWalletReconciliationUseCase],
+  exports: [WalletRepository, WalletService, WalletRepositoryPort, CodShopSettlementService, ReconcileShopWalletUseCase, RequestWalletWithdrawalUseCase, ListShopWalletWithdrawalsUseCase, ApproveWalletWithdrawalUseCase, CompleteWalletWithdrawalUseCase, CancelWalletWithdrawalUseCase, RejectWalletWithdrawalUseCase, AdjustWalletBalanceUseCase, GetWalletReconciliationUseCase],
 })
 export class WalletModule {}

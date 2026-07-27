@@ -8,6 +8,13 @@ import { lastValueFrom } from 'rxjs';
 export class WalletRpcService {
   constructor(@Inject(CATALOG_SERVICE_CLIENT) private readonly catalogClient: ClientProxy) {}
 
+  listBanks() {
+    return this.send(WALLET_MESSAGE_PATTERNS.listBanks, {});
+  }
+  verifyBankAccount(payload: PayoutOwnerPayload & { bankBin: string; accountNumber: string }) {
+    return this.send(WALLET_MESSAGE_PATTERNS.verifyBankAccount, payload);
+  }
+
   getMyWallet(payload: { userId: string }) { return this.send(WALLET_MESSAGE_PATTERNS.getMyWallet, payload); }
   getMyWalletTransactions(payload: { userId: string; page: number; limit: number }) {
     return this.send(WALLET_MESSAGE_PATTERNS.getMyWalletTransactions, payload);
@@ -27,6 +34,12 @@ export class WalletRpcService {
   }
   listShopWalletWithdrawals(payload: { shopId: string; requesterUserId: string; requesterRole: string }) {
     return this.send(WALLET_MESSAGE_PATTERNS.listShopWalletWithdrawals, payload);
+  }
+  listShopCodSettlements(payload: { shopId: string; requesterUserId: string; requesterRole: string }) {
+    return this.send(WALLET_MESSAGE_PATTERNS.listShopCodSettlements, payload);
+  }
+  listUserWalletWithdrawals(payload: { userId: string }) {
+    return this.send(WALLET_MESSAGE_PATTERNS.listUserWalletWithdrawals, payload);
   }
 
   approveWalletWithdrawal(payload: { id: string; adminUserId: string }) {
@@ -76,6 +89,9 @@ export class WalletRpcService {
   createWalletTopUp(payload: { userId: string; amount: string; idempotencyKey: string }) {
     return this.send(WALLET_MESSAGE_PATTERNS.createWalletTopUp, payload);
   }
+  createShopWalletTopUp(payload: { shopId: string; userId: string; requesterRole: string; amount: string; idempotencyKey: string }) {
+    return this.send(WALLET_MESSAGE_PATTERNS.createShopWalletTopUp, payload);
+  }
   handleWalletTopUpWebhook(payload: { code: string; desc: string; success: boolean; signature: string; data: Record<string, unknown> }) {
     return this.send(WALLET_MESSAGE_PATTERNS.handleWalletTopUpWebhook, payload);
   }
@@ -110,20 +126,12 @@ type WithdrawalPayload = {
 };
 type PayoutAccountPayload = {
   authorizationToken: string;
-  bankBin: string;
-  bankCode: string;
-  bankName: string;
-  accountNumber: string;
-  accountHolder: string;
+  verificationId: string;
 };
 type ChallengePayload = {
   operation: 'CREATE_PAYOUT_ACCOUNT' | 'DELETE_PAYOUT_ACCOUNT' | 'CREATE_WITHDRAWAL';
   channel: 'PHONE' | 'EMAIL';
   payoutAccountId?: string;
   amount?: string;
-  bankBin?: string;
-  bankCode?: string;
-  bankName?: string;
-  accountNumber?: string;
-  accountHolder?: string;
+  bankAccountVerificationId?: string;
 };

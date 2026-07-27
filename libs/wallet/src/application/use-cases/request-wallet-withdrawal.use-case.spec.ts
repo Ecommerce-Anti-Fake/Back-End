@@ -12,6 +12,7 @@ describe('RequestWalletWithdrawalUseCase', () => {
   const tx = {
     walletWithdrawal: { findUnique: jest.fn(), create: jest.fn() },
     payoutAccount: { findUnique: jest.fn() },
+    codShopSettlement: { count: jest.fn() },
   };
   const prisma = { $transaction: jest.fn() };
   const walletService = { canAccessShopWallet: jest.fn() };
@@ -34,6 +35,7 @@ describe('RequestWalletWithdrawalUseCase', () => {
     walletRepository.executeTransactionInTransaction.mockResolvedValue({ id: 'transaction-1' });
     tx.payoutAccount.findUnique.mockResolvedValue(payoutAccount);
     tx.walletWithdrawal.findUnique.mockResolvedValue(null);
+    tx.codShopSettlement.count.mockResolvedValue(0);
     tx.walletWithdrawal.create.mockImplementation(({ data }: { data: Record<string, unknown> }) => ({
       id: 'withdrawal-1', status: 'PENDING', createdAt: now, processedAt: null, ...data,
     }));
@@ -114,6 +116,21 @@ describe('RequestWalletWithdrawalUseCase', () => {
       payoutAccountId: 'payout-1', idempotencyKey: 'key', authorizationToken: 'token',
     })).rejects.toThrow('Buyer withdrawals are not enabled');
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('blocks a new shop withdrawal while COD obligations are outstanding', async () => {
+    tx.codShopSettlement.count.mockResolvedValueOnce(1);
+
+    await expect(createUseCase().execute({
+      shopId: 'shop-1',
+      requesterUserId: 'owner-1',
+      requesterRole: 'user',
+      amount: '100000',
+      payoutAccountId: 'payout-1',
+      idempotencyKey: 'cod-debt-key',
+      authorizationToken: 'token',
+    })).rejects.toThrow('Outstanding COD obligations must be paid before withdrawing');
+    expect(authorization.consumeInTransaction).not.toHaveBeenCalled();
   });
 
   function createUseCase() {

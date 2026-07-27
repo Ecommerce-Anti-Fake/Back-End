@@ -11,6 +11,7 @@ import {
   ListLiveCommentsUseCase,
   ListLiveSessionsUseCase,
   RemindLiveSessionUseCase,
+  StartLiveSessionUseCase,
   UpdateLiveCommentVisibilityUseCase,
   UpdateLiveSessionStatusUseCase,
 } from './application/use-cases';
@@ -28,6 +29,7 @@ import { LiveCommerceRpcController } from './presentation/rpc/live-commerce.rpc-
     SyncLiveProviderEventUseCase,
     ListLiveSessionsUseCase,
     CreateLiveSessionUseCase,
+    StartLiveSessionUseCase,
     UpdateLiveSessionStatusUseCase,
     RemindLiveSessionUseCase,
     ListLiveCommentsUseCase,

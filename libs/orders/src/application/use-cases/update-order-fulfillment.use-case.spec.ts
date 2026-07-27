@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
 import { OrdersRepository } from '../../infrastructure/persistence/orders.repository';
 import { OrderReversalService } from '../services';
+import { CodShopSettlementService } from '@wallet';
 import { UpdateOrderFulfillmentUseCase } from './update-order-fulfillment.use-case';
 
 describe('UpdateOrderFulfillmentUseCase', () => {
@@ -20,6 +21,10 @@ describe('UpdateOrderFulfillmentUseCase', () => {
     cancelOrder: jest.fn(),
     cancelOrderShopGroup: jest.fn(),
   };
+  const codShopSettlementServiceMock = {
+    prepare: jest.fn(),
+    activate: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -29,6 +34,7 @@ describe('UpdateOrderFulfillmentUseCase', () => {
         UpdateOrderFulfillmentUseCase,
         { provide: OrdersRepository, useValue: ordersRepositoryMock },
         { provide: OrderReversalService, useValue: orderReversalServiceMock },
+        { provide: CodShopSettlementService, useValue: codShopSettlementServiceMock },
       ],
     }).compile();
 
@@ -120,6 +126,26 @@ describe('UpdateOrderFulfillmentUseCase', () => {
     expect(ordersRepositoryMock.allocateOrderBatchesAndUpdateFulfillment).not.toHaveBeenCalled();
   });
 
+  it('prepares a COD settlement when a shop starts processing', async () => {
+    const order = createMultiShopOrder();
+    order.paymentIntent.paymentMethod = 'COD';
+    order.paymentIntent.paymentStatus = 'PENDING';
+    order.orderStatus = 'pending';
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(order);
+    ordersRepositoryMock.updateShopGroupFulfillmentStatus.mockResolvedValueOnce(order);
+
+    await useCase.execute({
+      id: 'order-1',
+      requesterUserId: 'seller-user-2',
+      fulfillmentStatus: 'PROCESSING',
+    });
+
+    expect(codShopSettlementServiceMock.prepare).toHaveBeenCalledWith({
+      orderShopGroupId: 'group-2',
+      actorUserId: 'seller-user-2',
+    });
+  });
+
   it('marks delivered without completing the order', async () => {
     ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord({ fulfillmentStatus: 'SHIPPING' }));
     ordersRepositoryMock.updateFulfillmentStatus.mockResolvedValueOnce(
@@ -142,6 +168,61 @@ describe('UpdateOrderFulfillmentUseCase', () => {
         toStatus: 'DELIVERED',
       }),
     );
+    expect(result).toMatchObject({
+      orderStatus: 'paid',
+      fulfillmentStatus: 'DELIVERED',
+    });
+  });
+
+  it('keeps an aggregate COD order pending until every active shop group is delivered', async () => {
+    const order = createMultiShopOrder();
+    order.orderStatus = 'pending';
+    order.fulfillmentStatus = 'SHIPPING';
+    order.paymentIntent.paymentMethod = 'COD';
+    order.paymentIntent.paymentStatus = 'PENDING';
+    order.shopGroups[0].fulfillmentStatus = 'DELIVERED';
+    order.shopGroups[1].fulfillmentStatus = 'SHIPPING';
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(order);
+    ordersRepositoryMock.updateShopGroupFulfillmentStatus.mockResolvedValueOnce({
+      ...order,
+      orderStatus: 'paid',
+      fulfillmentStatus: 'DELIVERED',
+      shopGroups: [
+        order.shopGroups[0],
+        { ...order.shopGroups[1], fulfillmentStatus: 'DELIVERED' },
+      ],
+    });
+    ordersRepositoryMock.markOrderPaid.mockResolvedValueOnce({
+      ...order,
+      orderStatus: 'paid',
+      fulfillmentStatus: 'DELIVERED',
+    });
+
+    const result = await useCase.execute({
+      id: 'order-1',
+      requesterUserId: 'seller-user-2',
+      fulfillmentStatus: 'DELIVERED',
+    });
+
+    expect(codShopSettlementServiceMock.activate).toHaveBeenCalledWith({
+      orderShopGroupId: 'group-2',
+      actorUserId: 'seller-user-2',
+    });
+    expect(
+      codShopSettlementServiceMock.activate.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      ordersRepositoryMock.updateShopGroupFulfillmentStatus.mock.invocationCallOrder[0],
+    );
+    expect(
+      ordersRepositoryMock.markOrderPaid.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      ordersRepositoryMock.updateShopGroupFulfillmentStatus.mock.invocationCallOrder[0],
+    );
+    expect(ordersRepositoryMock.markOrderPaid).toHaveBeenCalledWith({
+      id: 'order-1',
+      actorUserId: 'seller-user-2',
+      providerRef: 'COD-order-1',
+    });
     expect(result).toMatchObject({
       orderStatus: 'paid',
       fulfillmentStatus: 'DELIVERED',

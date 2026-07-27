@@ -15,18 +15,13 @@ export type PayoutAccountMutationInput = {
   requesterRole: string;
   shopId?: string;
   authorizationToken: string;
-  bankBin: string;
-  bankCode: string;
-  bankName: string;
-  accountNumber: string;
-  accountHolder: string;
+  verificationId: string;
 };
 
 type OwnerContext = {
   ownerType: 'USER' | 'SHOP';
   userId?: string;
   shopId?: string;
-  expectedHolder: string;
 };
 
 @Injectable()
@@ -40,32 +35,37 @@ export class PayoutAccountService {
 
   async create(input: PayoutAccountMutationInput) {
     const wallet = await this.resolveWallet(input.userId, input.requesterRole, input.shopId);
-    const owner = await this.resolveOwnerContext(input.userId, input.shopId);
-    if (!this.security.holderNamesMatch(input.accountHolder, owner.expectedHolder)) {
-      throw new BadRequestException('Payout account holder must match the verified owner');
-    }
-
-    const accountNumber = this.security.normalizeAccountNumber(input.accountNumber);
-    const bankBin = input.bankBin.trim();
-    const bankCode = input.bankCode.trim().toUpperCase();
-    const bankName = input.bankName.trim();
-    const accountHolder = input.accountHolder.trim();
-    const accountNumberHash = this.security.hashAccountNumber(bankBin, accountNumber);
+    const owner = this.resolveOwnerContext(input.userId, input.shopId);
     const now = new Date();
 
     return this.prisma.$transaction(async (tx) => {
+      const verification = await tx.bankAccountVerification.findUnique({
+        where: { id: input.verificationId },
+      });
+      const ownsVerification =
+        verification?.userId === input.userId &&
+        (input.shopId
+          ? verification.shopId === input.shopId
+          : verification.shopId === null);
+      if (!verification || !ownsVerification) {
+        throw new ForbiddenException('Bank account verification does not belong to this wallet owner');
+      }
+      if (verification.consumedAt || verification.expiresAt <= now) {
+        throw new BadRequestException('Bank account verification has expired or was already used');
+      }
+
       await this.authorizationService.consumeInTransaction(tx, {
         authorizationToken: input.authorizationToken,
         userId: input.userId,
         walletId: wallet.id,
         operation: 'CREATE_PAYOUT_ACCOUNT',
-        payload: { bankBin, bankCode, bankName, accountNumber, accountHolder },
+        payload: { bankAccountVerificationId: verification.id },
       });
 
       const duplicate = await tx.payoutAccount.findFirst({
         where: {
-          bankBin,
-          accountNumberHash,
+          bankBin: verification.bankBin,
+          accountNumberHash: verification.accountNumberHash,
           ...(owner.shopId ? { shopId: owner.shopId } : { userId: owner.userId }),
           disabledAt: null,
         },
@@ -73,19 +73,35 @@ export class PayoutAccountService {
       });
       if (duplicate) throw new BadRequestException('This payout account already exists');
 
+      const consumed = await tx.bankAccountVerification.updateMany({
+        where: {
+          id: verification.id,
+          consumedAt: null,
+          expiresAt: { gt: now },
+        },
+        data: { consumedAt: now },
+      });
+      if (consumed.count !== 1) {
+        throw new BadRequestException('Bank account verification has expired or was already used');
+      }
+
       const account = await tx.payoutAccount.create({
         data: {
           ownerType: owner.ownerType,
           userId: owner.userId,
           shopId: owner.shopId,
-          bankBin,
-          bankCode,
-          bankName,
-          accountNumberEncrypted: this.security.encryptAccountNumber(accountNumber),
-          accountNumberHash,
-          accountNumberLast4: accountNumber.slice(-4),
-          accountNumberLength: accountNumber.length,
-          declaredAccountHolder: accountHolder,
+          bankBin: verification.bankBin,
+          bankCode: verification.bankCode,
+          bankName: verification.bankName,
+          accountNumberEncrypted: verification.accountNumberEncrypted,
+          accountNumberHash: verification.accountNumberHash,
+          accountNumberLast4: verification.accountNumberLast4,
+          accountNumberLength: verification.accountNumberLength,
+          declaredAccountHolder: verification.accountHolder,
+          resolvedAccountHolder: verification.accountHolder,
+          verificationStatus: 'VERIFIED',
+          verificationMethod: 'PROVIDER',
+          verifiedAt: now,
           availableAfter: new Date(now.getTime() + 24 * 60 * 60_000),
         },
       });
@@ -156,11 +172,8 @@ export class PayoutAccountService {
     const account = await this.prisma.payoutAccount.findUnique({ where: { id: input.payoutAccountId } });
     if (!account || account.disabledAt) throw new NotFoundException('Payout account not found');
     if (account.verificationStatus !== 'PENDING') throw new BadRequestException('Payout account is not pending verification');
-    const owner = await this.resolveOwnerContext(account.userId ?? '', account.shopId ?? undefined);
     const resolvedAccountHolder = input.resolvedAccountHolder.trim();
-    if (!this.security.holderNamesMatch(resolvedAccountHolder, owner.expectedHolder)) {
-      throw new BadRequestException('Bank beneficiary name does not match the verified owner');
-    }
+    if (!resolvedAccountHolder) throw new BadRequestException('Resolved account holder is required');
 
     const verifiedAt = new Date();
     return this.prisma.$transaction(async (tx) => {
@@ -271,47 +284,11 @@ export class PayoutAccountService {
     return account;
   }
 
-  private async resolveOwnerContext(userId: string, shopId?: string): Promise<OwnerContext> {
+  private resolveOwnerContext(userId: string, shopId?: string): OwnerContext {
     if (shopId) {
-      const shop = await this.prisma.shop.findUnique({
-        where: { id: shopId },
-        select: {
-          id: true, ownerUserId: true, businessType: true, verifiedLegalName: true, shopStatus: true,
-          owner: { select: { kyc: { select: { fullName: true, verificationStatus: true, verifiedAt: true } } } },
-        },
-      });
-      if (!shop) throw new NotFoundException('Shop not found');
-      if (shop.shopStatus !== 'verified') throw new BadRequestException('Shop must be verified before adding a payout account');
-      const isCompany = this.isCompany(shop.businessType) || Boolean(shop.verifiedLegalName);
-      if (isCompany && !shop.verifiedLegalName?.trim()) {
-        throw new BadRequestException('Company legal name must be verified before adding a payout account');
-      }
-      if (!isCompany) this.assertApprovedKyc(shop.owner.kyc);
-      return {
-        ownerType: 'SHOP',
-        shopId: shop.id,
-        expectedHolder: isCompany ? shop.verifiedLegalName!.trim() : shop.owner.kyc!.fullName,
-      };
+      return { ownerType: 'SHOP', shopId };
     }
-
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, kyc: { select: { fullName: true, verificationStatus: true, verifiedAt: true } } },
-    });
-    if (!user) throw new NotFoundException('User not found');
-    this.assertApprovedKyc(user.kyc);
-    return { ownerType: 'USER', userId: user.id, expectedHolder: user.kyc!.fullName };
-  }
-
-  private assertApprovedKyc(kyc: { fullName: string; verificationStatus: string; verifiedAt: Date | null } | null) {
-    if (!kyc || kyc.verificationStatus.toLowerCase() !== 'approved' || !kyc.verifiedAt) {
-      throw new BadRequestException('Approved KYC is required before adding a payout account');
-    }
-  }
-
-  private isCompany(value: string) {
-    const normalized = this.security.normalizeHolderName(value);
-    return normalized === 'COMPANY' || normalized === 'DOANH NGHIEP' || normalized === 'ENTERPRISE';
+    return { ownerType: 'USER', userId };
   }
 
   private toResponse(account: PayoutAccount) {
