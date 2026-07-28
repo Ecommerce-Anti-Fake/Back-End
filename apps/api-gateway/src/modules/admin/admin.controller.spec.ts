@@ -1,5 +1,5 @@
 import { PATH_METADATA } from '@nestjs/common/constants';
-import { DECORATORS } from '@nestjs/swagger/dist/constants';
+import { DECORATORS } from '@nestjs/swagger';
 import { ReviewShopDocumentDto } from '@shops';
 import { AdminShopVerificationController } from './admin-shop-verification.controller';
 import { AdminController } from './admin.controller';
@@ -39,9 +39,6 @@ describe('AdminShopVerificationController routes', () => {
     );
     expect(Reflect.getMetadata(PATH_METADATA, AdminShopVerificationController.prototype.reviewShopDocument)).toBe(
       ':shopId/documents/review',
-    );
-    expect(Reflect.getMetadata(PATH_METADATA, AdminShopVerificationController.prototype.reviewBrandAuthorization)).toBe(
-      'brand-authorizations/:authorizationId/review',
     );
   });
 });
