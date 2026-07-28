@@ -63,13 +63,6 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
       title: 'Live hang chinh hang',
       description: 'San pham co QR',
       startAt: '2026-06-02T13:00:00.000Z',
-      playbackUrl: 'https://video.example.com/live-1',
-      streamProvider: 'HLS_CDN',
-      streamProviderSessionId: 'provider-live-1',
-      streamIngestUrl: 'rtmp://ingest.example.com/live/live-1',
-      streamLatencyTargetMs: 8000,
-      recordingUrl: 'https://cdn.example.com/recordings/live-1.m3u8',
-      recordingRetentionDays: 30,
       offerIds: ['offer-1'],
       voucherIds: ['voucher-1'],
     });
@@ -82,16 +75,20 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
         offerIds: ['offer-1'],
         voucherIds: ['voucher-1'],
         requesterUserId: 'seller-user-1',
-        streamProvider: 'HLS_CDN',
-        streamProviderSessionId: 'provider-live-1',
-        streamLatencyTargetMs: 8000,
-        recordingRetentionDays: 30,
+        playbackUrl: null,
+        streamProvider: 'AGORA_RTC',
+        streamProviderSessionId: 'live_live1',
+        streamIngestUrl: null,
+        streamLatencyTargetMs: 1000,
+        providerStatus: 'READY',
+        recordingUrl: null,
+        recordingRetentionDays: null,
       }),
     );
     expect(result).toMatchObject({
       id: 'live-1',
       status: 'SCHEDULED',
-      streamProvider: 'HLS_CDN',
+      streamProvider: 'AGORA_RTC',
       offers: [expect.objectContaining({ offerId: 'offer-1' })],
     });
     expect(result).not.toHaveProperty('streamProviderSessionId');
@@ -249,6 +246,20 @@ describe('live-commerce use cases in LiveCommerceModule', () => {
     });
     expect(result.viewerHasReminder).toBe(true);
   });
+
+  it('rejects a reminder when the atomic repository check observes LIVE', async () => {
+    repository.remindLiveSession.mockResolvedValueOnce(
+      liveSession({ status: 'LIVE' }),
+    );
+    const useCase = new RemindLiveSessionUseCase(repository as never);
+
+    await expect(
+      useCase.execute({
+        sessionId: 'live-1',
+        requesterUserId: 'buyer-user-1',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
 });
 
 function liveSession(overrides: Record<string, unknown> = {}) {
@@ -260,13 +271,14 @@ function liveSession(overrides: Record<string, unknown> = {}) {
     coverUrl: null,
     startAt: new Date('2026-06-02T13:00:00.000Z'),
     status: 'SCHEDULED',
-    playbackUrl: 'https://video.example.com/live-1',
-    streamProvider: 'HLS_CDN',
-    streamProviderSessionId: 'provider-live-1',
-    streamIngestUrl: 'rtmp://ingest.example.com/live/live-1',
-    streamLatencyTargetMs: 8000,
-    recordingUrl: 'https://cdn.example.com/recordings/live-1.m3u8',
-    recordingRetentionDays: 30,
+    playbackUrl: null,
+    streamProvider: 'AGORA_RTC',
+    streamProviderSessionId: 'live_live1',
+    streamIngestUrl: null,
+    streamLatencyTargetMs: 1000,
+    providerStatus: 'READY',
+    recordingUrl: null,
+    recordingRetentionDays: null,
     createdAt: new Date('2026-06-01T10:00:00.000Z'),
     shop: { shopName: 'Seller Shop' },
     offers: [

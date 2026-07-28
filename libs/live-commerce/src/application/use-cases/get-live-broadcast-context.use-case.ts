@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -13,8 +14,8 @@ export class GetLiveBroadcastContextUseCase {
 
   async execute(input: {
     sessionId: string;
-    requesterUserId: string;
-    requesterRole?: string | null;
+    requesterUserId?: string | null;
+    accessRole?: 'owner' | 'auto';
   }) {
     const session = await this.liveCommerceRepository.findLiveSessionById(
       input.sessionId,
@@ -22,11 +23,21 @@ export class GetLiveBroadcastContextUseCase {
     if (!session) {
       throw new NotFoundException('Live session not found');
     }
-    if (
-      input.requesterRole !== 'admin' &&
-      session.shop.ownerUserId !== input.requesterUserId
-    ) {
+    const isOwner = Boolean(
+      input.requesterUserId &&
+      session.shop.ownerUserId === input.requesterUserId,
+    );
+    if (input.accessRole !== 'auto' && !isOwner) {
       throw new ForbiddenException('You do not own this live session');
+    }
+    const rtcRole = isOwner ? 'PUBLISHER' : 'SUBSCRIBER';
+    if (
+      ['ENDED', 'CANCELLED'].includes(session.status) ||
+      (rtcRole === 'SUBSCRIBER' && session.status !== 'LIVE')
+    ) {
+      throw new BadRequestException(
+        'Agora access is unavailable for this live session state',
+      );
     }
     return {
       sessionId: session.id,
@@ -34,6 +45,7 @@ export class GetLiveBroadcastContextUseCase {
       status: session.status,
       streamProvider: session.streamProvider,
       providerSessionId: session.streamProviderSessionId ?? null,
+      rtcRole,
     };
   }
 }

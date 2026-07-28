@@ -160,22 +160,25 @@ export async function seedSocialChatLive(prisma: PrismaClient, ctx: SeedContext)
   for (let i = 0; i < COUNTS.liveSessions; i += 1) {
     const shop = pick(ctx.shops, i);
     const status = [LiveSessionStatus.SCHEDULED, LiveSessionStatus.LIVE, LiveSessionStatus.ENDED, LiveSessionStatus.CANCELLED][i % 4];
+    const sessionId = id();
     const session = await prisma.liveCommerceSession.create({
       data: {
-        id: id(),
+        id: sessionId,
         shopId: shop.id,
         title: `Livestream kiểm hàng chính hãng #${i + 1}`,
         description: 'Giới thiệu sản phẩm có tem QR, hướng dẫn kiểm tra nguồn gốc và ưu đãi live.',
         coverUrl: imageUrl(`live-${i}`, 1200, 675),
         startAt: status === LiveSessionStatus.SCHEDULED ? recentDate(-3 - i) : recentDate(8 - i),
         status,
-        playbackUrl: status === LiveSessionStatus.ENDED ? `https://cdn.antifake.local/live/${i}/playback.m3u8` : null,
-        streamProvider: 'seed-webrtc',
-        streamProviderSessionId: `live-seed-${i + 1}`,
-        streamIngestUrl: status === LiveSessionStatus.LIVE ? `rtmp://live.antifake.local/seed/${i + 1}` : null,
-        streamLatencyTargetMs: 3000,
-        recordingUrl: status === LiveSessionStatus.ENDED ? `https://cdn.antifake.local/live/${i}/recording.mp4` : null,
-        recordingRetentionDays: 30,
+        playbackUrl: null,
+        streamProvider: 'AGORA_RTC',
+        streamProviderSessionId: `live_${sessionId.replace(/-/g, '')}`,
+        streamIngestUrl: null,
+        streamLatencyTargetMs: 1000,
+        providerStatus:
+          status === LiveSessionStatus.LIVE ? 'CONNECTED' : 'READY',
+        recordingUrl: null,
+        recordingRetentionDays: null,
       },
     });
     sessions.push(session);

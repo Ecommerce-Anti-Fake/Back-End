@@ -3,14 +3,16 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Header,
-  HttpException,
   Logger,
   Param,
   Patch,
   Post,
   Query,
+  ServiceUnavailableException,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -31,9 +33,11 @@ import {
   OptionalJwtAuthGuard,
 } from '@security';
 import {
+  AgoraRtcAccessResponseDto,
   CreateLiveCommentDto,
   CreateLiveSessionDto,
   CreatedLiveSessionResponseDto,
+  JoinLiveSessionDto,
   ListLiveCommentsQueryDto,
   ListLiveSessionsQueryDto,
   LiveCommentResponseDto,
@@ -44,7 +48,12 @@ import {
 import { RateLimit } from '../../observability';
 import { CatalogRpcService } from '../offer/catalog-rpc.service';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
-import { CloudflareStreamService } from './cloudflare-stream.service';
+import { NotificationSseBrokerService } from '../user/notification-sse-broker.service';
+import { UsersRpcService } from '../user/users-rpc.service';
+import {
+  AgoraRtcTokenService,
+  agoraChannelName,
+} from './agora-rtc-token.service';
 
 @ApiTags('Live')
 @Controller()
@@ -56,7 +65,9 @@ export class LiveController {
     private readonly liveReactionService: RealtimeLiveReactionService,
     private readonly presenceService: RealtimePresenceService,
     private readonly dashboardSseBrokerService: DashboardSseBrokerService,
-    private readonly cloudflareStreamService: CloudflareStreamService,
+    private readonly agoraRtcTokenService: AgoraRtcTokenService,
+    private readonly usersRpcService: UsersRpcService,
+    private readonly notificationSseBrokerService: NotificationSseBrokerService,
   ) {}
 
   @ApiOperation({ summary: 'Lay danh sach phien live commerce' })
@@ -247,275 +258,134 @@ export class LiveController {
     @CurrentUserId() requesterUserId: string,
     @Body() dto: CreateLiveSessionDto,
   ) {
+    this.agoraRtcTokenService.assertConfigured();
     const sessionId = randomUUID();
-    const provisioned = this.cloudflareStreamService.isConfigured()
-      ? await this.cloudflareStreamService.createLiveInput({
-          sessionName: `${dto.shopId}: ${dto.title}`,
-          sessionId,
-          shopId: dto.shopId,
-        })
-      : null;
-    let result: unknown;
-    try {
-      result = await this.catalogRpcService.createLiveSession({
-        sessionId,
-        requesterUserId,
-        shopId: dto.shopId,
-        title: dto.title,
-        description: dto.description ?? null,
-        coverUrl: dto.coverUrl ?? null,
-        startAt: dto.startAt,
-        playbackUrl: provisioned?.playbackUrl ?? dto.playbackUrl ?? null,
-        streamProvider: provisioned
-          ? 'CLOUDFLARE_STREAM'
-          : (dto.streamProvider ?? null),
-        streamProviderSessionId:
-          provisioned?.providerSessionId ?? dto.streamProviderSessionId ?? null,
-        streamIngestUrl: provisioned ? null : (dto.streamIngestUrl ?? null),
-        providerStatus: provisioned ? 'PROVISIONED' : null,
-        streamLatencyTargetMs: dto.streamLatencyTargetMs ?? 8000,
-        recordingUrl: dto.recordingUrl ?? null,
-        recordingRetentionDays:
-          provisioned?.recordingRetentionDays ??
-          dto.recordingRetentionDays ??
-          null,
-        offerIds: dto.offerIds ?? [],
-        voucherIds: dto.voucherIds ?? [],
-      });
-    } catch (error) {
-      if (!provisioned) throw error;
-
-      let context: { providerSessionId?: string | null };
-      try {
-        context = (await this.catalogRpcService.getLiveBroadcastContext({
-          sessionId,
-          requesterUserId,
-        })) as {
-          providerSessionId?: string | null;
-        };
-      } catch (reconciliationError) {
-        if (
-          reconciliationError instanceof HttpException &&
-          reconciliationError.getStatus() === 404
-        ) {
-          try {
-            await this.cloudflareStreamService.deleteLiveInput(
-              provisioned.providerSessionId,
-            );
-          } catch {
-            this.logger.error({
-              metric: 'livestream.cloudflare.cleanup.failed',
-              sessionId,
-              providerSessionId: provisioned.providerSessionId,
-              reason: 'db_create_failed',
-            });
-          }
-        } else {
-          this.logger.error({
-            metric: 'livestream.cloudflare.db_commit.ambiguous',
-            sessionId,
-            providerSessionId: provisioned.providerSessionId,
-            reason: 'reconciliation_unavailable',
-          });
-        }
-        throw error;
-      }
-
-      if (context.providerSessionId !== provisioned.providerSessionId) {
-        this.logger.error({
-          metric: 'livestream.cloudflare.db_commit.ambiguous',
-          sessionId,
-          providerSessionId: provisioned.providerSessionId,
-          reason: 'provider_session_mismatch',
-        });
-        throw error;
-      }
-
-      try {
-        result = await this.catalogRpcService.getLiveSession({
-          sessionId,
-          requesterUserId,
-        });
-      } catch {
-        this.logger.error({
-          metric: 'livestream.cloudflare.db_commit.ambiguous',
-          sessionId,
-          providerSessionId: provisioned.providerSessionId,
-          reason: 'committed_session_unavailable',
-        });
-        throw error;
-      }
-      this.logger.warn({
-        metric: 'livestream.cloudflare.db_commit.recovered',
-        sessionId,
-        providerSessionId: provisioned.providerSessionId,
-      });
-    }
-    this.logger.log({
-      metric: 'livestream.cloudflare.db.persisted',
+    const access = this.agoraRtcTokenService.issueToken({
       sessionId,
-      providerSessionId: provisioned?.providerSessionId,
+      clientId: dto.clientId,
+      principalId: requesterUserId,
+      role: 'PUBLISHER',
+    });
+    const result = await this.catalogRpcService.createLiveSession({
+      sessionId,
+      requesterUserId,
+      shopId: dto.shopId,
+      title: dto.title,
+      description: dto.description ?? null,
+      coverUrl: dto.coverUrl ?? null,
+      startAt: dto.startAt,
+      offerIds: dto.offerIds ?? [],
+      voucherIds: dto.voucherIds ?? [],
+    });
+    this.logger.log({
+      metric: 'livestream.agora.session.created',
+      sessionId,
+      channelName: agoraChannelName(sessionId),
     });
     this.dashboardSseBrokerService.notifyShop(
       shopIdFromResult(result) ?? dto.shopId,
       'live_changed',
     );
 
-    if (!provisioned) return result;
-    this.logger.log({
-      metric: 'livestream.cloudflare.credentials.returned',
-      sessionId,
-      providerSessionId: provisioned.providerSessionId,
-    });
     return {
       ...(result as Record<string, unknown>),
-      broadcastCredentials: {
-        ingestUrl: provisioned.ingestUrl,
-        streamKey: provisioned.streamKey,
-      },
+      ...access,
     };
   }
 
-  @ApiOperation({ summary: 'Chuan bi phien Cloudflare va cho OBS ket noi' })
+  @ApiOperation({ summary: 'Xac nhan publisher da phat len Agora RTC' })
   @ApiBearerAuth('access-token')
   @ApiOkResponse({
-    description: 'Phien dang cho webhook Cloudflare xac nhan ket noi.',
+    description: 'Phien Agora da chuyen sang trang thai dang phat.',
     type: LiveSessionResponseDto,
   })
+  @RateLimit({ profile: 'auth' })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('live/sessions/:sessionId/start')
   async startLiveSession(
     @Param('sessionId') sessionId: string,
     @CurrentUserId() requesterUserId: string,
-    @CurrentUser() requester: AuthenticatedUser | undefined,
   ) {
-    const context = (await this.catalogRpcService.getLiveBroadcastContext({
-      sessionId,
-      requesterUserId,
-      requesterRole: requester?.role,
-    })) as {
-      streamProvider?: string | null;
-      providerSessionId?: string | null;
-      status?: string;
-    };
-    if (context.status === 'ENDED' || context.status === 'CANCELLED') {
-      throw new BadRequestException('Terminal live sessions cannot be started');
-    }
-    if (
-      context.streamProvider !== 'CLOUDFLARE_STREAM' ||
-      !context.providerSessionId
-    ) {
-      throw new BadRequestException(
-        'Live session is not managed by Cloudflare Stream',
-      );
-    }
-
-    await this.cloudflareStreamService.getBroadcastCredentials(
-      context.providerSessionId,
-    );
     const result = await this.catalogRpcService.startLiveSession({
       sessionId,
       requesterUserId,
-      requesterRole: requester?.role,
     });
     this.logger.log({
-      metric: 'livestream.cloudflare.starting',
+      metric: 'livestream.agora.publisher.started',
       sessionId,
-      providerSessionId: context.providerSessionId,
     });
     const shopId = shopIdFromResult(result);
     if (shopId) {
       this.dashboardSseBrokerService.notifyShop(shopId, 'live_changed');
     }
-    return result;
+    await this.notifyReminderRecipients(result);
+    return publicStartResult(result);
   }
 
-  @ApiOperation({ summary: 'Lay cau hinh OBS cua phien live do seller so huu' })
+  @ApiOperation({ summary: 'Lay Agora RTC token de tham gia phien live' })
+  @ApiOkResponse({
+    description: 'Token ngan han; backend tu suy role va UID.',
+    type: AgoraRtcAccessResponseDto,
+  })
+  @RateLimit({ profile: 'publicCatalog' })
+  @UseGuards(OptionalJwtAuthGuard)
+  @Post('live/sessions/:sessionId/join')
+  @Header('Cache-Control', 'no-store')
+  async joinLiveSession(
+    @Param('sessionId') sessionId: string,
+    @CurrentUser() requester: AuthenticatedUser | undefined,
+    @Body() dto: JoinLiveSessionDto,
+  ) {
+    await this.assertActiveRequester(requester);
+    return this.issueAgoraAccess(sessionId, requester, dto.clientId, 'auto');
+  }
+
+  @ApiOperation({
+    summary: 'Alias cu: lay Agora publisher token',
+    deprecated: true,
+  })
   @ApiBearerAuth('access-token')
-  @ApiOkResponse({ description: 'RTMPS server va stream key cho OBS.' })
+  @ApiOkResponse({ type: AgoraRtcAccessResponseDto })
+  @RateLimit({ profile: 'auth' })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
   @Post('live/sessions/:sessionId/broadcast-credentials')
   @Header('Cache-Control', 'no-store')
-  async getBroadcastCredentials(
+  getBroadcastCredentials(
     @Param('sessionId') sessionId: string,
-    @CurrentUserId() requesterUserId: string,
     @CurrentUser() requester: AuthenticatedUser | undefined,
+    @Body() dto: JoinLiveSessionDto,
   ) {
-    const context = (await this.catalogRpcService.getLiveBroadcastContext({
-      sessionId,
-      requesterUserId,
-      requesterRole: requester?.role,
-    })) as {
-      streamProvider?: string | null;
-      providerSessionId?: string | null;
-      status?: string;
-    };
-    if (context.status === 'ENDED' || context.status === 'CANCELLED') {
-      throw new BadRequestException(
-        'Broadcast credentials are unavailable for terminal sessions',
-      );
-    }
-    if (
-      context.streamProvider !== 'CLOUDFLARE_STREAM' ||
-      !context.providerSessionId
-    ) {
-      throw new BadRequestException(
-        'Broadcast credentials are managed outside Cloudflare Stream',
-      );
-    }
-    const credentials =
-      await this.cloudflareStreamService.getBroadcastCredentials(
-        context.providerSessionId,
-      );
-    return {
-      ingestUrl: credentials.ingestUrl,
-      streamKey: credentials.streamKey,
-    };
+    return this.issueAgoraAccess(sessionId, requester, dto.clientId, 'owner');
   }
 
-  @ApiOperation({ summary: 'Kiem tra va gan ban ghi replay tu Cloudflare' })
-  @ApiBearerAuth('access-token')
-  @ApiOkResponse({ description: 'Trang thai san sang cua ban ghi replay.' })
-  @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post('live/sessions/:sessionId/recording/refresh')
-  async refreshLiveRecording(
-    @Param('sessionId') sessionId: string,
-    @CurrentUserId() requesterUserId: string,
-    @CurrentUser() requester: AuthenticatedUser | undefined,
+  private async issueAgoraAccess(
+    sessionId: string,
+    requester: AuthenticatedUser | undefined,
+    clientId: string,
+    accessRole: 'owner' | 'auto',
   ) {
     const context = (await this.catalogRpcService.getLiveBroadcastContext({
       sessionId,
-      requesterUserId,
-      requesterRole: requester?.role,
+      requesterUserId: requester?.id ?? null,
+      accessRole,
     })) as {
       streamProvider?: string | null;
       providerSessionId?: string | null;
+      rtcRole?: 'PUBLISHER' | 'SUBSCRIBER';
     };
     if (
-      context.streamProvider !== 'CLOUDFLARE_STREAM' ||
-      !context.providerSessionId
+      context.streamProvider !== 'AGORA_RTC' ||
+      context.providerSessionId !== agoraChannelName(sessionId) ||
+      !context.rtcRole
     ) {
-      throw new BadRequestException(
-        'Recording is managed outside Cloudflare Stream',
-      );
+      throw new BadRequestException('Live session is not managed by Agora RTC');
     }
-    const recording =
-      await this.cloudflareStreamService.getLatestReadyRecording(
-        context.providerSessionId,
-      );
-    if (!recording) return { ready: false };
-
-    const session = await this.catalogRpcService.syncLiveProviderEvent({
-      providerSessionId: context.providerSessionId,
-      eventType: 'recording.ready',
-      occurredAt: new Date().toISOString(),
-      recordingUrl: recording.recordingUrl,
+    return this.agoraRtcTokenService.issueToken({
+      sessionId,
+      clientId,
+      principalId: requester?.id ?? null,
+      role: context.rtcRole,
     });
-    const shopId = shopIdFromResult(session);
-    if (shopId) {
-      this.dashboardSseBrokerService.notifyShop(shopId, 'live_changed');
-    }
-    return { ready: true, recordingUrl: recording.recordingUrl };
   }
 
   @ApiOperation({ summary: 'Cap nhat trang thai phien live commerce' })
@@ -532,31 +402,12 @@ export class LiveController {
     @CurrentUser() requester: AuthenticatedUser | undefined,
     @Body() dto: UpdateLiveSessionStatusDto,
   ) {
-    const terminalStatus = ['ENDED', 'CANCELLED'].includes(dto.status);
-    const providerContext = terminalStatus
-      ? ((await this.catalogRpcService.getLiveBroadcastContext({
-          sessionId,
-          requesterUserId,
-          requesterRole: requester?.role,
-        })) as {
-          streamProvider?: string | null;
-          providerSessionId?: string | null;
-        })
-      : null;
     const result = await this.catalogRpcService.updateLiveSessionStatus({
       sessionId,
       requesterUserId,
       requesterRole: requester?.role,
       status: dto.status,
     });
-    if (
-      providerContext?.streamProvider === 'CLOUDFLARE_STREAM' &&
-      providerContext.providerSessionId
-    ) {
-      await this.cloudflareStreamService.disableLiveInput(
-        providerContext.providerSessionId,
-      );
-    }
     const shopId = shopIdFromResult(result);
     if (shopId) {
       this.dashboardSseBrokerService.notifyShop(shopId, 'live_changed');
@@ -584,6 +435,73 @@ export class LiveController {
       requesterRole: requester?.role,
     });
   }
+
+  private async assertActiveRequester(
+    requester: AuthenticatedUser | undefined,
+  ) {
+    if (!requester?.id) return;
+    const user = await this.usersRpcService.findById(requester.id);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    if (user.accountStatus !== 'active') {
+      throw new ForbiddenException('Account is not active');
+    }
+  }
+
+  private async notifyReminderRecipients(result: unknown) {
+    if (!result || typeof result !== 'object') return;
+    const record = result as Record<string, unknown>;
+    const sessionId = typeof record.id === 'string' ? record.id : null;
+    const title =
+      typeof record.title === 'string' ? record.title : 'Livestream';
+    const userIds = Array.isArray(record.reminderUserIds)
+      ? record.reminderUserIds.filter(
+          (userId): userId is string => typeof userId === 'string',
+        )
+      : [];
+    if (!sessionId || !userIds.length) return;
+
+    const notifications = await Promise.allSettled(
+      userIds.map((userId) =>
+        this.usersRpcService.createNotification({
+          userId,
+          notificationType: 'LIVE_STARTED',
+          title: 'Livestream da bat dau',
+          body: `${title} dang phat truc tiep.`,
+          targetType: 'LIVE_SESSION',
+          targetId: sessionId,
+          dedupeKey: `live-started:${sessionId}:${userId}`,
+          eventName: 'notification.live.started.v1',
+        }),
+      ),
+    );
+    notifications.forEach((notification, index) => {
+      if (
+        notification.status === 'fulfilled' &&
+        notificationWasCreated(notification.value)
+      ) {
+        this.notificationSseBrokerService.notifyUser({
+          family: 'notification',
+          reason: 'created',
+          userId: userIds[index],
+        });
+      }
+    });
+    const failedCount = notifications.filter(
+      (notification) => notification.status === 'rejected',
+    ).length;
+    if (failedCount) {
+      this.logger.warn({
+        metric: 'livestream.reminder.notification.pending_retry',
+        sessionId,
+        failedCount,
+      });
+      throw new ServiceUnavailableException(
+        'Live-start notifications are pending retry',
+      );
+    }
+  }
 }
 
 function shopIdFromResult(result: unknown) {
@@ -593,4 +511,19 @@ function shopIdFromResult(result: unknown) {
   }
 
   return undefined;
+}
+
+function publicStartResult(result: unknown) {
+  if (!result || typeof result !== 'object') return result;
+  const session = { ...(result as Record<string, unknown>) };
+  delete session.reminderUserIds;
+  delete session.startedNow;
+  return session;
+}
+
+function notificationWasCreated(value: unknown) {
+  if (!value || typeof value !== 'object' || !('createdNow' in value)) {
+    return true;
+  }
+  return (value as { createdNow?: unknown }).createdNow !== false;
 }

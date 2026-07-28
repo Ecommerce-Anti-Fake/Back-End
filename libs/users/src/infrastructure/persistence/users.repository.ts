@@ -183,7 +183,7 @@ export class UsersRepository {
     });
   }
 
-  createNotification(input: {
+  async createNotification(input: {
     userId: string;
     notificationType: string;
     title: string;
@@ -192,24 +192,42 @@ export class UsersRepository {
     targetId?: string | null;
     dedupeKey: string;
   }) {
-    return this.prisma.notification.upsert({
-      where: { dedupeKey: input.dedupeKey },
-      update: {
-        title: input.title,
-        body: input.body,
-        targetType: input.targetType ?? null,
-        targetId: input.targetId ?? null,
-      },
-      create: {
-        userId: input.userId,
-        notificationType: input.notificationType,
-        title: input.title,
-        body: input.body,
-        targetType: input.targetType ?? null,
-        targetId: input.targetId ?? null,
-        dedupeKey: input.dedupeKey,
-      },
-    });
+    const data = {
+      userId: input.userId,
+      notificationType: input.notificationType,
+      title: input.title,
+      body: input.body,
+      targetType: input.targetType ?? null,
+      targetId: input.targetId ?? null,
+      dedupeKey: input.dedupeKey,
+    };
+    try {
+      return {
+        notification: await this.prisma.notification.create({ data }),
+        createdNow: true,
+      };
+    } catch (error) {
+      if (
+        !(
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        )
+      ) {
+        throw error;
+      }
+      return {
+        notification: await this.prisma.notification.update({
+          where: { dedupeKey: input.dedupeKey },
+          data: {
+            title: input.title,
+            body: input.body,
+            targetType: input.targetType ?? null,
+            targetId: input.targetId ?? null,
+          },
+        }),
+        createdNow: false,
+      };
+    }
   }
 
   registerNotificationFcmToken(input: {

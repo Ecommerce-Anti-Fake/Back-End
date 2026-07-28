@@ -6,8 +6,8 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
-  Min,
   MinLength,
 } from 'class-validator';
 
@@ -39,6 +39,14 @@ export class ListLiveSessionsQueryDto {
 }
 
 export class CreateLiveSessionDto {
+  @ApiProperty({
+    description:
+      'Stable browser client identifier used to renew the publisher Agora UID.',
+    example: '8954d00d-dbf8-4dc4-a9b7-30b94d1df8ea',
+  })
+  @IsUUID('4')
+  clientId!: string;
+
   @ApiProperty({ example: 'shop-id' })
   @IsString()
   shopId!: string;
@@ -64,49 +72,6 @@ export class CreateLiveSessionDto {
   @IsString()
   startAt!: string;
 
-  @ApiPropertyOptional({ example: 'https://video.example.com/embed/live-1' })
-  @IsOptional()
-  @IsString()
-  playbackUrl?: string | null;
-
-  @ApiPropertyOptional({ example: 'HLS_CDN' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  streamProvider?: string | null;
-
-  @ApiPropertyOptional({ example: 'provider-session-id' })
-  @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  streamProviderSessionId?: string | null;
-
-  @ApiPropertyOptional({ example: 'rtmp://ingest.example.com/live/stream-key' })
-  @IsOptional()
-  @IsString()
-  streamIngestUrl?: string | null;
-
-  @ApiPropertyOptional({ example: 8000 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1000)
-  streamLatencyTargetMs?: number | null;
-
-  @ApiPropertyOptional({
-    example: 'https://cdn.example.com/recordings/live-1.m3u8',
-  })
-  @IsOptional()
-  @IsString()
-  recordingUrl?: string | null;
-
-  @ApiPropertyOptional({ example: 30 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  recordingRetentionDays?: number | null;
-
   @ApiPropertyOptional({ example: ['offer-id-1', 'offer-id-2'], isArray: true })
   @IsOptional()
   @IsArray()
@@ -122,6 +87,16 @@ export class CreateLiveSessionDto {
   @IsArray()
   @IsString({ each: true })
   voucherIds?: string[];
+}
+
+export class JoinLiveSessionDto {
+  @ApiProperty({
+    description:
+      'Stable browser client identifier used only to renew the same Agora UID.',
+    example: '8954d00d-dbf8-4dc4-a9b7-30b94d1df8ea',
+  })
+  @IsUUID('4')
+  clientId!: string;
 }
 
 export class UpdateLiveSessionStatusDto {
@@ -230,17 +205,21 @@ export class LiveSessionResponseDto {
   @ApiProperty() createdAt!: Date;
 }
 
-export class LiveBroadcastCredentialsResponseDto {
-  @ApiProperty({ example: 'rtmps://live.cloudflare.com:443/live/' })
-  ingestUrl!: string;
-
-  @ApiProperty({
-    description: 'Sensitive OBS stream key. Never persisted or logged.',
-  })
-  streamKey!: string;
+export class AgoraRtcAccessResponseDto {
+  @ApiProperty() appId!: string;
+  @ApiProperty() channelName!: string;
+  @ApiProperty() uid!: number;
+  @ApiProperty() token!: string;
+  @ApiProperty({ enum: ['PUBLISHER', 'SUBSCRIBER'] })
+  role!: 'PUBLISHER' | 'SUBSCRIBER';
+  @ApiProperty() expiresAt!: string;
 }
 
 export class CreatedLiveSessionResponseDto extends LiveSessionResponseDto {
-  @ApiPropertyOptional({ type: LiveBroadcastCredentialsResponseDto })
-  broadcastCredentials?: LiveBroadcastCredentialsResponseDto;
+  @ApiProperty() appId!: string;
+  @ApiProperty() channelName!: string;
+  @ApiProperty() uid!: number;
+  @ApiProperty() token!: string;
+  @ApiProperty({ enum: ['PUBLISHER'] }) role!: 'PUBLISHER';
+  @ApiProperty() expiresAt!: string;
 }

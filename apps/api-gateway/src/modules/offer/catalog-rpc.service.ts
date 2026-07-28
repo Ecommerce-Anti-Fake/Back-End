@@ -16,7 +16,6 @@ import {
   GetLiveSessionMessage,
   GetLiveBroadcastContextMessage,
   GetLiveAnalyticsMessage,
-  SyncLiveProviderEventMessage,
   CreateLiveCommentMessage,
   CreateLiveSessionMessage,
   CreateSocialCommentMessage,
@@ -319,10 +318,6 @@ export class CatalogRpcService {
 
   getLiveAnalytics(payload: GetLiveAnalyticsMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.getLiveAnalytics, payload);
-  }
-
-  syncLiveProviderEvent(payload: SyncLiveProviderEventMessage) {
-    return this.send(PRODUCTS_MESSAGE_PATTERNS.syncLiveProviderEvent, payload);
   }
 
   createLiveSession(payload: CreateLiveSessionMessage) {

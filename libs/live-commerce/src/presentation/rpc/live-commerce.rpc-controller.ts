@@ -9,7 +9,6 @@ import type {
   GetLiveSessionMessage,
   GetLiveBroadcastContextMessage,
   GetLiveAnalyticsMessage,
-  SyncLiveProviderEventMessage,
   LiveSessionLookupMessage,
   ListLiveCommentsMessage,
   ListLiveSessionsMessage,
@@ -23,7 +22,6 @@ import {
   GetLiveSessionUseCase,
   GetLiveBroadcastContextUseCase,
   GetLiveAnalyticsUseCase,
-  SyncLiveProviderEventUseCase,
   ListLiveCommentsUseCase,
   ListLiveSessionsUseCase,
   RemindLiveSessionUseCase,
@@ -39,7 +37,6 @@ export class LiveCommerceRpcController {
     private readonly getLiveSessionUseCase: GetLiveSessionUseCase,
     private readonly getLiveBroadcastContextUseCase: GetLiveBroadcastContextUseCase,
     private readonly getLiveAnalyticsUseCase: GetLiveAnalyticsUseCase,
-    private readonly syncLiveProviderEventUseCase: SyncLiveProviderEventUseCase,
     private readonly createLiveSessionUseCase: CreateLiveSessionUseCase,
     private readonly startLiveSessionUseCase: StartLiveSessionUseCase,
     private readonly updateLiveSessionStatusUseCase: UpdateLiveSessionStatusUseCase,
@@ -80,16 +77,6 @@ export class LiveCommerceRpcController {
   async getLiveAnalytics(@Payload() payload: GetLiveAnalyticsMessage) {
     try {
       return await this.getLiveAnalyticsUseCase.execute(payload);
-    } catch (error) {
-      throwRpcException(error);
-    }
-  }
-  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.syncLiveProviderEvent)
-  async syncLiveProviderEvent(
-    @Payload() payload: SyncLiveProviderEventMessage,
-  ) {
-    try {
-      return await this.syncLiveProviderEventUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

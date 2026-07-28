@@ -5,12 +5,11 @@ import { AuthGuardsModule } from '@security';
 import { GatewayOfferModule } from '../offer/offer.module';
 import { GatewayUserModule } from '../user/user.module';
 import { LiveController } from './live.controller';
-import { CloudflareStreamService } from './cloudflare-stream.service';
-import { CloudflareStreamWebhookController } from './cloudflare-stream-webhook.controller';
+import { AgoraRtcTokenService } from './agora-rtc-token.service';
 
 @Module({
   imports: [ConfigModule, AuthGuardsModule, RealtimeOperationsModule, GatewayOfferModule, GatewayUserModule],
-  controllers: [LiveController, CloudflareStreamWebhookController],
-  providers: [CloudflareStreamService],
+  controllers: [LiveController],
+  providers: [AgoraRtcTokenService],
 })
 export class GatewayLiveModule {}

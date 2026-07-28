@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { LiveCommerceRepository } from '../../infrastructure/persistence/live-commerce.repository';
+import { agoraChannelName } from '../agora-rtc';
 import { toLiveSessionResponse } from '../live-commerce.mapper';
 
 @Injectable()
@@ -21,14 +22,6 @@ export class CreateLiveSessionUseCase {
     description?: string | null;
     coverUrl?: string | null;
     startAt: string;
-    playbackUrl?: string | null;
-    streamProvider?: string | null;
-    streamProviderSessionId?: string | null;
-    streamIngestUrl?: string | null;
-    providerStatus?: string | null;
-    streamLatencyTargetMs?: number | null;
-    recordingUrl?: string | null;
-    recordingRetentionDays?: number | null;
     offerIds?: string[];
     voucherIds?: string[];
   }) {
@@ -41,25 +34,6 @@ export class CreateLiveSessionUseCase {
     if (Number.isNaN(startAt.getTime())) {
       throw new BadRequestException('Live session startAt is invalid');
     }
-    if (
-      input.streamLatencyTargetMs !== undefined &&
-      input.streamLatencyTargetMs !== null &&
-      input.streamLatencyTargetMs < 1000
-    ) {
-      throw new BadRequestException(
-        'Live stream latency target must be at least 1000ms',
-      );
-    }
-    if (
-      input.recordingRetentionDays !== undefined &&
-      input.recordingRetentionDays !== null &&
-      input.recordingRetentionDays < 1
-    ) {
-      throw new BadRequestException(
-        'Recording retention must be at least 1 day',
-      );
-    }
-
     const shop = await this.liveCommerceRepository.findShopForLiveSession(
       input.shopId,
     );
@@ -140,14 +114,14 @@ export class CreateLiveSessionUseCase {
       description: input.description?.trim() || null,
       coverUrl: input.coverUrl?.trim() || null,
       startAt,
-      playbackUrl: input.playbackUrl?.trim() || null,
-      streamProvider: input.streamProvider?.trim() || 'HLS_CDN',
-      streamProviderSessionId: input.streamProviderSessionId?.trim() || null,
-      streamIngestUrl: input.streamIngestUrl?.trim() || null,
-      providerStatus: input.providerStatus?.trim() || null,
-      streamLatencyTargetMs: input.streamLatencyTargetMs ?? null,
-      recordingUrl: input.recordingUrl?.trim() || null,
-      recordingRetentionDays: input.recordingRetentionDays ?? null,
+      playbackUrl: null,
+      streamProvider: 'AGORA_RTC',
+      streamProviderSessionId: agoraChannelName(input.sessionId),
+      streamIngestUrl: null,
+      providerStatus: 'READY',
+      streamLatencyTargetMs: 1000,
+      recordingUrl: null,
+      recordingRetentionDays: null,
       offerIds,
       voucherIds,
       requesterUserId: input.requesterUserId,

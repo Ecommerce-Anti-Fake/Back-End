@@ -165,7 +165,6 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   getLiveSession: 'products.get-live-session',
   getLiveBroadcastContext: 'products.get-live-broadcast-context',
   getLiveAnalytics: 'products.get-live-analytics',
-  syncLiveProviderEvent: 'products.sync-live-provider-event',
   createLiveSession: 'products.create-live-session',
   startLiveSession: 'products.start-live-session',
   updateLiveSessionStatus: 'products.update-live-session-status',
@@ -835,25 +834,14 @@ export type GetLiveSessionMessage = {
 
 export type GetLiveBroadcastContextMessage = {
   sessionId: string;
-  requesterUserId: string;
-  requesterRole?: string | null;
+  requesterUserId?: string | null;
+  accessRole?: 'owner' | 'auto';
 };
 
-export type GetLiveAnalyticsMessage = GetLiveBroadcastContextMessage;
-
-export type SyncLiveProviderEventMessage = {
-  providerSessionId: string;
-  eventType:
-    | 'live_input.connected'
-    | 'live_input.disconnected'
-    | 'live_input.errored'
-    | 'recording.ready';
-  occurredAt: string;
-  recordingUrl?: string | null;
-  errorCode?: string | null;
-  errorMessage?: string | null;
-  videoCodec?: string | null;
-  audioCodec?: string | null;
+export type GetLiveAnalyticsMessage = {
+  sessionId: string;
+  requesterUserId: string;
+  requesterRole?: string | null;
 };
 
 export type CreateLiveSessionMessage = {
@@ -864,14 +852,6 @@ export type CreateLiveSessionMessage = {
   description?: string | null;
   coverUrl?: string | null;
   startAt: string;
-  playbackUrl?: string | null;
-  streamProvider?: string | null;
-  streamProviderSessionId?: string | null;
-  streamIngestUrl?: string | null;
-  providerStatus?: string | null;
-  streamLatencyTargetMs?: number | null;
-  recordingUrl?: string | null;
-  recordingRetentionDays?: number | null;
   offerIds?: string[];
   voucherIds?: string[];
 };

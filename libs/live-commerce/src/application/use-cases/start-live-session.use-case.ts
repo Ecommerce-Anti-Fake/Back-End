@@ -13,11 +13,7 @@ export class StartLiveSessionUseCase {
     private readonly liveCommerceRepository: LiveCommerceRepository,
   ) {}
 
-  async execute(input: {
-    sessionId: string;
-    requesterUserId: string;
-    requesterRole?: string | null;
-  }) {
+  async execute(input: { sessionId: string; requesterUserId: string }) {
     const session = await this.liveCommerceRepository.findLiveSessionById(
       input.sessionId,
       input.requesterUserId,
@@ -32,40 +28,39 @@ export class StartLiveSessionUseCase {
     if (!shop) {
       throw new NotFoundException('Shop not found');
     }
-    if (
-      input.requesterRole !== 'admin' &&
-      shop.ownerUserId !== input.requesterUserId
-    ) {
-      throw new ForbiddenException(
-        'Only shop owner or admin can start live sessions',
-      );
+    if (shop.ownerUserId !== input.requesterUserId) {
+      throw new ForbiddenException('Only shop owner can start live sessions');
     }
 
     if (
-      session.streamProvider !== 'CLOUDFLARE_STREAM' ||
+      session.streamProvider !== 'AGORA_RTC' ||
       !session.streamProviderSessionId
     ) {
-      throw new BadRequestException(
-        'Live session is not managed by Cloudflare Stream',
-      );
+      throw new BadRequestException('Live session is not managed by Agora RTC');
     }
-    if (session.status === 'LIVE' || session.providerStatus === 'STARTING') {
-      return toLiveSessionResponse(session, input.requesterUserId);
-    }
-    if (session.status !== 'SCHEDULED') {
+    if (session.status !== 'SCHEDULED' && session.status !== 'LIVE') {
       throw new BadRequestException(
         `Cannot start live session from ${session.status}`,
       );
     }
 
-    const updatedSession =
-      await this.liveCommerceRepository.markLiveSessionStarting({
-        sessionId: input.sessionId,
-        requesterUserId: input.requesterUserId,
-      });
-    if (!updatedSession) {
+    const transition = await this.liveCommerceRepository.markLiveSessionLive({
+      sessionId: input.sessionId,
+      requesterUserId: input.requesterUserId,
+      startedAt: new Date(),
+    });
+    if (!transition.session) {
       throw new NotFoundException('Live session not found');
     }
-    return toLiveSessionResponse(updatedSession, input.requesterUserId);
+    if (transition.session.status !== 'LIVE') {
+      throw new BadRequestException(
+        `Cannot start live session from ${transition.session.status}`,
+      );
+    }
+    return {
+      ...toLiveSessionResponse(transition.session, input.requesterUserId),
+      startedNow: transition.startedNow,
+      reminderUserIds: transition.reminderUserIds,
+    };
   }
 }

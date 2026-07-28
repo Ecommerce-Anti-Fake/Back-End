@@ -20,21 +20,32 @@ export class CreateNotificationUseCase {
     dedupeKey: string;
     eventName?: string | null;
   }) {
-    const notification = await this.usersRepository.createNotification(input);
+    const { notification, createdNow } =
+      await this.usersRepository.createNotification(input);
+    const response = {
+      ...toNotificationResponse(notification),
+      createdNow,
+    };
+    if (!createdNow) {
+      return response;
+    }
     const eventName = input.eventName?.trim() || 'notification.created.v1';
-    const tokens = await this.usersRepository.listActiveNotificationFcmTokens(input.userId);
+    const tokens = await this.usersRepository.listActiveNotificationFcmTokens(
+      input.userId,
+    );
 
-    const fcmResults = await this.firebaseNotificationDeliveryService.sendToTokens({
-      tokens: tokens.map((token) => token.token),
-      title: input.title,
-      body: input.body,
-      data: {
-        notificationId: notification.id,
-        notificationType: input.notificationType,
-        targetType: input.targetType ?? '',
-        targetId: input.targetId ?? '',
-      },
-    });
+    const fcmResults =
+      await this.firebaseNotificationDeliveryService.sendToTokens({
+        tokens: tokens.map((token) => token.token),
+        title: input.title,
+        body: input.body,
+        data: {
+          notificationId: notification.id,
+          notificationType: input.notificationType,
+          targetType: input.targetType ?? '',
+          targetId: input.targetId ?? '',
+        },
+      });
 
     await Promise.all(
       fcmResults.map((result) =>
@@ -50,6 +61,6 @@ export class CreateNotificationUseCase {
       ),
     );
 
-    return toNotificationResponse(notification);
+    return response;
   }
 }

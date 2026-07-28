@@ -1,467 +1,281 @@
-import {
-  BadRequestException,
-  NotFoundException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PATH_METADATA } from '@nestjs/common/constants';
 import { LiveController } from './live.controller';
 
-describe('LiveController routes', () => {
-  it('exposes live routes without the legacy products prefix', () => {
-    /* eslint-disable @typescript-eslint/unbound-method -- method objects are metadata targets and are never invoked */
+describe('LiveController Agora routes', () => {
+  it('exposes Agora access routes without recording refresh', () => {
+    /* eslint-disable @typescript-eslint/unbound-method */
     expect(Reflect.getMetadata(PATH_METADATA, LiveController)).toBe('/');
     expect(
       Reflect.getMetadata(
         PATH_METADATA,
-        LiveController.prototype.listLiveSessions,
+        LiveController.prototype.joinLiveSession,
       ),
-    ).toBe('live/sessions');
-    expect(
-      Reflect.getMetadata(
-        PATH_METADATA,
-        LiveController.prototype.getLiveSession,
-      ),
-    ).toBe('live/sessions/:sessionId');
-    expect(
-      Reflect.getMetadata(
-        PATH_METADATA,
-        LiveController.prototype.getLiveReactionAggregate,
-      ),
-    ).toBe('live/sessions/:sessionId/reactions');
-    expect(
-      Reflect.getMetadata(
-        PATH_METADATA,
-        LiveController.prototype.getLiveAnalytics,
-      ),
-    ).toBe('live/sessions/:sessionId/analytics');
-    expect(
-      Reflect.getMetadata(
-        PATH_METADATA,
-        LiveController.prototype.listLiveComments,
-      ),
-    ).toBe('live/sessions/:sessionId/comments');
-    expect(
-      Reflect.getMetadata(
-        PATH_METADATA,
-        LiveController.prototype.createLiveComment,
-      ),
-    ).toBe('live/sessions/:sessionId/comments');
-    expect(
-      Reflect.getMetadata(
-        PATH_METADATA,
-        LiveController.prototype.updateLiveCommentVisibility,
-      ),
-    ).toBe('live/sessions/:sessionId/comments/:commentId/visibility');
-    expect(
-      Reflect.getMetadata(
-        PATH_METADATA,
-        LiveController.prototype.deleteLiveComment,
-      ),
-    ).toBe('live/sessions/:sessionId/comments/:commentId');
-    expect(
-      Reflect.getMetadata(
-        PATH_METADATA,
-        LiveController.prototype.createLiveSession,
-      ),
-    ).toBe('live/sessions');
-    expect(
-      Reflect.getMetadata(
-        PATH_METADATA,
-        LiveController.prototype.startLiveSession,
-      ),
-    ).toBe('live/sessions/:sessionId/start');
+    ).toBe('live/sessions/:sessionId/join');
     expect(
       Reflect.getMetadata(
         PATH_METADATA,
         LiveController.prototype.getBroadcastCredentials,
       ),
     ).toBe('live/sessions/:sessionId/broadcast-credentials');
-    expect(
-      Reflect.getMetadata(
-        PATH_METADATA,
-        LiveController.prototype.refreshLiveRecording,
-      ),
-    ).toBe('live/sessions/:sessionId/recording/refresh');
-    expect(
-      Reflect.getMetadata(
-        PATH_METADATA,
-        LiveController.prototype.updateLiveSessionStatus,
-      ),
-    ).toBe('live/sessions/:sessionId/status');
-    expect(
-      Reflect.getMetadata(
-        PATH_METADATA,
-        LiveController.prototype.remindLiveSession,
-      ),
-    ).toBe('live/sessions/:sessionId/reminders');
+    expect('refreshLiveRecording' in LiveController.prototype).toBe(false);
     /* eslint-enable @typescript-eslint/unbound-method */
   });
 
-  it('provisions Cloudflare and returns OBS credentials only to the creating seller', async () => {
-    const catalogRpcService = {
-      createLiveSession: jest.fn().mockResolvedValue({
-        id: 'live-1',
-        shopId: 'shop-1',
-        title: 'Live hang chinh hang',
-        status: 'SCHEDULED',
-      }),
-    };
-    const cloudflareStreamService = {
-      isConfigured: jest.fn().mockReturnValue(true),
-      createLiveInput: jest.fn().mockResolvedValue({
-        providerSessionId: 'input-1',
-        playbackUrl:
-          'https://customer-code.cloudflarestream.com/input-1/iframe',
-        ingestUrl: 'rtmps://live.cloudflare.com:443/live/',
-        streamKey: 'secret-stream-key',
-        recordingRetentionDays: 30,
-      }),
-      deleteLiveInput: jest.fn(),
-    };
-    const controller = new LiveController(
-      catalogRpcService as never,
-      {} as never,
-      {} as never,
-      { notifyShop: jest.fn() } as never,
-      cloudflareStreamService as never,
-    );
-
-    const result = await controller.createLiveSession('seller-1', {
-      shopId: 'shop-1',
-      title: 'Live hang chinh hang',
-      startAt: '2026-07-25T02:00:00.000Z',
-    });
-
-    expect(catalogRpcService.createLiveSession).toHaveBeenCalledWith(
-      expect.objectContaining({
-        requesterUserId: 'seller-1',
-        sessionId: expect.any(String) as string,
-        shopId: 'shop-1',
-        streamProvider: 'CLOUDFLARE_STREAM',
-        streamProviderSessionId: 'input-1',
-        providerStatus: 'PROVISIONED',
-        playbackUrl:
-          'https://customer-code.cloudflarestream.com/input-1/iframe',
-        streamIngestUrl: null,
-        recordingRetentionDays: 30,
-      }),
-    );
-    expect(cloudflareStreamService.createLiveInput).toHaveBeenCalledWith({
-      sessionName: 'shop-1: Live hang chinh hang',
-      sessionId: expect.any(String) as string,
-      shopId: 'shop-1',
-    });
-    expect(result).toMatchObject({
+  it('creates a server-owned session and returns publisher access at top level', async () => {
+    const fixture = controllerFixture();
+    fixture.catalog.createLiveSession.mockResolvedValue({
       id: 'live-1',
-      broadcastCredentials: {
-        ingestUrl: 'rtmps://live.cloudflare.com:443/live/',
-        streamKey: 'secret-stream-key',
-      },
-    });
-  });
-
-  it('marks the provider as starting without setting the commerce session live', async () => {
-    const catalogRpcService = {
-      getLiveBroadcastContext: jest.fn().mockResolvedValue({
-        sessionId: 'live-1',
-        shopId: 'shop-1',
-        status: 'SCHEDULED',
-        streamProvider: 'CLOUDFLARE_STREAM',
-        providerSessionId: 'input-1',
-      }),
-      startLiveSession: jest.fn().mockResolvedValue({
-        id: 'live-1',
-        shopId: 'shop-1',
-        status: 'SCHEDULED',
-        providerStatus: 'STARTING',
-      }),
-    };
-    const cloudflareStreamService = {
-      getBroadcastCredentials: jest.fn().mockResolvedValue({
-        enabled: true,
-      }),
-    };
-    const controller = new LiveController(
-      catalogRpcService as never,
-      {} as never,
-      {} as never,
-      { notifyShop: jest.fn() } as never,
-      cloudflareStreamService as never,
-    );
-
-    await expect(
-      controller.startLiveSession('live-1', 'seller-1', {
-        role: 'seller',
-      } as never),
-    ).resolves.toMatchObject({
+      shopId: 'shop-1',
       status: 'SCHEDULED',
-      providerStatus: 'STARTING',
+      streamProvider: 'AGORA_RTC',
     });
-    expect(
-      cloudflareStreamService.getBroadcastCredentials,
-    ).toHaveBeenCalledWith('input-1');
-    expect(catalogRpcService.startLiveSession).toHaveBeenCalledWith({
-      sessionId: 'live-1',
-      requesterUserId: 'seller-1',
-      requesterRole: 'seller',
+    fixture.agora.issueToken.mockReturnValue({
+      appId: 'app-id',
+      channelName: 'live_channel',
+      uid: 41,
+      token: '007-publisher-token',
+      role: 'PUBLISHER',
+      expiresAt: '2026-07-29T03:00:00.000Z',
     });
-  });
 
-  it('deletes a provisioned input only after confirming the session was not persisted', async () => {
-    const createError = new ServiceUnavailableException('catalog unavailable');
-    const catalogRpcService = {
-      createLiveSession: jest.fn().mockRejectedValue(createError),
-      getLiveBroadcastContext: jest
-        .fn()
-        .mockRejectedValue(new NotFoundException('Live session not found')),
-    };
-    const cloudflareStreamService = {
-      isConfigured: jest.fn().mockReturnValue(true),
-      createLiveInput: jest.fn().mockResolvedValue({
-        providerSessionId: 'input-1',
-        playbackUrl:
-          'https://customer-code.cloudflarestream.com/input-1/iframe',
-        ingestUrl: 'rtmps://live.cloudflare.com:443/live/',
-        streamKey: 'secret-stream-key',
-        recordingRetentionDays: 30,
-      }),
-      deleteLiveInput: jest.fn().mockResolvedValue(undefined),
-    };
-    const controller = new LiveController(
-      catalogRpcService as never,
-      {} as never,
-      {} as never,
-      { notifyShop: jest.fn() } as never,
-      cloudflareStreamService as never,
-    );
-
-    await expect(
-      controller.createLiveSession('seller-1', {
-        shopId: 'shop-1',
-        title: 'Live hang chinh hang',
-        startAt: '2026-07-25T02:00:00.000Z',
-      }),
-    ).rejects.toBe(createError);
-
-    expect(cloudflareStreamService.deleteLiveInput).toHaveBeenCalledWith(
-      'input-1',
-    );
-  });
-
-  it('recovers a successful DB commit after the create RPC response is lost', async () => {
-    const catalogRpcService = {
-      createLiveSession: jest
-        .fn()
-        .mockRejectedValue(new ServiceUnavailableException('response lost')),
-      getLiveBroadcastContext: jest.fn().mockResolvedValue({
-        sessionId: 'live-1',
-        shopId: 'shop-1',
-        providerSessionId: 'input-1',
-        streamProvider: 'CLOUDFLARE_STREAM',
-      }),
-      getLiveSession: jest.fn().mockResolvedValue({
-        id: 'live-1',
-        shopId: 'shop-1',
-        title: 'Live hang chinh hang',
-        status: 'SCHEDULED',
-      }),
-    };
-    const cloudflareStreamService = {
-      isConfigured: jest.fn().mockReturnValue(true),
-      createLiveInput: jest
-        .fn()
-        .mockImplementation(({ sessionId }: { sessionId: string }) =>
-          Promise.resolve({
-            providerSessionId: 'input-1',
-            playbackUrl:
-              'https://customer-code.cloudflarestream.com/input-1/iframe',
-            ingestUrl: 'rtmps://live.cloudflare.com:443/live/',
-            streamKey: 'secret-stream-key',
-            recordingRetentionDays: 30,
-            sessionId,
-          }),
-        ),
-      deleteLiveInput: jest.fn(),
-    };
-    const controller = new LiveController(
-      catalogRpcService as never,
-      {} as never,
-      {} as never,
-      { notifyShop: jest.fn() } as never,
-      cloudflareStreamService as never,
-    );
-
-    const result = await controller.createLiveSession('seller-1', {
+    const result = await fixture.controller.createLiveSession('seller-1', {
       shopId: 'shop-1',
       title: 'Live hang chinh hang',
-      startAt: '2026-07-25T02:00:00.000Z',
+      startAt: '2026-07-29T02:00:00.000Z',
+      clientId: '8954d00d-dbf8-4dc4-a9b7-30b94d1df8ea',
     });
 
+    expect(fixture.agora.assertConfigured).toHaveBeenCalledTimes(1);
+    expect(fixture.catalog.createLiveSession).toHaveBeenCalledWith({
+      sessionId: expect.any(String) as string,
+      requesterUserId: 'seller-1',
+      shopId: 'shop-1',
+      title: 'Live hang chinh hang',
+      description: null,
+      coverUrl: null,
+      startAt: '2026-07-29T02:00:00.000Z',
+      offerIds: [],
+      voucherIds: [],
+    });
     expect(result).toMatchObject({
-      id: 'live-1',
-      broadcastCredentials: {
-        ingestUrl: 'rtmps://live.cloudflare.com:443/live/',
-        streamKey: 'secret-stream-key',
-      },
+      streamProvider: 'AGORA_RTC',
+      role: 'PUBLISHER',
+      token: '007-publisher-token',
     });
-    expect(cloudflareStreamService.deleteLiveInput).not.toHaveBeenCalled();
+    expect(fixture.agora.issueToken).toHaveBeenCalledWith({
+      sessionId: expect.any(String) as string,
+      clientId: '8954d00d-dbf8-4dc4-a9b7-30b94d1df8ea',
+      principalId: 'seller-1',
+      role: 'PUBLISHER',
+    });
   });
 
-  it('keeps the input when the session exists but recovery cannot load it', async () => {
-    const createError = new ServiceUnavailableException('response lost');
-    const catalogRpcService = {
-      createLiveSession: jest.fn().mockRejectedValue(createError),
-      getLiveBroadcastContext: jest.fn().mockResolvedValue({
-        sessionId: 'live-1',
-        shopId: 'shop-1',
-        providerSessionId: 'input-1',
-        streamProvider: 'CLOUDFLARE_STREAM',
-      }),
-      getLiveSession: jest
-        .fn()
-        .mockRejectedValue(new NotFoundException('temporarily unavailable')),
-    };
-    const cloudflareStreamService = {
-      isConfigured: jest.fn().mockReturnValue(true),
-      createLiveInput: jest.fn().mockResolvedValue({
-        providerSessionId: 'input-1',
-        playbackUrl:
-          'https://customer-code.cloudflarestream.com/input-1/iframe',
-        ingestUrl: 'rtmps://live.cloudflare.com:443/live/',
-        streamKey: 'secret-stream-key',
-        recordingRetentionDays: 30,
-      }),
-      deleteLiveInput: jest.fn(),
-    };
-    const controller = new LiveController(
-      catalogRpcService as never,
-      {} as never,
-      {} as never,
-      { notifyShop: jest.fn() } as never,
-      cloudflareStreamService as never,
-    );
+  it('issues a subscriber token to an anonymous viewer without client-selected role', async () => {
+    const fixture = controllerFixture();
+    fixture.catalog.getLiveBroadcastContext.mockResolvedValue({
+      sessionId: '3f40b6b4-32c4-41fe-a344-53db0e2c9930',
+      status: 'LIVE',
+      streamProvider: 'AGORA_RTC',
+      providerSessionId: 'live_3f40b6b432c441fea34453db0e2c9930',
+      rtcRole: 'SUBSCRIBER',
+    });
+    fixture.agora.issueToken.mockReturnValue({
+      appId: 'app-id',
+      channelName: 'live_3f40b6b432c441fea34453db0e2c9930',
+      uid: 42,
+      token: '007-token',
+      role: 'SUBSCRIBER',
+      expiresAt: '2026-07-29T03:00:00.000Z',
+    });
 
     await expect(
-      controller.createLiveSession('seller-1', {
-        shopId: 'shop-1',
-        title: 'Live hang chinh hang',
-        startAt: '2026-07-25T02:00:00.000Z',
-      }),
-    ).rejects.toBe(createError);
-
-    expect(cloudflareStreamService.deleteLiveInput).not.toHaveBeenCalled();
+      fixture.controller.joinLiveSession(
+        '3f40b6b4-32c4-41fe-a344-53db0e2c9930',
+        undefined,
+        { clientId: '8954d00d-dbf8-4dc4-a9b7-30b94d1df8ea' },
+      ),
+    ).resolves.toMatchObject({ role: 'SUBSCRIBER', uid: 42 });
+    expect(fixture.catalog.getLiveBroadcastContext).toHaveBeenCalledWith({
+      sessionId: '3f40b6b4-32c4-41fe-a344-53db0e2c9930',
+      requesterUserId: null,
+      accessRole: 'auto',
+    });
+    expect(fixture.agora.issueToken).toHaveBeenCalledWith({
+      sessionId: '3f40b6b4-32c4-41fe-a344-53db0e2c9930',
+      clientId: '8954d00d-dbf8-4dc4-a9b7-30b94d1df8ea',
+      principalId: null,
+      role: 'SUBSCRIBER',
+    });
   });
 
-  it('does not delete the input while the DB commit state is ambiguous', async () => {
-    const createError = new ServiceUnavailableException('catalog unavailable');
-    const catalogRpcService = {
-      createLiveSession: jest.fn().mockRejectedValue(createError),
-      getLiveBroadcastContext: jest
-        .fn()
-        .mockRejectedValue(
-          new ServiceUnavailableException('still unavailable'),
-        ),
-    };
-    const cloudflareStreamService = {
-      isConfigured: jest.fn().mockReturnValue(true),
-      createLiveInput: jest.fn().mockResolvedValue({
-        providerSessionId: 'input-1',
-        playbackUrl:
-          'https://customer-code.cloudflarestream.com/input-1/iframe',
-        ingestUrl: 'rtmps://live.cloudflare.com:443/live/',
-        streamKey: 'secret-stream-key',
-        recordingRetentionDays: 30,
-      }),
-      deleteLiveInput: jest.fn(),
-    };
-    const controller = new LiveController(
-      catalogRpcService as never,
-      {} as never,
-      {} as never,
-      { notifyShop: jest.fn() } as never,
-      cloudflareStreamService as never,
-    );
+  it('rejects an inactive authenticated requester before issuing access', async () => {
+    const fixture = controllerFixture();
+    fixture.users.findById.mockResolvedValue({
+      id: 'seller-1',
+      accountStatus: 'inactive',
+    });
 
     await expect(
-      controller.createLiveSession('seller-1', {
-        shopId: 'shop-1',
-        title: 'Live hang chinh hang',
-        startAt: '2026-07-25T02:00:00.000Z',
-      }),
-    ).rejects.toBe(createError);
-
-    expect(cloudflareStreamService.deleteLiveInput).not.toHaveBeenCalled();
+      fixture.controller.joinLiveSession(
+        '3f40b6b4-32c4-41fe-a344-53db0e2c9930',
+        { id: 'seller-1' } as never,
+        { clientId: '8954d00d-dbf8-4dc4-a9b7-30b94d1df8ea' },
+      ),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(fixture.catalog.getLiveBroadcastContext).not.toHaveBeenCalled();
+    expect(fixture.agora.issueToken).not.toHaveBeenCalled();
   });
 
-  it.each(['ENDED', 'CANCELLED'] as const)(
-    'disables the Cloudflare input when the session becomes %s',
-    async (status) => {
-      const catalogRpcService = {
-        getLiveBroadcastContext: jest.fn().mockResolvedValue({
-          sessionId: 'live-1',
-          shopId: 'shop-1',
-          status: 'LIVE',
-          streamProvider: 'CLOUDFLARE_STREAM',
-          providerSessionId: 'input-1',
-        }),
-        updateLiveSessionStatus: jest.fn().mockResolvedValue({
-          id: 'live-1',
-          shopId: 'shop-1',
-          status,
-        }),
-      };
-      const cloudflareStreamService = {
-        disableLiveInput: jest.fn().mockResolvedValue(undefined),
-      };
-      const controller = new LiveController(
-        catalogRpcService as never,
-        {} as never,
-        {} as never,
-        { notifyShop: jest.fn() } as never,
-        cloudflareStreamService as never,
-      );
-
-      await controller.updateLiveSessionStatus(
-        'live-1',
-        'seller-1',
-        { role: 'seller' } as never,
-        { status },
-      );
-
-      expect(cloudflareStreamService.disableLiveInput).toHaveBeenCalledWith(
-        'input-1',
-      );
-    },
-  );
-
-  it('does not return OBS credentials for a terminal session', async () => {
-    const catalogRpcService = {
-      getLiveBroadcastContext: jest.fn().mockResolvedValue({
-        sessionId: 'live-1',
-        shopId: 'shop-1',
-        status: 'ENDED',
-        streamProvider: 'CLOUDFLARE_STREAM',
-        providerSessionId: 'input-1',
-      }),
-    };
-    const cloudflareStreamService = {
-      getBroadcastCredentials: jest.fn(),
-    };
-    const controller = new LiveController(
-      catalogRpcService as never,
-      {} as never,
-      {} as never,
-      { notifyShop: jest.fn() } as never,
-      cloudflareStreamService as never,
-    );
+  it('keeps the deprecated credentials alias owner-only', async () => {
+    const fixture = controllerFixture();
+    fixture.catalog.getLiveBroadcastContext.mockResolvedValue({
+      status: 'SCHEDULED',
+      streamProvider: 'AGORA_RTC',
+      providerSessionId: 'live_3f40b6b432c441fea34453db0e2c9930',
+      rtcRole: 'PUBLISHER',
+    });
+    fixture.agora.issueToken.mockReturnValue({ role: 'PUBLISHER' });
 
     await expect(
-      controller.getBroadcastCredentials('live-1', 'seller-1', {
-        role: 'seller',
-      } as never),
+      fixture.controller.getBroadcastCredentials(
+        '3f40b6b4-32c4-41fe-a344-53db0e2c9930',
+        { id: 'seller-1' } as never,
+        { clientId: '8954d00d-dbf8-4dc4-a9b7-30b94d1df8ea' },
+      ),
+    ).resolves.toMatchObject({ role: 'PUBLISHER' });
+    expect(fixture.catalog.getLiveBroadcastContext).toHaveBeenCalledWith({
+      sessionId: '3f40b6b4-32c4-41fe-a344-53db0e2c9930',
+      requesterUserId: 'seller-1',
+      accessRole: 'owner',
+    });
+  });
+
+  it('rejects a session whose persisted channel does not match its ID', async () => {
+    const fixture = controllerFixture();
+    fixture.catalog.getLiveBroadcastContext.mockResolvedValue({
+      status: 'LIVE',
+      streamProvider: 'AGORA_RTC',
+      providerSessionId: 'other-channel',
+      rtcRole: 'SUBSCRIBER',
+    });
+
+    await expect(
+      fixture.controller.joinLiveSession(
+        '3f40b6b4-32c4-41fe-a344-53db0e2c9930',
+        undefined,
+        { clientId: '8954d00d-dbf8-4dc4-a9b7-30b94d1df8ea' },
+      ),
     ).rejects.toBeInstanceOf(BadRequestException);
-    expect(
-      cloudflareStreamService.getBroadcastCredentials,
-    ).not.toHaveBeenCalled();
+    expect(fixture.agora.issueToken).not.toHaveBeenCalled();
+  });
+
+  it('notifies reminders after publish and strips internal transition fields', async () => {
+    const fixture = controllerFixture();
+    fixture.catalog.startLiveSession.mockResolvedValue({
+      id: 'live-1',
+      shopId: 'shop-1',
+      title: 'Live hang chinh hang',
+      status: 'LIVE',
+      startedNow: true,
+      reminderUserIds: ['buyer-1'],
+    });
+    fixture.users.createNotification.mockResolvedValue({
+      id: 'notification-1',
+    });
+
+    const result = await fixture.controller.startLiveSession(
+      'live-1',
+      'seller-1',
+    );
+
+    expect(result).toEqual({
+      id: 'live-1',
+      shopId: 'shop-1',
+      title: 'Live hang chinh hang',
+      status: 'LIVE',
+    });
+    expect(fixture.users.createNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'buyer-1',
+        dedupeKey: 'live-started:live-1:buyer-1',
+      }),
+    );
+    expect(fixture.notification.notifyUser).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: 'buyer-1' }),
+    );
+  });
+
+  it('does not regress a live transition when notification delivery fails', async () => {
+    const fixture = controllerFixture();
+    fixture.catalog.startLiveSession.mockResolvedValue({
+      id: 'live-1',
+      title: 'Live hang chinh hang',
+      status: 'LIVE',
+      startedNow: true,
+      reminderUserIds: ['buyer-1'],
+    });
+    fixture.users.createNotification.mockRejectedValue(
+      new Error('users service unavailable'),
+    );
+
+    await expect(
+      fixture.controller.startLiveSession('live-1', 'seller-1'),
+    ).rejects.toThrow('Live-start notifications are pending retry');
+    expect(fixture.notification.notifyUser).not.toHaveBeenCalled();
+  });
+
+  it('does not rebroadcast an existing deduplicated live-start notification', async () => {
+    const fixture = controllerFixture();
+    fixture.catalog.startLiveSession.mockResolvedValue({
+      id: 'live-1',
+      title: 'Live hang chinh hang',
+      status: 'LIVE',
+      startedNow: false,
+      reminderUserIds: ['buyer-1'],
+    });
+    fixture.users.createNotification.mockResolvedValue({
+      id: 'notification-1',
+      createdNow: false,
+    });
+
+    await expect(
+      fixture.controller.startLiveSession('live-1', 'seller-1'),
+    ).resolves.toMatchObject({ id: 'live-1', status: 'LIVE' });
+    expect(fixture.notification.notifyUser).not.toHaveBeenCalled();
   });
 });
+
+function controllerFixture() {
+  const catalog = {
+    createLiveSession: jest.fn(),
+    getLiveBroadcastContext: jest.fn(),
+    startLiveSession: jest.fn(),
+  };
+  const dashboard = { notifyShop: jest.fn() };
+  const agora = {
+    assertConfigured: jest.fn(),
+    issueToken: jest.fn(),
+  };
+  const users = {
+    createNotification: jest.fn(),
+    findById: jest.fn(),
+  };
+  const notification = { notifyUser: jest.fn() };
+  return {
+    catalog,
+    dashboard,
+    agora,
+    users,
+    notification,
+    controller: new LiveController(
+      catalog as never,
+      {} as never,
+      {} as never,
+      dashboard as never,
+      agora as never,
+      users as never,
+      notification as never,
+    ),
+  };
+}

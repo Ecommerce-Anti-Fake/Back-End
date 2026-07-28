@@ -132,13 +132,6 @@ export class LiveCommerceRepository {
     });
   }
 
-  findLiveSessionByProviderId(providerSessionId: string) {
-    return this.prisma.liveCommerceSession.findUnique({
-      where: { streamProviderSessionId: providerSessionId },
-      include: this.liveSessionInclude(),
-    });
-  }
-
   findVouchersForLiveSession(voucherIds: string[]) {
     return this.prisma.voucher.findMany({
       where: { id: { in: voucherIds } },
@@ -153,41 +146,6 @@ export class LiveCommerceRepository {
     });
   }
 
-  updateLiveProviderState(input: {
-    sessionId: string;
-    status?: 'LIVE' | 'ENDED';
-    providerStatus: string;
-    actualStartedAt?: Date;
-    actualEndedAt?: Date;
-    providerEventAt: Date;
-    providerEventType: string;
-    providerErrorCode?: string | null;
-    providerErrorMessage?: string | null;
-    recordingUrl?: string;
-  }) {
-    return this.prisma.liveCommerceSession.update({
-      where: { id: input.sessionId },
-      data: {
-        ...(input.status ? { status: input.status } : {}),
-        providerStatus: input.providerStatus,
-        providerEventAt: input.providerEventAt,
-        providerEventType: input.providerEventType,
-        ...(input.providerErrorCode !== undefined
-          ? { providerErrorCode: input.providerErrorCode }
-          : {}),
-        ...(input.providerErrorMessage !== undefined
-          ? { providerErrorMessage: input.providerErrorMessage }
-          : {}),
-        ...(input.actualStartedAt
-          ? { actualStartedAt: input.actualStartedAt }
-          : {}),
-        ...(input.actualEndedAt ? { actualEndedAt: input.actualEndedAt } : {}),
-        ...(input.recordingUrl ? { recordingUrl: input.recordingUrl } : {}),
-      },
-      include: this.liveSessionInclude(),
-    });
-  }
-
   updateLiveSessionStatus(input: {
     sessionId: string;
     status: 'ENDED' | 'CANCELLED';
@@ -198,47 +156,97 @@ export class LiveCommerceRepository {
       where: { id: input.sessionId },
       data: {
         status: input.status,
+        providerStatus: 'IDLE',
+        providerEventAt: new Date(),
+        providerEventType:
+          input.status === 'ENDED'
+            ? 'agora.publisher.ended'
+            : 'agora.session.cancelled',
         ...(input.actualEndedAt ? { actualEndedAt: input.actualEndedAt } : {}),
       },
       include: this.liveSessionInclude(input.requesterUserId),
     });
   }
 
-  async markLiveSessionStarting(input: {
+  async markLiveSessionLive(input: {
     sessionId: string;
     requesterUserId: string;
+    startedAt: Date;
   }) {
-    await this.prisma.liveCommerceSession.updateMany({
-      where: {
-        id: input.sessionId,
-        status: 'SCHEDULED',
-      },
-      data: {
-        providerStatus: 'STARTING',
-        providerErrorCode: null,
-        providerErrorMessage: null,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const lockedSessions = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "live_commerce_session"
+        WHERE "id" = ${input.sessionId}
+        FOR UPDATE
+      `;
+      if (!lockedSessions[0]) {
+        return { startedNow: false, session: null, reminderUserIds: [] };
+      }
+
+      const result = await tx.liveCommerceSession.updateMany({
+        where: {
+          id: input.sessionId,
+          status: 'SCHEDULED',
+          streamProvider: 'AGORA_RTC',
+        },
+        data: {
+          status: 'LIVE',
+          providerStatus: 'CONNECTED',
+          actualStartedAt: input.startedAt,
+          providerEventAt: input.startedAt,
+          providerEventType: 'agora.publisher.started',
+          providerErrorCode: null,
+          providerErrorMessage: null,
+        },
+      });
+      const session = await tx.liveCommerceSession.findUnique({
+        where: { id: input.sessionId },
+        include: this.liveSessionInclude(input.requesterUserId),
+      });
+      const reminders = await tx.liveSessionReminder.findMany({
+        where: { sessionId: input.sessionId },
+        select: { userId: true },
+      });
+
+      return {
+        startedNow: result.count === 1,
+        session,
+        reminderUserIds: reminders.map((reminder) => reminder.userId),
+      };
     });
-    return this.findLiveSessionById(input.sessionId, input.requesterUserId);
   }
 
   async remindLiveSession(input: { sessionId: string; userId: string }) {
-    await this.prisma.liveSessionReminder.upsert({
-      where: {
-        sessionId_userId: { sessionId: input.sessionId, userId: input.userId },
-      },
-      create: input,
-      update: {},
-    });
-    return this.findLiveSessionById(input.sessionId, input.userId);
-  }
+    return this.prisma.$transaction(async (tx) => {
+      const lockedSessions = await tx.$queryRaw<
+        Array<{ id: string; status: string }>
+      >`
+        SELECT "id", "status"::text AS "status"
+        FROM "live_commerce_session"
+        WHERE "id" = ${input.sessionId}
+        FOR UPDATE
+      `;
+      if (!lockedSessions[0]) return null;
 
-  async listLiveReminderUserIds(sessionId: string) {
-    const reminders = await this.prisma.liveSessionReminder.findMany({
-      where: { sessionId },
-      select: { userId: true },
+      if (lockedSessions[0].status === 'SCHEDULED') {
+        await tx.liveSessionReminder.upsert({
+          where: {
+            sessionId_userId: {
+              sessionId: input.sessionId,
+              userId: input.userId,
+            },
+          },
+          create: input,
+          update: {},
+        });
+      }
+
+      return tx.liveCommerceSession.findUnique({
+        where: { id: input.sessionId },
+        include: this.liveSessionInclude(input.userId),
+      });
     });
-    return reminders.map((reminder) => reminder.userId);
   }
 
   async getLiveSessionAnalytics(sessionId: string) {
