@@ -16,12 +16,29 @@ type LiveCommentWithAuthor = {
   updatedAt: Date;
   author: UserDisplayRecord;
 };
+type LiveOfferProjection = {
+  id: string;
+  title: string;
+  currency: string;
+  offerStatus?: string;
+  variants?: Array<{
+    price: Prisma.Decimal | number | string | null;
+    availableQuantity: number;
+  }>;
+  media?: Array<{
+    mediaType: string;
+    fileUrl?: string | null;
+    mediaAsset?: { secureUrl?: string | null } | null;
+  }>;
+};
 type LiveSessionWithRelations = {
   id: string;
   shopId: string;
   title: string;
   description: string | null;
   coverUrl: string | null;
+  pinnedOfferId?: string | null;
+  pinnedOffer?: LiveOfferProjection | null;
   startAt: Date;
   status: string;
   playbackUrl: string | null;
@@ -37,17 +54,7 @@ type LiveSessionWithRelations = {
   createdAt: Date;
   shop: { shopName: string };
   offers?: Array<{
-    offer: {
-      id: string;
-      title: string;
-      currency: string;
-      variants?: Array<{ price: Prisma.Decimal | number | string | null; availableQuantity: number }>;
-      media?: Array<{
-        mediaType: string;
-        fileUrl?: string | null;
-        mediaAsset?: { secureUrl?: string | null } | null;
-      }>;
-    };
+    offer: LiveOfferProjection;
   }>;
   vouchers?: Array<{
     voucher: {
@@ -79,43 +86,31 @@ export function toLiveSessionResponse(
     title: session.title,
     description: session.description,
     coverUrl: session.coverUrl,
+    pinnedOfferId: session.pinnedOfferId ?? null,
+    pinnedOffer: session.pinnedOffer
+      ? toOfferResponse(session.pinnedOffer, 'id')
+      : null,
     startAt: session.startAt,
     status: session.status,
-    playbackUrl: session.playbackUrl,
+    playbackUrl:
+      session.status === 'ENDED' || session.status === 'CANCELLED'
+        ? null
+        : session.playbackUrl,
     streamProvider: session.streamProvider ?? null,
     streamLatencyTargetMs: session.streamLatencyTargetMs ?? null,
     providerStatus: session.providerStatus ?? null,
     actualStartedAt: session.actualStartedAt ?? null,
     actualEndedAt: session.actualEndedAt ?? null,
-    recordingUrl: session.recordingUrl ?? null,
-    recordingRetentionDays: session.recordingRetentionDays ?? null,
+    recordingUrl: null,
+    recordingRetentionDays: null,
     reminderCount: session._count?.reminders ?? session.reminders?.length ?? 0,
     viewerHasReminder: Boolean(
       viewerUserId &&
       session.reminders?.some((reminder) => reminder.userId === viewerUserId),
     ),
-    offers: (session.offers ?? []).map(({ offer }) => {
-      const thumbnailMedia =
-        offer.media?.find(
-          (media) =>
-            media.mediaType === 'thumbnail' &&
-            (media.mediaAsset?.secureUrl || media.fileUrl),
-        ) ??
-        offer.media?.find(
-          (media) => media.mediaAsset?.secureUrl || media.fileUrl,
-        );
-      return {
-        offerId: offer.id,
-        title: offer.title,
-        price: Math.min(...(offer.variants ?? []).filter((variant) => variant.price !== null).map((variant) => decimalToNumber(variant.price))),
-        currency: offer.currency,
-        availableQuantity: (offer.variants ?? []).reduce((sum, variant) => sum + variant.availableQuantity, 0),
-        thumbnailUrl:
-          thumbnailMedia?.mediaAsset?.secureUrl ??
-          thumbnailMedia?.fileUrl ??
-          null,
-      };
-    }),
+    offers: (session.offers ?? []).map(({ offer }) =>
+      toOfferResponse(offer, 'offerId'),
+    ),
     vouchers: (session.vouchers ?? [])
       .filter(({ voucher }) => voucher.status === 'ACTIVE')
       .map(({ voucher }) => ({
@@ -131,6 +126,39 @@ export function toLiveSessionResponse(
         endsAt: voucher.endsAt,
       })),
     createdAt: session.createdAt,
+  };
+}
+
+function toOfferResponse(
+  offer: LiveOfferProjection,
+  idField: 'id' | 'offerId',
+) {
+  const thumbnailMedia =
+    offer.media?.find(
+      (media) =>
+        media.mediaType === 'thumbnail' &&
+        (media.mediaAsset?.secureUrl || media.fileUrl),
+    ) ??
+    offer.media?.find((media) => media.mediaAsset?.secureUrl || media.fileUrl);
+  const prices = (offer.variants ?? [])
+    .filter((variant) => variant.price !== null)
+    .map((variant) => decimalToNumber(variant.price));
+  const availableQuantity =
+    offer.offerStatus && offer.offerStatus !== 'active'
+      ? 0
+      : (offer.variants ?? []).reduce(
+          (sum, variant) => sum + variant.availableQuantity,
+          0,
+        );
+
+  return {
+    [idField]: offer.id,
+    title: offer.title,
+    price: prices.length ? Math.min(...prices) : 0,
+    currency: offer.currency,
+    availableQuantity,
+    thumbnailUrl:
+      thumbnailMedia?.mediaAsset?.secureUrl ?? thumbnailMedia?.fileUrl ?? null,
   };
 }
 

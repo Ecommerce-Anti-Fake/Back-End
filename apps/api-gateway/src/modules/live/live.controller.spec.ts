@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PATH_METADATA } from '@nestjs/common/constants';
 import { LiveController } from './live.controller';
 
@@ -39,12 +43,21 @@ describe('LiveController Agora routes', () => {
       expiresAt: '2026-07-29T03:00:00.000Z',
     });
 
-    const result = await fixture.controller.createLiveSession('seller-1', {
-      shopId: 'shop-1',
-      title: 'Live hang chinh hang',
-      startAt: '2026-07-29T02:00:00.000Z',
-      clientId: '8954d00d-dbf8-4dc4-a9b7-30b94d1df8ea',
-    });
+    const result = await fixture.controller.createLiveSession(
+      'seller-1',
+      {
+        shopId: 'shop-1',
+        title: 'Live hang chinh hang',
+        startAt: '2026-07-29T02:00:00.000Z',
+        clientId: '8954d00d-dbf8-4dc4-a9b7-30b94d1df8ea',
+      },
+      {
+        buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47]),
+        mimetype: 'image/png',
+        originalname: 'cover.png',
+        size: 4,
+      },
+    );
 
     expect(fixture.agora.assertConfigured).toHaveBeenCalledTimes(1);
     expect(fixture.catalog.createLiveSession).toHaveBeenCalledWith({
@@ -53,7 +66,12 @@ describe('LiveController Agora routes', () => {
       shopId: 'shop-1',
       title: 'Live hang chinh hang',
       description: null,
-      coverUrl: null,
+      coverImage: {
+        buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47]),
+        mimetype: 'image/png',
+        originalname: 'cover.png',
+        size: 4,
+      },
       startAt: '2026-07-29T02:00:00.000Z',
       offerIds: [],
       voucherIds: [],
@@ -107,6 +125,130 @@ describe('LiveController Agora routes', () => {
       principalId: null,
       role: 'SUBSCRIBER',
     });
+  });
+
+  it('honors an explicit subscriber request from the session owner', async () => {
+    const fixture = controllerFixture();
+    fixture.users.findById.mockResolvedValue({
+      id: 'seller-1',
+      accountStatus: 'active',
+    });
+    fixture.catalog.getLiveBroadcastContext.mockResolvedValue({
+      streamProvider: 'AGORA_RTC',
+      providerSessionId: 'live_3f40b6b432c441fea34453db0e2c9930',
+      rtcRole: 'SUBSCRIBER',
+    });
+    fixture.agora.issueToken.mockReturnValue({ role: 'SUBSCRIBER' });
+
+    await fixture.controller.joinLiveSession(
+      '3f40b6b4-32c4-41fe-a344-53db0e2c9930',
+      { id: 'seller-1' } as never,
+      {
+        clientId: '8954d00d-dbf8-4dc4-a9b7-30b94d1df8ea',
+        role: 'SUBSCRIBER',
+      },
+    );
+
+    expect(fixture.catalog.getLiveBroadcastContext).toHaveBeenCalledWith(
+      expect.objectContaining({ accessRole: 'subscriber' }),
+    );
+    expect(fixture.lease.claim).not.toHaveBeenCalled();
+  });
+
+  it('rejects a second publisher when the session lease is occupied', async () => {
+    const fixture = controllerFixture();
+    fixture.users.findById.mockResolvedValue({
+      id: 'seller-1',
+      accountStatus: 'active',
+    });
+    fixture.catalog.getLiveBroadcastContext.mockResolvedValue({
+      streamProvider: 'AGORA_RTC',
+      providerSessionId: 'live_3f40b6b432c441fea34453db0e2c9930',
+      rtcRole: 'PUBLISHER',
+    });
+    fixture.lease.claim.mockResolvedValue(false);
+
+    await expect(
+      fixture.controller.joinLiveSession(
+        '3f40b6b4-32c4-41fe-a344-53db0e2c9930',
+        { id: 'seller-1' } as never,
+        {
+          clientId: '8954d00d-dbf8-4dc4-a9b7-30b94d1df8ea',
+          role: 'PUBLISHER',
+        },
+      ),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(fixture.agora.issueToken).not.toHaveBeenCalled();
+  });
+
+  it('returns conflict when the publisher heartbeat loses its lease', async () => {
+    const fixture = controllerFixture();
+    fixture.lease.heartbeat.mockResolvedValue(false);
+
+    await expect(
+      fixture.controller.heartbeatPublisherLease('live-1', 'seller-1', {
+        clientId: '8954d00d-dbf8-4dc4-a9b7-30b94d1df8ea',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('broadcasts a changed pinned offer and keeps the command response lean', async () => {
+    const fixture = controllerFixture();
+    fixture.catalog.updatePinnedLiveOffer.mockResolvedValue({
+      changed: true,
+      session: {
+        id: 'live-1',
+        shopId: 'shop-1',
+        pinnedOfferId: 'offer-1',
+        pinnedOffer: {
+          id: 'offer-1',
+          title: 'Offer 1',
+          availableQuantity: 3,
+        },
+      },
+    });
+
+    await expect(
+      fixture.controller.updatePinnedLiveOffer(
+        'live-1',
+        'seller-1',
+        { role: 'seller' } as never,
+        { offerId: 'offer-1' },
+      ),
+    ).resolves.toEqual({
+      success: true,
+      message: expect.any(String) as string,
+    });
+    expect(fixture.realtime.broadcastPinnedOffer).toHaveBeenCalledWith({
+      sessionId: 'live-1',
+      pinnedOfferId: 'offer-1',
+      pinnedOffer: {
+        id: 'offer-1',
+        title: 'Offer 1',
+        availableQuantity: 3,
+      },
+    });
+  });
+
+  it('does not rebroadcast an idempotent pinned offer command', async () => {
+    const fixture = controllerFixture();
+    fixture.catalog.updatePinnedLiveOffer.mockResolvedValue({
+      changed: false,
+      session: {
+        id: 'live-1',
+        shopId: 'shop-1',
+        pinnedOfferId: null,
+      },
+    });
+
+    await fixture.controller.updatePinnedLiveOffer(
+      'live-1',
+      'seller-1',
+      { role: 'seller' } as never,
+      { offerId: null },
+    );
+
+    expect(fixture.realtime.broadcastPinnedOffer).not.toHaveBeenCalled();
   });
 
   it('rejects an inactive authenticated requester before issuing access', async () => {
@@ -251,8 +393,17 @@ function controllerFixture() {
     createLiveSession: jest.fn(),
     getLiveBroadcastContext: jest.fn(),
     startLiveSession: jest.fn(),
+    updatePinnedLiveOffer: jest.fn(),
+    updateLiveSessionOffers: jest.fn(),
   };
   const dashboard = { notifyShop: jest.fn() };
+  const realtime = { broadcastPinnedOffer: jest.fn() };
+  const lease = {
+    claim: jest.fn().mockResolvedValue(true),
+    heartbeat: jest.fn().mockResolvedValue(true),
+    release: jest.fn().mockResolvedValue(true),
+    forceRelease: jest.fn().mockResolvedValue(undefined),
+  };
   const agora = {
     assertConfigured: jest.fn(),
     issueToken: jest.fn(),
@@ -265,6 +416,8 @@ function controllerFixture() {
   return {
     catalog,
     dashboard,
+    realtime,
+    lease,
     agora,
     users,
     notification,
@@ -272,6 +425,8 @@ function controllerFixture() {
       catalog as never,
       {} as never,
       {} as never,
+      realtime as never,
+      lease as never,
       dashboard as never,
       agora as never,
       users as never,

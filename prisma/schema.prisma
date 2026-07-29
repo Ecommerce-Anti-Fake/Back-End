@@ -896,6 +896,7 @@ model LiveCommerceSession {
   title       String
   description String?
   coverUrl    String?           @map("cover_url")
+  pinnedOfferId String?         @map("pinned_offer_id")
   startAt     DateTime          @map("start_at")
   status      LiveSessionStatus @default(SCHEDULED)
   playbackUrl String?           @map("playback_url")
@@ -915,6 +916,7 @@ model LiveCommerceSession {
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
   shop        Shop              @relation(fields: [shopId], references: [id])
+  pinnedOffer Offer?            @relation("LiveSessionPinnedOffer", fields: [pinnedOfferId], references: [id], onDelete: SetNull)
   offers      LiveSessionOffer[]
   reminders   LiveSessionReminder[]
   vouchers    LiveSessionVoucher[]
@@ -924,6 +926,7 @@ model LiveCommerceSession {
 
   @@index([shopId, startAt])
   @@index([status, startAt])
+  @@index([pinnedOfferId])
   @@map("live_commerce_session")
 }
 
@@ -1239,6 +1242,7 @@ model Offer {
   favoritedBy          UserFavoriteOffer[]
   socialPosts          SocialPost[]
   liveSessionOffers    LiveSessionOffer[]
+  pinnedInLiveSessions LiveCommerceSession[] @relation("LiveSessionPinnedOffer")
   optionGroups         OfferOptionGroup[]
   variants             OfferVariant[]
 

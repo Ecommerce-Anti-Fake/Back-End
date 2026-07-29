@@ -15,7 +15,7 @@ export class GetLiveBroadcastContextUseCase {
   async execute(input: {
     sessionId: string;
     requesterUserId?: string | null;
-    accessRole?: 'owner' | 'auto';
+    accessRole?: 'owner' | 'subscriber' | 'auto';
   }) {
     const session = await this.liveCommerceRepository.findLiveSessionById(
       input.sessionId,
@@ -27,10 +27,16 @@ export class GetLiveBroadcastContextUseCase {
       input.requesterUserId &&
       session.shop.ownerUserId === input.requesterUserId,
     );
-    if (input.accessRole !== 'auto' && !isOwner) {
+    const accessRole = input.accessRole ?? 'owner';
+    if (accessRole === 'owner' && !isOwner) {
       throw new ForbiddenException('You do not own this live session');
     }
-    const rtcRole = isOwner ? 'PUBLISHER' : 'SUBSCRIBER';
+    const rtcRole =
+      accessRole === 'subscriber'
+        ? 'SUBSCRIBER'
+        : isOwner
+          ? 'PUBLISHER'
+          : 'SUBSCRIBER';
     if (
       ['ENDED', 'CANCELLED'].includes(session.status) ||
       (rtcRole === 'SUBSCRIBER' && session.status !== 'LIVE')

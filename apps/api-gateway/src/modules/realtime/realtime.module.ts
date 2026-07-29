@@ -8,6 +8,6 @@ import { LiveReactionsRealtimeService } from './live-reactions-realtime.service'
 @Module({
   imports: [AuthGuardsModule, RealtimeOperationsModule, GatewayOfferModule],
   providers: [ChatRealtimeService, LiveReactionsRealtimeService],
-  exports: [ChatRealtimeService],
+  exports: [ChatRealtimeService, LiveReactionsRealtimeService],
 })
 export class GatewayRealtimeModule {}

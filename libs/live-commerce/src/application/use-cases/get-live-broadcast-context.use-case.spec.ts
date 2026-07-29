@@ -103,6 +103,29 @@ describe('GetLiveBroadcastContextUseCase', () => {
     ).resolves.toMatchObject({ rtcRole: 'SUBSCRIBER' });
   });
 
+  it('lets the shop owner explicitly join a live session as subscriber', async () => {
+    repository.findLiveSessionById.mockResolvedValueOnce({
+      id: 'live-1',
+      shopId: 'shop-1',
+      status: 'LIVE',
+      streamProvider: 'AGORA_RTC',
+      streamProviderSessionId: 'live_live1',
+      shop: {
+        shopName: 'Seller Shop',
+        ownerUserId: 'seller-1',
+      },
+    });
+    const useCase = new GetLiveBroadcastContextUseCase(repository as never);
+
+    await expect(
+      useCase.execute({
+        sessionId: 'live-1',
+        requesterUserId: 'seller-1',
+        accessRole: 'subscriber',
+      }),
+    ).resolves.toMatchObject({ rtcRole: 'SUBSCRIBER' });
+  });
+
   it('returns a nullable provider ID for unmanaged sessions', async () => {
     repository.findLiveSessionById.mockResolvedValueOnce({
       id: 'live-1',

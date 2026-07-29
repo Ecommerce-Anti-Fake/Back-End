@@ -1,7 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
+  ArrayUnique,
   IsArray,
+  IsDefined,
   IsIn,
   IsInt,
   IsOptional,
@@ -9,6 +11,7 @@ import {
   IsUUID,
   MaxLength,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 const LIVE_SESSION_STATUSES = [
@@ -20,6 +23,7 @@ const LIVE_SESSION_STATUSES = [
 const LIVE_SESSION_MUTATION_STATUSES = ['ENDED', 'CANCELLED'] as const;
 const LIVE_SESSION_FILTERS = ['all', 'live', 'upcoming'] as const;
 const CONTENT_VISIBILITIES = ['PUBLIC', 'HIDDEN'] as const;
+const AGORA_RTC_ROLES = ['PUBLISHER', 'SUBSCRIBER'] as const;
 
 export class ListLiveSessionsQueryDto {
   @ApiPropertyOptional({ enum: LIVE_SESSION_FILTERS, example: 'all' })
@@ -63,19 +67,15 @@ export class CreateLiveSessionDto {
   @MaxLength(2000)
   description?: string | null;
 
-  @ApiPropertyOptional({ example: 'https://cdn.example.com/live-cover.jpg' })
-  @IsOptional()
-  @IsString()
-  coverUrl?: string | null;
-
   @ApiProperty({ example: '2026-06-02T13:00:00.000Z' })
   @IsString()
   startAt!: string;
 
   @ApiPropertyOptional({ example: ['offer-id-1', 'offer-id-2'], isArray: true })
   @IsOptional()
+  @Transform(({ value }) => normalizeMultipartArray(value))
   @IsArray()
-  @IsString({ each: true })
+  @IsUUID(undefined, { each: true })
   offerIds?: string[];
 
   @ApiPropertyOptional({
@@ -84,8 +84,9 @@ export class CreateLiveSessionDto {
     description: 'Active shop vouchers valid when the livestream starts.',
   })
   @IsOptional()
+  @Transform(({ value }) => normalizeMultipartArray(value))
   @IsArray()
-  @IsString({ each: true })
+  @IsUUID(undefined, { each: true })
   voucherIds?: string[];
 }
 
@@ -97,6 +98,40 @@ export class JoinLiveSessionDto {
   })
   @IsUUID('4')
   clientId!: string;
+
+  @ApiPropertyOptional({
+    enum: AGORA_RTC_ROLES,
+    description:
+      'Requested SDK role. The backend still derives and enforces authorization.',
+  })
+  @IsOptional()
+  @IsIn(AGORA_RTC_ROLES)
+  role?: (typeof AGORA_RTC_ROLES)[number];
+}
+
+export class PublisherLeaseDto {
+  @ApiProperty({ example: '8954d00d-dbf8-4dc4-a9b7-30b94d1df8ea' })
+  @IsUUID('4')
+  clientId!: string;
+}
+
+export class UpdatePinnedLiveOfferDto {
+  @ApiPropertyOptional({
+    example: '958d2054-d03d-4b05-a37f-409f02745983',
+    nullable: true,
+  })
+  @IsDefined()
+  @ValidateIf((_object, value) => value !== null)
+  @IsUUID()
+  offerId!: string | null;
+}
+
+export class UpdateLiveSessionOffersDto {
+  @ApiProperty({ type: String, isArray: true })
+  @IsArray()
+  @ArrayUnique()
+  @IsUUID(undefined, { each: true })
+  offerIds!: string[];
 }
 
 export class UpdateLiveSessionStatusDto {
@@ -153,6 +188,15 @@ export class LiveSessionOfferResponseDto {
   @ApiPropertyOptional() thumbnailUrl?: string | null;
 }
 
+export class PinnedLiveOfferResponseDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() title!: string;
+  @ApiProperty() price!: number;
+  @ApiProperty() currency!: string;
+  @ApiPropertyOptional() thumbnailUrl?: string | null;
+  @ApiProperty() availableQuantity!: number;
+}
+
 export class LiveSessionVoucherResponseDto {
   @ApiProperty() voucherId!: string;
   @ApiProperty() code!: string;
@@ -186,6 +230,9 @@ export class LiveSessionResponseDto {
   @ApiProperty() title!: string;
   @ApiPropertyOptional() description?: string | null;
   @ApiPropertyOptional() coverUrl?: string | null;
+  @ApiPropertyOptional({ nullable: true }) pinnedOfferId?: string | null;
+  @ApiPropertyOptional({ type: PinnedLiveOfferResponseDto, nullable: true })
+  pinnedOffer?: PinnedLiveOfferResponseDto | null;
   @ApiProperty() startAt!: Date;
   @ApiProperty({ enum: LIVE_SESSION_STATUSES }) status!: string;
   @ApiPropertyOptional() playbackUrl?: string | null;
@@ -222,4 +269,16 @@ export class CreatedLiveSessionResponseDto extends LiveSessionResponseDto {
   @ApiProperty() token!: string;
   @ApiProperty({ enum: ['PUBLISHER'] }) role!: 'PUBLISHER';
   @ApiProperty() expiresAt!: string;
+}
+
+export class LiveSessionMutationResponseDto {
+  @ApiProperty({ example: true }) success!: true;
+  @ApiProperty() message!: string;
+}
+
+function normalizeMultipartArray(value: unknown): unknown[] {
+  if (value === undefined || value === null || value === '') {
+    return [];
+  }
+  return Array.isArray(value) ? value.map((item: unknown) => item) : [value];
 }

@@ -53,6 +53,8 @@ import {
   StartShopChatThreadMessage,
   LiveSessionLookupMessage,
   UpdateLiveCommentVisibilityMessage,
+  UpdateLiveSessionOffersMessage,
+  UpdatePinnedLiveOfferMessage,
   UpdateSocialPostVisibilityMessage,
   UpdateLiveSessionStatusMessage,
   UpdateOfferMessage,
@@ -322,6 +324,17 @@ export class CatalogRpcService {
 
   createLiveSession(payload: CreateLiveSessionMessage) {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.createLiveSession, payload);
+  }
+
+  updatePinnedLiveOffer(payload: UpdatePinnedLiveOfferMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.updatePinnedLiveOffer, payload);
+  }
+
+  updateLiveSessionOffers(payload: UpdateLiveSessionOffersMessage) {
+    return this.send(
+      PRODUCTS_MESSAGE_PATTERNS.updateLiveSessionOffers,
+      payload,
+    );
   }
 
   startLiveSession(payload: LiveSessionLookupMessage) {

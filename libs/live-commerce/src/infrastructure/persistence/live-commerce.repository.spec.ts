@@ -1,100 +1,60 @@
 import { LiveCommerceRepository } from './live-commerce.repository';
 
-describe('LiveCommerceRepository', () => {
-  it('locks the session while transitioning and snapshots reminder recipients', async () => {
-    const startedAt = new Date('2026-07-28T05:00:00.000Z');
-    const connectedSession = {
-      id: 'live-1',
-      status: 'LIVE',
-      providerStatus: 'CONNECTED',
-    };
-    let lockSql = '';
-    const transaction = {
-      $queryRaw: jest.fn((strings: TemplateStringsArray) => {
-        lockSql = strings.join('');
-        return Promise.resolve([{ id: 'live-1' }]);
-      }),
-      liveCommerceSession: {
-        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
-        findUnique: jest.fn().mockResolvedValue(connectedSession),
-      },
-      liveSessionReminder: {
-        findMany: jest
-          .fn()
-          .mockResolvedValue([{ userId: 'buyer-1' }, { userId: 'buyer-2' }]),
-      },
-    };
-    const prisma = {
-      $transaction: jest.fn(
-        (callback: (tx: typeof transaction) => Promise<unknown>) =>
-          callback(transaction),
-      ),
-    };
-    const repository = new LiveCommerceRepository(prisma as never);
+describe('LiveCommerceRepository.listLiveSessions', () => {
+  it('returns live sessions before future scheduled sessions for public all', async () => {
+    const inputs: unknown[] = [];
+    const results = [
+      [{ id: 'live-now', status: 'LIVE' }],
+      [{ id: 'live-later', status: 'SCHEDULED' }],
+    ];
+    const findMany = jest.fn((input: unknown) => {
+      inputs.push(input);
+      return Promise.resolve(results[inputs.length - 1] ?? []);
+    });
+    const repository = new LiveCommerceRepository({
+      liveCommerceSession: { findMany },
+    } as never);
 
     await expect(
-      repository.markLiveSessionLive({
-        sessionId: 'live-1',
-        requesterUserId: 'seller-1',
-        startedAt,
-      }),
-    ).resolves.toEqual({
-      startedNow: false,
-      session: connectedSession,
-      reminderUserIds: ['buyer-1', 'buyer-2'],
-    });
-    expect(transaction.$queryRaw).toHaveBeenCalledTimes(1);
-    expect(lockSql).toContain('FOR UPDATE');
-    expect(transaction.liveCommerceSession.updateMany).toHaveBeenCalledWith({
-      where: {
-        id: 'live-1',
-        status: 'SCHEDULED',
-        streamProvider: 'AGORA_RTC',
-      },
-      data: {
-        status: 'LIVE',
-        providerStatus: 'CONNECTED',
-        actualStartedAt: startedAt,
-        providerEventAt: startedAt,
-        providerEventType: 'agora.publisher.started',
-        providerErrorCode: null,
-        providerErrorMessage: null,
-      },
-    });
+      repository.listLiveSessions({ filter: 'all' }),
+    ).resolves.toEqual([
+      { id: 'live-now', status: 'LIVE' },
+      { id: 'live-later', status: 'SCHEDULED' },
+    ]);
+    const firstInput = inputs[0] as {
+      where: { status: string };
+    };
+    const secondInput = inputs[1] as {
+      where: { status: string; startAt: { gte: Date } };
+      orderBy: { startAt: string };
+    };
+    expect(firstInput.where.status).toBe('LIVE');
+    expect(secondInput.where.status).toBe('SCHEDULED');
+    expect(secondInput.where.startAt.gte).toBeInstanceOf(Date);
+    expect(secondInput.orderBy).toEqual({ startAt: 'asc' });
   });
 
-  it('does not insert a reminder after the locked session has left SCHEDULED', async () => {
-    const liveSession = { id: 'live-1', status: 'LIVE' };
-    let lockSql = '';
-    const transaction = {
-      $queryRaw: jest.fn((strings: TemplateStringsArray) => {
-        lockSql = strings.join('');
-        return Promise.resolve([{ id: 'live-1', status: 'LIVE' }]);
-      }),
-      liveSessionReminder: {
-        upsert: jest.fn(),
-      },
-      liveCommerceSession: {
-        findUnique: jest.fn().mockResolvedValue(liveSession),
-      },
-    };
-    const prisma = {
-      $transaction: jest.fn(
-        (callback: (tx: typeof transaction) => Promise<unknown>) =>
-          callback(transaction),
-      ),
-    };
-    const repository = new LiveCommerceRepository(prisma as never);
+  it('uses one unrestricted status query for an authorized shop management list', async () => {
+    const findMany = jest
+      .fn()
+      .mockResolvedValue([{ id: 'cancelled', status: 'CANCELLED' }]);
+    const repository = new LiveCommerceRepository({
+      liveCommerceSession: { findMany },
+    } as never);
 
-    await expect(
-      repository.remindLiveSession({
-        sessionId: 'live-1',
-        userId: 'buyer-1',
-      }),
-    ).resolves.toBe(liveSession);
+    await repository.listLiveSessions({
+      requesterUserId: 'seller-1',
+      filter: 'all',
+      shopId: 'shop-1',
+      includeTerminal: true,
+    });
 
-    expect(transaction.$queryRaw).toHaveBeenCalledTimes(1);
-    expect(lockSql).toContain('FOR UPDATE');
-    expect(transaction.liveSessionReminder.upsert).not.toHaveBeenCalled();
+    expect(findMany).toHaveBeenCalledTimes(1);
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { shopId: 'shop-1' },
+        orderBy: { createdAt: 'desc' },
+      }),
+    );
   });
 });

@@ -13,6 +13,8 @@ import type {
   ListLiveCommentsMessage,
   ListLiveSessionsMessage,
   UpdateLiveCommentVisibilityMessage,
+  UpdateLiveSessionOffersMessage,
+  UpdatePinnedLiveOfferMessage,
   UpdateLiveSessionStatusMessage,
 } from '@contracts';
 import {
@@ -27,6 +29,8 @@ import {
   RemindLiveSessionUseCase,
   StartLiveSessionUseCase,
   UpdateLiveCommentVisibilityUseCase,
+  UpdateLiveSessionOffersUseCase,
+  UpdatePinnedLiveOfferUseCase,
   UpdateLiveSessionStatusUseCase,
 } from '../../application/use-cases';
 
@@ -38,6 +42,8 @@ export class LiveCommerceRpcController {
     private readonly getLiveBroadcastContextUseCase: GetLiveBroadcastContextUseCase,
     private readonly getLiveAnalyticsUseCase: GetLiveAnalyticsUseCase,
     private readonly createLiveSessionUseCase: CreateLiveSessionUseCase,
+    private readonly updatePinnedLiveOfferUseCase: UpdatePinnedLiveOfferUseCase,
+    private readonly updateLiveSessionOffersUseCase: UpdateLiveSessionOffersUseCase,
     private readonly startLiveSessionUseCase: StartLiveSessionUseCase,
     private readonly updateLiveSessionStatusUseCase: UpdateLiveSessionStatusUseCase,
     private readonly remindLiveSessionUseCase: RemindLiveSessionUseCase,
@@ -85,6 +91,26 @@ export class LiveCommerceRpcController {
   async createLiveSession(@Payload() payload: CreateLiveSessionMessage) {
     try {
       return await this.createLiveSessionUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.updatePinnedLiveOffer)
+  async updatePinnedLiveOffer(
+    @Payload() payload: UpdatePinnedLiveOfferMessage,
+  ) {
+    try {
+      return await this.updatePinnedLiveOfferUseCase.execute(payload);
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.updateLiveSessionOffers)
+  async updateLiveSessionOffers(
+    @Payload() payload: UpdateLiveSessionOffersMessage,
+  ) {
+    try {
+      return await this.updateLiveSessionOffersUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

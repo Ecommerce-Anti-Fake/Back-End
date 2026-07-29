@@ -35,6 +35,7 @@ model Offer {
   favoritedBy          UserFavoriteOffer[]
   socialPosts          SocialPost[]
   liveSessionOffers    LiveSessionOffer[]
+  pinnedInLiveSessions LiveCommerceSession[] @relation("LiveSessionPinnedOffer")
   optionGroups         OfferOptionGroup[]
   variants             OfferVariant[]
 

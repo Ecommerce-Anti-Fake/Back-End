@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Body,
+  ConflictException,
   Controller,
   Delete,
   ForbiddenException,
@@ -13,17 +14,26 @@ import {
   Query,
   ServiceUnavailableException,
   UnauthorizedException,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import { randomUUID } from 'node:crypto';
-import { RealtimeLiveReactionService, RealtimePresenceService } from '@common';
+import {
+  RealtimeLiveReactionService,
+  RealtimePresenceService,
+  RealtimePublisherLeaseService,
+} from '@common';
 import type { AuthenticatedUser } from '@contracts';
 import {
   ActiveUserGuard,
@@ -42,6 +52,10 @@ import {
   ListLiveSessionsQueryDto,
   LiveCommentResponseDto,
   LiveSessionResponseDto,
+  LiveSessionMutationResponseDto,
+  PublisherLeaseDto,
+  UpdateLiveSessionOffersDto,
+  UpdatePinnedLiveOfferDto,
   UpdateLiveCommentVisibilityDto,
   UpdateLiveSessionStatusDto,
 } from '@live-commerce';
@@ -50,6 +64,7 @@ import { CatalogRpcService } from '../offer/catalog-rpc.service';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 import { NotificationSseBrokerService } from '../user/notification-sse-broker.service';
 import { UsersRpcService } from '../user/users-rpc.service';
+import { LiveReactionsRealtimeService } from '../realtime/live-reactions-realtime.service';
 import {
   AgoraRtcTokenService,
   agoraChannelName,
@@ -64,6 +79,8 @@ export class LiveController {
     private readonly catalogRpcService: CatalogRpcService,
     private readonly liveReactionService: RealtimeLiveReactionService,
     private readonly presenceService: RealtimePresenceService,
+    private readonly liveRealtimeService: LiveReactionsRealtimeService,
+    private readonly publisherLeaseService: RealtimePublisherLeaseService,
     private readonly dashboardSseBrokerService: DashboardSseBrokerService,
     private readonly agoraRtcTokenService: AgoraRtcTokenService,
     private readonly usersRpcService: UsersRpcService,
@@ -85,7 +102,8 @@ export class LiveController {
   ) {
     return this.catalogRpcService.listLiveSessions({
       requesterUserId: requester?.id ?? null,
-      filter: query.filter ?? 'all',
+      requesterRole: requester?.role,
+      filter: query.filter,
       q: query.q ?? null,
       shopId: query.shopId ?? null,
     });
@@ -247,16 +265,51 @@ export class LiveController {
 
   @ApiOperation({ summary: 'Seller tao lich live commerce' })
   @ApiBearerAuth('access-token')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['clientId', 'shopId', 'title', 'startAt'],
+      properties: {
+        clientId: { type: 'string', format: 'uuid' },
+        shopId: { type: 'string' },
+        title: { type: 'string' },
+        description: { type: 'string' },
+        startAt: { type: 'string', format: 'date-time' },
+        offerIds: {
+          type: 'array',
+          items: { type: 'string', format: 'uuid' },
+        },
+        voucherIds: {
+          type: 'array',
+          items: { type: 'string', format: 'uuid' },
+        },
+        coverImage: { type: 'string', format: 'binary' },
+      },
+    },
+  })
   @ApiCreatedResponse({
     description: 'Phien live commerce da duoc tao.',
     type: CreatedLiveSessionResponseDto,
   })
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @UseInterceptors(
+    FileInterceptor('coverImage', {
+      limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+    }),
+  )
   @Post('live/sessions')
   @Header('Cache-Control', 'no-store')
   async createLiveSession(
     @CurrentUserId() requesterUserId: string,
     @Body() dto: CreateLiveSessionDto,
+    @UploadedFile()
+    coverImage?: {
+      buffer: Buffer;
+      mimetype: string;
+      originalname?: string;
+      size: number;
+    },
   ) {
     this.agoraRtcTokenService.assertConfigured();
     const sessionId = randomUUID();
@@ -272,7 +325,7 @@ export class LiveController {
       shopId: dto.shopId,
       title: dto.title,
       description: dto.description ?? null,
-      coverUrl: dto.coverUrl ?? null,
+      coverImage: coverImage ?? null,
       startAt: dto.startAt,
       offerIds: dto.offerIds ?? [],
       voucherIds: dto.voucherIds ?? [],
@@ -290,6 +343,83 @@ export class LiveController {
     return {
       ...(result as Record<string, unknown>),
       ...access,
+    };
+  }
+
+  @ApiOperation({ summary: 'Ghim hoac bo ghim san pham trong livestream' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: LiveSessionMutationResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Patch('live/sessions/:sessionId/pinned-offer')
+  async updatePinnedLiveOffer(
+    @Param('sessionId') sessionId: string,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester: AuthenticatedUser | undefined,
+    @Body() dto: UpdatePinnedLiveOfferDto,
+  ) {
+    const result = (await this.catalogRpcService.updatePinnedLiveOffer({
+      sessionId,
+      requesterUserId,
+      requesterRole: requester?.role,
+      offerId: dto.offerId ?? null,
+    })) as {
+      changed?: boolean;
+      session?: {
+        id?: string;
+        shopId?: string;
+        pinnedOfferId?: string | null;
+        pinnedOffer?: unknown;
+      };
+    };
+    if (result.changed && result.session) {
+      this.liveRealtimeService.broadcastPinnedOffer({
+        sessionId,
+        pinnedOfferId: result.session.pinnedOfferId ?? null,
+        pinnedOffer: result.session.pinnedOffer ?? null,
+      });
+      if (result.session.shopId) {
+        this.dashboardSseBrokerService.notifyShop(
+          result.session.shopId,
+          'live_changed',
+        );
+      }
+    }
+
+    return {
+      success: true as const,
+      message:
+        dto.offerId === null
+          ? 'Đã bỏ ghim sản phẩm khỏi livestream.'
+          : 'Đã ghim sản phẩm trong livestream.',
+    };
+  }
+
+  @ApiOperation({ summary: 'Thay danh sach san pham cua livestream' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: LiveSessionMutationResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Patch('live/sessions/:sessionId/offers')
+  async updateLiveSessionOffers(
+    @Param('sessionId') sessionId: string,
+    @CurrentUserId() requesterUserId: string,
+    @CurrentUser() requester: AuthenticatedUser | undefined,
+    @Body() dto: UpdateLiveSessionOffersDto,
+  ) {
+    const result = (await this.catalogRpcService.updateLiveSessionOffers({
+      sessionId,
+      requesterUserId,
+      requesterRole: requester?.role,
+      offerIds: dto.offerIds,
+    })) as { changed?: boolean; session?: { shopId?: string } };
+    if (result.changed && result.session?.shopId) {
+      this.dashboardSseBrokerService.notifyShop(
+        result.session.shopId,
+        'live_changed',
+      );
+    }
+    return {
+      success: true as const,
+      message: 'Đã cập nhật danh sách sản phẩm livestream.',
     };
   }
 
@@ -337,7 +467,64 @@ export class LiveController {
     @Body() dto: JoinLiveSessionDto,
   ) {
     await this.assertActiveRequester(requester);
-    return this.issueAgoraAccess(sessionId, requester, dto.clientId, 'auto');
+    return this.issueAgoraAccess(
+      sessionId,
+      requester,
+      dto.clientId,
+      dto.role === 'PUBLISHER'
+        ? 'owner'
+        : dto.role === 'SUBSCRIBER'
+          ? 'subscriber'
+          : 'auto',
+    );
+  }
+
+  @ApiOperation({ summary: 'Gia han publisher lease cua studio' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: LiveSessionMutationResponseDto })
+  @RateLimit({ profile: 'auth' })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('live/sessions/:sessionId/publisher-lease/heartbeat')
+  async heartbeatPublisherLease(
+    @Param('sessionId') sessionId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: PublisherLeaseDto,
+  ) {
+    const refreshed = await this.publisherLeaseService.heartbeat({
+      sessionId,
+      requesterUserId,
+      clientId: dto.clientId,
+    });
+    if (!refreshed) {
+      throw new ConflictException(
+        'Publisher lease is no longer owned by this studio',
+      );
+    }
+    return {
+      success: true as const,
+      message: 'Publisher lease refreshed.',
+    };
+  }
+
+  @ApiOperation({ summary: 'Giai phong publisher lease cua studio' })
+  @ApiBearerAuth('access-token')
+  @ApiOkResponse({ type: LiveSessionMutationResponseDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Delete('live/sessions/:sessionId/publisher-lease')
+  async releasePublisherLease(
+    @Param('sessionId') sessionId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: PublisherLeaseDto,
+  ) {
+    await this.publisherLeaseService.release({
+      sessionId,
+      requesterUserId,
+      clientId: dto.clientId,
+    });
+    return {
+      success: true as const,
+      message: 'Publisher lease released.',
+    };
   }
 
   @ApiOperation({
@@ -362,7 +549,7 @@ export class LiveController {
     sessionId: string,
     requester: AuthenticatedUser | undefined,
     clientId: string,
-    accessRole: 'owner' | 'auto',
+    accessRole: 'owner' | 'subscriber' | 'auto',
   ) {
     const context = (await this.catalogRpcService.getLiveBroadcastContext({
       sessionId,
@@ -380,12 +567,42 @@ export class LiveController {
     ) {
       throw new BadRequestException('Live session is not managed by Agora RTC');
     }
-    return this.agoraRtcTokenService.issueToken({
-      sessionId,
-      clientId,
-      principalId: requester?.id ?? null,
-      role: context.rtcRole,
-    });
+    let claimedPublisherLease = false;
+    if (context.rtcRole === 'PUBLISHER') {
+      if (!requester?.id) {
+        throw new UnauthorizedException(
+          'Authentication is required for publisher access',
+        );
+      }
+      claimedPublisherLease = await this.publisherLeaseService.claim({
+        sessionId,
+        requesterUserId: requester.id,
+        clientId,
+      });
+      if (!claimedPublisherLease) {
+        throw new ConflictException(
+          'This livestream is already open in another publisher studio',
+        );
+      }
+    }
+
+    try {
+      return this.agoraRtcTokenService.issueToken({
+        sessionId,
+        clientId,
+        principalId: requester?.id ?? null,
+        role: context.rtcRole,
+      });
+    } catch (error) {
+      if (claimedPublisherLease && requester?.id) {
+        await this.publisherLeaseService.release({
+          sessionId,
+          requesterUserId: requester.id,
+          clientId,
+        });
+      }
+      throw error;
+    }
   }
 
   @ApiOperation({ summary: 'Cap nhat trang thai phien live commerce' })
@@ -412,6 +629,7 @@ export class LiveController {
     if (shopId) {
       this.dashboardSseBrokerService.notifyShop(shopId, 'live_changed');
     }
+    await this.publisherLeaseService.forceRelease(sessionId);
 
     return result;
   }

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '@database/prisma/prisma.module';
+import { MediaModule } from '@media';
 import {
   CreateLiveCommentUseCase,
   CreateLiveSessionUseCase,
@@ -12,13 +13,15 @@ import {
   RemindLiveSessionUseCase,
   StartLiveSessionUseCase,
   UpdateLiveCommentVisibilityUseCase,
+  UpdateLiveSessionOffersUseCase,
+  UpdatePinnedLiveOfferUseCase,
   UpdateLiveSessionStatusUseCase,
 } from './application/use-cases';
 import { LiveCommerceRepository } from './infrastructure/persistence/live-commerce.repository';
 import { LiveCommerceRpcController } from './presentation/rpc/live-commerce.rpc-controller';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, MediaModule],
   controllers: [LiveCommerceRpcController],
   providers: [
     LiveCommerceRepository,
@@ -27,6 +30,8 @@ import { LiveCommerceRpcController } from './presentation/rpc/live-commerce.rpc-
     GetLiveAnalyticsUseCase,
     ListLiveSessionsUseCase,
     CreateLiveSessionUseCase,
+    UpdatePinnedLiveOfferUseCase,
+    UpdateLiveSessionOffersUseCase,
     StartLiveSessionUseCase,
     UpdateLiveSessionStatusUseCase,
     RemindLiveSessionUseCase,

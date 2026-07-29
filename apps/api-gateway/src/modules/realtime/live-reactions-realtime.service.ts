@@ -39,7 +39,12 @@ type LiveSessionRecord = {
 };
 
 type LiveAck =
-  | { ok: true; aggregate?: unknown; comment?: unknown; clientMessageId?: string | null }
+  | {
+      ok: true;
+      aggregate?: unknown;
+      comment?: unknown;
+      clientMessageId?: string | null;
+    }
   | { ok: false; error: string; aggregate?: unknown };
 
 type LiveAckCallback = (ack: LiveAck) => void;
@@ -48,7 +53,10 @@ type LiveAckCallback = (ack: LiveAck) => void;
 export class LiveReactionsRealtimeService implements OnModuleDestroy {
   private readonly logger = new Logger(LiveReactionsRealtimeService.name);
   private io: Server | null = null;
-  private readonly commentRateLimits = new Map<string, { count: number; resetAt: number }>();
+  private readonly commentRateLimits = new Map<
+    string,
+    { count: number; resetAt: number }
+  >();
 
   constructor(
     private readonly jwtService: JwtService,
@@ -68,7 +76,7 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
     });
   }
 
-  async onModuleDestroy() {
+  onModuleDestroy() {
     this.io = null;
   }
 
@@ -76,9 +84,24 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
     return `live:session:${liveSessionId}`;
   }
 
+  broadcastPinnedOffer(input: {
+    sessionId: string;
+    pinnedOfferId: string | null;
+    pinnedOffer: unknown;
+  }) {
+    this.io
+      ?.to(this.roomName(input.sessionId))
+      .emit('live:offer-pinned', input);
+  }
+
   async authenticate(socket: Socket): Promise<LiveSocketPrincipal> {
-    const rawToken = socket.handshake.auth?.accessToken || socket.handshake.query?.accessToken;
-    const accessToken = Array.isArray(rawToken) ? rawToken[0] : rawToken;
+    const auth = socket.handshake.auth as unknown as Record<string, unknown>;
+    const queryToken: unknown = socket.handshake.query?.accessToken;
+    const rawToken: unknown = auth.accessToken || queryToken;
+    const firstToken: unknown = Array.isArray(rawToken)
+      ? rawToken[0]
+      : rawToken;
+    const accessToken = typeof firstToken === 'string' ? firstToken : undefined;
     if (!accessToken || typeof accessToken !== 'string') {
       return anonymousPrincipal(socket.id);
     }
@@ -102,7 +125,12 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
     }
   }
 
-  async joinLiveSession(socket: Socket, principal: LiveSocketPrincipal, payload: LiveJoinPayload, ack?: LiveAckCallback) {
+  async joinLiveSession(
+    socket: Socket,
+    principal: LiveSocketPrincipal,
+    payload: LiveJoinPayload,
+    ack?: LiveAckCallback,
+  ) {
     const liveSessionId = payload.liveSessionId?.trim();
     if (!liveSessionId) {
       this.ackError(ack, 'liveSessionId is required');
@@ -113,8 +141,13 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
       await this.assertCanJoin(liveSessionId, principal);
       await socket.join(this.roomName(liveSessionId));
       this.joinedLiveSessions(socket).add(liveSessionId);
-      await this.presenceService.addLiveViewer({ liveSessionId, userId: principal.userId, sessionId: socket.id });
-      const aggregate = await this.liveReactionService.getAggregate(liveSessionId);
+      await this.presenceService.addLiveViewer({
+        liveSessionId,
+        userId: principal.userId,
+        sessionId: socket.id,
+      });
+      const aggregate =
+        await this.liveReactionService.getAggregate(liveSessionId);
       socket.emit('live:reaction.aggregate', aggregate);
       ack?.({ ok: true, aggregate });
     } catch (error) {
@@ -124,11 +157,19 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
         liveSessionId,
         message: error instanceof Error ? error.message : 'join failed',
       });
-      this.ackError(ack, error instanceof Error ? error.message : 'Cannot join live session');
+      this.ackError(
+        ack,
+        error instanceof Error ? error.message : 'Cannot join live session',
+      );
     }
   }
 
-  async sendReaction(socket: Socket, principal: LiveSocketPrincipal, payload: LiveReactionPayload, ack?: LiveAckCallback) {
+  async sendReaction(
+    socket: Socket,
+    principal: LiveSocketPrincipal,
+    payload: LiveReactionPayload,
+    ack?: LiveAckCallback,
+  ) {
     const liveSessionId = payload.liveSessionId?.trim();
     const reactionType = normalizeReactionType(payload.reactionType);
     if (!liveSessionId || !reactionType) {
@@ -150,7 +191,11 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
       reactionType,
     });
     if (!result.accepted) {
-      ack?.({ ok: false, error: result.reason ?? 'reaction_dropped', aggregate: result.aggregate });
+      ack?.({
+        ok: false,
+        error: result.reason ?? 'reaction_dropped',
+        aggregate: result.aggregate,
+      });
       return;
     }
 
@@ -161,11 +206,18 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
       aggregate: result.aggregate,
       actor: { userId: publicUserId(principal.userId) },
     };
-    this.io?.to(this.roomName(liveSessionId)).emit('live:reaction.created', event);
+    this.io
+      ?.to(this.roomName(liveSessionId))
+      .emit('live:reaction.created', event);
     ack?.({ ok: true, aggregate: result.aggregate });
   }
 
-  async sendComment(socket: Socket, principal: LiveSocketPrincipal, payload: LiveCommentPayload, ack?: LiveAckCallback) {
+  async sendComment(
+    socket: Socket,
+    principal: LiveSocketPrincipal,
+    payload: LiveCommentPayload,
+    ack?: LiveAckCallback,
+  ) {
     const liveSessionId = payload.liveSessionId?.trim();
     const body = payload.body?.trim();
     const clientMessageId = payload.clientMessageId?.trim() || null;
@@ -200,33 +252,56 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
         comment,
         clientMessageId,
       };
-      this.io?.to(this.roomName(liveSessionId)).emit('live:comment.created', event);
+      this.io
+        ?.to(this.roomName(liveSessionId))
+        .emit('live:comment.created', event);
       ack?.({ ok: true, comment, clientMessageId });
     } catch (error) {
-      this.ackError(ack, error instanceof Error ? error.message : 'Cannot send live comment');
+      this.ackError(
+        ack,
+        error instanceof Error ? error.message : 'Cannot send live comment',
+      );
     }
   }
 
   private async handleConnection(socket: Socket) {
     const principal = await this.authenticate(socket);
 
-    socket.on('live:join', (payload: LiveJoinPayload, ack?: LiveAckCallback) => {
-      void this.joinLiveSession(socket, principal, payload ?? {}, ack);
-    });
-    socket.on('live:reaction', (payload: LiveReactionPayload, ack?: LiveAckCallback) => {
-      void this.sendReaction(socket, principal, payload ?? {}, ack);
-    });
-    socket.on('live:comment', (payload: LiveCommentPayload, ack?: LiveAckCallback) => {
-      void this.sendComment(socket, principal, payload ?? {}, ack);
-    });
+    socket.on(
+      'live:join',
+      (payload: LiveJoinPayload, ack?: LiveAckCallback) => {
+        void this.joinLiveSession(socket, principal, payload ?? {}, ack);
+      },
+    );
+    socket.on(
+      'live:reaction',
+      (payload: LiveReactionPayload, ack?: LiveAckCallback) => {
+        void this.sendReaction(socket, principal, payload ?? {}, ack);
+      },
+    );
+    socket.on(
+      'live:comment',
+      (payload: LiveCommentPayload, ack?: LiveAckCallback) => {
+        void this.sendComment(socket, principal, payload ?? {}, ack);
+      },
+    );
     socket.on('presence:heartbeat', (ack?: (payload: { ok: true }) => void) => {
-      void this.recordHeartbeat(socket, principal).then(() => ack?.({ ok: true }));
+      void this.recordHeartbeat(socket, principal).then(() =>
+        ack?.({ ok: true }),
+      );
     });
   }
 
-  private async recordHeartbeat(socket: Socket, principal: LiveSocketPrincipal) {
+  private async recordHeartbeat(
+    socket: Socket,
+    principal: LiveSocketPrincipal,
+  ) {
     for (const liveSessionId of this.joinedLiveSessions(socket)) {
-      await this.presenceService.refreshLiveViewer({ liveSessionId, userId: principal.userId, sessionId: socket.id });
+      await this.presenceService.refreshLiveViewer({
+        liveSessionId,
+        userId: principal.userId,
+        sessionId: socket.id,
+      });
     }
     this.logger.log({
       metric: REALTIME_OPERATION_METRICS.websocketPresenceHeartbeats,
@@ -235,13 +310,20 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
     });
   }
 
-  private async assertCanJoin(liveSessionId: string, principal: LiveSocketPrincipal) {
+  private async assertCanJoin(
+    liveSessionId: string,
+    principal: LiveSocketPrincipal,
+  ) {
     const sessions = await this.catalogRpcService.listLiveSessions({
       requesterUserId: principal.authenticated ? principal.userId : null,
       filter: 'all',
       q: null,
     });
-    const items = normalizeList<LiveSessionRecord>(sessions, ['items', 'data', 'sessions']);
+    const items = normalizeList<LiveSessionRecord>(sessions, [
+      'items',
+      'data',
+      'sessions',
+    ]);
     const session = items.find((item) => item.id === liveSessionId);
     if (!session || session.status === 'CANCELLED') {
       throw new Error('Live session is not available');
@@ -249,10 +331,13 @@ export class LiveReactionsRealtimeService implements OnModuleDestroy {
   }
 
   private joinedLiveSessions(socket: Socket) {
-    if (!socket.data.joinedLiveSessions) {
-      socket.data.joinedLiveSessions = new Set<string>();
+    const data = socket.data as unknown as {
+      joinedLiveSessions?: Set<string>;
+    };
+    if (!data.joinedLiveSessions) {
+      data.joinedLiveSessions = new Set<string>();
     }
-    return socket.data.joinedLiveSessions as Set<string>;
+    return data.joinedLiveSessions;
   }
 
   private ackError(ack: LiveAckCallback | undefined, error: string) {
@@ -283,9 +368,13 @@ function anonymousPrincipal(socketId: string): LiveSocketPrincipal {
   };
 }
 
-function normalizeReactionType(value: string | undefined): LiveReactionType | null {
+function normalizeReactionType(
+  value: string | undefined,
+): LiveReactionType | null {
   const normalized = value?.trim().toUpperCase();
-  return LIVE_REACTION_TYPES.includes(normalized as LiveReactionType) ? (normalized as LiveReactionType) : null;
+  return LIVE_REACTION_TYPES.includes(normalized as LiveReactionType)
+    ? (normalized as LiveReactionType)
+    : null;
 }
 
 function publicUserId(userId: string) {

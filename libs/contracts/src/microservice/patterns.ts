@@ -166,6 +166,8 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   getLiveBroadcastContext: 'products.get-live-broadcast-context',
   getLiveAnalytics: 'products.get-live-analytics',
   createLiveSession: 'products.create-live-session',
+  updatePinnedLiveOffer: 'products.update-pinned-live-offer',
+  updateLiveSessionOffers: 'products.update-live-session-offers',
   startLiveSession: 'products.start-live-session',
   updateLiveSessionStatus: 'products.update-live-session-status',
   remindLiveSession: 'products.remind-live-session',
@@ -822,6 +824,7 @@ export type UpdateSocialPostVisibilityMessage = SocialPostLookupMessage & {
 
 export type ListLiveSessionsMessage = {
   requesterUserId?: string | null;
+  requesterRole?: string | null;
   filter?: 'all' | 'live' | 'upcoming';
   q?: string | null;
   shopId?: string | null;
@@ -835,7 +838,7 @@ export type GetLiveSessionMessage = {
 export type GetLiveBroadcastContextMessage = {
   sessionId: string;
   requesterUserId?: string | null;
-  accessRole?: 'owner' | 'auto';
+  accessRole?: 'owner' | 'subscriber' | 'auto';
 };
 
 export type GetLiveAnalyticsMessage = {
@@ -850,10 +853,23 @@ export type CreateLiveSessionMessage = {
   shopId: string;
   title: string;
   description?: string | null;
-  coverUrl?: string | null;
+  coverImage?: {
+    buffer: Buffer;
+    mimetype: string;
+    originalname?: string;
+    size: number;
+  } | null;
   startAt: string;
   offerIds?: string[];
   voucherIds?: string[];
+};
+
+export type UpdatePinnedLiveOfferMessage = LiveSessionLookupMessage & {
+  offerId: string | null;
+};
+
+export type UpdateLiveSessionOffersMessage = LiveSessionLookupMessage & {
+  offerIds: string[];
 };
 
 export type LiveSessionLookupMessage = {

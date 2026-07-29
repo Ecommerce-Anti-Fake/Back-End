@@ -5,50 +5,92 @@ import { PrismaService } from '@database/prisma/prisma.service';
 export class LiveCommerceRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  listLiveSessions(input: {
+  async listLiveSessions(input: {
     requesterUserId?: string | null;
     filter?: 'all' | 'live' | 'upcoming';
     q?: string | null;
     shopId?: string | null;
+    includeTerminal?: boolean;
   }) {
     const now = new Date();
     const search = input.q?.trim();
-    const statusWhere =
-      input.filter === 'live'
-        ? { status: 'LIVE' as const }
-        : input.filter === 'upcoming'
-          ? { status: 'SCHEDULED' as const, startAt: { gte: now } }
-          : { status: { not: 'CANCELLED' as const } };
-    return this.prisma.liveCommerceSession.findMany({
-      where: {
-        ...statusWhere,
-        ...(input.shopId ? { shopId: input.shopId } : {}),
-        ...(search
-          ? {
-              OR: [
-                { title: { contains: search, mode: 'insensitive' as const } },
-                {
-                  description: {
+    const baseWhere = {
+      ...(input.shopId ? { shopId: input.shopId } : {}),
+      ...(search
+        ? {
+            OR: [
+              { title: { contains: search, mode: 'insensitive' as const } },
+              {
+                description: {
+                  contains: search,
+                  mode: 'insensitive' as const,
+                },
+              },
+              {
+                shop: {
+                  shopName: {
                     contains: search,
                     mode: 'insensitive' as const,
                   },
                 },
-                {
-                  shop: {
-                    shopName: {
-                      contains: search,
-                      mode: 'insensitive' as const,
-                    },
-                  },
-                },
-              ],
-            }
-          : {}),
-      },
-      include: this.liveSessionInclude(input.requesterUserId),
-      orderBy: [{ status: 'asc' }, { startAt: 'asc' }],
-      take: 50,
-    });
+              },
+            ],
+          }
+        : {}),
+    };
+    const include = this.liveSessionInclude(input.requesterUserId);
+
+    if (input.filter === 'live') {
+      return this.prisma.liveCommerceSession.findMany({
+        where: { ...baseWhere, status: 'LIVE' },
+        include,
+        orderBy: { startAt: 'asc' },
+        take: 50,
+      });
+    }
+
+    if (input.filter === 'upcoming') {
+      return this.prisma.liveCommerceSession.findMany({
+        where: {
+          ...baseWhere,
+          status: 'SCHEDULED',
+          startAt: { gte: now },
+        },
+        include,
+        orderBy: { startAt: 'asc' },
+        take: 50,
+      });
+    }
+
+    if (input.includeTerminal) {
+      return this.prisma.liveCommerceSession.findMany({
+        where: baseWhere,
+        include,
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      });
+    }
+
+    const [liveSessions, scheduledSessions] = await Promise.all([
+      this.prisma.liveCommerceSession.findMany({
+        where: { ...baseWhere, status: 'LIVE' },
+        include,
+        orderBy: { startAt: 'asc' },
+        take: 50,
+      }),
+      this.prisma.liveCommerceSession.findMany({
+        where: {
+          ...baseWhere,
+          status: 'SCHEDULED',
+          startAt: { gte: now },
+        },
+        include,
+        orderBy: { startAt: 'asc' },
+        take: 50,
+      }),
+    ]);
+
+    return [...liveSessions, ...scheduledSessions].slice(0, 50);
   }
 
   findShopForLiveSession(shopId: string) {
@@ -165,6 +207,124 @@ export class LiveCommerceRepository {
         ...(input.actualEndedAt ? { actualEndedAt: input.actualEndedAt } : {}),
       },
       include: this.liveSessionInclude(input.requesterUserId),
+    });
+  }
+
+  async updatePinnedOfferAtomic(input: {
+    sessionId: string;
+    offerId: string | null;
+    requesterUserId: string;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      const lockedSessions = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "live_commerce_session"
+        WHERE "id" = ${input.sessionId}
+        FOR UPDATE
+      `;
+      if (!lockedSessions[0]) {
+        return { kind: 'NOT_FOUND' as const };
+      }
+
+      const current = await tx.liveCommerceSession.findUnique({
+        where: { id: input.sessionId },
+        include: this.liveSessionInclude(input.requesterUserId),
+      });
+      if (!current) {
+        return { kind: 'NOT_FOUND' as const };
+      }
+      if (current.status !== 'SCHEDULED' && current.status !== 'LIVE') {
+        return { kind: 'INVALID_STATUS' as const, session: current };
+      }
+      if (current.pinnedOfferId === input.offerId) {
+        return { kind: 'OK' as const, changed: false, session: current };
+      }
+
+      if (input.offerId) {
+        const attached = current.offers.find(
+          ({ offer }) => offer.id === input.offerId,
+        )?.offer;
+        const availableQuantity = attached?.variants.reduce(
+          (sum, variant) => sum + variant.availableQuantity,
+          0,
+        );
+        if (
+          !attached ||
+          attached.shopId !== current.shopId ||
+          attached.offerStatus !== 'active' ||
+          (availableQuantity ?? 0) <= 0
+        ) {
+          return { kind: 'INVALID_OFFER' as const, session: current };
+        }
+      }
+
+      const session = await tx.liveCommerceSession.update({
+        where: { id: input.sessionId },
+        data: { pinnedOfferId: input.offerId },
+        include: this.liveSessionInclude(input.requesterUserId),
+      });
+      return { kind: 'OK' as const, changed: true, session };
+    });
+  }
+
+  async replaceLiveSessionOffersAtomic(input: {
+    sessionId: string;
+    offerIds: string[];
+    requesterUserId: string;
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      const lockedSessions = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id"
+        FROM "live_commerce_session"
+        WHERE "id" = ${input.sessionId}
+        FOR UPDATE
+      `;
+      if (!lockedSessions[0]) {
+        return { kind: 'NOT_FOUND' as const };
+      }
+
+      const current = await tx.liveCommerceSession.findUnique({
+        where: { id: input.sessionId },
+        include: this.liveSessionInclude(input.requesterUserId),
+      });
+      if (!current) {
+        return { kind: 'NOT_FOUND' as const };
+      }
+      if (current.status !== 'SCHEDULED' && current.status !== 'LIVE') {
+        return { kind: 'INVALID_STATUS' as const, session: current };
+      }
+      if (
+        current.pinnedOfferId &&
+        !input.offerIds.includes(current.pinnedOfferId)
+      ) {
+        return { kind: 'PINNED_OFFER_CONFLICT' as const, session: current };
+      }
+
+      const currentIds = current.offers.map(({ offerId }) => offerId);
+      const unchanged =
+        currentIds.length === input.offerIds.length &&
+        currentIds.every((offerId, index) => offerId === input.offerIds[index]);
+      if (unchanged) {
+        return { kind: 'OK' as const, changed: false, session: current };
+      }
+
+      await tx.liveSessionOffer.deleteMany({
+        where: { sessionId: input.sessionId },
+      });
+      if (input.offerIds.length) {
+        await tx.liveSessionOffer.createMany({
+          data: input.offerIds.map((offerId, sortOrder) => ({
+            sessionId: input.sessionId,
+            offerId,
+            sortOrder,
+          })),
+        });
+      }
+      const session = await tx.liveCommerceSession.findUniqueOrThrow({
+        where: { id: input.sessionId },
+        include: this.liveSessionInclude(input.requesterUserId),
+      });
+      return { kind: 'OK' as const, changed: true, session };
     });
   }
 
@@ -361,20 +521,14 @@ export class LiveCommerceRepository {
   private liveSessionInclude(requesterUserId?: string | null) {
     return {
       shop: { select: { shopName: true, ownerUserId: true } },
+      pinnedOffer: {
+        include: this.liveOfferInclude(),
+      },
       offers: {
         orderBy: { sortOrder: 'asc' as const },
         include: {
           offer: {
-            include: {
-              media: {
-                include: { mediaAsset: true },
-                orderBy: { createdAt: 'desc' as const },
-              },
-              variants: {
-                where: { isActive: true },
-                select: { price: true, availableQuantity: true },
-              },
-            },
+            include: this.liveOfferInclude(),
           },
         },
       },
@@ -386,6 +540,19 @@ export class LiveCommerceRepository {
         ? { where: { userId: requesterUserId } }
         : false,
       _count: { select: { reminders: true } },
+    };
+  }
+
+  private liveOfferInclude() {
+    return {
+      media: {
+        include: { mediaAsset: true },
+        orderBy: { createdAt: 'desc' as const },
+      },
+      variants: {
+        where: { isActive: true },
+        select: { price: true, availableQuantity: true },
+      },
     };
   }
 
