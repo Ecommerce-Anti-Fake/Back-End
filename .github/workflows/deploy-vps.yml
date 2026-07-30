@@ -31,7 +31,7 @@ jobs:
 
             APP_DIR="/var/www/antifake/backend"
             APP_NAME="antifake-backend"
-            HEALTH_URL="https://api.antifake.io.vn/api/categories"
+            HEALTH_URL="https://api.antifake.io.vn/api/health"
 
             cd "$APP_DIR"
 
