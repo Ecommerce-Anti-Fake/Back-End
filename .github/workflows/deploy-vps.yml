@@ -18,8 +18,10 @@ jobs:
 
     steps:
       - name: Record deploy start time
+        id: deploy_start
         run: |
-          echo "DEPLOY_START=$(date +%s)" >> "$GITHUB_ENV"
+          echo "timestamp=$(date +%s)" >> "$GITHUB_OUTPUT"
+
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -42,7 +44,7 @@ jobs:
             echo "========================================"
 
             if ! git diff --quiet || ! git diff --cached --quiet; then
-              echo "ERROR: VPS có thay đổi chưa commit."
+              echo "ERROR: Repository backend trên VPS có thay đổi chưa commit."
               git status --short
               exit 1
             fi
@@ -51,6 +53,8 @@ jobs:
             echo "Phiên bản hiện tại: $PREVIOUS_COMMIT"
 
             rollback() {
+              EXIT_CODE=$?
+
               # Ngăn rollback bị gọi lặp lại nếu chính rollback gặp lỗi.
               trap - ERR
               set +e
@@ -61,16 +65,25 @@ jobs:
 
               cd "$APP_DIR"
 
+              echo "Khôi phục source code về: $PREVIOUS_COMMIT"
               git reset --hard "$PREVIOUS_COMMIT"
 
+              echo "Cài lại dependencies của phiên bản trước."
               npm ci
+
+              echo "Build lại phiên bản trước."
               npm run build
 
+              echo "Khởi động lại ứng dụng."
               pm2 restart "$APP_NAME" --update-env
               pm2 save
 
+              echo "========================================"
               echo "Rollback source code hoàn tất."
-              exit 1
+              echo "Lưu ý: Prisma migration không được tự động rollback."
+              echo "========================================"
+
+              exit "$EXIT_CODE"
             }
 
             trap rollback ERR
@@ -122,25 +135,29 @@ jobs:
               --fail \
               --silent \
               --show-error \
+              --location \
               --retry 10 \
               --retry-delay 3 \
               --retry-all-errors \
               "$HEALTH_URL" \
               > /dev/null
 
+            echo "Health check thành công."
+
             trap - ERR
 
             echo "========================================"
-            echo "Deployment completed successfully."
+            echo "Backend deployment completed successfully."
             echo "Commit: $NEW_COMMIT"
             echo "========================================"
 
-      - name: Telegram - backend deploy success
-        if: success()
+      - name: Telegram - backend deploy notification
+        if: ${{ always() }}
         continue-on-error: true
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
           REPOSITORY: ${{ github.repository }}
           BRANCH: ${{ github.ref_name }}
           ACTOR: ${{ github.actor }}
@@ -149,12 +166,29 @@ jobs:
           WORKFLOW: ${{ github.workflow }}
           RUN_NUMBER: ${{ github.run_number }}
           RUN_ID: ${{ github.run_id }}
+
+          DEPLOY_START: ${{ steps.deploy_start.outputs.timestamp }}
+          JOB_STATUS: ${{ job.status }}
+
         run: |
           SHORT_SHA="${COMMIT_SHA:0:7}"
           RUN_URL="https://github.com/${REPOSITORY}/actions/runs/${RUN_ID}"
 
-          END_TIME=$(date +%s)
-          TOTAL_SECONDS=$((END_TIME - DEPLOY_START))
+          echo "Job status: ${JOB_STATUS}"
+
+          # Tính tổng thời gian deploy.
+          END_TIME="$(date +%s)"
+
+          if [ -n "${DEPLOY_START:-}" ]; then
+            TOTAL_SECONDS=$((END_TIME - DEPLOY_START))
+          else
+            TOTAL_SECONDS=0
+          fi
+
+          # Tránh giá trị âm trong trường hợp thời gian không hợp lệ.
+          if [ "$TOTAL_SECONDS" -lt 0 ]; then
+            TOTAL_SECONDS=0
+          fi
 
           HOURS=$((TOTAL_SECONDS / 3600))
           MINUTES=$(((TOTAL_SECONDS % 3600) / 60))
@@ -168,104 +202,69 @@ jobs:
             DEPLOY_TIME="${SECONDS}s"
           fi
 
-          if [ -z "$COMMIT_MESSAGE" ]; then
-            COMMIT_MESSAGE="Chạy workflow thủ công hoặc không có nội dung commit"
+          # workflow_dispatch có thể không có head_commit.message.
+          if [ -z "${COMMIT_MESSAGE:-}" ]; then
+            COMMIT_MESSAGE="Chạy workflow thủ công"
           fi
 
-          MESSAGE=$(cat <<EOF
-          🚀 AntiFake Backend Deploy Thành Công
+          # Nội dung thông báo thay đổi theo trạng thái của job.
+          case "$JOB_STATUS" in
+            success)
+              TITLE="🚀 AntiFake Backend Deploy Thành Công"
+              TIME_LABEL="Thời gian deploy"
 
-          🌐 Môi trường: Production
+              RESULT_MESSAGE="$(printf '%s\n' \
+                '🟢 Deploy: SUCCESS' \
+                '🟢 Health Check: PASSED' \
+                '🔗 API: https://api.antifake.io.vn')"
+              ;;
 
-          📦 Repository: ${REPOSITORY}
-          🌿 Branch: ${BRANCH}
+            failure)
+              TITLE="❌ AntiFake Backend Deploy Thất Bại"
+              TIME_LABEL="Thời gian chạy"
 
-          🔖 Commit:
-          ${SHORT_SHA} - ${COMMIT_MESSAGE}
+              RESULT_MESSAGE="$(printf '%s\n' \
+                '🔴 Deploy: FAILED' \
+                '🟡 Rollback: Kiểm tra log để xác nhận kết quả rollback' \
+                '⚠️ Prisma migration không tự động rollback')"
+              ;;
 
-          👤 Người thực hiện: ${ACTOR}
-          🚀 Workflow: ${WORKFLOW}
-          🔢 Run: #${RUN_NUMBER}
-          ⏱️ Thời gian deploy: ${DEPLOY_TIME}
+            cancelled)
+              TITLE="⚠️ AntiFake Backend Deploy Đã Bị Hủy"
+              TIME_LABEL="Thời gian chạy"
 
-          🟢 Health Check: PASSED
-          🔗 API: https://api.antifake.io.vn
+              RESULT_MESSAGE="$(printf '%s\n' \
+                '🟠 Deploy: CANCELLED' \
+                'ℹ️ Kiểm tra log để xác định trạng thái ứng dụng')"
+              ;;
 
-          Chi tiết:
-          ${RUN_URL}
-          EOF
-          )
+            *)
+              TITLE="⚠️ AntiFake Backend Deploy Có Trạng Thái Không Xác Định"
+              TIME_LABEL="Thời gian chạy"
 
-          curl \
-            --fail \
-            --silent \
-            --show-error \
-            --request POST \
-            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-            --data-urlencode "text=${MESSAGE}" \
-            > /dev/null
+              RESULT_MESSAGE="🟠 Trạng thái: ${JOB_STATUS}"
+              ;;
+          esac
 
-      - name: Telegram - backend deploy failed
-        if: failure()
-        continue-on-error: true
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          REPOSITORY: ${{ github.repository }}
-          BRANCH: ${{ github.ref_name }}
-          ACTOR: ${{ github.actor }}
-          COMMIT_SHA: ${{ github.sha }}
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-          WORKFLOW: ${{ github.workflow }}
-          RUN_NUMBER: ${{ github.run_number }}
-          RUN_ID: ${{ github.run_id }}
-        run: |
-          SHORT_SHA="${COMMIT_SHA:0:7}"
-          RUN_URL="https://github.com/${REPOSITORY}/actions/runs/${RUN_ID}"
-
-          END_TIME=$(date +%s)
-          TOTAL_SECONDS=$((END_TIME - DEPLOY_START))
-
-          HOURS=$((TOTAL_SECONDS / 3600))
-          MINUTES=$(((TOTAL_SECONDS % 3600) / 60))
-          SECONDS=$((TOTAL_SECONDS % 60))
-
-          if [ "$HOURS" -gt 0 ]; then
-            DEPLOY_TIME="${HOURS}h ${MINUTES}m ${SECONDS}s"
-          elif [ "$MINUTES" -gt 0 ]; then
-            DEPLOY_TIME="${MINUTES}m ${SECONDS}s"
-          else
-            DEPLOY_TIME="${SECONDS}s"
-          fi
-
-          if [ -z "$COMMIT_MESSAGE" ]; then
-            COMMIT_MESSAGE="Chạy workflow thủ công hoặc không có nội dung commit"
-          fi
-
-          MESSAGE=$(cat <<EOF
-          ❌ AntiFake Backend Deploy Thất Bại
-
-          🌐 Môi trường: Production
-
-          📦 Repository: ${REPOSITORY}
-          🌿 Branch: ${BRANCH}
-
-          🔖 Commit:
-          ${SHORT_SHA} - ${COMMIT_MESSAGE}
-
-          👤 Người thực hiện: ${ACTOR}
-          🚀 Workflow: ${WORKFLOW}
-          🔢 Run: #${RUN_NUMBER}
-          ⏱️ Thời gian chạy: ${DEPLOY_TIME}
-
-          🔴 Deploy: FAILED
-          🟡 Rollback: Đã kích hoạt quy trình rollback
-
-          Kiểm tra log:
-          ${RUN_URL}
-          EOF
-          )
+          MESSAGE="$(printf '%s\n' \
+            "${TITLE}" \
+            "" \
+            "🌐 Môi trường: Production" \
+            "📦 Repository: ${REPOSITORY}" \
+            "🌿 Branch: ${BRANCH}" \
+            "" \
+            "🔖 Commit:" \
+            "${SHORT_SHA} - ${COMMIT_MESSAGE}" \
+            "" \
+            "👤 Người thực hiện: ${ACTOR}" \
+            "🚀 Workflow: ${WORKFLOW}" \
+            "🔢 Run: #${RUN_NUMBER}" \
+            "⏱️ ${TIME_LABEL}: ${DEPLOY_TIME}" \
+            "" \
+            "${RESULT_MESSAGE}" \
+            "" \
+            "Chi tiết:" \
+            "${RUN_URL}")"
 
           curl \
             --fail \
