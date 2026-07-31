@@ -17,6 +17,9 @@ jobs:
     timeout-minutes: 30
 
     steps:
+      - name: Record deploy start time
+        run: |
+          echo "DEPLOY_START=$(date +%s)" >> "$GITHUB_ENV"
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -146,18 +149,24 @@ jobs:
           WORKFLOW: ${{ github.workflow }}
           RUN_NUMBER: ${{ github.run_number }}
           RUN_ID: ${{ github.run_id }}
-          RUN_STARTED_AT: ${{ github.run_started_at }}
         run: |
           SHORT_SHA="${COMMIT_SHA:0:7}"
           RUN_URL="https://github.com/${REPOSITORY}/actions/runs/${RUN_ID}"
 
-          START_TIME=$(date -d "$RUN_STARTED_AT" +%s)
           END_TIME=$(date +%s)
-          TOTAL_SECONDS=$((END_TIME - START_TIME))
+          TOTAL_SECONDS=$((END_TIME - DEPLOY_START))
 
-          MINUTES=$((TOTAL_SECONDS / 60))
+          HOURS=$((TOTAL_SECONDS / 3600))
+          MINUTES=$(((TOTAL_SECONDS % 3600) / 60))
           SECONDS=$((TOTAL_SECONDS % 60))
-          DEPLOY_TIME="${MINUTES}m ${SECONDS}s"
+
+          if [ "$HOURS" -gt 0 ]; then
+            DEPLOY_TIME="${HOURS}h ${MINUTES}m ${SECONDS}s"
+          elif [ "$MINUTES" -gt 0 ]; then
+            DEPLOY_TIME="${MINUTES}m ${SECONDS}s"
+          else
+            DEPLOY_TIME="${SECONDS}s"
+          fi
 
           if [ -z "$COMMIT_MESSAGE" ]; then
             COMMIT_MESSAGE="Chạy workflow thủ công hoặc không có nội dung commit"
@@ -211,18 +220,24 @@ jobs:
           WORKFLOW: ${{ github.workflow }}
           RUN_NUMBER: ${{ github.run_number }}
           RUN_ID: ${{ github.run_id }}
-          RUN_STARTED_AT: ${{ github.run_started_at }}
         run: |
           SHORT_SHA="${COMMIT_SHA:0:7}"
           RUN_URL="https://github.com/${REPOSITORY}/actions/runs/${RUN_ID}"
 
-          START_TIME=$(date -d "$RUN_STARTED_AT" +%s)
           END_TIME=$(date +%s)
-          TOTAL_SECONDS=$((END_TIME - START_TIME))
+          TOTAL_SECONDS=$((END_TIME - DEPLOY_START))
 
-          MINUTES=$((TOTAL_SECONDS / 60))
+          HOURS=$((TOTAL_SECONDS / 3600))
+          MINUTES=$(((TOTAL_SECONDS % 3600) / 60))
           SECONDS=$((TOTAL_SECONDS % 60))
-          DEPLOY_TIME="${MINUTES}m ${SECONDS}s"
+
+          if [ "$HOURS" -gt 0 ]; then
+            DEPLOY_TIME="${HOURS}h ${MINUTES}m ${SECONDS}s"
+          elif [ "$MINUTES" -gt 0 ]; then
+            DEPLOY_TIME="${MINUTES}m ${SECONDS}s"
+          else
+            DEPLOY_TIME="${SECONDS}s"
+          fi
 
           if [ -z "$COMMIT_MESSAGE" ]; then
             COMMIT_MESSAGE="Chạy workflow thủ công hoặc không có nội dung commit"
