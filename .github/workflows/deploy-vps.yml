@@ -103,7 +103,13 @@ jobs:
             echo "3. Cài dependencies"
             echo "========================================"
 
-            npm ci
+            npm ci --include=dev
+
+            echo "Kiểm tra công cụ build."
+
+            npx --no-install ts-node --version
+            npx --no-install prisma --version
+            npx --no-install nest --version
 
             echo "========================================"
             echo "4. Build ứng dụng"
