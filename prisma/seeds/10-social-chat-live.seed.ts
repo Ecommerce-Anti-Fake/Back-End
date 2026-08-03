@@ -27,12 +27,15 @@ export async function seedSocialChatLive(prisma: PrismaClient, ctx: SeedContext)
     });
     posts.push(post);
 
-    await createMediaAsset(prisma, {
+    const media = await createMediaAsset(prisma, {
       ownerUserId: shop.ownerUserId,
       resourceType: 'PRODUCT_IMAGE',
       secureUrl: imageUrl(`social-post-${post.id}`, 1200, 675),
       publicId: `seed/social-posts/${post.id}/cover`,
       folder: 'seed/social-posts',
+    });
+    await prisma.socialPostMedia.create({
+      data: { id: id(), postId: post.id, mediaAssetId: media.id, sortOrder: 0 },
     });
   }
 
@@ -159,6 +162,7 @@ export async function seedSocialChatLive(prisma: PrismaClient, ctx: SeedContext)
   const sessions: { id: string; shopId: string }[] = [];
   for (let i = 0; i < COUNTS.liveSessions; i += 1) {
     const shop = pick(ctx.shops, i);
+    const pinnedOffer = ctx.offers.find((offer) => offer.shopId === shop.id) ?? null;
     const status = [LiveSessionStatus.SCHEDULED, LiveSessionStatus.LIVE, LiveSessionStatus.ENDED, LiveSessionStatus.CANCELLED][i % 4];
     const sessionId = id();
     const session = await prisma.liveCommerceSession.create({
@@ -168,6 +172,7 @@ export async function seedSocialChatLive(prisma: PrismaClient, ctx: SeedContext)
         title: `Livestream kiểm hàng chính hãng #${i + 1}`,
         description: 'Giới thiệu sản phẩm có tem QR, hướng dẫn kiểm tra nguồn gốc và ưu đãi live.',
         coverUrl: imageUrl(`live-${i}`, 1200, 675),
+        pinnedOfferId: status === LiveSessionStatus.LIVE ? pinnedOffer?.id ?? null : null,
         startAt: status === LiveSessionStatus.SCHEDULED ? recentDate(-3 - i) : recentDate(8 - i),
         status,
         playbackUrl: null,
@@ -177,6 +182,8 @@ export async function seedSocialChatLive(prisma: PrismaClient, ctx: SeedContext)
         streamLatencyTargetMs: 1000,
         providerStatus:
           status === LiveSessionStatus.LIVE ? 'CONNECTED' : 'READY',
+        actualStartedAt: status === LiveSessionStatus.SCHEDULED || status === LiveSessionStatus.CANCELLED ? null : recentDate(7 - i),
+        actualEndedAt: status === LiveSessionStatus.ENDED || status === LiveSessionStatus.CANCELLED ? recentDate(2) : null,
         recordingUrl: null,
         recordingRetentionDays: null,
       },

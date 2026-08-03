@@ -42,6 +42,11 @@ export async function seedShops(prisma: PrismaClient, ctx: SeedContext) {
         businessType: registrationType === ShopRegistrationType.NORMAL ? 'HOUSEHOLD' : 'COMPANY',
         taxCode: taxCode(i + 1),
         shopStatus: status,
+        warehouseAddress: `${18 + i} Nguyen Trai, Quan 1, TP.HCM`,
+        warehouseProvinceCode: 'VN-P202',
+        warehouseProvinceName: 'TP Ho Chi Minh',
+        warehouseWardCode: `VN-P202-D1442-W${String(20101 + (i % 5))}`,
+        warehouseWardName: `Phuong ${1 + (i % 5)}`,
         createdAt: recentDate(90 - i),
       },
     });

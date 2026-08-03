@@ -36,14 +36,15 @@ const names = [
 ];
 
 export async function seedUsersAndKyc(prisma: PrismaClient, ctx: SeedContext) {
-  const password = hashPassword('12345678');
+  const password = hashPassword('antifake@2026');
 
   for (let i = 0; i < COUNTS.users; i += 1) {
-    const role = i === 2 ? 'admin' : 'user';
+    const role = i === COUNTS.users - 1 ? 'admin' : 'user';
+    const email = role === 'admin' ? 'admin@antifake.io.vn' : `seed.user${String(i + 1).padStart(2, '0')}@antifake.local`;
     let user = await prisma.user.create({
       data: {
         id: id(),
-        email: `seed.user${String(i + 1).padStart(2, '0')}@antifake.local`,
+        email,
         phone: phone(i + 1),
         displayName: names[i],
         password,
@@ -67,11 +68,14 @@ export async function seedUsersAndKyc(prisma: PrismaClient, ctx: SeedContext) {
     ctx.users.push(user);
 
     if (role === 'admin') ctx.admins.push(user);
-    else if (i < 2) ctx.shopOwners.push(user);
-    else ctx.affiliateUsers.push(user);
+    else {
+      ctx.buyers.push(user);
+      if (i < 2) ctx.shopOwners.push(user);
+      ctx.affiliateUsers.push(user);
+    }
   }
 
-  while (ctx.affiliateUsers.length < 6) ctx.affiliateUsers.push(ctx.users[ctx.affiliateUsers.length + 2]);
+  while (ctx.affiliateUsers.length < 6) ctx.affiliateUsers.push(ctx.users[ctx.affiliateUsers.length]);
 
   for (let i = 0; i < COUNTS.userAddresses; i += 1) {
     const user = ctx.users[i % ctx.users.length];
@@ -81,6 +85,10 @@ export async function seedUsersAndKyc(prisma: PrismaClient, ctx: SeedContext) {
         userId: user.id,
         recipientName: user.displayName ?? `Người nhận ${i + 1}`,
         phone: user.phone ?? phone(i + 100),
+        provinceCode: 'VN-P202',
+        provinceName: 'TP Ho Chi Minh',
+        wardCode: `VN-P202-D1442-W${String(20101 + (i % 5))}`,
+        wardName: `Phuong ${1 + (i % 5)}`,
         addressLine: `${12 + i} Nguyễn Trãi, Phường ${1 + (i % 10)}, Quận ${1 + (i % 12)}, TP.HCM`,
         isDefault: i < ctx.users.length,
         createdAt: recentDate(45 - (i % 30)),
