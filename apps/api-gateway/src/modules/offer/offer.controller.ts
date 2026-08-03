@@ -476,6 +476,52 @@ export class OfferController {
     });
   }
 
+  @ApiOperation({ summary: 'Lay danh sach anh cua offer cua seller' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get('offers/:offerId/media')
+  findOfferMedia(
+    @Param('offerId') offerId: string,
+    @CurrentUserId() requesterUserId: string,
+  ) {
+    return this.catalogRpcService.findOfferMedia({
+      offerId,
+      requesterUserId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Xoa mot anh cua offer' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Delete('offers/:offerId/media/:mediaId')
+  deleteOfferMedia(
+    @Param('offerId') offerId: string,
+    @Param('mediaId') mediaId: string,
+    @CurrentUserId() requesterUserId: string,
+  ) {
+    return this.catalogRpcService.deleteOfferMedia({
+      offerId,
+      mediaId,
+      requesterUserId,
+    });
+  }
+
+  @ApiOperation({ summary: 'Dat mot anh cua offer lam anh dai dien' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Patch('offers/:offerId/media/:mediaId/primary')
+  setOfferPrimaryMedia(
+    @Param('offerId') offerId: string,
+    @Param('mediaId') mediaId: string,
+    @CurrentUserId() requesterUserId: string,
+  ) {
+    return this.catalogRpcService.setOfferPrimaryMedia({
+      offerId,
+      mediaId,
+      requesterUserId,
+    });
+  }
+
   @ApiOperation({ summary: 'Thay toan bo anh offer va dat anh dau lam thumbnail' })
   @ApiBearerAuth('access-token')
   @ApiBody({ type: AddOfferMediaBatchDto })
@@ -488,6 +534,7 @@ export class OfferController {
   ) {
     const previousMedia = await this.catalogRpcService.findOfferMedia({
       offerId,
+      requesterUserId,
     });
     const addedMedia = await this.catalogRpcService.addOfferMediaBatch({
       offerId,
@@ -519,7 +566,10 @@ export class OfferController {
       }
     }
 
-    return this.catalogRpcService.findOfferMedia({ offerId });
+    return this.catalogRpcService.findOfferMedia({
+      offerId,
+      requesterUserId,
+    });
   }
 }
 

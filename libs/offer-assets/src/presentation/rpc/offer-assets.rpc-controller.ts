@@ -59,7 +59,7 @@ export class OfferAssetsRpcController {
   @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findOfferMedia)
   async findOfferMedia(@Payload() payload: OfferMediaLookupMessage) {
     try {
-      return await this.listOfferMediaUseCase.execute(payload.offerId);
+      return await this.listOfferMediaUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

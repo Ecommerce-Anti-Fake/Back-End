@@ -67,6 +67,24 @@ describe('OfferController', () => {
     expect(
       Reflect.getMetadata(
         PATH_METADATA,
+        OfferController.prototype.findOfferMedia,
+      ),
+    ).toBe('offers/:offerId/media');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        OfferController.prototype.deleteOfferMedia,
+      ),
+    ).toBe('offers/:offerId/media/:mediaId');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        OfferController.prototype.setOfferPrimaryMedia,
+      ),
+    ).toBe('offers/:offerId/media/:mediaId/primary');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
         OfferController.prototype.replaceOfferMedia,
       ),
     ).toBe('offers/:offerId/media/replace');

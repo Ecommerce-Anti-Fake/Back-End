@@ -1020,6 +1020,7 @@ export type AddOfferMediaBatchMessage = {
 
 export type OfferMediaLookupMessage = {
   offerId: string;
+  requesterUserId: string;
 };
 
 export type DeleteOfferMediaMessage = {

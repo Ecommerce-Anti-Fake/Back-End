@@ -6,13 +6,16 @@ import { toOfferMediaResponse } from '../offer-assets.mapper';
 export class ListOfferMediaUseCase {
   constructor(private readonly offerAssetsRepository: OfferAssetsRepository) {}
 
-  async execute(offerId: string) {
-    const offer = await this.offerAssetsRepository.findOfferById(offerId);
+  async execute(input: { offerId: string; requesterUserId: string }) {
+    const offer = await this.offerAssetsRepository.findOwnedOffer(
+      input.offerId,
+      input.requesterUserId,
+    );
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
 
-    const media = await this.offerAssetsRepository.findOfferMedia(offerId);
+    const media = await this.offerAssetsRepository.findOfferMedia(input.offerId);
     return media.map(toOfferMediaResponse);
   }
 }
