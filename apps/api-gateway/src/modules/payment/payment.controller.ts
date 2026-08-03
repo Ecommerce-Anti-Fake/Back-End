@@ -9,6 +9,8 @@ import { OrdersRpcService } from '../order/orders-rpc.service';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
 import type { Response } from 'express';
 
+const PAYOS_RETURN_QUERY_KEYS = ['code', 'id', 'cancel', 'status', 'orderCode'] as const;
+
 @ApiTags('Payment')
 @Controller('orders')
 export class PaymentController {
@@ -20,8 +22,23 @@ export class PaymentController {
 
   @ApiOperation({ summary: 'Redirect payOS success return ve trang frontend thanh cong' })
   @Get('payos/return')
-  handlePayOSReturn(@Res() response: Response) {
-    response.redirect(302, this.resolveFrontendPaymentSuccessUrl());
+  handlePayOSReturn(
+    @Query() query: Record<string, string | string[] | undefined>,
+    @Res() response: Response,
+  ) {
+    const target = new URL(
+      this.isFailedPayOSReturn(query)
+        ? this.resolveFrontendPaymentFailedUrl()
+        : this.resolveFrontendPaymentSuccessUrl(),
+    );
+    for (const key of PAYOS_RETURN_QUERY_KEYS) {
+      const value = query[key];
+      if (typeof value === 'string' && value.trim()) {
+        target.searchParams.set(key, value);
+      }
+    }
+
+    response.redirect(302, target.toString());
   }
 
   @ApiOperation({ summary: 'Admin doi soat tai chinh don hang, escrow va affiliate' })
@@ -102,5 +119,25 @@ export class PaymentController {
 
     const frontendUrl = this.configService.get<string>('FRONTEND_URL')?.trim() || 'http://localhost:5173';
     return `${frontendUrl.replace(/\/$/, '')}/payment-success`;
+  }
+
+  private resolveFrontendPaymentFailedUrl() {
+    const configured = this.configService.get<string>('PAYOS_FINAL_FAILED_URL')?.trim();
+    if (configured) {
+      return configured;
+    }
+
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL')?.trim() || 'http://localhost:5173';
+    return `${frontendUrl.replace(/\/$/, '')}/payment-failed`;
+  }
+
+  private isFailedPayOSReturn(query: Record<string, string | string[] | undefined>) {
+    const status = typeof query.status === 'string' ? query.status.toUpperCase() : '';
+    const code = typeof query.code === 'string' ? query.code.trim() : '';
+    return (
+      query.cancel === 'true' ||
+      ['CANCELLED', 'CANCELED', 'FAILED', 'EXPIRED'].includes(status) ||
+      (code !== '' && code !== '00')
+    );
   }
 }

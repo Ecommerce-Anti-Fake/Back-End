@@ -26,7 +26,8 @@ export class HandleWalletTopUpWebhookUseCase {
     return this.prisma.$transaction(async (tx) => {
       const current = await tx.walletTopUp.findUnique({ where: { id: topUp.id } });
       if (!current || current.status !== 'PENDING') return { success: true, message: 'Webhook nạp ví đã được xử lý.' };
-      if (!(input.success && input.code === '00')) {
+      const dataCode = typeof input.data.code === 'string' ? input.data.code.trim() : '';
+      if (!(input.success && input.code === '00' && dataCode === '00')) {
         await tx.walletTopUp.update({ where: { id: current.id }, data: { status: 'FAILED' } });
         return { success: true, message: 'Đã ghi nhận nạp ví thất bại.' };
       }

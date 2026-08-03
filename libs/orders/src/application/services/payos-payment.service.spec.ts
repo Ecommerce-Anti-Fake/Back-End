@@ -54,7 +54,7 @@ describe('PayOSPaymentService', () => {
 
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.returnUrl).toBe('https://api.antifake.test/api/orders/payos/return');
-    expect(body.cancelUrl).toBe('https://antifake.io.vn/checkout/cancel/order-1');
+    expect(body.cancelUrl).toBe('https://antifake.io.vn/payment-failed');
   });
 
   it('rejects a production return URL when only the legacy Render URL exists', async () => {
