@@ -34,8 +34,8 @@ export class PayOSTopUpService {
     );
     const cancelUrl = input.cancelUrl?.trim() || (
       input.destination === 'SHOP'
-        ? this.resolveUrl('PAYOS_SHOP_WALLET_CANCEL_URL', '/seller/wallet')
-        : this.resolveUrl('PAYOS_WALLET_CANCEL_URL', '/profile/wallet')
+        ? this.resolveUrl('PAYOS_SHOP_WALLET_CANCEL_URL', '/seller/wallet?topUp=cancelled')
+        : this.resolveUrl('PAYOS_WALLET_CANCEL_URL', '/profile/wallet?topUp=cancelled')
     );
     const description = `Nap vi ${input.idempotencyKey.replace(/[^a-zA-Z0-9]/g, '').slice(-4) || 'user'}`.slice(0, 9);
     const signaturePayload = { amount, cancelUrl, description, orderCode: Number(orderCode), returnUrl };

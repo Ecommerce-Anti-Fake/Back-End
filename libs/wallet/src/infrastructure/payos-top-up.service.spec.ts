@@ -4,6 +4,15 @@ import { PayOSTopUpService } from './payos-top-up.service';
 describe('PayOSTopUpService', () => {
   const originalFetch = global.fetch;
 
+  const config = new ConfigService({
+    PAYOS_CLIENT_ID: 'client-id',
+    PAYOS_API_KEY: 'api-key',
+    PAYOS_CHECKSUM_KEY: 'checksum-key',
+    PAYOS_API_BASE_URL: 'https://payos.test',
+    FRONTEND_URL: 'https://antifake.io.vn',
+    BACKEND_PUBLIC_URL: 'https://api.antifake.io.vn',
+  });
+
   afterEach(() => {
     global.fetch = originalFetch;
   });
@@ -38,5 +47,53 @@ describe('PayOSTopUpService', () => {
         destination: 'USER',
       }),
     ).rejects.toThrow('BACKEND_PUBLIC_URL');
+  });
+
+  it('marks the user-wallet cancel URL so a cancelled PayOS top-up is visible', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        code: '00',
+        data: {
+          paymentLinkId: 'link-user',
+          checkoutUrl: 'https://pay.payos.vn/web/link-user',
+        },
+      }),
+    });
+    global.fetch = fetchMock as never;
+
+    await new PayOSTopUpService(config).createPaymentLink({
+      amount: 100000,
+      idempotencyKey: 'wallet-user-1',
+      destination: 'USER',
+    });
+
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).cancelUrl).toBe(
+      'https://antifake.io.vn/profile/wallet?topUp=cancelled',
+    );
+  });
+
+  it('marks the shop-wallet cancel URL so a cancelled PayOS top-up is visible', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        code: '00',
+        data: {
+          paymentLinkId: 'link-shop',
+          checkoutUrl: 'https://pay.payos.vn/web/link-shop',
+        },
+      }),
+    });
+    global.fetch = fetchMock as never;
+
+    await new PayOSTopUpService(config).createPaymentLink({
+      amount: 100000,
+      idempotencyKey: 'wallet-shop-1',
+      destination: 'SHOP',
+    });
+
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).cancelUrl).toBe(
+      'https://antifake.io.vn/seller/wallet?topUp=cancelled',
+    );
   });
 });
