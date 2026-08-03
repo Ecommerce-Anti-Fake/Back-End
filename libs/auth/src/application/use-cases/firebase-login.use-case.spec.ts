@@ -69,6 +69,25 @@ describe('FirebaseLoginUseCase', () => {
     ).not.toHaveBeenCalled();
   });
 
+  it('returns the stable code when a Google identity is not linked', async () => {
+    firebaseTokenVerifierServiceMock.verifyIdToken.mockResolvedValueOnce({
+      uid: 'google-1',
+      email: 'user@example.com',
+      emailVerified: true,
+      signInProvider: 'google.com',
+    });
+    registrationRepositoryMock.findAuthIdentity.mockResolvedValueOnce(null);
+
+    await expect(useCase.execute({ idToken: 'token' })).rejects.toMatchObject({
+      response: expect.objectContaining({
+        error: 'GOOGLE_ACCOUNT_NOT_LINKED',
+      }),
+    });
+    expect(
+      registrationRepositoryMock.findPendingRegistrationByFirebaseUid,
+    ).not.toHaveBeenCalled();
+  });
+
   it('does not promote when email verification is absent or email mismatches', async () => {
     firebaseTokenVerifierServiceMock.verifyIdToken.mockResolvedValueOnce({
       uid: 'firebase-1',

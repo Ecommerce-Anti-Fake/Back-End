@@ -1,6 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { ForbiddenException, HttpException } from '@nestjs/common';
-import { throwHttpExceptionFromRpc, toVietnameseMessage } from './rpc-error';
+import {
+  ForbiddenException,
+  HttpException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
+import {
+  throwHttpExceptionFromRpc,
+  throwRpcException,
+  toVietnameseMessage,
+} from './rpc-error';
 
 describe('toVietnameseMessage', () => {
   it('identifies the invalid field for class-validator errors', () => {
@@ -46,6 +55,44 @@ describe('toVietnameseMessage', () => {
       expect.objectContaining({
         registration: expect.objectContaining({ email: 'user@example.com' }),
       }),
+    );
+  });
+
+  it('preserves the Google not-linked code through the RPC boundary', () => {
+    let thrown: unknown;
+    try {
+      throwRpcException(
+        new UnauthorizedException({
+          statusCode: 401,
+          error: 'GOOGLE_ACCOUNT_NOT_LINKED',
+          message: 'Google account is not linked.',
+        }),
+      );
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(RpcException);
+    expect((thrown as RpcException).getError()).toEqual(
+      expect.objectContaining({ error: 'GOOGLE_ACCOUNT_NOT_LINKED' }),
+    );
+  });
+
+  it('preserves the Google not-linked code when normalizing an RPC response', () => {
+    let thrown: unknown;
+    try {
+      throwHttpExceptionFromRpc({
+        statusCode: 401,
+        error: 'GOOGLE_ACCOUNT_NOT_LINKED',
+        message: 'Google account is not linked.',
+      });
+    } catch (error) {
+      thrown = error;
+    }
+
+    expect(thrown).toBeInstanceOf(HttpException);
+    expect((thrown as HttpException).getResponse()).toEqual(
+      expect.objectContaining({ error: 'GOOGLE_ACCOUNT_NOT_LINKED' }),
     );
   });
 });
