@@ -18,6 +18,7 @@ describe('FirebaseLoginUseCase', () => {
     findAuthIdentity: jest.fn(),
     findPendingRegistrationByFirebaseUid: jest.fn(),
     promotePendingRegistration: jest.fn(),
+    createOrLinkGoogleUser: jest.fn(),
   };
   const authSessionRepositoryMock = { create: jest.fn(), update: jest.fn() };
   const passwordHasherServiceMock = { hashOpaqueToken: jest.fn() };
@@ -69,22 +70,48 @@ describe('FirebaseLoginUseCase', () => {
     ).not.toHaveBeenCalled();
   });
 
-  it('returns the stable code when a Google identity is not linked', async () => {
+  it('creates and authenticates a Google account when no identity is linked', async () => {
     firebaseTokenVerifierServiceMock.verifyIdToken.mockResolvedValueOnce({
       uid: 'google-1',
-      email: 'user@example.com',
+      email: 'USER@example.com',
       emailVerified: true,
+      name: 'Google User',
       signInProvider: 'google.com',
     });
     registrationRepositoryMock.findAuthIdentity.mockResolvedValueOnce(null);
+    registrationRepositoryMock.createOrLinkGoogleUser.mockResolvedValueOnce(
+      activeUser(),
+    );
+    configureSessionTokens();
 
-    await expect(useCase.execute({ idToken: 'token' })).rejects.toMatchObject({
-      response: expect.objectContaining({
-        error: 'GOOGLE_ACCOUNT_NOT_LINKED',
-      }),
-    });
+    const result = await useCase.execute({ idToken: 'token' });
+
     expect(
-      registrationRepositoryMock.findPendingRegistrationByFirebaseUid,
+      registrationRepositoryMock.createOrLinkGoogleUser,
+    ).toHaveBeenCalledWith({
+      email: 'user@example.com',
+      displayName: 'Google User',
+      firebaseUid: 'google-1',
+    });
+    expect(result).toMatchObject({
+      accessToken: 'access-token',
+      user: { id: 'user-1', email: 'user@example.com' },
+    });
+  });
+
+  it('rejects an unverified Google token before creating an account', async () => {
+    firebaseTokenVerifierServiceMock.verifyIdToken.mockResolvedValueOnce({
+      uid: 'google-1',
+      email: 'user@example.com',
+      emailVerified: false,
+      signInProvider: 'google.com',
+    });
+
+    await expect(useCase.execute({ idToken: 'token' })).rejects.toThrow(
+      ForbiddenException,
+    );
+    expect(
+      registrationRepositoryMock.createOrLinkGoogleUser,
     ).not.toHaveBeenCalled();
   });
 

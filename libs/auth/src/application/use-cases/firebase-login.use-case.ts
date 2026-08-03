@@ -40,7 +40,17 @@ export class FirebaseLoginUseCase {
     );
 
     if (token.signInProvider === 'google.com') {
-      return this.loginExistingIdentity('GOOGLE', token.uid);
+      const email = normalizeEmail(token.email);
+      if (!email || token.emailVerified !== true) {
+        throw new ForbiddenException('A verified Google token is required');
+      }
+
+      const user = await this.registrationRepository.createOrLinkGoogleUser({
+        email,
+        displayName: token.name?.trim() || null,
+        firebaseUid: token.uid,
+      });
+      return this.issueAuthenticatedResponse(user);
     }
     if (!FIREBASE_PASSWORD_PROVIDERS.has(token.signInProvider ?? '')) {
       throw new UnauthorizedException('Unsupported Firebase login provider');
@@ -129,24 +139,6 @@ export class FirebaseLoginUseCase {
     }
 
     return this.issueAuthenticatedResponse(user);
-  }
-
-  private async loginExistingIdentity(
-    provider: string,
-    providerSubject: string,
-  ) {
-    const identity = await this.registrationRepository.findAuthIdentity(
-      provider,
-      providerSubject,
-    );
-    if (!identity) {
-      throw new UnauthorizedException({
-        statusCode: 401,
-        error: 'GOOGLE_ACCOUNT_NOT_LINKED',
-        message: 'Tai khoan Google chua duoc dang ky hoac lien ket.',
-      });
-    }
-    return this.issueAuthenticatedResponse(identity.user);
   }
 
   private async issueAuthenticatedResponse(

@@ -43,6 +43,29 @@ describe('StructuredExceptionFilter', () => {
     );
   });
 
+  it('preserves stable auth error codes for unlinked Google accounts', () => {
+    const filter = new StructuredExceptionFilter();
+    const logger = {
+      error: jest.fn(),
+      warn: jest.fn(),
+    };
+    Object.assign(filter, { logger });
+    const { host, response } = createHost();
+
+    filter.catch(
+      new UnauthorizedException({
+        statusCode: HttpStatus.UNAUTHORIZED,
+        error: 'GOOGLE_ACCOUNT_NOT_LINKED',
+        message: 'Tai khoan Google chua duoc dang ky hoac lien ket.',
+      }),
+      host,
+    );
+
+    expect(response.json).toHaveBeenCalledWith(
+      expect.objectContaining({ error: 'GOOGLE_ACCOUNT_NOT_LINKED' }),
+    );
+  });
+
   it('maps body parser payload limit errors to HTTP 413', () => {
     const filter = new StructuredExceptionFilter();
     const logger = {

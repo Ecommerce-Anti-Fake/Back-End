@@ -28,6 +28,13 @@ export class StructuredExceptionFilter implements ExceptionFilter {
         ? toVietnameseMessage(rawMessage, statusCode)
         : toVietnameseMessage('Đã xảy ra lỗi máy chủ.', statusCode);
 
+    const errorCode =
+      typeof payload === 'object' &&
+      payload !== null &&
+      'error' in payload &&
+      typeof (payload as { error?: unknown }).error === 'string'
+        ? (payload as { error: string }).error
+        : undefined;
     const logPayload = JSON.stringify({
       event: 'http.error',
       requestId: request.requestId ?? null,
@@ -48,6 +55,7 @@ export class StructuredExceptionFilter implements ExceptionFilter {
     response.status(statusCode).json({
       statusCode,
       message,
+      ...(errorCode ? { error: errorCode } : {}),
       requestId: request.requestId ?? null,
     });
   }
