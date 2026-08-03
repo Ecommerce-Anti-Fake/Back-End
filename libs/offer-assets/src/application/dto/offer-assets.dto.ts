@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  ArrayMaxSize,
   IsArray,
   IsIn,
   IsInt,
@@ -22,6 +23,7 @@ export class OfferMediaUploadSignatureItemDto {
 export class GetOfferMediaUploadSignaturesDto {
   @ApiProperty({ type: OfferMediaUploadSignatureItemDto, isArray: true })
   @IsArray()
+  @ArrayMaxSize(10)
   @ValidateNested({ each: true })
   @Type(() => OfferMediaUploadSignatureItemDto)
   items!: OfferMediaUploadSignatureItemDto[];
@@ -70,6 +72,7 @@ export class OfferMediaItemDto {
 export class AddOfferMediaBatchDto {
   @ApiProperty({ type: OfferMediaItemDto, isArray: true })
   @IsArray()
+  @ArrayMaxSize(10)
   @ValidateNested({ each: true })
   @Type(() => OfferMediaItemDto)
   items!: OfferMediaItemDto[];

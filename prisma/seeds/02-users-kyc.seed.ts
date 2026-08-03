@@ -41,6 +41,7 @@ export async function seedUsersAndKyc(prisma: PrismaClient, ctx: SeedContext) {
   for (let i = 0; i < COUNTS.users; i += 1) {
     const role = i === COUNTS.users - 1 ? 'admin' : 'user';
     const email = role === 'admin' ? 'admin@antifake.io.vn' : `seed.user${String(i + 1).padStart(2, '0')}@antifake.local`;
+    const isReadyForSeedLogin = role === 'admin' || i < 2;
     let user = await prisma.user.create({
       data: {
         id: id(),
@@ -50,6 +51,8 @@ export async function seedUsersAndKyc(prisma: PrismaClient, ctx: SeedContext) {
         password,
         role,
         accountStatus: i === 7 ? 'suspended' : 'active',
+        emailVerifiedAt: isReadyForSeedLogin ? recentDate(30) : null,
+        phoneVerifiedAt: isReadyForSeedLogin ? recentDate(30) : null,
         createdAt: recentDate(60 - i),
       },
     });

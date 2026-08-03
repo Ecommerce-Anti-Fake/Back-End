@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -51,6 +52,10 @@ import {
   ModerateOfferDto,
 } from '@offers';
 import { BuyNowCheckoutDto, BuyNowCheckoutQuoteDto } from '@orders';
+import {
+  AddOfferMediaBatchDto,
+  GetOfferMediaUploadSignaturesDto,
+} from '@offer-assets';
 import { RateLimit } from '../../observability';
 import { CatalogRpcService } from './catalog-rpc.service';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
@@ -436,6 +441,86 @@ export class OfferController {
   findOfferBatchLinks(@Param('offerId') offerId: string) {
     return this.catalogRpcService.findOfferBatchLinks({ offerId });
   }
+
+  @ApiOperation({ summary: 'Cap chu ky upload anh offer cho seller' })
+  @ApiBearerAuth('access-token')
+  @ApiBody({ type: GetOfferMediaUploadSignaturesDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('offers/:offerId/media/upload-signatures')
+  getOfferMediaUploadSignatures(
+    @Param('offerId') offerId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: GetOfferMediaUploadSignaturesDto,
+  ) {
+    return this.catalogRpcService.getOfferMediaUploadSignatures({
+      offerId,
+      requesterUserId,
+      items: dto.items,
+    });
+  }
+
+  @ApiOperation({ summary: 'Luu anh offer sau khi upload Cloudinary' })
+  @ApiBearerAuth('access-token')
+  @ApiBody({ type: AddOfferMediaBatchDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post('offers/:offerId/media')
+  addOfferMedia(
+    @Param('offerId') offerId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: AddOfferMediaBatchDto,
+  ) {
+    return this.catalogRpcService.addOfferMediaBatch({
+      offerId,
+      requesterUserId,
+      items: dto.items,
+    });
+  }
+
+  @ApiOperation({ summary: 'Thay toan bo anh offer va dat anh dau lam thumbnail' })
+  @ApiBearerAuth('access-token')
+  @ApiBody({ type: AddOfferMediaBatchDto })
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Put('offers/:offerId/media/replace')
+  async replaceOfferMedia(
+    @Param('offerId') offerId: string,
+    @CurrentUserId() requesterUserId: string,
+    @Body() dto: AddOfferMediaBatchDto,
+  ) {
+    const previousMedia = await this.catalogRpcService.findOfferMedia({
+      offerId,
+    });
+    const addedMedia = await this.catalogRpcService.addOfferMediaBatch({
+      offerId,
+      requesterUserId,
+      items: dto.items,
+    });
+    const firstMediaId = Array.isArray(addedMedia)
+      ? mediaIdFromResult(addedMedia[0])
+      : undefined;
+
+    if (firstMediaId) {
+      await this.catalogRpcService.setOfferPrimaryMedia({
+        offerId,
+        mediaId: firstMediaId,
+        requesterUserId,
+      });
+    }
+
+    if (Array.isArray(previousMedia)) {
+      for (const media of previousMedia) {
+        const mediaId = mediaIdFromResult(media);
+        if (mediaId) {
+          await this.catalogRpcService.deleteOfferMedia({
+            offerId,
+            mediaId,
+            requesterUserId,
+          });
+        }
+      }
+    }
+
+    return this.catalogRpcService.findOfferMedia({ offerId });
+  }
 }
 
 function shopIdFromResult(result: unknown) {
@@ -445,6 +530,15 @@ function shopIdFromResult(result: unknown) {
   }
 
   return undefined;
+}
+
+function mediaIdFromResult(result: unknown) {
+  if (!result || typeof result !== 'object' || !('id' in result)) {
+    return undefined;
+  }
+
+  const id = (result as { id?: unknown }).id;
+  return typeof id === 'string' ? id : undefined;
 }
 
 function toOfferListItem(offer: unknown): OfferListItemResponseDto {

@@ -55,6 +55,24 @@ describe('OfferController', () => {
     expect(
       Reflect.getMetadata(
         PATH_METADATA,
+        OfferController.prototype.getOfferMediaUploadSignatures,
+      ),
+    ).toBe('offers/:offerId/media/upload-signatures');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        OfferController.prototype.addOfferMedia,
+      ),
+    ).toBe('offers/:offerId/media');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
+        OfferController.prototype.replaceOfferMedia,
+      ),
+    ).toBe('offers/:offerId/media/replace');
+    expect(
+      Reflect.getMetadata(
+        PATH_METADATA,
         OfferController.prototype.buyNowCheckout,
       ),
     ).toBe('offers/buy-now/checkout');
