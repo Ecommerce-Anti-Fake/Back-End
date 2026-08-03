@@ -73,6 +73,7 @@ async function bootstrap() {
   });
 
   const port = configService.get<number>('PORT') ?? 3001;
+  const host = configService.get<string>('HOST') ?? '127.0.0.1';
 
   await app.init();
 
@@ -80,8 +81,8 @@ async function bootstrap() {
 
   await app.get(ChatRealtimeService).bind(httpServer);
 
-  httpServer.listen(port, '0.0.0.0', () => {
-    console.log(`API Gateway listening on port ${port}`);
+  httpServer.listen(port, host, () => {
+    console.log(`API Gateway listening on http://${host}:${port}`);
   });
 }
 
