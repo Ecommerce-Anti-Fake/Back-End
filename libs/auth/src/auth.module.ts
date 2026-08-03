@@ -37,6 +37,7 @@ import {
   RegistrationRepository,
 } from './infrastructure/persistence';
 import { AuthRpcController } from './presentation/rpc/auth.rpc-controller';
+import { PendingRegistrationCleanupService } from './infrastructure/pending-registration-cleanup.service';
 
 @Module({
   imports: [
@@ -103,6 +104,7 @@ import { AuthRpcController } from './presentation/rpc/auth.rpc-controller';
     AuthSessionRepository,
     PasswordResetTokenRepository,
     RegistrationRepository,
+    PendingRegistrationCleanupService,
     JwtTokenAdapter,
     UsersIdentityAdapter,
     {

@@ -1,14 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, Matches, MinLength } from 'class-validator';
+import { IsString, Matches, MinLength } from 'class-validator';
 
 export class RegisterDto {
-  @ApiProperty({
-    description: 'Email bat buoc cua tai khoan.',
-    example: 'user@example.com',
-    format: 'email',
-  })
-  @IsEmail()
-  email!: string;
+  @ApiProperty({ description: 'Firebase Email/Password ID token.' })
+  @IsString()
+  idToken!: string;
 
   @ApiProperty({
     description: 'So dien thoai Viet Nam bat buoc cua tai khoan.',
@@ -25,13 +21,4 @@ export class RegisterDto {
   @IsString()
   @MinLength(3)
   displayName!: string;
-
-  @ApiProperty({
-    description: 'Mat khau dang nhap, toi thieu 8 ky tu.',
-    example: 'StrongPass123',
-    minLength: 8,
-  })
-  @IsString()
-  @MinLength(8)
-  password!: string;
 }

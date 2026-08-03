@@ -1,4 +1,5 @@
 import { UnauthorizedException } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/unbound-method */
 import { ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { AuthRpcService } from './auth-rpc.service';
@@ -72,36 +73,26 @@ describe('AuthController refresh cookie contract', () => {
     );
   });
 
-  it('keeps the registration token in an httpOnly cookie and omits it from registration JSON', async () => {
+  it('returns pending registration details without creating a registration cookie', async () => {
     authRpcService.register.mockResolvedValue({
-      registrationToken: 'registration-1.secret',
       registration: {
         provider: 'LOCAL',
         email: 'buyer@example.com',
-        phone: '0901234567',
+        phone: '+84901234567',
         expiresAt: new Date('2026-07-23T00:00:00.000Z'),
       },
     });
 
-    const result = await controller.register(
-      {
-        email: 'buyer@example.com',
-        phone: '0901234567',
-        displayName: 'Buyer',
-        password: 'StrongPass123',
-      },
-      response as Response,
-    );
+    const result = await controller.register({
+      idToken: 'firebase-token',
+      phone: '0901234567',
+      displayName: 'Buyer',
+    });
 
-    expect(response.cookie).toHaveBeenCalledWith(
-      'eaf_registration_session',
-      'registration-1.secret',
-      expect.objectContaining({ httpOnly: true, path: '/api/auth' }),
-    );
     expect(result).toEqual(
       expect.objectContaining({ registration: expect.any(Object) }),
     );
-    expect(result).not.toHaveProperty('registrationToken');
+    expect(response.cookie).not.toHaveBeenCalled();
   });
 
   it('resumes a pending registration with a fresh httpOnly registration cookie', async () => {
@@ -132,12 +123,11 @@ describe('AuthController refresh cookie contract', () => {
     expect(result).not.toHaveProperty('registrationToken');
   });
 
-  it('keeps a Google link intent in an httpOnly cookie without creating another user', async () => {
+  it('sets the refresh cookie for an immediately authenticated Google registration', async () => {
     authRpcService.googleRegister.mockResolvedValue({
-      kind: 'LINK_REQUIRED',
-      linkToken: 'link-1.secret',
-      email: 'buyer@example.com',
-      expiresAt: new Date('2026-07-22T10:10:00.000Z'),
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      user: { id: 'user-1', role: 'user' },
     });
 
     const result = await controller.googleRegister(
@@ -146,15 +136,14 @@ describe('AuthController refresh cookie contract', () => {
     );
 
     expect(response.cookie).toHaveBeenCalledWith(
-      'eaf_google_link_intent',
-      'link-1.secret',
+      'eaf_refresh_token',
+      'refresh-token',
       expect.objectContaining({ httpOnly: true, path: '/api/auth' }),
     );
     expect(result).toMatchObject({
-      kind: 'LINK_REQUIRED',
-      email: 'buyer@example.com',
+      accessToken: 'access-token',
     });
-    expect(result).not.toHaveProperty('linkToken');
+    expect(result).not.toHaveProperty('refreshToken');
   });
 
   it('sets refresh token in an httpOnly cookie and omits it from login response body', async () => {

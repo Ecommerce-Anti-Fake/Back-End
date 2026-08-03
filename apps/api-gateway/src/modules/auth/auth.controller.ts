@@ -76,27 +76,22 @@ export class AuthController {
   @ApiOperation({ summary: 'Dang ky tai khoan bang email hoac so dien thoai' })
   @ApiBody({ type: RegisterDto })
   @ApiCreatedResponse({
-    description: 'Dang ky thanh cong va tra ve thong tin user an toan.',
+    description:
+      'Tao hoac cap nhat PendingRegistration; User chinh thuc chi duoc tao sau khi Firebase proof thanh cong.',
     type: RegisterResponseDto,
   })
   @ApiBadRequestResponse({
     description:
-      'Thieu email/phone, du lieu khong hop le hoac tai khoan da ton tai.',
+      'Thieu token/phone/displayName, token Firebase khong hop le hoac tai khoan da ton tai.',
   })
   @RateLimit({ profile: 'auth' })
   @Post('register')
-  async register(
-    @Body() dto: RegisterDto,
-    @Res({ passthrough: true }) response: Response,
-  ) {
-    return this.exposeRegistration(
-      await this.authRpcService.register(dto),
-      response,
-    );
+  async register(@Body() dto: RegisterDto) {
+    return this.authRpcService.register(dto);
   }
 
   @ApiOperation({
-    summary: 'Dang ky tai khoan Google va bat buoc xac minh Email Link',
+    summary: 'Dang ky tai khoan Google da xac minh email',
   })
   @RateLimit({ profile: 'auth' })
   @Post('google-register')
@@ -104,21 +99,10 @@ export class AuthController {
     @Body() dto: GoogleRegisterDto,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const result = await this.authRpcService.googleRegister(dto);
-    if (result.kind === 'LINK_REQUIRED') {
-      this.setScopedAuthCookie(
-        response,
-        GOOGLE_LINK_INTENT_COOKIE,
-        result.linkToken,
-        10 * 60 * 1000,
-      );
-      return {
-        kind: result.kind,
-        email: result.email,
-        expiresAt: result.expiresAt,
-      };
-    }
-    return this.exposeRegistration(result, response);
+    return this.exposeAccessToken(
+      await this.authRpcService.googleRegister(dto),
+      response,
+    );
   }
 
   @ApiOperation({

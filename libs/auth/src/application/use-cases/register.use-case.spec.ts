@@ -1,29 +1,20 @@
-import { BadRequestException } from '@nestjs/common';
+import { ConflictException, ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { PasswordHasherService } from '../services/password-hasher.service';
-import { RegistrationRepository } from '../../infrastructure/persistence/registration.repository';
+import { RegistrationRepository } from '../../infrastructure/persistence';
+import { FirebaseTokenVerifierService } from '../services';
 import { RegisterUseCase } from './register.use-case';
 
 describe('RegisterUseCase', () => {
-  let useCase: RegisterUseCase;
-
   const registrationRepositoryMock = {
+    findAuthIdentity: jest.fn(),
     findUserByIdentifier: jest.fn(),
-    findGoogleIdentityByUserId: jest.fn(),
-    createLocalRegistration: jest.fn(),
-    createRegistrationSession: jest.fn(),
-    replaceExpiredLocalRegistration: jest.fn(),
+    upsertPendingRegistration: jest.fn(),
   };
-
-  const passwordHasherServiceMock = {
-    hashPassword: jest.fn(),
-    hashOpaqueToken: jest.fn(),
-    verifyPassword: jest.fn(),
-  };
+  const firebaseTokenVerifierServiceMock = { verifyIdToken: jest.fn() };
+  let useCase: RegisterUseCase;
 
   beforeEach(async () => {
     jest.resetAllMocks();
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RegisterUseCase,
@@ -31,185 +22,112 @@ describe('RegisterUseCase', () => {
           provide: RegistrationRepository,
           useValue: registrationRepositoryMock,
         },
-        { provide: PasswordHasherService, useValue: passwordHasherServiceMock },
+        {
+          provide: FirebaseTokenVerifierService,
+          useValue: firebaseTokenVerifierServiceMock,
+        },
       ],
     }).compile();
-
-    useCase = module.get<RegisterUseCase>(RegisterUseCase);
+    useCase = module.get(RegisterUseCase);
   });
 
-  it('requires both email and phone for standard registration', async () => {
-    await expect(
-      useCase.execute({
-        email: 'user@example.com',
-        displayName: 'User',
-        password: 'StrongPass123',
-      }),
-    ).rejects.toThrow(BadRequestException);
-
-    await expect(
-      useCase.execute({
-        phone: '0901234567',
-        displayName: 'User',
-        password: 'StrongPass123',
-      }),
-    ).rejects.toThrow(BadRequestException);
-  });
-
-  it('returns an account-link-required conflict when the email belongs to Google', async () => {
-    registrationRepositoryMock.findUserByIdentifier.mockResolvedValueOnce({
-      id: 'user-1',
+  it('requires a Firebase Email/Password token', async () => {
+    firebaseTokenVerifierServiceMock.verifyIdToken.mockResolvedValueOnce({
+      uid: 'firebase-1',
       email: 'user@example.com',
-      phone: null,
-      accountStatus: 'active',
+      signInProvider: 'google.com',
     });
-    registrationRepositoryMock.findGoogleIdentityByUserId.mockResolvedValueOnce(
-      {
-        providerSubject: 'firebase-1',
-      },
-    );
 
     await expect(
       useCase.execute({
-        email: 'user@example.com',
+        idToken: 'google-token',
         phone: '0901234567',
         displayName: 'User',
-        password: 'StrongPass123',
       }),
-    ).rejects.toMatchObject({
-      response: expect.objectContaining({
-        error: 'ACCOUNT_EXISTS_WITH_GOOGLE',
-      }),
-    });
+    ).rejects.toThrow(ForbiddenException);
   });
 
-  it('creates a pending local account and a 24-hour registration session', async () => {
+  it('creates only a pending registration and never creates a User', async () => {
+    firebaseTokenVerifierServiceMock.verifyIdToken.mockResolvedValueOnce({
+      uid: 'firebase-1',
+      email: 'USER@example.com',
+      signInProvider: 'password',
+    });
+    registrationRepositoryMock.findAuthIdentity.mockResolvedValueOnce(null);
     registrationRepositoryMock.findUserByIdentifier.mockResolvedValueOnce(null);
-    passwordHasherServiceMock.hashPassword.mockResolvedValueOnce(
-      'hashed-password',
-    );
-    passwordHasherServiceMock.hashOpaqueToken.mockReturnValueOnce(
-      'hashed-registration-secret',
-    );
-    registrationRepositoryMock.createLocalRegistration.mockImplementationOnce(
-      async (input) => ({
-        user: {
-          id: 'user-1',
-          email: input.email,
-          phone: input.phone,
-          accountStatus: 'pending_verification',
-        },
-        session: { id: 'registration-1', expiresAt: input.sessionExpiresAt },
-      }),
-    );
+    registrationRepositoryMock.upsertPendingRegistration.mockResolvedValueOnce({
+      id: 'pending-1',
+      expiresAt: new Date(Date.now() + 60_000),
+    });
 
     const result = await useCase.execute({
-      email: 'USER@example.com',
-      phone: '+84901234567',
-      displayName: ' User ',
-      password: 'StrongPass123',
+      idToken: 'email-password-token',
+      phone: '0901234567',
+      displayName: ' Nguyen Van A ',
     });
 
     expect(
-      registrationRepositoryMock.createLocalRegistration,
+      registrationRepositoryMock.upsertPendingRegistration,
     ).toHaveBeenCalledWith(
       expect.objectContaining({
+        firebaseUid: 'firebase-1',
         email: 'user@example.com',
-        phone: '0901234567',
-        displayName: 'User',
-        password: 'hashed-password',
-        accountStatus: 'pending_verification',
-        sessionProvider: 'LOCAL',
-        sessionPurpose: 'REGISTER',
-        sessionTokenHash: 'hashed-registration-secret',
+        phone: '+84901234567',
+        displayName: 'Nguyen Van A',
       }),
     );
-    expect(result.registration).toEqual({
-      provider: 'LOCAL',
+    expect(result.registration).toMatchObject({
       email: 'user@example.com',
-      phone: '0901234567',
-      expiresAt: expect.any(Date),
+      phone: '+84901234567',
     });
-    expect(result.registrationToken).toMatch(/^registration-1\./);
   });
 
-  it('resumes the same pending registration within 24 hours when the password matches', async () => {
-    registrationRepositoryMock.findUserByIdentifier.mockResolvedValueOnce({
-      id: 'user-1',
+  it('is retryable for the same Firebase UID', async () => {
+    firebaseTokenVerifierServiceMock.verifyIdToken.mockResolvedValue({
+      uid: 'firebase-1',
       email: 'user@example.com',
-      phone: '0901234567',
-      password: 'hashed-password',
-      accountStatus: 'pending_verification',
-      createdAt: new Date(Date.now() - 60_000),
+      signInProvider: 'password',
     });
-    registrationRepositoryMock.findGoogleIdentityByUserId.mockResolvedValueOnce(
-      null,
-    );
-    passwordHasherServiceMock.verifyPassword.mockResolvedValueOnce(true);
-    passwordHasherServiceMock.hashOpaqueToken.mockReturnValueOnce(
-      'hashed-registration-secret',
-    );
-    registrationRepositoryMock.createRegistrationSession.mockImplementationOnce(
-      async (input) => ({
-        id: 'registration-2',
-        expiresAt: input.expiresAt,
-      }),
-    );
+    registrationRepositoryMock.findAuthIdentity.mockResolvedValue(null);
+    registrationRepositoryMock.findUserByIdentifier.mockResolvedValue(null);
+    registrationRepositoryMock.upsertPendingRegistration.mockResolvedValue({
+      id: 'pending-1',
+      expiresAt: new Date(Date.now() + 60_000),
+    });
 
-    const result = await useCase.execute({
-      email: 'user@example.com',
+    await useCase.execute({
+      idToken: 'email-password-token',
       phone: '0901234567',
       displayName: 'User',
-      password: 'StrongPass123',
+    });
+    await useCase.execute({
+      idToken: 'email-password-token',
+      phone: '0901234567',
+      displayName: 'User',
     });
 
     expect(
-      registrationRepositoryMock.createRegistrationSession,
-    ).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: 'user-1', purpose: 'REGISTER' }),
-    );
-    expect(result.registrationToken).toMatch(/^registration-2\./);
+      registrationRepositoryMock.upsertPendingRegistration,
+    ).toHaveBeenCalledTimes(2);
   });
 
-  it('replaces the same pending registration after its 24-hour window expires', async () => {
+  it('rejects an email or phone already owned by a User', async () => {
+    firebaseTokenVerifierServiceMock.verifyIdToken.mockResolvedValueOnce({
+      uid: 'firebase-1',
+      email: 'user@example.com',
+      signInProvider: 'password',
+    });
+    registrationRepositoryMock.findAuthIdentity.mockResolvedValueOnce(null);
     registrationRepositoryMock.findUserByIdentifier.mockResolvedValueOnce({
       id: 'user-1',
-      email: 'user@example.com',
-      phone: '0901234567',
-      password: 'old-hash',
-      accountStatus: 'pending_verification',
-      createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
-    });
-    registrationRepositoryMock.findGoogleIdentityByUserId.mockResolvedValueOnce(
-      null,
-    );
-    passwordHasherServiceMock.hashPassword.mockResolvedValueOnce('new-hash');
-    passwordHasherServiceMock.hashOpaqueToken.mockReturnValueOnce(
-      'hashed-registration-secret',
-    );
-    registrationRepositoryMock.replaceExpiredLocalRegistration.mockImplementationOnce(
-      async (input) => ({
-        session: { id: 'registration-3', expiresAt: input.sessionExpiresAt },
-      }),
-    );
-
-    const result = await useCase.execute({
-      email: 'user@example.com',
-      phone: '0901234567',
-      displayName: 'New Name',
-      password: 'NewStrongPass123',
     });
 
-    expect(
-      registrationRepositoryMock.replaceExpiredLocalRegistration,
-    ).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: 'user-1',
-        email: 'user@example.com',
+    await expect(
+      useCase.execute({
+        idToken: 'email-password-token',
         phone: '0901234567',
-        password: 'new-hash',
+        displayName: 'User',
       }),
-    );
-    expect(result.registrationToken).toMatch(/^registration-3\./);
+    ).rejects.toThrow(ConflictException);
   });
 });

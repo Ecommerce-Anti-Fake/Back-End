@@ -39,14 +39,14 @@ type InternalRegistrationResponse = {
   };
 };
 
-type InternalGoogleRegisterResponse =
-  | ({ kind: 'PENDING_VERIFICATION' } & InternalRegistrationResponse)
-  | {
-      kind: 'LINK_REQUIRED';
-      linkToken: string;
-      email: string;
-      expiresAt: Date;
-    };
+type PendingRegistrationResponse = {
+  registration: {
+    provider: 'LOCAL';
+    email: string;
+    phone: string;
+    expiresAt: Date;
+  };
+};
 
 @Injectable()
 export class AuthRpcService {
@@ -56,14 +56,14 @@ export class AuthRpcService {
   ) {}
 
   register(dto: RegisterDto) {
-    return this.send<InternalRegistrationResponse>(
+    return this.send<PendingRegistrationResponse>(
       AUTH_MESSAGE_PATTERNS.register,
       dto,
     );
   }
 
   googleRegister(dto: GoogleRegisterDto) {
-    return this.send<InternalGoogleRegisterResponse>(
+    return this.send<InternalTokenResponse>(
       AUTH_MESSAGE_PATTERNS.googleRegister,
       dto,
     );

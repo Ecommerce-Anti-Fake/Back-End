@@ -11,6 +11,14 @@ export function normalizePhone(phone?: string): string | null {
   return normalized;
 }
 
+export function normalizePhoneE164(phone?: string): string | null {
+  const normalized = normalizePhone(phone);
+  if (!normalized) return null;
+  if (/^0\d{9}$/.test(normalized)) return `+84${normalized.slice(1)}`;
+  if (/^\+84\d{9}$/.test(normalized)) return normalized;
+  return null;
+}
+
 export function isEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }

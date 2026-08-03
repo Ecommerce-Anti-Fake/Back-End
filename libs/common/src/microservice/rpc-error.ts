@@ -9,6 +9,7 @@ type RpcErrorPayload = {
   statusCode: number;
   message: string | string[];
   error?: string;
+  registration?: unknown;
 };
 
 export function throwRpcException(error: unknown): never {
@@ -18,6 +19,10 @@ export function throwRpcException(error: unknown): never {
 
   if (error instanceof HttpException) {
     const response = error.getResponse();
+    const responseObject =
+      typeof response === 'object' && response !== null
+        ? (response as { registration?: unknown })
+        : undefined;
     const payload =
       typeof response === 'string'
         ? {
@@ -32,6 +37,9 @@ export function throwRpcException(error: unknown): never {
               error.getStatus(),
             ),
             error: extractErrorName(response, error.name),
+            ...(responseObject && 'registration' in responseObject
+              ? { registration: responseObject.registration }
+              : {}),
           };
 
     throw new RpcException(payload);
@@ -52,7 +60,9 @@ export function toVietnameseMessage(
   statusCode?: number,
 ): string | string[] {
   if (Array.isArray(message)) {
-    return message.map((item) => toVietnameseMessage(item, statusCode) as string);
+    return message.map(
+      (item) => toVietnameseMessage(item, statusCode) as string,
+    );
   }
 
   const validationMessage = toVietnameseValidationMessage(message);
@@ -63,10 +73,12 @@ export function toVietnameseMessage(
     ORDER_ALREADY_PAID: 'Đơn hàng đã được thanh toán.',
     INSUFFICIENT_BALANCE: 'Số dư ví không đủ để thanh toán đơn hàng.',
     WALLET_FROZEN: 'Ví hiện đang bị khóa.',
-    INVALID_ORDER_STATUS: 'Trạng thái đơn hàng không cho phép thực hiện thao tác này.',
+    INVALID_ORDER_STATUS:
+      'Trạng thái đơn hàng không cho phép thực hiện thao tác này.',
     ORDER_NOT_OWNED: 'Bạn không có quyền thao tác với đơn hàng này.',
     ESCROW_ALREADY_REFUNDED: 'Đơn hàng đã được hoàn tiền trước đó.',
-    ESCROW_ALREADY_RELEASED: 'Tiền của đơn hàng đã được đối soát cho shop và không thể hoàn theo luồng này.',
+    ESCROW_ALREADY_RELEASED:
+      'Tiền của đơn hàng đã được đối soát cho shop và không thể hoàn theo luồng này.',
     PAYMENT_FAILED: 'Thanh toán không thành công. Vui lòng thử lại.',
     REFUND_FAILED: 'Hoàn tiền không thành công. Vui lòng thử lại.',
     'Invalid credentials': 'Thông tin đăng nhập không hợp lệ.',
@@ -74,17 +86,23 @@ export function toVietnameseMessage(
     'Offer not found': 'Không tìm thấy offer.',
     'Order not found': 'Không tìm thấy đơn hàng.',
     'Shop not found': 'Không tìm thấy shop.',
-    'Variant is required for this offer': 'Vui lòng chọn variant cho offer này.',
+    'Variant is required for this offer':
+      'Vui lòng chọn variant cho offer này.',
     'Variant is not available': 'Variant không khả dụng.',
   };
 
   if (mappings[message]) return mappings[message];
   if (/[À-ỹ]/.test(message)) return message;
-  if (statusCode === HttpStatus.UNAUTHORIZED) return 'Phiên đăng nhập không hợp lệ.';
-  if (statusCode === HttpStatus.FORBIDDEN) return 'Bạn không có quyền thực hiện thao tác này.';
-  if (statusCode === HttpStatus.NOT_FOUND) return 'Không tìm thấy dữ liệu yêu cầu.';
-  if (statusCode === HttpStatus.CONFLICT) return 'Dữ liệu đã tồn tại hoặc đang xung đột.';
-  if (statusCode && statusCode >= HttpStatus.INTERNAL_SERVER_ERROR) return 'Đã xảy ra lỗi máy chủ.';
+  if (statusCode === HttpStatus.UNAUTHORIZED)
+    return 'Phiên đăng nhập không hợp lệ.';
+  if (statusCode === HttpStatus.FORBIDDEN)
+    return 'Bạn không có quyền thực hiện thao tác này.';
+  if (statusCode === HttpStatus.NOT_FOUND)
+    return 'Không tìm thấy dữ liệu yêu cầu.';
+  if (statusCode === HttpStatus.CONFLICT)
+    return 'Dữ liệu đã tồn tại hoặc đang xung đột.';
+  if (statusCode && statusCode >= Number(HttpStatus.INTERNAL_SERVER_ERROR))
+    return 'Đã xảy ra lỗi máy chủ.';
   return 'Dữ liệu yêu cầu không hợp lệ.';
 }
 
@@ -115,8 +133,10 @@ function toVietnameseValidationMessage(message: string): string | null {
     case 'should not be empty':
       return `${field}: không được để trống.`;
     default:
-      if (match.groups.min) return `${field}: phải có ít nhất ${match.groups.min} ký tự.`;
-      if (match.groups.max) return `${field}: không được vượt quá ${match.groups.max} ký tự.`;
+      if (match.groups.min)
+        return `${field}: phải có ít nhất ${match.groups.min} ký tự.`;
+      if (match.groups.max)
+        return `${field}: không được vượt quá ${match.groups.max} ký tự.`;
       return `${field}: dữ liệu không hợp lệ.`;
   }
 }

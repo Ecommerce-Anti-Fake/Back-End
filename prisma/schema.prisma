@@ -1508,6 +1508,21 @@ model PayoutAccount {
   @@map("payout_account")
 }
 
+model PendingRegistration {
+  id          String    @id @default(uuid())
+  firebaseUid String    @unique @map("firebase_uid")
+  email       String    @unique
+  phone       String    @unique
+  displayName String    @map("display_name")
+  expiresAt   DateTime  @map("expires_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([expiresAt])
+  @@map("pending_registration")
+}
+
 model ProvenanceEvent {
   id          String            @id @default(uuid())
   labelId     String            @map("label_id")

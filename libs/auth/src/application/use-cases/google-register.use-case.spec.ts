@@ -1,6 +1,10 @@
 import { ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { RegistrationRepository } from '../../infrastructure/persistence';
+import { JwtTokenAdapter } from '../../infrastructure/adapters';
+import {
+  AuthSessionRepository,
+  RegistrationRepository,
+} from '../../infrastructure/persistence';
 import {
   FirebaseTokenVerifierService,
   PasswordHasherService,
@@ -8,16 +12,16 @@ import {
 import { GoogleRegisterUseCase } from './google-register.use-case';
 
 describe('GoogleRegisterUseCase', () => {
-  const registrationRepositoryMock = {
-    findAuthIdentity: jest.fn(),
-    findUserByIdentifier: jest.fn(),
-    createGoogleRegistration: jest.fn(),
-    createGoogleLinkIntent: jest.fn(),
-    createRegistrationSession: jest.fn(),
-    replaceExpiredGoogleRegistration: jest.fn(),
-  };
+  const registrationRepositoryMock = { createOrLinkGoogleUser: jest.fn() };
   const firebaseTokenVerifierServiceMock = { verifyIdToken: jest.fn() };
+  const authSessionRepositoryMock = { create: jest.fn(), update: jest.fn() };
   const passwordHasherServiceMock = { hashOpaqueToken: jest.fn() };
+  const jwtTokenAdapterMock = {
+    generateAccessToken: jest.fn(),
+    generateRefreshToken: jest.fn(),
+    calculateRefreshExpiry: jest.fn(),
+    generateTokenId: jest.fn(),
+  };
   let useCase: GoogleRegisterUseCase;
 
   beforeEach(async () => {
@@ -33,7 +37,9 @@ describe('GoogleRegisterUseCase', () => {
           provide: FirebaseTokenVerifierService,
           useValue: firebaseTokenVerifierServiceMock,
         },
+        { provide: AuthSessionRepository, useValue: authSessionRepositoryMock },
         { provide: PasswordHasherService, useValue: passwordHasherServiceMock },
+        { provide: JwtTokenAdapter, useValue: jwtTokenAdapterMock },
       ],
     }).compile();
     useCase = module.get(GoogleRegisterUseCase);
@@ -43,149 +49,97 @@ describe('GoogleRegisterUseCase', () => {
     firebaseTokenVerifierServiceMock.verifyIdToken.mockResolvedValueOnce({
       uid: 'firebase-1',
       email: 'user@example.com',
-      emailVerified: true,
-      signInProvider: 'password',
+      emailVerified: false,
+      signInProvider: 'google.com',
     });
 
-    await expect(
-      useCase.execute({ idToken: 'email-link-token' }),
-    ).rejects.toThrow(ForbiddenException);
-  });
-
-  it('creates a pending Google account that still requires email-link verification', async () => {
-    firebaseTokenVerifierServiceMock.verifyIdToken.mockResolvedValueOnce(
-      googleToken(),
-    );
-    registrationRepositoryMock.findAuthIdentity.mockResolvedValueOnce(null);
-    registrationRepositoryMock.findUserByIdentifier.mockResolvedValueOnce(null);
-    passwordHasherServiceMock.hashOpaqueToken.mockReturnValueOnce(
-      'hashed-registration-secret',
-    );
-    registrationRepositoryMock.createGoogleRegistration.mockImplementationOnce(
-      async (input) => ({
-        user: { id: 'user-1', accountStatus: 'pending_verification' },
-        session: { id: 'registration-1', expiresAt: input.sessionExpiresAt },
-      }),
-    );
-
-    const result = await useCase.execute({ idToken: 'google-token' });
-
-    expect(
-      registrationRepositoryMock.createGoogleRegistration,
-    ).toHaveBeenCalledWith(
-      expect.objectContaining({
-        email: 'user@example.com',
-        firebaseUid: 'firebase-1',
-        accountStatus: 'pending_verification',
-        sessionProvider: 'GOOGLE',
-      }),
-    );
-    expect(result.kind).toBe('PENDING_VERIFICATION');
-    expect(result.registrationToken).toMatch(/^registration-1\./);
-  });
-
-  it('creates a one-use link intent when Google email belongs to an active local account', async () => {
-    firebaseTokenVerifierServiceMock.verifyIdToken.mockResolvedValueOnce(
-      googleToken(),
-    );
-    registrationRepositoryMock.findAuthIdentity.mockResolvedValueOnce(null);
-    registrationRepositoryMock.findUserByIdentifier.mockResolvedValueOnce({
-      id: 'local-user-1',
-      email: 'user@example.com',
-      accountStatus: 'active',
-    });
-    passwordHasherServiceMock.hashOpaqueToken.mockReturnValueOnce(
-      'hashed-link-secret',
-    );
-    registrationRepositoryMock.createGoogleLinkIntent.mockImplementationOnce(
-      async (input) => ({
-        id: 'link-1',
-        expiresAt: input.expiresAt,
-      }),
-    );
-
-    const result = await useCase.execute({ idToken: 'google-token' });
-
-    expect(result).toMatchObject({
-      kind: 'LINK_REQUIRED',
-      linkToken: expect.stringMatching(/^link-1\./),
-      email: 'user@example.com',
-    });
-    expect(
-      registrationRepositoryMock.createGoogleRegistration,
-    ).not.toHaveBeenCalled();
-  });
-
-  it('resumes a pending Google registration only within its original 24-hour window', async () => {
-    const createdAt = new Date(Date.now() - 60_000);
-    firebaseTokenVerifierServiceMock.verifyIdToken.mockResolvedValueOnce(
-      googleToken(),
-    );
-    registrationRepositoryMock.findAuthIdentity.mockResolvedValueOnce({
-      user: {
-        id: 'user-1',
-        accountStatus: 'pending_verification',
-        createdAt,
-      },
-    });
-    passwordHasherServiceMock.hashOpaqueToken.mockReturnValueOnce(
-      'hashed-secret',
-    );
-    registrationRepositoryMock.createRegistrationSession.mockImplementationOnce(
-      (input) =>
-        Promise.resolve({ id: 'registration-2', expiresAt: input.expiresAt }),
-    );
-
-    await useCase.execute({ idToken: 'google-token' });
-
-    expect(
-      registrationRepositoryMock.createRegistrationSession,
-    ).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: 'user-1',
-        expiresAt: new Date(createdAt.getTime() + 24 * 60 * 60 * 1000),
-      }),
+    await expect(useCase.execute({ idToken: 'google-token' })).rejects.toThrow(
+      ForbiddenException,
     );
   });
 
-  it('replaces an expired pending Google registration instead of extending it indefinitely', async () => {
-    firebaseTokenVerifierServiceMock.verifyIdToken.mockResolvedValueOnce(
-      googleToken(),
-    );
-    registrationRepositoryMock.findAuthIdentity.mockResolvedValueOnce({
-      user: {
-        id: 'user-1',
-        accountStatus: 'pending_verification',
-        createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000),
-      },
-    });
-    passwordHasherServiceMock.hashOpaqueToken.mockReturnValueOnce(
-      'hashed-secret',
-    );
-    registrationRepositoryMock.replaceExpiredGoogleRegistration.mockImplementationOnce(
-      (input) =>
-        Promise.resolve({
-          session: { id: 'registration-3', expiresAt: input.sessionExpiresAt },
-        }),
-    );
-
-    const result = await useCase.execute({ idToken: 'google-token' });
-
-    expect(
-      registrationRepositoryMock.replaceExpiredGoogleRegistration,
-    ).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: 'user-1', email: 'user@example.com' }),
-    );
-    expect(result.registrationToken).toMatch(/^registration-3\./);
-  });
-
-  function googleToken() {
-    return {
+  it('creates a verified Google account immediately', async () => {
+    firebaseTokenVerifierServiceMock.verifyIdToken.mockResolvedValueOnce({
       uid: 'firebase-1',
       email: 'USER@example.com',
       emailVerified: true,
       signInProvider: 'google.com',
       name: 'Google User',
-    };
+    });
+    registrationRepositoryMock.createOrLinkGoogleUser.mockResolvedValueOnce(
+      activeUser(),
+    );
+    configureSessionTokens();
+
+    const result = await useCase.execute({ idToken: 'google-token' });
+
+    expect(
+      registrationRepositoryMock.createOrLinkGoogleUser,
+    ).toHaveBeenCalledWith({
+      email: 'user@example.com',
+      displayName: 'Google User',
+      firebaseUid: 'firebase-1',
+    });
+    expect(result).toMatchObject({
+      accessToken: 'access-token',
+      user: { id: 'user-1', email: 'user@example.com' },
+    });
+  });
+
+  it('uses the same create/link path on retry', async () => {
+    firebaseTokenVerifierServiceMock.verifyIdToken.mockResolvedValue({
+      uid: 'firebase-1',
+      email: 'user@example.com',
+      emailVerified: true,
+      signInProvider: 'google.com',
+    });
+    registrationRepositoryMock.createOrLinkGoogleUser.mockResolvedValue(
+      activeUser(),
+    );
+    configureSessionTokens();
+    configureSessionTokens();
+
+    await useCase.execute({ idToken: 'google-token' });
+    await useCase.execute({ idToken: 'google-token' });
+
+    expect(
+      registrationRepositoryMock.createOrLinkGoogleUser,
+    ).toHaveBeenCalledTimes(2);
+  });
+
+  function configureSessionTokens() {
+    authSessionRepositoryMock.create.mockResolvedValueOnce({ id: 'session-1' });
+    authSessionRepositoryMock.update.mockResolvedValueOnce({});
+    jwtTokenAdapterMock.generateAccessToken.mockResolvedValueOnce(
+      'access-token',
+    );
+    jwtTokenAdapterMock.generateTokenId
+      .mockReturnValueOnce('refresh-token-id')
+      .mockReturnValueOnce('token-family-id');
+    jwtTokenAdapterMock.calculateRefreshExpiry.mockReturnValueOnce(
+      new Date(Date.now() + 60_000),
+    );
+    jwtTokenAdapterMock.generateRefreshToken.mockResolvedValueOnce(
+      'refresh-token',
+    );
+    passwordHasherServiceMock.hashOpaqueToken.mockReturnValueOnce(
+      'hashed-refresh-token',
+    );
   }
 });
+
+function activeUser() {
+  return {
+    id: 'user-1',
+    email: 'user@example.com',
+    phone: null,
+    displayName: 'Google User',
+    avatar: null,
+    role: 'user',
+    accountStatus: 'active',
+    emailVerifiedAt: new Date(),
+    phoneVerifiedAt: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}

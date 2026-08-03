@@ -1,26 +1,26 @@
+import { ForbiddenException, Injectable } from '@nestjs/common';
+import { TokenPair } from '@contracts';
 import {
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-} from '@nestjs/common';
-import { randomBytes } from 'crypto';
-import { RegistrationRepository } from '../../infrastructure/persistence';
+  AuthSessionRepository,
+  RegistrationRepository,
+} from '../../infrastructure/persistence';
+import { JwtTokenAdapter } from '../../infrastructure/adapters';
 import { GoogleRegisterDto } from '../dto';
 import {
   FirebaseTokenVerifierService,
   PasswordHasherService,
 } from '../services';
 import { normalizeEmail } from './auth-identifier.mapper';
-
-const REGISTRATION_TTL_MS = 24 * 60 * 60 * 1000;
-const LINK_INTENT_TTL_MS = 10 * 60 * 1000;
+import { toSafeUser } from './user.mapper';
 
 @Injectable()
 export class GoogleRegisterUseCase {
   constructor(
     private readonly registrationRepository: RegistrationRepository,
     private readonly firebaseTokenVerifierService: FirebaseTokenVerifierService,
+    private readonly authSessionRepository: AuthSessionRepository,
     private readonly passwordHasherService: PasswordHasherService,
+    private readonly jwtTokenAdapter: JwtTokenAdapter,
   ) {}
 
   async execute(dto: GoogleRegisterDto) {
@@ -31,124 +31,45 @@ export class GoogleRegisterUseCase {
     if (
       token.signInProvider !== 'google.com' ||
       !email ||
-      !token.emailVerified
+      token.emailVerified !== true
     ) {
       throw new ForbiddenException('A verified Google token is required');
     }
 
-    const identity = await this.registrationRepository.findAuthIdentity(
-      'GOOGLE',
-      token.uid,
-    );
-    if (identity) {
-      if (identity.user.accountStatus === 'pending_verification') {
-        return this.resumePending(
-          identity.user.id,
-          email,
-          token.name?.trim() || null,
-          identity.user.createdAt,
-        );
-      }
-      throw codedConflict(
-        'ACCOUNT_ALREADY_EXISTS',
-        'Tai khoan Google da ton tai. Vui long dang nhap.',
-      );
-    }
-
-    const existing = await this.registrationRepository.findUserByIdentifier({
+    const user = await this.registrationRepository.createOrLinkGoogleUser({
       email,
-      phone: null,
+      displayName: token.name?.trim() || null,
+      firebaseUid: token.uid,
     });
-    if (existing) {
-      if (existing.accountStatus !== 'active') {
-        throw codedConflict(
-          'ACCOUNT_VERIFICATION_REQUIRED',
-          'Tai khoan dang cho xac minh. Vui long hoan tat dang ky ban dau.',
-        );
-      }
-
-      const secret = randomBytes(32).toString('base64url');
-      const intent = await this.registrationRepository.createGoogleLinkIntent({
-        userId: existing.id,
-        providerSubject: token.uid,
-        tokenHash: this.passwordHasherService.hashOpaqueToken(secret),
-        expiresAt: new Date(Date.now() + LINK_INTENT_TTL_MS),
-      });
-      return {
-        kind: 'LINK_REQUIRED' as const,
-        linkToken: `${intent.id}.${secret}`,
-        email,
-        expiresAt: intent.expiresAt,
-      };
-    }
-
-    const secret = randomBytes(32).toString('base64url');
-    const sessionExpiresAt = new Date(Date.now() + REGISTRATION_TTL_MS);
-    const { session } =
-      await this.registrationRepository.createGoogleRegistration({
-        email,
-        displayName: token.name?.trim() || null,
-        firebaseUid: token.uid,
-        accountStatus: 'pending_verification',
-        sessionProvider: 'GOOGLE',
-        sessionPurpose: 'REGISTER',
-        sessionTokenHash: this.passwordHasherService.hashOpaqueToken(secret),
-        sessionExpiresAt,
-      });
-    return pendingResult(session.id, secret, email, session.expiresAt);
+    const tokenPair = await this.issueSessionTokens(user.id, user.role);
+    return { ...tokenPair, user: toSafeUser(user) };
   }
 
-  private async resumePending(
+  private async issueSessionTokens(
     userId: string,
-    email: string,
-    displayName: string | null,
-    createdAt: Date,
-  ) {
-    const secret = randomBytes(32).toString('base64url');
-    const originalExpiry = new Date(createdAt.getTime() + REGISTRATION_TTL_MS);
-    if (originalExpiry.getTime() <= Date.now()) {
-      const { session } =
-        await this.registrationRepository.replaceExpiredGoogleRegistration({
-          userId,
-          email,
-          displayName,
-          sessionTokenHash: this.passwordHasherService.hashOpaqueToken(secret),
-          sessionExpiresAt: new Date(Date.now() + REGISTRATION_TTL_MS),
-        });
-      return pendingResult(session.id, secret, email, session.expiresAt);
-    }
-
-    const session = await this.registrationRepository.createRegistrationSession(
-      {
-        userId,
-        provider: 'GOOGLE',
-        purpose: 'REGISTER',
-        tokenHash: this.passwordHasherService.hashOpaqueToken(secret),
-        expiresAt: originalExpiry,
-      },
+    role: string,
+  ): Promise<TokenPair> {
+    const accessToken = await this.jwtTokenAdapter.generateAccessToken(
+      userId,
+      role,
     );
-    return pendingResult(session.id, secret, email, session.expiresAt);
+    const refreshTokenId = this.jwtTokenAdapter.generateTokenId();
+    const session = await this.authSessionRepository.create({
+      userId,
+      tokenFamily: this.jwtTokenAdapter.generateTokenId(),
+      currentTokenId: refreshTokenId,
+      currentTokenHash: '',
+      expiresAt: this.jwtTokenAdapter.calculateRefreshExpiry(),
+    });
+    const refreshToken = await this.jwtTokenAdapter.generateRefreshToken(
+      userId,
+      session.id,
+      refreshTokenId,
+    );
+    await this.authSessionRepository.update(session.id, {
+      currentTokenHash:
+        this.passwordHasherService.hashOpaqueToken(refreshToken),
+    });
+    return { accessToken, refreshToken };
   }
-}
-
-function pendingResult(
-  sessionId: string,
-  secret: string,
-  email: string,
-  expiresAt: Date,
-) {
-  return {
-    kind: 'PENDING_VERIFICATION' as const,
-    registrationToken: `${sessionId}.${secret}`,
-    registration: {
-      provider: 'GOOGLE' as const,
-      email,
-      phone: null,
-      expiresAt,
-    },
-  };
-}
-
-function codedConflict(error: string, message: string) {
-  return new ConflictException({ statusCode: 409, error, message });
 }
