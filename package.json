@@ -30,6 +30,8 @@
     "start:prod:orders": "node dist/apps/orders-service/main",
     "start:prod:affiliate": "node dist/apps/affiliate-service/main",
     "db:seed": "ts-node prisma/seed.ts",
+    "db:update-offer-media": "ts-node prisma/scripts/update-offer-media.ts",
+    "db:update-offer-options": "ts-node prisma/scripts/update-offer-options.ts",
     "prisma:merge": "ts-node prisma/scripts/merge-prisma-schema.ts",
     "prisma:generate": "npm run prisma:merge && prisma generate",
     "prisma:migrate": "npm run prisma:merge && prisma migrate dev",

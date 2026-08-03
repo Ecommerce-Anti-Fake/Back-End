@@ -90,6 +90,8 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
   for (let i = 0; i < Math.min(4, ctx.users.length); i += 1) {
     const user = ctx.users[i];
     const accountNumber = `1900${String(500000 + i).padStart(6, '0')}`;
+    const accountHolder =
+      user.displayName?.trim() || user.email?.trim() || user.phone?.trim() || `Seed User ${i + 1}`;
     const payoutAccount = await prisma.payoutAccount.create({
       data: {
         id: id(),
@@ -102,8 +104,8 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
         accountNumberHash: sha256(accountNumber),
         accountNumberLast4: accountNumber.slice(-4),
         accountNumberLength: accountNumber.length,
-        declaredAccountHolder: user.displayName,
-        resolvedAccountHolder: user.displayName.toUpperCase(),
+        declaredAccountHolder: accountHolder,
+        resolvedAccountHolder: accountHolder.toUpperCase(),
         verificationStatus: PayoutAccountVerificationStatus.VERIFIED,
         verificationMethod: PayoutAccountVerificationMethod.MANUAL_BANK_APP,
         verifiedByUserId: ctx.admins[0]?.id,

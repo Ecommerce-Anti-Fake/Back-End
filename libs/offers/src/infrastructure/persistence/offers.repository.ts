@@ -74,10 +74,14 @@ export class OffersRepository {
               mediaAsset: { select: { secureUrl: true } },
             },
           },
-          variants: {
-            where: { isActive: true },
-            select: { price: true },
-          },
+      variants: {
+        where: { isActive: true },
+        select: { price: true },
+      },
+      orderItems: {
+        where: { order: { orderStatus: { in: ['paid', 'shipping', 'completed'] } } },
+        select: { quantity: true },
+      },
         },
         orderBy: { createdAt: 'desc' },
         skip: (input.page - 1) * input.pageSize,
@@ -475,10 +479,14 @@ export class OffersRepository {
           },
         },
       },
-      variants: {
-        orderBy: { createdAt: 'asc' as const },
-        select: this.offerDetailVariantSelect(),
-      },
+        variants: {
+          orderBy: { createdAt: 'asc' as const },
+          select: this.offerDetailVariantSelect(),
+        },
+        orderItems: {
+          where: { order: { orderStatus: { in: ['paid', 'shipping', 'completed'] } } },
+          select: { quantity: true },
+        },
     };
   }
 

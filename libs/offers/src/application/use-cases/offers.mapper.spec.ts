@@ -46,6 +46,7 @@ describe('toOfferResponse option groups', () => {
           ],
         },
       ],
+      orderItems: [{ quantity: 4 }],
       variants: [
         {
           id: 'variant-1',
@@ -81,6 +82,7 @@ describe('toOfferResponse option groups', () => {
         ],
       },
     ]);
+    expect(response.soldQuantity).toBe(4);
     expect(response.variants).toEqual([
       {
         id: 'variant-1',

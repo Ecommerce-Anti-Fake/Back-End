@@ -1,5 +1,29 @@
 import { PrismaClient } from '@prisma/client';
-import { COUNTS, createMediaAsset, documentUrl, gtin, id, imageUrl, money, pick, recentDate, SeedContext } from './00-utils';
+import { COUNTS, createMediaAsset, documentUrl, gtin, id, money, pick, recentDate, SeedContext } from './00-utils';
+import { offerOptionSpecs } from './offer-option-specs';
+
+const productImageQueries = [
+  'milk,bottle',
+  'mineral-water,bottle',
+  'coffee,beans',
+  'instant-noodles,food',
+  'dish-soap,cleaning',
+  'sunscreen,skincare',
+  'body-wash,cosmetics',
+  'stainless-steel,cooking-pot',
+  'thermos,bottle',
+  'running-shoes,sneakers',
+  'cotton,t-shirt',
+  'cashews,nuts',
+  'artichoke,tea',
+  'baby-formula,milk',
+  'notebook,stationery',
+] as const;
+
+export function productImageUrl(templateIndex: number, offerIndex: number, mediaIndex: number) {
+  const query = productImageQueries[templateIndex] ?? 'consumer,product';
+  return `https://loremflickr.com/900/900/${query}?lock=${offerIndex * 2 + mediaIndex}`;
+}
 
 const productTemplates = [
   ['Sữa tươi tiệt trùng ít đường 1L', 'Thùng 12 hộp sữa tươi tiệt trùng 1L'],
@@ -63,7 +87,7 @@ export async function seedOffers(prisma: PrismaClient, ctx: SeedContext) {
       const media = await createMediaAsset(prisma, {
         ownerUserId: seller.id,
         resourceType: 'PRODUCT_IMAGE',
-        secureUrl: imageUrl(`offer-${offer.id}-${j}`, 900, 900),
+        secureUrl: productImageUrl(templateIndex, i, j),
         publicId: `seed/offers/${offer.id}/${j}`,
         folder: 'seed/offers',
       });
@@ -103,32 +127,29 @@ export async function seedOffers(prisma: PrismaClient, ctx: SeedContext) {
       });
     }
 
-    const colorGroup = await prisma.offerOptionGroup.create({
-      data: { id: id(), offerId: offer.id, displayName: 'Màu sắc' },
-    });
-    const sizeGroup = await prisma.offerOptionGroup.create({
-      data: { id: id(), offerId: offer.id, displayName: 'Kích thước' },
-    });
-    const colors = await Promise.all(
-      ['Đỏ', 'Xanh'].map((text, sortOrder) =>
-        prisma.offerOptionValue.create({
-          data: { id: id(), optionGroupId: colorGroup.id, text, sortOrder },
-        }),
-      ),
-    );
-    const sizes = await Promise.all(
-      ['S', 'M'].map((text, sortOrder) =>
-        prisma.offerOptionValue.create({
-          data: { id: id(), optionGroupId: sizeGroup.id, text, sortOrder },
-        }),
-      ),
+    const optionSpecs = offerOptionSpecs(templateIndex);
+    const optionValues = await Promise.all(
+      optionSpecs.map(async (spec) => {
+        const group = await prisma.offerOptionGroup.create({
+          data: { id: id(), offerId: offer.id, displayName: spec.displayName },
+        });
+        return Promise.all(
+          spec.values.map((text, sortOrder) =>
+            prisma.offerOptionValue.create({
+              data: { id: id(), optionGroupId: group.id, text, sortOrder },
+            }),
+          ),
+        );
+      }),
     );
     for (let variantIndex = 0; variantIndex < 4; variantIndex += 1) {
+      const firstValue = optionValues[0][variantIndex % 2];
+      const secondValue = optionValues[1][Math.floor(variantIndex / 2)];
       const variant = await prisma.offerVariant.create({
         data: {
           id: id(),
           offerId: offer.id,
-          sku: `${colors[variantIndex % 2].text}-${sizes[Math.floor(variantIndex / 2)].text}`,
+          sku: `${firstValue.text}-${secondValue.text}`,
           price: money(price + variantIndex * 5000),
           availableQuantity: 10 + variantIndex * 5,
           isActive: true,
@@ -136,8 +157,8 @@ export async function seedOffers(prisma: PrismaClient, ctx: SeedContext) {
       });
       await prisma.offerVariantValue.createMany({
         data: [
-          { id: id(), variantId: variant.id, optionValueId: colors[variantIndex % 2].id },
-          { id: id(), variantId: variant.id, optionValueId: sizes[Math.floor(variantIndex / 2)].id },
+          { id: id(), variantId: variant.id, optionValueId: firstValue.id },
+          { id: id(), variantId: variant.id, optionValueId: secondValue.id },
         ],
       });
     }

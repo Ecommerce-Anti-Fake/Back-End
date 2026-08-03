@@ -37,6 +37,9 @@ type LegacyOfferWithRelations = Offer & {
     }>;
   }>;
   variants?: OfferDetailVariantWithRelations[];
+  orderItems?: Array<{
+    quantity: number;
+  }>;
 };
 
 type OfferDetailVariantWithRelations = {
@@ -108,10 +111,13 @@ export function toOfferResponse(offer: OfferWithRelations) {
     (sum, variant) => sum + variant.availableQuantity,
     0,
   );
-  const allocatedQuantity =
-    offer.batchLinks?.reduce((sum, link) => sum + link.allocatedQuantity, 0) ??
-    availableQuantity;
-  const soldQuantity = Math.max(allocatedQuantity - availableQuantity, 0);
+  const soldQuantity = offer.orderItems
+    ? offer.orderItems.reduce((sum, item) => sum + item.quantity, 0)
+    : Math.max(
+        (offer.batchLinks?.reduce((sum, link) => sum + link.allocatedQuantity, 0) ??
+          availableQuantity) - availableQuantity,
+        0,
+      );
 
   return {
     id: offer.id,
