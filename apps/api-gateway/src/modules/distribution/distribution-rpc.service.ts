@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { measureServiceCall } from '@common/performance/request-context';
 import {
   AddBatchDocumentsBatchMessage,
   BatchDocumentUploadSignaturesMessage,
@@ -156,7 +157,7 @@ export class DistributionRpcService {
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {
     try {
-      return await lastValueFrom(this.catalogClient.send<TResult, unknown>(pattern, payload));
+      return await measureServiceCall(() => lastValueFrom(this.catalogClient.send<TResult, unknown>(pattern, payload)));
     } catch (error) {
       throwHttpExceptionFromRpc(error);
     }

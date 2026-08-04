@@ -18,6 +18,13 @@ type AuditLogRecord = {
   };
 };
 
+type PublicShopMetricRow = {
+  shopId: string;
+  avgRating?: number | string | null;
+  reviewCount?: number | string | bigint | null;
+  totalSale?: number | string | bigint | null;
+};
+
 const shopWithRelationsArgs = Prisma.validator<Prisma.ShopDefaultArgs>()({
   include: {
     shopType: {
@@ -438,7 +445,38 @@ export class ShopsRepository {
       }),
     ]);
 
-    const items = await Promise.all(shops.map((shop) => this.toPublicShopSummary(shop)));
+    const shopIds = shops.map((shop) => shop.id);
+    const [reviewMetrics, saleMetrics] = shopIds.length
+      ? await Promise.all([
+          this.prisma.$queryRaw<PublicShopMetricRow[]>(Prisma.sql`
+            SELECT o.shop_id AS "shopId",
+                   AVG(r.rating)::float AS "avgRating",
+                   COUNT(*)::int AS "reviewCount"
+            FROM "review" r
+            INNER JOIN "order" o ON o.id = r.order_id
+            WHERE o.shop_id IN (${Prisma.join(shopIds)})
+            GROUP BY o.shop_id
+          `),
+          this.prisma.$queryRaw<PublicShopMetricRow[]>(Prisma.sql`
+            SELECT o.shop_id AS "shopId",
+                   COALESCE(SUM(oi.quantity), 0)::int AS "totalSale"
+            FROM "order_item" oi
+            INNER JOIN "order" o ON o.id = oi.order_id
+            WHERE o.shop_id IN (${Prisma.join(shopIds)})
+              AND (o.order_status = 'completed' OR o.fulfillment_status = 'DELIVERED')
+            GROUP BY o.shop_id
+          `),
+        ])
+      : [[], []];
+    const reviewByShop = new Map(reviewMetrics.map((metric) => [metric.shopId, metric]));
+    const saleByShop = new Map(saleMetrics.map((metric) => [metric.shopId, metric]));
+    const items = shops.map((shop) =>
+      this.toPublicShopSummaryFromMetrics(shop, {
+        avgRating: reviewByShop.get(shop.id)?.avgRating ?? null,
+        reviewCount: reviewByShop.get(shop.id)?.reviewCount ?? 0,
+        totalSale: saleByShop.get(shop.id)?.totalSale ?? 0,
+      }),
+    );
 
     return {
       total,
@@ -554,16 +592,40 @@ export class ShopsRepository {
       }),
     ]);
 
+    return this.toPublicShopSummaryFromMetrics(shop, {
+      avgRating: reviewStats._avg.rating,
+      reviewCount: reviewStats._count._all,
+      totalSale: saleStats._sum.quantity,
+    });
+  }
+
+  private toPublicShopSummaryFromMetrics(
+    shop: {
+      id: string;
+      shopName: string;
+      phone?: string | null;
+      shopStatus: string;
+      createdAt: Date;
+      avatarMedia?: { secureUrl: string } | null;
+      bannerMedia?: { secureUrl: string } | null;
+      _count?: { offers: number };
+    },
+    metrics: {
+      avgRating: number | string | null;
+      reviewCount: number | string | bigint | null;
+      totalSale: number | string | bigint | null;
+    },
+  ) {
     return {
       shopId: shop.id,
       shopName: shop.shopName,
       phone: shop.phone ?? null,
       shopAvatar: shop.avatarMedia?.secureUrl ?? '',
       shopBanner: shop.bannerMedia?.secureUrl ?? '',
-      rating: Number((reviewStats._avg.rating ?? 0).toFixed(1)),
+      rating: Number(Number(metrics.avgRating ?? 0).toFixed(1)),
       totalOffer: shop._count?.offers ?? 0,
-      totalSale: saleStats._sum.quantity ?? 0,
-      totalReview: reviewStats._count._all,
+      totalSale: Number(metrics.totalSale ?? 0),
+      totalReview: Number(metrics.reviewCount ?? 0),
       createdAt: shop.createdAt.toISOString(),
       verify: shop.shopStatus === 'verified',
     };

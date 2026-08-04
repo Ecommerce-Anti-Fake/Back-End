@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { measureServiceCall } from '@common/performance/request-context';
 import {
   AFFILIATE_SERVICE_CLIENT,
   AFFILIATE_MESSAGE_PATTERNS,
@@ -134,7 +135,7 @@ export class AffiliateRpcService {
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {
     try {
-      return await lastValueFrom(this.affiliateClient.send<TResult, unknown>(pattern, payload));
+      return await measureServiceCall(() => lastValueFrom(this.affiliateClient.send<TResult, unknown>(pattern, payload)));
     } catch (error) {
       throwHttpExceptionFromRpc(error);
     }

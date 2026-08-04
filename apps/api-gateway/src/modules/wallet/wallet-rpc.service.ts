@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { CATALOG_SERVICE_CLIENT, WALLET_MESSAGE_PATTERNS } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
+import { measureServiceCall } from '@common/performance/request-context';
 import { lastValueFrom } from 'rxjs';
 
 @Injectable()
@@ -111,7 +112,7 @@ export class WalletRpcService {
 
   private async send<TResult>(pattern: string, payload: unknown): Promise<TResult> {
     try {
-      return await lastValueFrom(this.catalogClient.send<TResult, unknown>(pattern, payload));
+      return await measureServiceCall(() => lastValueFrom(this.catalogClient.send<TResult, unknown>(pattern, payload)));
     } catch (error) {
       throwHttpExceptionFromRpc(error);
     }

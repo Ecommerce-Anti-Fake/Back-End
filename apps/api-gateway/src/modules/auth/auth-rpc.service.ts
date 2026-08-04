@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { measureServiceCall } from '@common/performance/request-context';
 import { AUTH_MESSAGE_PATTERNS, AUTH_SERVICE_CLIENT } from '@contracts';
 import {
   AccountSecurityResponseDto,
@@ -185,9 +186,9 @@ export class AuthRpcService {
     payload: unknown,
   ): Promise<TResult> {
     try {
-      return await lastValueFrom(
+      return await measureServiceCall(() => lastValueFrom(
         this.authClient.send<TResult, unknown>(pattern, payload),
-      );
+      ));
     } catch (error) {
       throwHttpExceptionFromRpc(error);
     }

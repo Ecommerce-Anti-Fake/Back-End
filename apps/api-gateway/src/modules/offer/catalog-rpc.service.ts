@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
+import { measureServiceCall } from '@common/performance/request-context';
 import {
   AllocateOfferBatchesMessage,
   AddOfferDocumentsBatchMessage,
@@ -376,9 +377,9 @@ export class CatalogRpcService {
     payload: unknown,
   ): Promise<TResult> {
     try {
-      return await lastValueFrom(
+      return await measureServiceCall(() => lastValueFrom(
         this.catalogClient.send<TResult, unknown>(pattern, payload),
-      );
+      ));
     } catch (error) {
       throwHttpExceptionFromRpc(error);
     }

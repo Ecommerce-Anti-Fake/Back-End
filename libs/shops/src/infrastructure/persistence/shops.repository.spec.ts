@@ -50,6 +50,10 @@ describe('ShopsRepository', () => {
           _sum: { quantity: 15 },
         }),
       },
+      $queryRaw: jest
+        .fn()
+        .mockResolvedValueOnce([{ shopId: 'shop-1', avgRating: 4.5, reviewCount: 2 }])
+        .mockResolvedValueOnce([{ shopId: 'shop-1', totalSale: 15 }]),
       $transaction: jest.fn((queries) => Promise.all(queries)),
     };
     const repository = new ShopsRepository(prisma as never);
@@ -82,6 +86,9 @@ describe('ShopsRepository', () => {
         take: 10,
       }),
     );
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(prisma.review.aggregate).not.toHaveBeenCalled();
+    expect(prisma.orderItem.aggregate).not.toHaveBeenCalled();
   });
 
   it('returns a public shop summary by offer id', async () => {
