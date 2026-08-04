@@ -127,4 +127,31 @@ describe('PayOSTopUpService', () => {
       'https://antifake.io.vn/seller/wallet?topUp=cancelled',
     );
   });
+
+  it('reads a payment-link status for return-time wallet reconciliation', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        code: '00',
+        data: {
+          id: 'link-paid',
+          status: 'PAID',
+          amount: 100000,
+          amountPaid: 100000,
+        },
+      }),
+    });
+    global.fetch = fetchMock as never;
+
+    await expect(new PayOSTopUpService(config).getPaymentLink('link-paid')).resolves.toEqual({
+      paymentLinkId: 'link-paid',
+      status: 'PAID',
+      amount: 100000,
+      amountPaid: 100000,
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://payos.test/v2/payment-requests/link-paid',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
 });

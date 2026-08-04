@@ -90,3 +90,8 @@ export interface WalletTopUpWebhookMessage {
   signature: string;
   data: Record<string, unknown>;
 }
+
+export interface WalletTopUpReconciliationMessage {
+  userId: string;
+  paymentLinkId: string;
+}

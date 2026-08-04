@@ -9,6 +9,13 @@ export type WalletTopUpPaymentLink = {
   checkoutUrl: string;
 };
 
+export type PayOSPaymentLinkStatus = {
+  paymentLinkId: string;
+  status: string;
+  amount: number;
+  amountPaid: number;
+};
+
 @Injectable()
 export class PayOSTopUpService {
   private lastOrderCode = 0;
@@ -58,6 +65,59 @@ export class PayOSTopUpService {
       throw new ServiceUnavailableException(payload?.desc || 'Không thể tạo link nạp tiền PayOS.');
     }
     return { orderCode, paymentLinkId: payload.data.paymentLinkId, checkoutUrl: payload.data.checkoutUrl };
+  }
+
+  async getPaymentLink(paymentLinkId: string): Promise<PayOSPaymentLinkStatus> {
+    const normalizedPaymentLinkId = paymentLinkId.trim();
+    if (!normalizedPaymentLinkId) {
+      throw new BadRequestException('paymentLinkId is required');
+    }
+
+    const credentials = this.getCredentials();
+    const response = await fetch(
+      `${credentials.baseUrl}/v2/payment-requests/${encodeURIComponent(normalizedPaymentLinkId)}`,
+      {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'x-client-id': credentials.clientId,
+          'x-api-key': credentials.apiKey,
+        },
+      },
+    );
+    const payload = (await response.json().catch(() => null)) as {
+      code?: string;
+      desc?: string;
+      data?: {
+        id?: string;
+        status?: string;
+        amount?: number;
+        amountPaid?: number;
+      };
+    } | null;
+
+    if (
+      !response.ok ||
+      payload?.code !== '00' ||
+      !payload.data?.id ||
+      typeof payload.data.status !== 'string' ||
+      typeof payload.data.amount !== 'number'
+    ) {
+      throw new ServiceUnavailableException(
+        payload?.desc || 'Không thể đối soát trạng thái link PayOS.',
+      );
+    }
+
+    if (payload.data.id !== normalizedPaymentLinkId) {
+      throw new BadRequestException('PayOS paymentLinkId does not match the requested top-up');
+    }
+
+    return {
+      paymentLinkId: payload.data.id,
+      status: payload.data.status.toUpperCase(),
+      amount: payload.data.amount,
+      amountPaid: typeof payload.data.amountPaid === 'number' ? payload.data.amountPaid : 0,
+    };
   }
 
   verifyWebhook(data: Record<string, unknown>, signature: string) {

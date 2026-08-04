@@ -12,6 +12,7 @@ import type {
   ShopWalletTransactionsLookupMessage,
   ShopWalletWithdrawalMessage,
   WalletTopUpCreateMessage,
+  WalletTopUpReconciliationMessage,
   WalletTopUpWebhookMessage,
   WalletTransactionsLookupMessage,
   WalletWithdrawalActionMessage,
@@ -216,6 +217,11 @@ export class WalletRpcController {
   @MessagePattern(WALLET_MESSAGE_PATTERNS.handleWalletTopUpWebhook)
   async handleWalletTopUpWebhook(@Payload() payload: WalletTopUpWebhookMessage) {
     return this.run(() => this.handleWalletTopUpWebhookUseCase.execute(payload));
+  }
+
+  @MessagePattern(WALLET_MESSAGE_PATTERNS.reconcileWalletTopUp)
+  async reconcileWalletTopUp(@Payload() payload: WalletTopUpReconciliationMessage) {
+    return this.run(() => this.handleWalletTopUpWebhookUseCase.reconcile(payload));
   }
 
   @MessagePattern(WALLET_MESSAGE_PATTERNS.getWalletReconciliation)

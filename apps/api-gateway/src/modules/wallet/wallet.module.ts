@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { CATALOG_SERVICE_CLIENT } from '@contracts';
 import { AuthGuardsModule } from '@security';
+import { GatewayOrdersRpcModule } from '../order/orders-rpc.module';
 import { GatewayUserModule } from '../user/user.module';
 import { WalletController } from './wallet.controller';
 import { WalletRpcService } from './wallet-rpc.service';
@@ -12,6 +13,7 @@ import { WalletTopUpWebhookController } from './wallet-top-up-webhook.controller
   imports: [
     ConfigModule,
     AuthGuardsModule,
+    GatewayOrdersRpcModule,
     GatewayUserModule,
     ClientsModule.registerAsync([
       {
@@ -36,5 +38,6 @@ import { WalletTopUpWebhookController } from './wallet-top-up-webhook.controller
   ],
   controllers: [WalletController, WalletTopUpWebhookController],
   providers: [WalletRpcService],
+  exports: [WalletRpcService],
 })
 export class GatewayWalletModule {}

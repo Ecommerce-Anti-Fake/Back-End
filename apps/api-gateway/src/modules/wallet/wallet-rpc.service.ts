@@ -95,6 +95,9 @@ export class WalletRpcService {
   handleWalletTopUpWebhook(payload: { code: string; desc: string; success: boolean; signature: string; data: Record<string, unknown> }) {
     return this.send(WALLET_MESSAGE_PATTERNS.handleWalletTopUpWebhook, payload);
   }
+  reconcileWalletTopUp(payload: { userId: string; paymentLinkId: string }) {
+    return this.send(WALLET_MESSAGE_PATTERNS.reconcileWalletTopUp, payload);
+  }
   getPlatformWallets() { return this.send(WALLET_MESSAGE_PATTERNS.getPlatformWallets, {}); }
   getWalletReconciliation(payload: { fromDate?: string; toDate?: string; shopId?: string; transactionType?: string; status?: string; page?: number; limit?: number }) {
     return this.send(WALLET_MESSAGE_PATTERNS.getWalletReconciliation, payload);

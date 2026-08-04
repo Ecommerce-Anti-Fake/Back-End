@@ -61,6 +61,15 @@ export class WalletController {
     return this.walletRpcService.createWalletTopUp({ userId, amount: body.amount, idempotencyKey: body.idempotencyKey ?? '' });
   }
 
+  @ApiOperation({ summary: 'Đối soát trạng thái link PayOS và cập nhật giao dịch nạp ví idempotent' })
+  @Post('wallet/me/top-ups/:paymentLinkId/reconcile')
+  reconcileWalletTopUp(
+    @Param('paymentLinkId') paymentLinkId: string,
+    @CurrentUserId() userId: string,
+  ) {
+    return this.walletRpcService.reconcileWalletTopUp({ userId, paymentLinkId });
+  }
+
   @ApiOperation({ summary: 'Lấy các tài khoản nhận tiền của người dùng' })
   @ApiOkResponse({ type: PayoutAccountResponseDto, isArray: true })
   @Get('wallet/me/payout-accounts')

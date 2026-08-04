@@ -7,6 +7,7 @@ import { AdminFinanceReconciliationQueryDto, MarkOrderPaidDto, RefundOrderDto } 
 import { RateLimit } from '../../observability';
 import { OrdersRpcService } from '../order/orders-rpc.service';
 import { DashboardSseBrokerService } from '../user/dashboard-sse-broker.service';
+import { WalletRpcService } from '../wallet/wallet-rpc.service';
 import type { Response } from 'express';
 
 const PAYOS_RETURN_QUERY_KEYS = ['code', 'id', 'cancel', 'status', 'orderCode'] as const;
@@ -16,6 +17,7 @@ const PAYOS_RETURN_QUERY_KEYS = ['code', 'id', 'cancel', 'status', 'orderCode'] 
 export class PaymentController {
   constructor(
     private readonly ordersRpcService: OrdersRpcService,
+    private readonly walletRpcService: WalletRpcService,
     private readonly dashboardSseBrokerService: DashboardSseBrokerService,
     private readonly configService: ConfigService,
   ) {}
@@ -88,6 +90,9 @@ export class PaymentController {
   @Post('payos/webhook')
   async handlePayOSWebhook(@Body() payload: PayOSWebhookMessage) {
     const result = await this.ordersRpcService.handlePayOSWebhook(payload);
+    if (this.isUnknownOrderWebhook(result)) {
+      return this.walletRpcService.handleWalletTopUpWebhook(payload);
+    }
     this.dashboardSseBrokerService.notifyOrderChanged(result ?? {});
 
     return result;
@@ -119,6 +124,12 @@ export class PaymentController {
 
     const frontendUrl = this.configService.get<string>('FRONTEND_URL')?.trim() || 'http://localhost:5173';
     return `${frontendUrl.replace(/\/$/, '')}/payment-success`;
+  }
+
+  private isUnknownOrderWebhook(value: unknown) {
+    if (!value || typeof value !== 'object') return false;
+    const result = value as { ignored?: unknown; reason?: unknown };
+    return result.ignored === true && result.reason === 'order_not_found';
   }
 
   private resolveFrontendPaymentFailedUrl() {

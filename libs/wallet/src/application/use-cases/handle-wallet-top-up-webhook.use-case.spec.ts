@@ -67,4 +67,43 @@ describe('HandleWalletTopUpWebhookUseCase', () => {
       expect.objectContaining({ data: expect.objectContaining({ status: 'FAILED' }) }),
     );
   });
+
+  it('reconciles a paid provider link and credits the owned wallet', async () => {
+    const topUp = { id: 'top-up-1', walletId: 'wallet-1', amount: new Prisma.Decimal(100000), status: 'PENDING' };
+    const tx = { walletTopUp: { findUnique: jest.fn().mockResolvedValue(topUp), update: jest.fn() } };
+    const prisma = {
+      walletTopUp: { findFirst: jest.fn().mockResolvedValue(topUp) },
+      $transaction: jest.fn(async (callback: (value: typeof tx) => unknown) => callback(tx)),
+    };
+    const repository = { executeTransactionInTransaction: jest.fn() };
+    const codSettlement = { settleOutstandingForWalletInTransaction: jest.fn() };
+    const payOS = {
+      getPaymentLink: jest.fn().mockResolvedValue({
+        paymentLinkId: 'link-1',
+        status: 'PAID',
+        amount: 100000,
+        amountPaid: 100000,
+      }),
+    };
+    const useCase = new HandleWalletTopUpWebhookUseCase(
+      prisma as never,
+      repository as never,
+      payOS as never,
+      codSettlement as never,
+    );
+
+    await expect(useCase.reconcile({ userId: 'user-1', paymentLinkId: 'link-1' })).resolves.toEqual({
+      success: true,
+      message: 'Nạp tiền vào ví thành công.',
+      reconciled: true,
+      status: 'PAID',
+    });
+    expect(prisma.walletTopUp.findFirst).toHaveBeenCalledWith({
+      where: { paymentLinkId: 'link-1', wallet: { userId: 'user-1' } },
+    });
+    expect(repository.executeTransactionInTransaction).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ idempotencyKey: 'WALLET_TOP_UP:top-up-1:CREDIT' }),
+    );
+  });
 });

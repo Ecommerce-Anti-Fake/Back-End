@@ -119,6 +119,7 @@ export const WALLET_MESSAGE_PATTERNS = {
   createWalletTopUp: 'wallet.create-top-up',
   createShopWalletTopUp: 'wallet.create-shop-top-up',
   handleWalletTopUpWebhook: 'wallet.handle-top-up-webhook',
+  reconcileWalletTopUp: 'wallet.reconcile-top-up',
   getPlatformWallets: 'wallet.get-platform-wallets',
   listAdminWalletWithdrawals: 'wallet.list-admin-withdrawals',
 } as const;

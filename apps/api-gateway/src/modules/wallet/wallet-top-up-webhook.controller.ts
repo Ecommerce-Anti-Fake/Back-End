@@ -1,15 +1,20 @@
-import { Body, Controller, Get, Post, Query, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpException, Post, Query, Res } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Response } from 'express';
 import type { PayOSWebhookMessage } from '@contracts';
 import { RateLimit } from '../../observability';
+import { OrdersRpcService } from '../order/orders-rpc.service';
 import { WalletRpcService } from './wallet-rpc.service';
 
 const PAYOS_RETURN_QUERY_KEYS = ['code', 'id', 'cancel', 'status', 'orderCode'] as const;
 
 @Controller('wallet/top-ups')
 export class WalletTopUpWebhookController {
-  constructor(private readonly walletRpcService: WalletRpcService, private readonly configService: ConfigService) {}
+  constructor(
+    private readonly walletRpcService: WalletRpcService,
+    private readonly ordersRpcService: OrdersRpcService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Get('payos/return')
   handleReturn(
@@ -28,8 +33,13 @@ export class WalletTopUpWebhookController {
 
   @RateLimit({ profile: 'paymentWebhook' })
   @Post('payos/webhook')
-  handle(@Body() payload: PayOSWebhookMessage) {
-    return this.walletRpcService.handleWalletTopUpWebhook(payload);
+  async handle(@Body() payload: PayOSWebhookMessage) {
+    try {
+      return await this.walletRpcService.handleWalletTopUpWebhook(payload);
+    } catch (error) {
+      if (!this.isUnknownWalletTopUp(error)) throw error;
+      return this.ordersRpcService.handlePayOSWebhook(payload);
+    }
   }
 
   private isFailedPayOSReturn(query: Record<string, string | string[] | undefined>) {
@@ -40,5 +50,17 @@ export class WalletTopUpWebhookController {
       ['CANCELLED', 'CANCELED', 'FAILED', 'EXPIRED'].includes(status) ||
       (code !== '' && code !== '00')
     );
+  }
+
+  private isUnknownWalletTopUp(error: unknown) {
+    if (!(error instanceof HttpException)) return false;
+    const response = error.getResponse();
+    const message =
+      typeof response === 'string'
+        ? response
+        : response && typeof response === 'object' && 'message' in response
+          ? (response as { message?: unknown }).message
+          : null;
+    return message === 'Không tìm thấy giao dịch nạp ví.';
   }
 }
