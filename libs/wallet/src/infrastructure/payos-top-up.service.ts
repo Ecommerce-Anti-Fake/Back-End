@@ -30,7 +30,7 @@ export class PayOSTopUpService {
     const returnUrl = input.returnUrl?.trim() || (
       input.destination === 'SHOP'
         ? this.resolveUrl('PAYOS_SHOP_WALLET_RETURN_URL', '/seller/wallet?topUp=returned')
-        : this.resolveUrl('PAYOS_WALLET_RETURN_URL', '/api/wallet/top-ups/payos/return')
+        : this.resolveUrl('PAYOS_WALLET_RETURN_URL', '/payment')
     );
     const cancelUrl = input.cancelUrl?.trim() || (
       input.destination === 'SHOP'
@@ -77,7 +77,15 @@ export class PayOSTopUpService {
   private resolveUrl(envName: string, fallbackPath: string) {
     const configured = this.configService.get<string>(envName)?.trim();
     if (configured) return configured;
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL')?.trim() || 'http://localhost:5173';
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL')?.trim();
+    if (!frontendUrl) {
+      if (this.configService.get<string>('NODE_ENV')?.trim() === 'production') {
+        throw new ServiceUnavailableException(
+          'FRONTEND_URL must be configured in production',
+        );
+      }
+      return `http://localhost:5173${fallbackPath}`;
+    }
     if (!fallbackPath.startsWith('/api/')) {
       return `${frontendUrl.replace(/\/$/, '')}${fallbackPath}`;
     }

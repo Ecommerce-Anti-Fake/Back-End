@@ -137,25 +137,21 @@ export class PayOSPaymentService {
       return configured;
     }
 
-    const backendUrl = this.resolveBackendPublicUrl();
-    return `${backendUrl.replace(/\/$/, '')}/api/orders/payos/return`;
+    const frontendUrl = this.getFrontendUrl();
+    return `${frontendUrl.replace(/\/$/, '')}/payment`;
   }
 
-  private resolveBackendPublicUrl() {
-    const configured =
-      this.configService.get<string>('BACKEND_PUBLIC_URL')?.trim() ||
-      this.configService.get<string>('API_PUBLIC_URL')?.trim();
-    if (configured) {
-      return configured;
-    }
+  private getFrontendUrl() {
+    const configured = this.configService.get<string>('FRONTEND_URL')?.trim();
+    if (configured) return configured;
 
     if (this.configService.get<string>('NODE_ENV')?.trim() === 'production') {
       throw new ServiceUnavailableException(
-        'BACKEND_PUBLIC_URL must be configured in production',
+        'FRONTEND_URL must be configured in production',
       );
     }
 
-    return 'http://localhost:3001';
+    return 'http://localhost:5173';
   }
 
   private normalizeDescription(description: string, orderId: string) {

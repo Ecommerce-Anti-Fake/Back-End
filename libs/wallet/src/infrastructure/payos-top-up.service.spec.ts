@@ -35,7 +35,6 @@ describe('PayOSTopUpService', () => {
         PAYOS_CHECKSUM_KEY: 'checksum-key',
         PAYOS_API_BASE_URL: 'https://payos.test',
         NODE_ENV: 'production',
-        FRONTEND_URL: 'https://antifake.io.vn',
         RENDER_EXTERNAL_URL: 'https://legacy-platform.example',
       }),
     );
@@ -46,7 +45,7 @@ describe('PayOSTopUpService', () => {
         idempotencyKey: 'wallet-top-up-1',
         destination: 'USER',
       }),
-    ).rejects.toThrow('BACKEND_PUBLIC_URL');
+    ).rejects.toThrow('FRONTEND_URL');
   });
 
   it('marks the user-wallet cancel URL so a cancelled PayOS top-up is visible', async () => {
@@ -70,6 +69,9 @@ describe('PayOSTopUpService', () => {
 
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).cancelUrl).toBe(
       'https://antifake.io.vn/profile/wallet?topUp=cancelled',
+    );
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).returnUrl).toBe(
+      'https://antifake.io.vn/payment',
     );
   });
 
