@@ -265,6 +265,9 @@ export class NotificationsResponseDto {
   @ApiProperty({ example: 3 })
   unreadCount!: number;
 
+  @ApiProperty({ example: 1, description: 'So thong bao CHAT_MESSAGE chua doc.' })
+  unreadChatCount!: number;
+
   @ApiProperty({ example: 1 })
   page!: number;
 

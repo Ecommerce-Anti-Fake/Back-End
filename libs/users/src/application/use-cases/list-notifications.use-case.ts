@@ -12,6 +12,7 @@ export class ListNotificationsUseCase {
     return {
       total: result.total,
       unreadCount: result.unreadCount,
+      unreadChatCount: result.unreadChatCount,
       page: result.page,
       pageSize: result.pageSize,
       items: result.items.map(toNotificationResponse),

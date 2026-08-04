@@ -145,10 +145,17 @@ export class UsersRepository {
       ...(input.filter === 'readed' ? { readAt: { not: null } } : {}),
     };
 
-    const [total, unreadCount, items] = await this.prisma.$transaction([
+    const [total, unreadCount, unreadChatCount, items] = await this.prisma.$transaction([
       this.prisma.notification.count({ where }),
       this.prisma.notification.count({
         where: { userId: input.userId, readAt: null },
+      }),
+      this.prisma.notification.count({
+        where: {
+          userId: input.userId,
+          notificationType: 'CHAT_MESSAGE',
+          readAt: null,
+        },
       }),
       this.prisma.notification.findMany({
         where,
@@ -158,7 +165,7 @@ export class UsersRepository {
       }),
     ]);
 
-    return { total, unreadCount, page, pageSize, items };
+    return { total, unreadCount, unreadChatCount, page, pageSize, items };
   }
 
   async markNotificationRead(userId: string, notificationId: string) {

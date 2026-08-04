@@ -15,6 +15,7 @@ describe('Notification use cases', () => {
     repository.listNotifications.mockResolvedValue({
       total: 1,
       unreadCount: 1,
+      unreadChatCount: 1,
       page: 1,
       pageSize: 20,
       items: [notification()],
@@ -30,6 +31,7 @@ describe('Notification use cases', () => {
       filter: 'unread',
     });
     expect(result.unreadCount).toBe(1);
+    expect(result.unreadChatCount).toBe(1);
     expect(result.items[0].targetType).toBe('CHAT_THREAD');
   });
 
