@@ -8,7 +8,6 @@ describe('PayOSPaymentService', () => {
 
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(Date.parse('2026-07-10T00:00:00.000Z'));
-    jest.spyOn(Math, 'random').mockReturnValue(0.123);
     fetchMock.mockReset();
     fetchMock.mockResolvedValue({
       ok: true,
@@ -55,6 +54,29 @@ describe('PayOSPaymentService', () => {
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.returnUrl).toBe('https://antifake.io.vn/payment');
     expect(body.cancelUrl).toBe('https://antifake.io.vn/payment-failed');
+  });
+
+  it('uses a compact PayOS order code for the embedded checkout', async () => {
+    await service.createPaymentLink({
+      orderId: 'order-1',
+      amount: 100000,
+      description: 'DHorder1',
+      itemName: 'Offer',
+      quantity: 1,
+    });
+    await service.createPaymentLink({
+      orderId: 'order-2',
+      amount: 100000,
+      description: 'DHorder2',
+      itemName: 'Offer',
+      quantity: 1,
+    });
+
+    const first = JSON.parse(fetchMock.mock.calls[0][1].body).orderCode;
+    const second = JSON.parse(fetchMock.mock.calls[1][1].body).orderCode;
+    expect(first).toBeGreaterThan(0);
+    expect(first).toBeLessThan(1_000_000);
+    expect(second).toBe(first + 1);
   });
 
   it('rejects a production return URL when only the legacy Render URL exists', async () => {

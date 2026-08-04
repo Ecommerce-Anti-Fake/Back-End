@@ -21,6 +21,8 @@ type PayOSCreatePaymentResponse = {
 
 @Injectable()
 export class PayOSPaymentService {
+  private lastOrderCode = 0;
+
   constructor(private readonly configService: ConfigService) {}
 
   async createPaymentLink(input: {
@@ -165,7 +167,13 @@ export class PayOSPaymentService {
   }
 
   private createOrderCode() {
-    return Date.now() * 1000 + Math.floor(Math.random() * 1000);
+    const timestampCode = Date.now() % 1_000_000;
+    const nextCode = timestampCode === this.lastOrderCode
+      ? (timestampCode + 1) % 1_000_000
+      : timestampCode;
+
+    this.lastOrderCode = nextCode || 1;
+    return this.lastOrderCode;
   }
 
   private signObject(data: Record<string, unknown>, checksumKey: string) {

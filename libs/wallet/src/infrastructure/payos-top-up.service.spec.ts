@@ -4,6 +4,10 @@ import { PayOSTopUpService } from './payos-top-up.service';
 describe('PayOSTopUpService', () => {
   const originalFetch = global.fetch;
 
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(Date.parse('2026-07-10T00:00:00.000Z'));
+  });
+
   const config = new ConfigService({
     PAYOS_CLIENT_ID: 'client-id',
     PAYOS_API_KEY: 'api-key',
@@ -14,6 +18,7 @@ describe('PayOSTopUpService', () => {
   });
 
   afterEach(() => {
+    jest.useRealTimers();
     global.fetch = originalFetch;
   });
 
@@ -73,6 +78,30 @@ describe('PayOSTopUpService', () => {
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).returnUrl).toBe(
       'https://antifake.io.vn/payment',
     );
+  });
+
+  it('uses a compact PayOS order code for the embedded checkout', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        code: '00',
+        data: {
+          paymentLinkId: 'link-user',
+          checkoutUrl: 'https://pay.payos.vn/web/link-user',
+        },
+      }),
+    });
+    global.fetch = fetchMock as never;
+
+    await new PayOSTopUpService(config).createPaymentLink({
+      amount: 100000,
+      idempotencyKey: 'wallet-user-1',
+      destination: 'USER',
+    });
+
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.orderCode).toBeGreaterThan(0);
+    expect(body.orderCode).toBeLessThan(1_000_000);
   });
 
   it('marks the shop-wallet cancel URL so a cancelled PayOS top-up is visible', async () => {

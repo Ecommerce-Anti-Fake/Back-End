@@ -11,6 +11,8 @@ export type WalletTopUpPaymentLink = {
 
 @Injectable()
 export class PayOSTopUpService {
+  private lastOrderCode = 0;
+
   constructor(private readonly configService: ConfigService) {}
 
   async createPaymentLink(input: {
@@ -26,7 +28,7 @@ export class PayOSTopUpService {
     }
 
     const credentials = this.getCredentials();
-    const orderCode = String(Date.now() * 1000 + Math.floor(Math.random() * 1000));
+    const orderCode = String(this.createOrderCode());
     const returnUrl = input.returnUrl?.trim() || (
       input.destination === 'SHOP'
         ? this.resolveUrl('PAYOS_SHOP_WALLET_RETURN_URL', '/seller/wallet?topUp=returned')
@@ -104,6 +106,16 @@ export class PayOSTopUpService {
     }
 
     return `http://localhost:3001${fallbackPath}`;
+  }
+
+  private createOrderCode() {
+    const timestampCode = Date.now() % 1_000_000;
+    const nextCode = timestampCode === this.lastOrderCode
+      ? (timestampCode + 1) % 1_000_000
+      : timestampCode;
+
+    this.lastOrderCode = nextCode || 1;
+    return this.lastOrderCode;
   }
 
   private signObject(data: Record<string, unknown>, checksumKey: string) {
