@@ -30,6 +30,7 @@
     "start:prod:orders": "node dist/apps/orders-service/main",
     "start:prod:affiliate": "node dist/apps/affiliate-service/main",
     "db:seed": "ts-node prisma/seed.ts",
+    "db:seed:withdrawals": "ts-node prisma/scripts/seed-withdrawal-requests.ts",
     "db:update-offer-media": "ts-node prisma/scripts/update-offer-media.ts",
     "db:update-offer-options": "ts-node prisma/scripts/update-offer-options.ts",
     "db:update-seed-login-verification": "ts-node prisma/scripts/update-seed-login-verification.ts",

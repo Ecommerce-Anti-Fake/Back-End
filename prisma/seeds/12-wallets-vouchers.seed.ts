@@ -10,7 +10,17 @@ import {
   WalletTopUpStatus,
   WithdrawalStatus,
 } from '@prisma/client';
-import { COUNTS, id, money, pick, recentDate, SeedContext, sha256 } from './00-utils';
+import {
+  COUNTS,
+  encryptSeedAccountNumber,
+  hashSeedAccountNumber,
+  id,
+  money,
+  pick,
+  recentDate,
+  SeedContext,
+  sha256,
+} from './00-utils';
 
 export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedContext) {
   const platformWallet = await prisma.wallet.create({
@@ -58,7 +68,7 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
     ...Array.from(shopWallets.values()).map((walletId) => ({ id: walletId, availableBalance: 40000000 })),
   ]);
 
-  const payoutAccounts: { id: string; shopId: string }[] = [];
+  const payoutAccounts: { id: string; shopId: string; accountNumber: string }[] = [];
   for (let i = 0; i < COUNTS.payoutAccounts; i += 1) {
     const shop = pick(ctx.shops, i);
     const accountNumber = `1900${String(100000 + i).padStart(6, '0')}`;
@@ -67,11 +77,11 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
         id: id(),
         ownerType: PayoutAccountOwnerType.SHOP,
         shopId: shop.id,
-        bankBin: '970415',
+        bankBin: '970436',
         bankCode: 'VCB',
         bankName: 'Vietcombank',
-        accountNumberEncrypted: `seed-encrypted-${accountNumber}`,
-        accountNumberHash: sha256(accountNumber),
+        accountNumberEncrypted: encryptSeedAccountNumber(accountNumber),
+        accountNumberHash: hashSeedAccountNumber('970436', accountNumber),
         accountNumberLast4: accountNumber.slice(-4),
         accountNumberLength: accountNumber.length,
         declaredAccountHolder: shop.shopName,
@@ -83,7 +93,7 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
         availableAfter: recentDate(0),
       },
     });
-    payoutAccounts.push({ id: payoutAccount.id, shopId: shop.id });
+    payoutAccounts.push({ id: payoutAccount.id, shopId: shop.id, accountNumber });
   }
 
   const userPayoutAccounts: { id: string; userId: string }[] = [];
@@ -97,11 +107,11 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
         id: id(),
         ownerType: PayoutAccountOwnerType.USER,
         userId: user.id,
-        bankBin: '970415',
+        bankBin: '970436',
         bankCode: 'VCB',
         bankName: 'Vietcombank',
-        accountNumberEncrypted: `seed-encrypted-${accountNumber}`,
-        accountNumberHash: sha256(accountNumber),
+        accountNumberEncrypted: encryptSeedAccountNumber(accountNumber),
+        accountNumberHash: hashSeedAccountNumber('970436', accountNumber),
         accountNumberLast4: accountNumber.slice(-4),
         accountNumberLength: accountNumber.length,
         declaredAccountHolder: accountHolder,
@@ -124,12 +134,12 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
         id: id(),
         userId: shop.ownerUserId,
         shopId: shop.id,
-        bankBin: '970415',
+        bankBin: '970436',
         bankCode: 'VCB',
         bankName: 'Vietcombank',
         bankShortName: 'VCB',
-        accountNumberEncrypted: `seed-encrypted-${accountNumber}`,
-        accountNumberHash: sha256(accountNumber),
+        accountNumberEncrypted: encryptSeedAccountNumber(accountNumber),
+        accountNumberHash: hashSeedAccountNumber('970436', accountNumber),
         accountNumberLast4: accountNumber.slice(-4),
         accountNumberLength: accountNumber.length,
         accountHolder: shop.shopName.toUpperCase(),
@@ -200,7 +210,7 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
     const walletId = shopWallets.get(payout.shopId);
     const shop = ctx.shops.find((item) => item.id === payout.shopId);
     if (!walletId || !shop) continue;
-    const status = [WithdrawalStatus.PENDING, WithdrawalStatus.APPROVED, WithdrawalStatus.COMPLETED, WithdrawalStatus.REJECTED][i % 4];
+    const status = [WithdrawalStatus.PENDING, WithdrawalStatus.PROCESSING, WithdrawalStatus.COMPLETED, WithdrawalStatus.REJECTED][i % 4];
     await prisma.walletWithdrawal.create({
       data: {
         id: id(),
@@ -210,10 +220,10 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
         processedByUserId: status === WithdrawalStatus.PENDING ? null : ctx.admins[0]?.id,
         idempotencyKey: `SEED-WITHDRAWAL-${i + 1}`,
         amount: money(100000 + i * 50000),
-        bankBin: '970415',
+        bankBin: '970436',
         bankCode: 'VCB',
         bankName: 'Vietcombank',
-        accountNumberEncryptedSnapshot: `seed-encrypted-withdrawal-${i + 1}`,
+        accountNumberEncryptedSnapshot: encryptSeedAccountNumber(payout.accountNumber),
         accountNumberLast4: '0001',
         accountNumberLength: 10,
         accountHolder: shop.shopName.toUpperCase(),
@@ -222,7 +232,7 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
         rejectionReason: status === WithdrawalStatus.REJECTED ? 'Seed rejected withdrawal for admin UAT.' : null,
         approvedAt: status === WithdrawalStatus.PENDING || status === WithdrawalStatus.REJECTED ? null : recentDate(4),
         completedAt: status === WithdrawalStatus.COMPLETED ? recentDate(2) : null,
-        processedAt: status === WithdrawalStatus.PENDING ? null : recentDate(2),
+        processedAt: status === WithdrawalStatus.COMPLETED || status === WithdrawalStatus.REJECTED ? recentDate(2) : null,
       },
     });
   }

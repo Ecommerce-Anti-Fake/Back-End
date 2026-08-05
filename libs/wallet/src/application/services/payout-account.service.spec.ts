@@ -220,4 +220,30 @@ describe('PayoutAccountService', () => {
       targetId: 'withdrawal-1234-5678',
     }) });
   });
+
+  it('uses the linked legacy seed account when the withdrawal snapshot is not decryptable', async () => {
+    prisma.walletWithdrawal.findUnique.mockResolvedValue({
+      id: 'withdrawal-seed-1',
+      bankBin: '970415',
+      bankCode: 'VCB',
+      bankName: 'Vietcombank',
+      accountNumberEncryptedSnapshot: 'seed-encrypted-withdrawal-1',
+      accountNumber: null,
+      accountHolder: 'SEED SHOP',
+      amount: { toFixed: () => '100000.00' },
+      payoutAccount: { accountNumberEncrypted: 'seed-encrypted-1900100000' },
+    });
+    const service = new PayoutAccountService(
+      prisma as never,
+      walletService as never,
+      authorization as never,
+      security,
+    );
+
+    await expect(service.revealWithdrawalForAdmin({
+      withdrawalId: 'withdrawal-seed-1',
+      adminUserId: 'admin-1',
+      reason: 'ADMIN_TRANSFER_QR',
+    })).resolves.toMatchObject({ accountNumber: '1900100000' });
+  });
 });

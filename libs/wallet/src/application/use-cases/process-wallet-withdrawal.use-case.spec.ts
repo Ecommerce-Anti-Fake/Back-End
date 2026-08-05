@@ -26,7 +26,7 @@ describe('Process wallet withdrawal', () => {
     walletRepository.findShopWalletInTransaction.mockResolvedValue({ id: 'wallet-1' });
     walletRepository.executeTransactionInTransaction.mockResolvedValue({ id: 'transaction-1' });
     walletService.canAccessShopWallet.mockResolvedValue(true);
-    tx.walletWithdrawal.update.mockResolvedValue({ ...withdrawal, status: 'APPROVED' });
+    tx.walletWithdrawal.update.mockResolvedValue({ ...withdrawal, status: 'PROCESSING' });
   });
 
   it('approves without moving locked funds', async () => {
@@ -37,12 +37,12 @@ describe('Process wallet withdrawal', () => {
     });
     expect(walletRepository.executeTransactionInTransaction).not.toHaveBeenCalled();
     expect(tx.walletWithdrawal.update).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: 'withdrawal-1' }, data: { status: 'APPROVED', approvedAt: expect.any(Date) },
+      where: { id: 'withdrawal-1' }, data: { status: 'PROCESSING', approvedAt: expect.any(Date) },
     }));
   });
 
-  it('completes an approved withdrawal only after recording the bank transfer reference', async () => {
-    walletRepository.findWithdrawalInTransaction.mockResolvedValueOnce({ ...withdrawal, status: 'APPROVED' });
+  it('completes a processing withdrawal only after recording the bank transfer reference', async () => {
+    walletRepository.findWithdrawalInTransaction.mockResolvedValueOnce({ ...withdrawal, status: 'PROCESSING' });
     const useCase = new CompleteWalletWithdrawalUseCase(prisma as never, walletRepository as never);
 
     await expect(useCase.execute({ id: 'withdrawal-1', transferReference: 'VCB-20260722-001' })).resolves.toEqual({
@@ -62,7 +62,7 @@ describe('Process wallet withdrawal', () => {
     const useCase = new CompleteWalletWithdrawalUseCase(prisma as never, walletRepository as never);
 
     await expect(useCase.execute({ id: 'withdrawal-1', transferReference: 'REF-1' })).rejects.toThrow(
-      'Withdrawal is not approved',
+      'Withdrawal is not processing',
     );
     expect(walletRepository.executeTransactionInTransaction).not.toHaveBeenCalled();
   });
@@ -83,6 +83,26 @@ describe('Process wallet withdrawal', () => {
     expect(tx.walletWithdrawal.update).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ status: 'REJECTED', rejectionReason: 'Thông tin không hợp lệ' }),
     }));
+  });
+
+  it('does not reject a withdrawal after admin approval moved it to processing', async () => {
+    walletRepository.findWithdrawalInTransaction.mockResolvedValueOnce({ ...withdrawal, status: 'PROCESSING' });
+    const useCase = new RejectWalletWithdrawalUseCase(prisma as never, walletRepository as never);
+
+    await expect(useCase.execute({ id: 'withdrawal-1', reason: 'Too late to reject' })).rejects.toThrow(
+      'Only pending withdrawals can be rejected',
+    );
+    expect(walletRepository.executeTransactionInTransaction).not.toHaveBeenCalled();
+  });
+
+  it('does not let a shop owner cancel a processing withdrawal', async () => {
+    walletRepository.findWithdrawalInTransaction.mockResolvedValueOnce({ ...withdrawal, status: 'PROCESSING' });
+    const useCase = new CancelWalletWithdrawalUseCase(prisma as never, walletService as never, walletRepository as never);
+
+    await expect(useCase.execute({
+      id: 'withdrawal-1', shopId: 'shop-1', requesterUserId: 'owner-1', requesterRole: 'user',
+    })).rejects.toThrow('Only pending withdrawals can be cancelled');
+    expect(walletRepository.executeTransactionInTransaction).not.toHaveBeenCalled();
   });
 
   it('allows the shop owner to cancel a pending request and unlocks funds once', async () => {
@@ -129,7 +149,7 @@ describe('Process wallet withdrawal', () => {
   });
 
   it('allows only one concurrent completion to commit when the second wallet update conflicts', async () => {
-    walletRepository.findWithdrawalInTransaction.mockResolvedValue({ ...withdrawal, status: 'APPROVED' });
+    walletRepository.findWithdrawalInTransaction.mockResolvedValue({ ...withdrawal, status: 'PROCESSING' });
     walletRepository.executeTransactionInTransaction
       .mockResolvedValueOnce({ id: 'tx-1' })
       .mockRejectedValueOnce(new Error('WALLET_CONCURRENT_UPDATE'));

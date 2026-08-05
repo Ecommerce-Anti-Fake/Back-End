@@ -1,4 +1,4 @@
-import { pbkdf2Sync, randomBytes, randomUUID, createHash } from 'crypto';
+import { createCipheriv, createHash, createHmac, pbkdf2Sync, randomBytes, randomUUID } from 'crypto';
 import {
   AffiliateAccount,
   AffiliateCode,
@@ -169,6 +169,31 @@ export function hashPassword(password: string) {
 
 export function sha256(input: string) {
   return createHash('sha256').update(input).digest('hex');
+}
+
+export function encryptSeedAccountNumber(value: string) {
+  const key = seedEncryptionKey();
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', key, iv);
+  const ciphertext = Buffer.concat([cipher.update(value.replace(/\s+/g, '').trim(), 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return ['v1', iv.toString('base64url'), tag.toString('base64url'), ciphertext.toString('base64url')].join(':');
+}
+
+export function hashSeedAccountNumber(bankBin: string, value: string) {
+  return createHmac('sha256', seedEncryptionKey())
+    .update(`${bankBin.trim()}:${value.replace(/\s+/g, '').trim()}`)
+    .digest('hex');
+}
+
+function seedEncryptionKey() {
+  const configured = process.env.PAYOUT_ACCOUNT_ENCRYPTION_KEY?.trim();
+  if (!configured) throw new Error('PAYOUT_ACCOUNT_ENCRYPTION_KEY is required to seed payout accounts');
+  const key = /^[0-9a-f]{64}$/i.test(configured)
+    ? Buffer.from(configured, 'hex')
+    : Buffer.from(configured, 'base64');
+  if (key.length !== 32) throw new Error('PAYOUT_ACCOUNT_ENCRYPTION_KEY must be 32 bytes');
+  return key;
 }
 
 export function money(value: number): Prisma.Decimal {

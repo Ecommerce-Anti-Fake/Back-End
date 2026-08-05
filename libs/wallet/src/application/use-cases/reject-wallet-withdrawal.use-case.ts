@@ -23,8 +23,8 @@ export class RejectWalletWithdrawalUseCase {
   ) {
     const withdrawal = await this.walletRepository.findWithdrawalInTransaction(tx, input.id);
     if (!withdrawal) throw new NotFoundException('Withdrawal not found');
-    if (!['PENDING', 'APPROVED'].includes(withdrawal.status)) {
-      throw new BadRequestException('Withdrawal can no longer be rejected');
+    if (withdrawal.status !== 'PENDING') {
+      throw new BadRequestException('Only pending withdrawals can be rejected');
     }
 
     await this.walletRepository.executeTransactionInTransaction(tx, {

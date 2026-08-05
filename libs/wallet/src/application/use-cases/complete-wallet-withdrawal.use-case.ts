@@ -23,7 +23,7 @@ export class CompleteWalletWithdrawalUseCase {
   ) {
     const withdrawal = await this.walletRepository.findWithdrawalInTransaction(tx, input.id);
     if (!withdrawal) throw new NotFoundException('Withdrawal not found');
-    if (withdrawal.status !== 'APPROVED') throw new BadRequestException('Withdrawal is not approved');
+    if (withdrawal.status !== 'PROCESSING') throw new BadRequestException('Withdrawal is not processing');
 
     await this.walletRepository.executeTransactionInTransaction(tx, {
       transactionCode: `WITHDRAWAL:COMPLETE:${withdrawal.id}`,

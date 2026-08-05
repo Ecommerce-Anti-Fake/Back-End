@@ -222,8 +222,8 @@ export class WalletReconciliationQueryDto extends WalletTransactionsQueryDto {
 }
 
 export class WalletWithdrawalsQueryDto extends WalletTransactionsQueryDto {
-  @ApiPropertyOptional({ enum: ['PENDING', 'APPROVED', 'PROCESSING', 'COMPLETED', 'REJECTED', 'FAILED', 'CANCELLED'] })
+  @ApiPropertyOptional({ enum: ['PENDING', 'PROCESSING', 'COMPLETED', 'REJECTED', 'CANCELLED'] })
   @IsOptional()
-  @IsIn(['PENDING', 'APPROVED', 'PROCESSING', 'COMPLETED', 'REJECTED', 'FAILED', 'CANCELLED'])
-  status?: 'PENDING' | 'APPROVED' | 'PROCESSING' | 'COMPLETED' | 'REJECTED' | 'FAILED' | 'CANCELLED';
+  @IsIn(['PENDING', 'PROCESSING', 'COMPLETED', 'REJECTED', 'CANCELLED'])
+  status?: 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
 }

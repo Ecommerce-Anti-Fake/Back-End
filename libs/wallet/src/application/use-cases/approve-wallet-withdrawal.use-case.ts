@@ -21,7 +21,7 @@ export class ApproveWalletWithdrawalUseCase {
     await tx.walletWithdrawal.update({
       where: { id: withdrawal.id },
       data: {
-        status: 'APPROVED',
+        status: 'PROCESSING',
         approvedAt: new Date(),
         ...(input.adminUserId ? { processedByUserId: input.adminUserId } : {}),
       },

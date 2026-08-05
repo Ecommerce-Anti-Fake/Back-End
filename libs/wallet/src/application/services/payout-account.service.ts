@@ -153,7 +153,7 @@ export class PayoutAccountService {
         payload: {},
       });
       const activeWithdrawals = await tx.walletWithdrawal.count({
-        where: { payoutAccountId: account.id, status: { in: ['PENDING', 'APPROVED', 'PROCESSING'] } },
+        where: { payoutAccountId: account.id, status: { in: ['PENDING', 'PROCESSING'] } },
       });
       if (activeWithdrawals > 0) throw new BadRequestException('Payout account has an active withdrawal');
       await tx.payoutAccount.update({
@@ -246,11 +246,12 @@ export class PayoutAccountService {
   async revealWithdrawalForAdmin(input: { withdrawalId: string; adminUserId: string; reason: string }) {
     const reason = input.reason.trim();
     if (!reason) throw new BadRequestException('Reveal reason is required');
-    const withdrawal = await this.prisma.walletWithdrawal.findUnique({ where: { id: input.withdrawalId } });
+    const withdrawal = await this.prisma.walletWithdrawal.findUnique({
+      where: { id: input.withdrawalId },
+      include: { payoutAccount: { select: { accountNumberEncrypted: true } } },
+    });
     if (!withdrawal) throw new NotFoundException('Withdrawal not found');
-    const accountNumber = withdrawal.accountNumberEncryptedSnapshot
-      ? this.security.decryptAccountNumber(withdrawal.accountNumberEncryptedSnapshot)
-      : withdrawal.accountNumber;
+    const accountNumber = this.resolveWithdrawalAccountNumber(withdrawal);
     if (!accountNumber) throw new NotFoundException('Withdrawal account number is unavailable');
     await this.prisma.auditLog.create({
       data: {
@@ -269,6 +270,31 @@ export class PayoutAccountService {
       currency: 'VND',
       transferContent: `AFWD ${withdrawal.id.replace(/-/g, '').slice(0, 12).toUpperCase()}`,
     };
+  }
+
+  private resolveWithdrawalAccountNumber(withdrawal: {
+    accountNumber?: string | null;
+    accountNumberEncryptedSnapshot?: string | null;
+    payoutAccount?: { accountNumberEncrypted: string } | null;
+  }) {
+    const plainAccountNumber = withdrawal.accountNumber?.replace(/\s+/g, '').trim();
+    if (plainAccountNumber) return plainAccountNumber;
+
+    const encryptedValues = [
+      withdrawal.accountNumberEncryptedSnapshot,
+      withdrawal.payoutAccount?.accountNumberEncrypted,
+    ].filter((value): value is string => Boolean(value));
+
+    for (const value of encryptedValues) {
+      // Older UAT seed rows encoded the fixture account in this explicit marker
+      // instead of using the production AES-GCM format.
+      const legacySeedAccount = /^seed-encrypted-(\d{6,19})$/.exec(value);
+      if (legacySeedAccount) return legacySeedAccount[1];
+      if (value.startsWith('seed-encrypted-')) continue;
+      return this.security.decryptAccountNumber(value);
+    }
+
+    return null;
   }
 
   private async resolveWallet(userId: string, requesterRole: string, shopId?: string) {
