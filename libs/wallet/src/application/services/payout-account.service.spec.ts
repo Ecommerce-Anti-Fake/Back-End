@@ -37,6 +37,8 @@ describe('PayoutAccountService', () => {
   const prisma = {
     $transaction: jest.fn(),
     payoutAccount: { findUnique: jest.fn(), findMany: jest.fn() },
+    walletWithdrawal: { findUnique: jest.fn() },
+    auditLog: { create: jest.fn() },
   };
   const walletService = {
     canAccessShopWallet: jest.fn(),
@@ -182,5 +184,40 @@ describe('PayoutAccountService', () => {
       resolvedAccountHolder: 'THIRD PARTY NAME',
       verificationStatus: 'VERIFIED',
     });
+  });
+
+  it('returns audited transfer details for the admin QR flow', async () => {
+    prisma.walletWithdrawal.findUnique.mockResolvedValue({
+      id: 'withdrawal-1234-5678',
+      bankBin: '970436',
+      bankCode: 'VCB',
+      bankName: 'Vietcombank',
+      accountNumberEncryptedSnapshot: security.encryptAccountNumber('0123456789'),
+      accountNumber: null,
+      accountHolder: 'TRAN VAN B',
+      amount: { toFixed: () => '150000.00' },
+    });
+    const service = new PayoutAccountService(
+      prisma as never,
+      walletService as never,
+      authorization as never,
+      security,
+    );
+
+    await expect(service.revealWithdrawalForAdmin({
+      withdrawalId: 'withdrawal-1234-5678',
+      adminUserId: 'admin-1',
+      reason: 'ADMIN_TRANSFER_QR',
+    })).resolves.toMatchObject({
+      bankBin: '970436',
+      bankCode: 'VCB',
+      accountNumber: '0123456789',
+      amount: '150000.00',
+      transferContent: 'AFWD WITHDRAWAL12',
+    });
+    expect(prisma.auditLog.create).toHaveBeenCalledWith({ data: expect.objectContaining({
+      action: 'PREPARE_WITHDRAWAL_TRANSFER_QR',
+      targetId: 'withdrawal-1234-5678',
+    }) });
   });
 });

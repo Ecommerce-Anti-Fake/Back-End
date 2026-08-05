@@ -255,14 +255,19 @@ export class PayoutAccountService {
     await this.prisma.auditLog.create({
       data: {
         targetType: 'WALLET_WITHDRAWAL', targetId: withdrawal.id, actorUserId: input.adminUserId,
-        action: 'REVEAL_WITHDRAWAL_ACCOUNT_NUMBER', note: reason,
+        action: 'PREPARE_WITHDRAWAL_TRANSFER_QR', note: reason,
       },
     });
     return {
       id: withdrawal.id,
+      bankBin: withdrawal.bankBin,
+      bankCode: withdrawal.bankCode,
       bankName: withdrawal.bankName,
       accountHolder: withdrawal.accountHolder,
       accountNumber,
+      amount: withdrawal.amount.toFixed(2),
+      currency: 'VND',
+      transferContent: `AFWD ${withdrawal.id.replace(/-/g, '').slice(0, 12).toUpperCase()}`,
     };
   }
 
