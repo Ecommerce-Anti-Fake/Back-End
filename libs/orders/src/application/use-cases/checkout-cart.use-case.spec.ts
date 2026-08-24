@@ -177,6 +177,22 @@ describe('CheckoutCartUseCase', () => {
     expect(ordersRepository.removeCartItems).not.toHaveBeenCalled();
   });
 
+  it('rejects a quote when the cart variant is no longer available', async () => {
+    ordersRepository.findOfferVariantForCart.mockResolvedValueOnce(null);
+
+    await expect(
+      useCase.quote({
+        buyerUserId: 'buyer-1',
+        cartItemIds: ['cart-item-1'],
+        shippingOptionCode: 'GHN_1',
+      }),
+    ).rejects.toThrow('Variant is not available');
+
+    expect(
+      checkoutShippingService.resolveSelectedOption,
+    ).not.toHaveBeenCalled();
+  });
+
   function createCartItem(id: string, offerId: string, shopId: string, price: number, quantity: number) {
     return {
       id,
