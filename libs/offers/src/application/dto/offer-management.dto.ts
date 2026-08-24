@@ -198,6 +198,21 @@ export class BuyNowOfferPreviewQueryDto {
   @IsInt()
   @Min(1)
   quantity!: number;
+
+  @ApiPropertyOptional({
+    example: false,
+    default: true,
+    description: 'Chỉ báo giá vận chuyển khi checkout đã có địa chỉ giao hàng.',
+  })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined) return true;
+    if (value === true || value === 'true') return true;
+    if (value === false || value === 'false') return false;
+    return value;
+  })
+  @IsBoolean()
+  includeShipping = true;
 }
 
 export class BuyNowOfferPreviewResponseDto {

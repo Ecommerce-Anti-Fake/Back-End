@@ -409,6 +409,46 @@ describe('OfferController', () => {
     );
   });
 
+  it('returns Buy Now preview without requiring shipping when checkout has no address yet', async () => {
+    const catalogRpcService = {
+      getBuyNowOfferPreview: jest.fn().mockResolvedValue({
+        shopId: 'shop-1',
+        shopName: 'Shop ABC',
+        offerId: 'offer-1',
+        modelName: 'Kem chong nang SPF50',
+        variantId: 'variant-1',
+        quantity: 2,
+        price: 150000,
+        thumbnailUrl: null,
+      }),
+    };
+    const ordersRpcService = {
+      buyNowCheckout: jest.fn(),
+      quoteBuyNowShippingOptions: jest.fn(),
+    };
+    const controller = new OfferController(
+      catalogRpcService as never,
+      ordersRpcService as never,
+      { notifyOrderChanged: jest.fn(), notifyShop: jest.fn() } as never,
+      attributionTokenService as never,
+    );
+
+    const result = await controller.getBuyNowPreview('buyer-1', {
+      offerId: 'offer-1',
+      variantId: 'variant-1',
+      quantity: 2,
+      includeShipping: false,
+    });
+
+    expect(ordersRpcService.quoteBuyNowShippingOptions).not.toHaveBeenCalled();
+    expect(result).toEqual(
+      expect.objectContaining({
+        offerId: 'offer-1',
+        shippingOptions: [],
+      }),
+    );
+  });
+
   it('returns compact public offer list items', async () => {
     const catalogRpcService = {
       findOffers: jest.fn().mockResolvedValue({

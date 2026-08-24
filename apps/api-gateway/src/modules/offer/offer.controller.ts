@@ -223,12 +223,14 @@ export class OfferController {
       variantId: query.variantId ?? null,
       quantity: query.quantity,
     })) as Omit<BuyNowOfferPreviewResponseDto, 'shippingOptions'>;
-    const shippingOptions = await this.ordersRpcService.quoteBuyNowShippingOptions({
-      buyerUserId,
-      offerId: query.offerId,
-      variantId: query.variantId ?? null,
-      quantity: query.quantity,
-    });
+    const shippingOptions = query.includeShipping !== false
+      ? await this.ordersRpcService.quoteBuyNowShippingOptions({
+          buyerUserId,
+          offerId: query.offerId,
+          variantId: query.variantId ?? null,
+          quantity: query.quantity,
+        })
+      : [];
     return { ...preview, shippingOptions };
   }
 
