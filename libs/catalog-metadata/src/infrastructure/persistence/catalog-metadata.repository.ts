@@ -47,4 +47,55 @@ export class CatalogMetadataRepository {
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
   }
+
+  findVerificationLabelByCodeHash(codeHash: string) {
+    return this.prisma.verificationLabel.findFirst({
+      where: { codeHash },
+      select: {
+        labelType: true,
+        labelStatus: true,
+        scopeType: true,
+        scopeId: true,
+        issuedAt: true,
+        brand: { select: { name: true } },
+        provenance: {
+          orderBy: { occurredAt: 'asc' },
+          select: {
+            eventType: true,
+            channel: true,
+            occurredAt: true,
+          },
+        },
+      },
+    });
+  }
+
+  findSupplyBatchVerificationContext(batchId: string) {
+    return this.prisma.supplyBatch
+      .findUnique({
+        where: { id: batchId },
+        select: {
+          modelName: true,
+          batchNumber: true,
+          countryOfOrigin: true,
+          sourceType: true,
+          offerLinks: {
+            take: 1,
+            orderBy: { createdAt: 'asc' },
+            select: { offer: { select: { title: true } } },
+          },
+        },
+      })
+      .then((batch) =>
+        batch
+          ? {
+              modelName: batch.modelName,
+              batchNumber: batch.batchNumber,
+              countryOfOrigin: batch.countryOfOrigin,
+              sourceType: batch.sourceType,
+              offerTitle: batch.offerLinks[0]?.offer.title ?? null,
+            }
+          : null,
+      );
+  }
 }

@@ -59,7 +59,8 @@ export class CategoryResponseDto {
   name!: string;
 
   @ApiPropertyOptional({
-    example: 'https://res.cloudinary.com/demo/image/upload/categories/my-pham.jpg',
+    example:
+      'https://res.cloudinary.com/demo/image/upload/categories/my-pham.jpg',
     nullable: true,
   })
   imageUrl!: string | null;
@@ -85,4 +86,59 @@ export class ShippingCarrierResponseDto {
 
   @ApiProperty({ example: true })
   isIntegrated!: boolean;
+}
+
+export class VerifyProductQueryDto {
+  @ApiProperty({
+    description:
+      'Product verification code or an HTTP(S) link containing code.',
+    example: 'ANTIFAKE-QR-1-batch-id',
+  })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(2048)
+  code!: string;
+}
+
+export class VerificationProvenanceEventResponseDto {
+  @ApiProperty({ example: 'VERIFIED' })
+  eventType!: string;
+
+  @ApiProperty({ example: 'mobile_scan' })
+  channel!: string;
+
+  @ApiProperty({ example: '2026-08-02T00:00:00.000Z' })
+  occurredAt!: Date;
+}
+
+export class VerifyProductResponseDto {
+  @ApiProperty({ enum: ['VERIFIED', 'SUSPICIOUS', 'INACTIVE', 'NOT_FOUND'] })
+  status!: 'VERIFIED' | 'SUSPICIOUS' | 'INACTIVE' | 'NOT_FOUND';
+
+  @ApiProperty({ example: 'QR_BATCH', nullable: true })
+  labelType!: string | null;
+
+  @ApiProperty({ example: '2026-08-01T00:00:00.000Z', nullable: true })
+  issuedAt!: Date | null;
+
+  @ApiProperty({ example: 'Brand ABC', nullable: true })
+  brandName!: string | null;
+
+  @ApiProperty({ example: 'Product One', nullable: true })
+  productName!: string | null;
+
+  @ApiProperty({ example: 'Model One', nullable: true })
+  modelName!: string | null;
+
+  @ApiProperty({ example: 'BATCH-0001', nullable: true })
+  batchNumber!: string | null;
+
+  @ApiProperty({ example: 'Việt Nam', nullable: true })
+  countryOfOrigin!: string | null;
+
+  @ApiProperty({ example: 'MANUFACTURING', nullable: true })
+  sourceType!: string | null;
+
+  @ApiProperty({ type: [VerificationProvenanceEventResponseDto] })
+  provenance!: VerificationProvenanceEventResponseDto[];
 }

@@ -61,6 +61,7 @@ import {
   UpdateOfferMessage,
   ModerateOfferMessage,
   UpdateOfferVariantMessage,
+  VerifyProductMessage,
   CATALOG_SERVICE_CLIENT,
 } from '@contracts';
 import { throwHttpExceptionFromRpc } from '@common';
@@ -91,6 +92,10 @@ export class CatalogRpcService {
 
   findShippingCarriers() {
     return this.send(PRODUCTS_MESSAGE_PATTERNS.findShippingCarriers, {});
+  }
+
+  verifyProduct(payload: VerifyProductMessage) {
+    return this.send(PRODUCTS_MESSAGE_PATTERNS.verifyProduct, payload);
   }
 
   createOffer(payload: CreateOfferMessage) {
@@ -377,9 +382,11 @@ export class CatalogRpcService {
     payload: unknown,
   ): Promise<TResult> {
     try {
-      return await measureServiceCall(() => lastValueFrom(
-        this.catalogClient.send<TResult, unknown>(pattern, payload),
-      ));
+      return await measureServiceCall(() =>
+        lastValueFrom(
+          this.catalogClient.send<TResult, unknown>(pattern, payload),
+        ),
+      );
     } catch (error) {
       throwHttpExceptionFromRpc(error);
     }

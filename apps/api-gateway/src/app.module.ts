@@ -29,6 +29,7 @@ import { GatewaySocialModule } from './modules/social/social.module';
 import { GatewayUserModule } from './modules/user/user.module';
 import { GatewayWalletModule } from './modules/wallet/wallet.module';
 import { GatewayVoucherModule } from './modules/voucher/voucher.module';
+import { GatewayVerificationModule } from './modules/verification/verification.module';
 import {
   HealthController,
   RateLimitGuard,
@@ -69,6 +70,7 @@ import {
     GatewayAuthModule,
     GatewayWalletModule,
     GatewayVoucherModule,
+    GatewayVerificationModule,
   ],
   controllers: [HealthController],
   providers: [

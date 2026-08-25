@@ -2,13 +2,18 @@ import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { throwRpcException } from '@common';
 import { PRODUCTS_MESSAGE_PATTERNS } from '@contracts';
-import type { CreateBrandMessage, CreateCategoryMessage } from '@contracts';
+import type {
+  CreateBrandMessage,
+  CreateCategoryMessage,
+  VerifyProductMessage,
+} from '@contracts';
 import {
   CreateBrandUseCase,
   CreateCategoryUseCase,
   ListBrandsUseCase,
   ListCategoriesUseCase,
   ListShippingCarriersUseCase,
+  VerifyProductUseCase,
 } from '../../application/use-cases';
 
 @Controller()
@@ -19,6 +24,7 @@ export class CatalogMetadataRpcController {
     private readonly listCategoriesUseCase: ListCategoriesUseCase,
     private readonly createCategoryUseCase: CreateCategoryUseCase,
     private readonly listShippingCarriersUseCase: ListShippingCarriersUseCase,
+    private readonly verifyProductUseCase: VerifyProductUseCase,
   ) {}
 
   @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.findBrands)
@@ -61,6 +67,15 @@ export class CatalogMetadataRpcController {
   async findShippingCarriers() {
     try {
       return await this.listShippingCarriersUseCase.execute();
+    } catch (error) {
+      throwRpcException(error);
+    }
+  }
+
+  @MessagePattern(PRODUCTS_MESSAGE_PATTERNS.verifyProduct)
+  async verifyProduct(@Payload() payload: VerifyProductMessage) {
+    try {
+      return await this.verifyProductUseCase.execute(payload);
     } catch (error) {
       throwRpcException(error);
     }

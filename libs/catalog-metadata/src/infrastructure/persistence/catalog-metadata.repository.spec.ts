@@ -71,4 +71,73 @@ describe('CatalogMetadataRepository', () => {
       },
     });
   });
+
+  it('looks up verification labels by hash and returns only public batch context', async () => {
+    const prisma = {
+      verificationLabel: {
+        findFirst: jest.fn().mockResolvedValue({
+          labelType: 'QR_BATCH',
+          labelStatus: 'active',
+          scopeType: 'SUPPLY_BATCH',
+          scopeId: 'batch-1',
+          issuedAt: new Date('2026-08-01T00:00:00.000Z'),
+          brand: { name: 'Brand ABC' },
+          provenance: [],
+        }),
+      },
+      supplyBatch: {
+        findUnique: jest.fn().mockResolvedValue({
+          modelName: 'Model One',
+          batchNumber: 'BATCH-0001',
+          countryOfOrigin: 'Việt Nam',
+          sourceType: 'MANUFACTURING',
+          offerLinks: [{ offer: { title: 'Product One' } }],
+        }),
+      },
+    };
+    const repository = new CatalogMetadataRepository(prisma as never);
+
+    await expect(
+      repository.findVerificationLabelByCodeHash('hash'),
+    ).resolves.toEqual(expect.objectContaining({ labelType: 'QR_BATCH' }));
+    await expect(
+      repository.findSupplyBatchVerificationContext('batch-1'),
+    ).resolves.toEqual({
+      modelName: 'Model One',
+      batchNumber: 'BATCH-0001',
+      countryOfOrigin: 'Việt Nam',
+      sourceType: 'MANUFACTURING',
+      offerTitle: 'Product One',
+    });
+
+    expect(prisma.verificationLabel.findFirst).toHaveBeenCalledWith({
+      where: { codeHash: 'hash' },
+      select: {
+        labelType: true,
+        labelStatus: true,
+        scopeType: true,
+        scopeId: true,
+        issuedAt: true,
+        brand: { select: { name: true } },
+        provenance: {
+          orderBy: { occurredAt: 'asc' },
+          select: { eventType: true, channel: true, occurredAt: true },
+        },
+      },
+    });
+    expect(prisma.supplyBatch.findUnique).toHaveBeenCalledWith({
+      where: { id: 'batch-1' },
+      select: {
+        modelName: true,
+        batchNumber: true,
+        countryOfOrigin: true,
+        sourceType: true,
+        offerLinks: {
+          take: 1,
+          orderBy: { createdAt: 'asc' },
+          select: { offer: { select: { title: true } } },
+        },
+      },
+    });
+  });
 });

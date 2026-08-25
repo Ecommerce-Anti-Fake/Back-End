@@ -7,6 +7,7 @@ import {
   ListBrandsUseCase,
   ListCategoriesUseCase,
   ListShippingCarriersUseCase,
+  VerifyProductUseCase,
 } from './application/use-cases';
 import { CatalogMetadataRepository } from './infrastructure/persistence/catalog-metadata.repository';
 import { CatalogMetadataRpcController } from './presentation/rpc/catalog-metadata.rpc-controller';
@@ -21,6 +22,7 @@ import { CatalogMetadataRpcController } from './presentation/rpc/catalog-metadat
     ListCategoriesUseCase,
     CreateCategoryUseCase,
     ListShippingCarriersUseCase,
+    VerifyProductUseCase,
   ],
   exports: [
     CatalogMetadataRepository,
@@ -29,6 +31,7 @@ import { CatalogMetadataRpcController } from './presentation/rpc/catalog-metadat
     ListCategoriesUseCase,
     CreateCategoryUseCase,
     ListShippingCarriersUseCase,
+    VerifyProductUseCase,
   ],
 })
 export class CatalogMetadataModule {}

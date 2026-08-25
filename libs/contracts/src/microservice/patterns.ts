@@ -137,6 +137,7 @@ export const PRODUCTS_MESSAGE_PATTERNS = {
   updateOffer: 'products.update-offer',
   moderateOffer: 'products.moderate-offer',
   findShippingCarriers: 'products.find-shipping-carriers',
+  verifyProduct: 'products.verify-product',
   findOffers: 'products.find-offers',
   findAdminOffers: 'products.find-admin-offers',
   findOfferById: 'products.find-offer-by-id',
@@ -668,6 +669,10 @@ export type ReviewBrandAuthorizationMessage = {
 
 export type OfferLookupMessage = {
   id: string;
+};
+
+export type VerifyProductMessage = {
+  code: string;
 };
 
 export type BuyNowOfferPreviewMessage = {
