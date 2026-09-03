@@ -2,28 +2,37 @@ import { PrismaClient } from '@prisma/client';
 import { COUNTS, id, money, pick, recentDate, SeedContext } from './00-utils';
 
 const orderStatuses = [
-  ...Array(120).fill(['completed', 'DELIVERED']),
-  ...Array(30).fill(['shipping', 'SHIPPING']),
-  ...Array(20).fill(['paid', 'PROCESSING']),
-  ...Array(20).fill(['pending', 'PENDING']),
-  ...Array(10).fill(['cancelled', 'CANCELLED']),
+  ['completed', 'DELIVERED'],
+  ['paid', 'PROCESSING'],
+  ['shipping', 'SHIPPING'],
+  ['pending', 'PENDING'],
+  ['cancelled', 'CANCELLED'],
 ] as [string, string][];
 
 export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
   for (let buyerIndex = 0; buyerIndex < ctx.buyers.length; buyerIndex += 1) {
     const buyer = ctx.buyers[buyerIndex];
     const cart = await prisma.cart.upsert({
-      where: { buyerUserId_cartStatus: { buyerUserId: buyer.id, cartStatus: 'ACTIVE' } },
+      where: {
+        buyerUserId_cartStatus: { buyerUserId: buyer.id, cartStatus: 'ACTIVE' },
+      },
       update: {},
       create: { id: id(), buyerUserId: buyer.id, cartStatus: 'ACTIVE' },
     });
 
     for (let j = 0; j < 4; j += 1) {
       const offer = pick(ctx.offers, buyerIndex * 4 + j);
-      const shop = ctx.shops.find((item) => item.id === offer.shopId) ?? pick(ctx.shops, buyerIndex);
-      const variant = await prisma.offerVariant.findFirst({ where: { offerId: offer.id, isActive: true }, orderBy: { price: 'asc' } });
+      const shop =
+        ctx.shops.find((item) => item.id === offer.shopId) ??
+        pick(ctx.shops, buyerIndex);
+      const variant = await prisma.offerVariant.findFirst({
+        where: { offerId: offer.id, isActive: true },
+        orderBy: { price: 'asc' },
+      });
       if (!variant) throw new Error(`Offer ${offer.id} has no active variant`);
-      const existingCartItem = await prisma.cartItem.findFirst({ where: { cartId: cart.id, offerId: offer.id } });
+      const existingCartItem = await prisma.cartItem.findFirst({
+        where: { cartId: cart.id, offerId: offer.id },
+      });
       if (!existingCartItem) {
         await prisma.cartItem.create({
           data: {
@@ -44,32 +53,60 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
 
   for (let i = 0; i < COUNTS.favoriteOffers; i += 1) {
     await prisma.userFavoriteOffer.upsert({
-      where: { userId_offerId: { userId: pick(ctx.buyers, i).id, offerId: pick(ctx.offers, i).id } },
+      where: {
+        userId_offerId: {
+          userId: pick(ctx.buyers, i).id,
+          offerId: pick(ctx.offers, i).id,
+        },
+      },
       update: {},
-      create: { id: id(), userId: pick(ctx.buyers, i).id, offerId: pick(ctx.offers, i).id },
+      create: {
+        id: id(),
+        userId: pick(ctx.buyers, i).id,
+        offerId: pick(ctx.offers, i).id,
+      },
     });
   }
 
   for (let i = 0; i < COUNTS.orders; i += 1) {
     const itemCount = i < 100 ? 2 : 1;
-    const itemPlans: Array<{ offer: (typeof ctx.offers)[number]; variant: NonNullable<Awaited<ReturnType<typeof prisma.offerVariant.findFirst>>>; quantity: number }> = [];
+    const itemPlans: Array<{
+      offer: (typeof ctx.offers)[number];
+      variant: NonNullable<
+        Awaited<ReturnType<typeof prisma.offerVariant.findFirst>>
+      >;
+      quantity: number;
+    }> = [];
     for (let j = 0; j < itemCount; j += 1) {
       const offer = pick(ctx.offers, i + j);
-      const variant = await prisma.offerVariant.findFirst({ where: { offerId: offer.id, isActive: true }, orderBy: { price: 'asc' } });
+      const variant = await prisma.offerVariant.findFirst({
+        where: { offerId: offer.id, isActive: true },
+        orderBy: { price: 'asc' },
+      });
       if (!variant) throw new Error(`Offer ${offer.id} has no active variant`);
       itemPlans.push({ offer, variant, quantity: j === 0 ? 1 + (i % 3) : 1 });
     }
 
     const buyer = pick(ctx.buyers, i);
-    const firstShop = ctx.shops.find((shop) => shop.id === itemPlans[0].offer.shopId) ?? pick(ctx.shops, i);
+    const firstShop =
+      ctx.shops.find((shop) => shop.id === itemPlans[0].offer.shopId) ??
+      pick(ctx.shops, i);
     const hasDistributionContext = i % 5 === 0;
-    const buyerShop = hasDistributionContext ? pick(ctx.distributorShops, i) : null;
-    const buyerNode = hasDistributionContext ? ctx.nodes.find((node) => node.shopId === buyerShop?.id) : null;
-    const baseAmount = itemPlans.reduce((sum, item) => sum + Number(item.variant.price ?? 0) * item.quantity, 0);
+    const buyerShop = hasDistributionContext
+      ? pick(ctx.distributorShops, i)
+      : null;
+    const buyerNode = hasDistributionContext
+      ? ctx.nodes.find((node) => node.shopId === buyerShop?.id)
+      : null;
+    const baseAmount = itemPlans.reduce(
+      (sum, item) => sum + Number(item.variant.price ?? 0) * item.quantity,
+      0,
+    );
     const discountAmount = i % 9 === 0 ? Math.round(baseAmount * 0.05) : 0;
     const shippingFee = 18000 + (i % 4) * 5000;
     const platformFee = Math.round((baseAmount - discountAmount) * 0.03);
-    const [orderStatus, fulfillmentStatus] = orderStatuses[i];
+    const [orderStatus, fulfillmentStatus] =
+      orderStatuses[i % orderStatuses.length];
 
     const order = await prisma.order.create({
       data: {
@@ -84,21 +121,26 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
         discountAmount: money(discountAmount),
         platformFeeAmount: money(platformFee),
         buyerPayableAmount: money(baseAmount - discountAmount + shippingFee),
-        sellerReceivableAmount: money(baseAmount - discountAmount - platformFee),
+        sellerReceivableAmount: money(
+          baseAmount - discountAmount - platformFee,
+        ),
         totalAmount: money(baseAmount - discountAmount + shippingFee),
         shippingName: buyer.displayName,
         shippingPhone: buyer.phone,
-        shippingAddress: `${24 + (i % 50)} Le Loi, Quan ${1 + (i % 12)}, TP.HCM`,
-        shippingDistrictId: 1440 + (i % 20),
-        shippingDistrictName: `Quan ${1 + (i % 12)}`,
-        shippingWardCode: `VN-P202-D1442-W${String(20101 + (i % 5))}`,
-        shippingWardName: `Phuong ${1 + (i % 20)}`,
+        shippingAddress: `Dia chi giao hang kiem thu UAT ${String((i % 8) + 1).padStart(2, '0')}`,
+        shippingDistrictId: 0,
+        shippingDistrictName: 'Quan kiem thu UAT',
+        shippingWardCode: `UAT-WARD-${String((i % 5) + 1).padStart(2, '0')}`,
+        shippingWardName: `Phuong kiem thu UAT ${String((i % 5) + 1).padStart(2, '0')}`,
         shippingProviderCode: i % 3 === 0 ? 'GHN' : 'SELF_DELIVERY',
         shippingProviderName: i % 3 === 0 ? 'Giao Hang Nhanh' : 'Tu van chuyen',
         shippingServiceId: 53320 + (i % 5),
         shippingServiceTypeId: 2,
         shippingFeeAmount: money(shippingFee),
-        shippingTrackingCode: orderStatus === 'pending' ? null : `AFK${String(i + 1).padStart(8, '0')}`,
+        shippingTrackingCode:
+          orderStatus === 'pending'
+            ? null
+            : `UAT-TRACK-${String(i + 1).padStart(5, '0')}`,
         parcelWeightGrams: itemPlans[0].offer.parcelWeightGrams,
         parcelLengthCm: itemPlans[0].offer.parcelLengthCm,
         parcelWidthCm: itemPlans[0].offer.parcelWidthCm,
@@ -108,10 +150,25 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
     });
     ctx.orders.push(order);
 
-    const groups = new Map<string, { shopId: string; baseAmount: number; discountAmount: number; shippingFee: number; platformFee: number }>();
+    const groups = new Map<
+      string,
+      {
+        shopId: string;
+        baseAmount: number;
+        discountAmount: number;
+        shippingFee: number;
+        platformFee: number;
+      }
+    >();
     for (const [index, item] of itemPlans.entries()) {
       const shopId = item.offer.shopId;
-      const group = groups.get(shopId) ?? { shopId, baseAmount: 0, discountAmount: 0, shippingFee: 0, platformFee: 0 };
+      const group = groups.get(shopId) ?? {
+        shopId,
+        baseAmount: 0,
+        discountAmount: 0,
+        shippingFee: 0,
+        platformFee: 0,
+      };
       group.baseAmount += Number(item.variant.price ?? 0) * item.quantity;
       if (index === 0) {
         group.discountAmount = discountAmount;
@@ -122,7 +179,9 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
 
     const groupByShopId = new Map<string, (typeof ctx.orderGroups)[number]>();
     for (const groupInput of groups.values()) {
-      groupInput.platformFee = Math.round((groupInput.baseAmount - groupInput.discountAmount) * 0.03);
+      groupInput.platformFee = Math.round(
+        (groupInput.baseAmount - groupInput.discountAmount) * 0.03,
+      );
       const shopGroup = await prisma.orderShopGroup.create({
         data: {
           id: id(),
@@ -132,7 +191,11 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
           baseAmount: money(groupInput.baseAmount),
           discountAmount: money(groupInput.discountAmount),
           platformFeeAmount: money(groupInput.platformFee),
-          sellerReceivableAmount: money(groupInput.baseAmount - groupInput.discountAmount - groupInput.platformFee),
+          sellerReceivableAmount: money(
+            groupInput.baseAmount -
+              groupInput.discountAmount -
+              groupInput.platformFee,
+          ),
           shippingName: order.shippingName,
           shippingPhone: order.shippingPhone,
           shippingAddress: order.shippingAddress,
@@ -168,7 +231,9 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
           offerTitleSnapshot: itemPlan.offer.title,
           unitPrice: itemPlan.variant.price ?? money(0),
           quantity: itemPlan.quantity,
-          shopProductDiscountAmount: money(Number(shopGroup?.discountAmount ?? 0)),
+          shopProductDiscountAmount: money(
+            Number(shopGroup?.discountAmount ?? 0),
+          ),
           platformFeeAmount: money(Number(shopGroup?.platformFeeAmount ?? 0)),
         },
       });
@@ -185,7 +250,8 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
             orderItemId: orderItem.id,
             optionGroupId: selected.optionValue.optionGroupId,
             optionValueId: selected.optionValueId,
-            optionGroupDisplayName: selected.optionValue.optionGroup.displayName,
+            optionGroupDisplayName:
+              selected.optionValue.optionGroup.displayName,
             optionValueText: selected.optionValue.text,
           })),
         });
@@ -197,9 +263,16 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
         id: id(),
         orderId: order.id,
         paymentMethod: hasDistributionContext ? 'BANK_TRANSFER' : 'COD',
-        paymentStatus: ['paid', 'shipping', 'completed'].includes(orderStatus) ? 'PAID' : orderStatus === 'cancelled' ? 'CANCELLED' : 'PENDING',
+        paymentStatus: ['paid', 'shipping', 'completed'].includes(orderStatus)
+          ? 'PAID'
+          : orderStatus === 'cancelled'
+            ? 'CANCELLED'
+            : 'PENDING',
         amount: order.totalAmount,
-        providerRef: orderStatus === 'pending' ? null : `PAY-${String(i + 1).padStart(6, '0')}`,
+        providerRef:
+          orderStatus === 'pending'
+            ? null
+            : `PAY-${String(i + 1).padStart(6, '0')}`,
       },
     });
 
@@ -207,9 +280,18 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
       data: {
         id: id(),
         orderId: order.id,
-        escrowStatus: orderStatus === 'completed' ? 'RELEASED' : ['paid', 'shipping'].includes(orderStatus) ? 'HELD' : 'PENDING',
-        heldAmount: ['paid', 'shipping'].includes(orderStatus) ? order.sellerReceivableAmount : money(0),
-        holdAt: ['paid', 'shipping', 'completed'].includes(orderStatus) ? recentDate(20 - (i % 15)) : null,
+        escrowStatus:
+          orderStatus === 'completed'
+            ? 'RELEASED'
+            : ['paid', 'shipping'].includes(orderStatus)
+              ? 'HELD'
+              : 'PENDING',
+        heldAmount: ['paid', 'shipping'].includes(orderStatus)
+          ? order.sellerReceivableAmount
+          : money(0),
+        holdAt: ['paid', 'shipping', 'completed'].includes(orderStatus)
+          ? recentDate(20 - (i % 15))
+          : null,
         releaseAt: orderStatus === 'completed' ? recentDate(5 - (i % 5)) : null,
       },
     });
@@ -219,7 +301,12 @@ export async function seedOrders(prisma: PrismaClient, ctx: SeedContext) {
     const orderItem = pick(ctx.orderItems, i);
     const batch = pick(ctx.batches, i);
     await prisma.orderItemBatchAllocation.create({
-      data: { id: id(), orderItemId: orderItem.id, batchId: batch.id, quantity: Math.max(1, Math.min(orderItem.quantity, 5)) },
+      data: {
+        id: id(),
+        orderItemId: orderItem.id,
+        batchId: batch.id,
+        quantity: Math.max(1, Math.min(orderItem.quantity, 5)),
+      },
     });
   }
 }

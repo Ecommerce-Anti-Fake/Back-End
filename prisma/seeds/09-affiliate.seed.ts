@@ -8,7 +8,15 @@ import {
   PayoutStatus,
   PrismaClient,
 } from '@prisma/client';
-import { COUNTS, id, money, pick, recentDate, SeedContext } from './00-utils';
+import {
+  COUNTS,
+  id,
+  money,
+  pick,
+  recentDate,
+  SeedContext,
+  uatFrontendUrl,
+} from './00-utils';
 
 export async function seedAffiliate(prisma: PrismaClient, ctx: SeedContext) {
   for (let i = 0; i < COUNTS.affiliatePrograms; i += 1) {
@@ -20,9 +28,10 @@ export async function seedAffiliate(prisma: PrismaClient, ctx: SeedContext) {
         ownerShopId: shop.id,
         brandId: brand.id,
         offerId: i === 1 ? pick(ctx.offers, i).id : null,
-        scopeType: i === 1 ? AffiliateScopeType.OFFER : AffiliateScopeType.BRAND,
-        name: `${brand.name} Affiliate Program`,
-        slug: `seed-${brand.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${i + 1}`,
+        scopeType:
+          i === 1 ? AffiliateScopeType.OFFER : AffiliateScopeType.BRAND,
+        name: `Chuong trinh Affiliate Demo UAT ${i + 1}`,
+        slug: `uat-affiliate-${i + 1}`,
         programStatus: AffiliateProgramStatus.ACTIVE,
         attributionWindowDays: 30,
         commissionModel: 'revenue_share',
@@ -42,9 +51,12 @@ export async function seedAffiliate(prisma: PrismaClient, ctx: SeedContext) {
       data: {
         id: id(),
         programId: program.id,
-        userId: pick(ctx.users, i + 4).id,
+        userId: pick(ctx.affiliateUsers, i).id,
         parentAccountId: parent?.id ?? null,
-        accountStatus: i % 8 === 0 ? AffiliateAccountStatus.PENDING : AffiliateAccountStatus.ACTIVE,
+        accountStatus:
+          i % 8 === 0
+            ? AffiliateAccountStatus.PENDING
+            : AffiliateAccountStatus.ACTIVE,
         referralPath: parent ? `${parent.id}/${i + 1}` : `${i + 1}`,
         joinedAt: recentDate(25 - i),
         approvedAt: i % 8 === 0 ? null : recentDate(20 - i),
@@ -55,14 +67,18 @@ export async function seedAffiliate(prisma: PrismaClient, ctx: SeedContext) {
 
   for (let i = 0; i < COUNTS.affiliateCodes; i += 1) {
     const account = pick(ctx.affiliateAccounts, i);
-    const program = ctx.affiliatePrograms.find((item) => item.id === account.programId) ?? pick(ctx.affiliatePrograms, i);
+    const program =
+      ctx.affiliatePrograms.find((item) => item.id === account.programId) ??
+      pick(ctx.affiliatePrograms, i);
     const code = await prisma.affiliateCode.create({
       data: {
         id: id(),
         programId: program.id,
         accountId: account.id,
-        code: `AFK${String(i + 1).padStart(5, '0')}`,
-        landingUrl: `https://antifake.io.vn/products?aff=AFK${String(i + 1).padStart(5, '0')}`,
+        code: `UAT-AFF-${String(i + 1).padStart(4, '0')}`,
+        landingUrl: uatFrontendUrl(
+          `/products?aff=UAT-AFF-${String(i + 1).padStart(4, '0')}`,
+        ),
         isDefault: i < COUNTS.affiliateAccounts,
       },
     });
@@ -71,8 +87,12 @@ export async function seedAffiliate(prisma: PrismaClient, ctx: SeedContext) {
 
   for (let i = 0; i < COUNTS.affiliateConversions; i += 1) {
     const code = pick(ctx.affiliateCodes, i);
-    const account = ctx.affiliateAccounts.find((item) => item.id === code.accountId) ?? pick(ctx.affiliateAccounts, i);
-    const program = ctx.affiliatePrograms.find((item) => item.id === code.programId) ?? pick(ctx.affiliatePrograms, i);
+    const account =
+      ctx.affiliateAccounts.find((item) => item.id === code.accountId) ??
+      pick(ctx.affiliateAccounts, i);
+    const program =
+      ctx.affiliatePrograms.find((item) => item.id === code.programId) ??
+      pick(ctx.affiliatePrograms, i);
     const order = pick(ctx.orders, i);
     const offer = pick(ctx.offers, i);
     const amount = Number(order.totalAmount);
@@ -86,10 +106,16 @@ export async function seedAffiliate(prisma: PrismaClient, ctx: SeedContext) {
         tier1AccountId: account.id,
         tier2AccountId: account.parentAccountId,
         customerUserId: order.buyerUserId,
-        conversionStatus: i % 6 === 0 ? AffiliateConversionStatus.PENDING : AffiliateConversionStatus.APPROVED,
+        conversionStatus:
+          i % 6 === 0
+            ? AffiliateConversionStatus.PENDING
+            : AffiliateConversionStatus.APPROVED,
         orderAmount: money(amount),
         commissionBase: money(amount),
-        metadata: { source: 'seed', campaign: 'uat-demo' },
+        metadata: {
+          source: 'uat-fixture-seed',
+          campaign: 'UAT-AFFILIATE-DEMO',
+        },
         recordedAt: recentDate(20 - (i % 15)),
         approvedAt: i % 6 === 0 ? null : recentDate(15 - (i % 10)),
       },
@@ -99,17 +125,35 @@ export async function seedAffiliate(prisma: PrismaClient, ctx: SeedContext) {
 
   for (let i = 0; i < COUNTS.affiliateCommissionLedger; i += 1) {
     const conversion = pick(ctx.affiliateConversions, i);
-    const beneficiaryType = i % 3 === 0 ? CommissionBeneficiaryType.PLATFORM : i % 3 === 1 ? CommissionBeneficiaryType.AFFILIATE_TIER_1 : CommissionBeneficiaryType.AFFILIATE_TIER_2;
+    const beneficiaryType =
+      i % 3 === 0
+        ? CommissionBeneficiaryType.PLATFORM
+        : i % 3 === 1
+          ? CommissionBeneficiaryType.AFFILIATE_TIER_1
+          : CommissionBeneficiaryType.AFFILIATE_TIER_2;
     await prisma.affiliateCommissionLedger.create({
       data: {
         id: id(),
         conversionId: conversion.id,
-        beneficiaryAccountId: beneficiaryType === CommissionBeneficiaryType.PLATFORM ? null : conversion.tier1AccountId,
+        beneficiaryAccountId:
+          beneficiaryType === CommissionBeneficiaryType.PLATFORM
+            ? null
+            : conversion.tier1AccountId,
         beneficiaryType,
-        tierLevel: beneficiaryType === CommissionBeneficiaryType.AFFILIATE_TIER_2 ? 2 : beneficiaryType === CommissionBeneficiaryType.AFFILIATE_TIER_1 ? 1 : null,
+        tierLevel:
+          beneficiaryType === CommissionBeneficiaryType.AFFILIATE_TIER_2
+            ? 2
+            : beneficiaryType === CommissionBeneficiaryType.AFFILIATE_TIER_1
+              ? 1
+              : null,
         amount: money(10000 + (i % 20) * 3500),
         currency: 'VND',
-        commissionStatus: i % 8 === 0 ? AffiliateCommissionStatus.PENDING : i % 5 === 0 ? AffiliateCommissionStatus.PAID : AffiliateCommissionStatus.APPROVED,
+        commissionStatus:
+          i % 8 === 0
+            ? AffiliateCommissionStatus.PENDING
+            : i % 5 === 0
+              ? AffiliateCommissionStatus.PAID
+              : AffiliateCommissionStatus.APPROVED,
         lockedAt: i % 8 === 0 ? null : recentDate(10 - (i % 7)),
         paidAt: i % 5 === 0 ? recentDate(4 - (i % 3)) : null,
       },
@@ -118,7 +162,9 @@ export async function seedAffiliate(prisma: PrismaClient, ctx: SeedContext) {
 
   for (let i = 0; i < COUNTS.affiliatePayouts; i += 1) {
     const account = pick(ctx.affiliateAccounts, i);
-    const program = ctx.affiliatePrograms.find((item) => item.id === account.programId) ?? pick(ctx.affiliatePrograms, i);
+    const program =
+      ctx.affiliatePrograms.find((item) => item.id === account.programId) ??
+      pick(ctx.affiliatePrograms, i);
     await prisma.affiliatePayout.create({
       data: {
         id: id(),
@@ -129,7 +175,8 @@ export async function seedAffiliate(prisma: PrismaClient, ctx: SeedContext) {
         totalAmount: money(250000 + i * 175000),
         currency: 'VND',
         payoutStatus: i % 2 === 0 ? PayoutStatus.PAID : PayoutStatus.PROCESSING,
-        externalRef: i % 2 === 0 ? `BANK-${String(i + 1).padStart(5, '0')}` : null,
+        externalRef:
+          i % 2 === 0 ? `UAT-PAYOUT-${String(i + 1).padStart(5, '0')}` : null,
         paidAt: i % 2 === 0 ? recentDate(2 + i) : null,
       },
     });

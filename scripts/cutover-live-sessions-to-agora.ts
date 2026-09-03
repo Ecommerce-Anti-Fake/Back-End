@@ -1,6 +1,9 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
+import { assertUatRuntimeDatabaseTarget } from './uat/uat-safety';
+
+assertUatRuntimeDatabaseTarget();
 import { buildAgoraCutoverPlan } from '../libs/live-commerce/src/application/agora-rtc';
 
 const connectionString = process.env.DATABASE_URL?.trim();

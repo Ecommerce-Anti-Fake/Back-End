@@ -1,0 +1,42 @@
+name: UAT fixtures
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: antifake-uat-fixtures
+  cancel-in-progress: false
+
+jobs:
+  reset-and-verify:
+    name: Reset and verify isolated UAT fixtures
+    runs-on: ubuntu-latest
+    environment: uat
+    env:
+      NODE_ENV: uat
+      UAT_ENVIRONMENT: "true"
+      UAT_ISOLATION_CONFIRMED: "true"
+      DATABASE_URL: ${{ secrets.UAT_DATABASE_URL }}
+      UAT_DATABASE_TARGET: ${{ vars.UAT_DATABASE_TARGET }}
+      UAT_DATABASE_NAME: ${{ vars.UAT_DATABASE_NAME }}
+      UAT_DATABASE_HOST_ALLOWLIST: ${{ vars.UAT_DATABASE_HOST_ALLOWLIST }}
+      UAT_PRODUCTION_DATABASE_TARGET: ${{ vars.UAT_PRODUCTION_DATABASE_TARGET }}
+      UAT_FRONTEND_PUBLIC_URL: ${{ vars.UAT_FRONTEND_PUBLIC_URL }}
+      UAT_TEST_PASSWORD: ${{ secrets.UAT_TEST_PASSWORD }}
+      UAT_QR_CODE: ${{ secrets.UAT_QR_CODE }}
+      PAYOUT_ACCOUNT_ENCRYPTION_KEY: ${{ secrets.UAT_PAYOUT_ACCOUNT_ENCRYPTION_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Reset, seed and verify
+        run: npm run uat:reset

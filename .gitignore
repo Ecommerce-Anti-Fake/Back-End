@@ -40,6 +40,7 @@ lerna-debug.log*
 .env.*
 !.env.example
 !.env.passenger.example
+!.env.uat.example
 
 # Service account credentials
 *firebase-adminsdk*.json
@@ -61,3 +62,6 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 /generated/prisma
+
+# Isolated UAT runtime output: QR/auth state and smoke artifacts
+/.uat-runtime/

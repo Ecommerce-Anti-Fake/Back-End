@@ -1,8 +1,14 @@
-import { INestApplication, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  INestApplication,
+  Injectable,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 import { getRequestPerformanceContext } from '@common/performance/request-context';
+import { assertUatRuntimeDatabaseTarget } from '../../../../scripts/uat/uat-safety';
 
 type PrismaQueryEvent = {
   duration: number;
@@ -18,6 +24,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
   private readonly logger = new Logger(PrismaService.name);
 
   constructor(configService: ConfigService) {
+    assertUatRuntimeDatabaseTarget();
     const connectionString = configService.get<string>('DATABASE_URL');
 
     if (!connectionString) {
@@ -59,9 +66,9 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
     await this.$connect();
   }
 
-  async enableShutdownHooks(app: INestApplication) {
-    process.on('beforeExit', async () => {
-      await app.close();
+  enableShutdownHooks(app: INestApplication) {
+    process.on('beforeExit', () => {
+      void app.close();
     });
   }
 }

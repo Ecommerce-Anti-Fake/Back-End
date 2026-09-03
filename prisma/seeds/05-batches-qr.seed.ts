@@ -1,10 +1,23 @@
 import { PrismaClient } from '@prisma/client';
-import { COUNTS, createMediaAsset, documentUrl, gtin, id, money, pick, recentDate, SeedContext, sha256 } from './00-utils';
+import {
+  COUNTS,
+  createMediaAsset,
+  documentUrl,
+  gtin,
+  id,
+  money,
+  pick,
+  recentDate,
+  SeedContext,
+  sha256,
+  uatQrCode,
+} from './00-utils';
 
 export async function seedBatchesQr(prisma: PrismaClient, ctx: SeedContext) {
   for (let i = 0; i < COUNTS.supplyBatches; i += 1) {
     const offer = pick(ctx.offers, i);
-    const shop = ctx.shops.find((item) => item.id === offer.shopId) ?? pick(ctx.shops, i);
+    const shop =
+      ctx.shops.find((item) => item.id === offer.shopId) ?? pick(ctx.shops, i);
     const batch = await prisma.supplyBatch.create({
       data: {
         id: id(),
@@ -15,7 +28,7 @@ export async function seedBatchesQr(prisma: PrismaClient, ctx: SeedContext) {
         modelName: offer.modelName,
         gtin: offer.gtin ?? gtin(i + 900),
         verificationPolicy: offer.verificationPolicy,
-        batchNumber: `BATCH-${new Date().getFullYear()}-${String(i + 1).padStart(4, '0')}`,
+        batchNumber: `UAT-BATCH-${String(i + 1).padStart(4, '0')}`,
         quantity: 150 + (i % 10) * 50,
         sourceName: shop.shopName,
         countryOfOrigin: 'Việt Nam',
@@ -29,7 +42,7 @@ export async function seedBatchesQr(prisma: PrismaClient, ctx: SeedContext) {
       ownerUserId: shop.ownerUserId,
       resourceType: 'BATCH_DOCUMENT',
       secureUrl: documentUrl(`batch-${batch.id}`),
-      publicId: `seed/batch-documents/${batch.id}`,
+      publicId: `uat/batch-documents/${batch.id}`,
       mimeType: 'application/pdf',
       assetType: 'RAW',
     });
@@ -54,7 +67,12 @@ export async function seedBatchesQr(prisma: PrismaClient, ctx: SeedContext) {
     await prisma.offerBatchLink.upsert({
       where: { offerId_batchId: { offerId: offer.id, batchId: batch.id } },
       update: {},
-      create: { id: id(), offerId: offer.id, batchId: batch.id, allocatedQuantity: 20 + (i % 12) * 5 },
+      create: {
+        id: id(),
+        offerId: offer.id,
+        batchId: batch.id,
+        allocatedQuantity: 20 + (i % 12) * 5,
+      },
     });
   }
 
@@ -65,7 +83,11 @@ export async function seedBatchesQr(prisma: PrismaClient, ctx: SeedContext) {
         id: id(),
         brandId: batch.brandId,
         labelType: i % 2 === 0 ? 'QR_PRODUCT' : 'QR_BATCH',
-        codeHash: sha256(`ANTIFAKE-QR-${i + 1}-${batch.id}`),
+        codeHash: sha256(
+          i === 3
+            ? uatQrCode()
+            : `UAT-QR-${String(i + 1).padStart(4, '0')}-${batch.id}`,
+        ),
         issuerType: 'PLATFORM',
         labelStatus: i % 20 === 0 ? 'suspicious' : 'active',
         scopeType: 'SUPPLY_BATCH',
@@ -73,7 +95,11 @@ export async function seedBatchesQr(prisma: PrismaClient, ctx: SeedContext) {
         issuedAt: recentDate(40 - (i % 30)),
       },
     });
-    ctx.labels.push({ id: label.id, brandId: label.brandId, scopeId: label.scopeId });
+    ctx.labels.push({
+      id: label.id,
+      brandId: label.brandId,
+      scopeId: label.scopeId,
+    });
   }
 
   const eventTypes = ['CREATED', 'PACKAGED', 'DISTRIBUTED', 'VERIFIED'];
@@ -97,10 +123,13 @@ export async function seedBatchesQr(prisma: PrismaClient, ctx: SeedContext) {
     });
   }
 
-  const targets = [...ctx.offers.map((item) => ['OFFER', item.id] as const), ...ctx.shops.map((item) => ['SHOP', item.id] as const)];
+  const targets = [
+    ...ctx.offers.map((item) => ['OFFER', item.id] as const),
+    ...ctx.shops.map((item) => ['SHOP', item.id] as const),
+  ];
   for (let i = 0; i < COUNTS.riskScores; i += 1) {
     const [targetType, targetId] = pick(targets, i);
-    const score = 10 + (i * 7) % 90;
+    const score = 10 + ((i * 7) % 90);
     await prisma.riskScore.create({
       data: {
         id: id(),
@@ -108,7 +137,8 @@ export async function seedBatchesQr(prisma: PrismaClient, ctx: SeedContext) {
         targetId,
         score: money(score),
         riskLevel: score > 70 ? 'high' : score > 40 ? 'medium' : 'low',
-        factorSummary: 'Seed score dựa trên trạng thái xác minh, báo cáo và lịch sử giao dịch.',
+        factorSummary:
+          'Seed score dựa trên trạng thái xác minh, báo cáo và lịch sử giao dịch.',
         calculatedAt: recentDate(i % 20),
       },
     });

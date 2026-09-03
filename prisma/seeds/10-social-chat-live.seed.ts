@@ -1,20 +1,41 @@
-import { LiveSessionStatus, PrismaClient, SocialPostType } from '@prisma/client';
-import { COUNTS, createMediaAsset, id, imageUrl, pick, recentDate, SeedContext } from './00-utils';
+import {
+  LiveSessionStatus,
+  PrismaClient,
+  SocialPostType,
+} from '@prisma/client';
+import {
+  COUNTS,
+  createMediaAsset,
+  id,
+  imageUrl,
+  pick,
+  recentDate,
+  SeedContext,
+} from './00-utils';
 
-export async function seedSocialChatLive(prisma: PrismaClient, ctx: SeedContext) {
+export async function seedSocialChatLive(
+  prisma: PrismaClient,
+  ctx: SeedContext,
+) {
   const posts: { id: string }[] = [];
   const comments: { id: string; postId: string; authorUserId: string }[] = [];
   const replies: { id: string; authorUserId: string }[] = [];
   for (let i = 0; i < COUNTS.socialPosts; i += 1) {
     const offer = pick(ctx.offers, i);
-    const shop = ctx.shops.find((item) => item.id === offer.shopId) ?? pick(ctx.shops, i);
+    const shop =
+      ctx.shops.find((item) => item.id === offer.shopId) ?? pick(ctx.shops, i);
     const post = await prisma.socialPost.create({
       data: {
         id: id(),
         authorUserId: shop.ownerUserId,
         authorShopId: shop.id,
         offerId: offer.id,
-        postType: i % 3 === 0 ? SocialPostType.QUESTION : i % 3 === 1 ? SocialPostType.PRODUCT_SHARE : SocialPostType.SHARE,
+        postType:
+          i % 3 === 0
+            ? SocialPostType.QUESTION
+            : i % 3 === 1
+              ? SocialPostType.PRODUCT_SHARE
+              : SocialPostType.SHARE,
         body:
           i % 3 === 0
             ? `Sản phẩm này có thể xác thực nguồn gốc bằng QR như thế nào?\n\nẢnh minh họa: ${imageUrl(`social-post-${i}`, 1200, 675)}`
@@ -31,8 +52,8 @@ export async function seedSocialChatLive(prisma: PrismaClient, ctx: SeedContext)
       ownerUserId: shop.ownerUserId,
       resourceType: 'PRODUCT_IMAGE',
       secureUrl: imageUrl(`social-post-${post.id}`, 1200, 675),
-      publicId: `seed/social-posts/${post.id}/cover`,
-      folder: 'seed/social-posts',
+      publicId: `uat/social-posts/${post.id}/cover`,
+      folder: 'uat/social-posts',
     });
     await prisma.socialPostMedia.create({
       data: { id: id(), postId: post.id, mediaAssetId: media.id, sortOrder: 0 },
@@ -103,17 +124,37 @@ export async function seedSocialChatLive(prisma: PrismaClient, ctx: SeedContext)
 
   for (let i = 0; i < COUNTS.socialReactions; i += 1) {
     await prisma.socialReaction.upsert({
-      where: { postId_userId_reactionType: { postId: pick(posts, i).id, userId: pick(ctx.users, i).id, reactionType: 'LIKE' } },
+      where: {
+        postId_userId_reactionType: {
+          postId: pick(posts, i).id,
+          userId: pick(ctx.users, i).id,
+          reactionType: 'LIKE',
+        },
+      },
       update: {},
-      create: { id: id(), postId: pick(posts, i).id, userId: pick(ctx.users, i).id, reactionType: 'LIKE' },
+      create: {
+        id: id(),
+        postId: pick(posts, i).id,
+        userId: pick(ctx.users, i).id,
+        reactionType: 'LIKE',
+      },
     });
   }
 
   for (let i = 0; i < COUNTS.socialShares; i += 1) {
     await prisma.socialShare.upsert({
-      where: { postId_userId: { postId: pick(posts, i).id, userId: pick(ctx.users, i + 3).id } },
+      where: {
+        postId_userId: {
+          postId: pick(posts, i).id,
+          userId: pick(ctx.users, i + 3).id,
+        },
+      },
       update: {},
-      create: { id: id(), postId: pick(posts, i).id, userId: pick(ctx.users, i + 3).id },
+      create: {
+        id: id(),
+        postId: pick(posts, i).id,
+        userId: pick(ctx.users, i + 3).id,
+      },
     });
   }
 
@@ -123,21 +164,29 @@ export async function seedSocialChatLive(prisma: PrismaClient, ctx: SeedContext)
     const thread = await prisma.chatThread.upsert({
       where: { buyerUserId_shopId: { buyerUserId: buyer.id, shopId: shop.id } },
       update: {},
-      create: { id: id(), shopId: shop.id, buyerUserId: buyer.id, sellerUserId: shop.ownerUserId, createdAt: recentDate(15 - (i % 10)) },
+      create: {
+        id: id(),
+        shopId: shop.id,
+        buyerUserId: buyer.id,
+        sellerUserId: shop.ownerUserId,
+        createdAt: recentDate(15 - (i % 10)),
+      },
     });
 
     for (let j = 0; j < 10; j += 1) {
       const fromBuyer = j % 2 === 0;
       const hasImage = j === 3 || j === 7;
-      const chatImageUrl = hasImage ? imageUrl(`chat-${thread.id}-${j}`, 900, 900) : null;
+      const chatImageUrl = hasImage
+        ? imageUrl(`chat-${thread.id}-${j}`, 900, 900)
+        : null;
 
       if (hasImage) {
         await createMediaAsset(prisma, {
           ownerUserId: fromBuyer ? buyer.id : shop.ownerUserId,
           resourceType: 'PRODUCT_IMAGE',
           secureUrl: chatImageUrl!,
-          publicId: `seed/chats/${thread.id}/${j}`,
-          folder: 'seed/chats',
+          publicId: `uat/chats/${thread.id}/${j}`,
+          folder: 'uat/chats',
         });
       }
 
@@ -146,7 +195,7 @@ export async function seedSocialChatLive(prisma: PrismaClient, ctx: SeedContext)
           id: id(),
           threadId: thread.id,
           senderUserId: fromBuyer ? buyer.id : shop.ownerUserId,
-          clientMessageId: `seed-${i}-${j}`,
+          clientMessageId: `uat-chat-${i}-${j}`,
           messageType: hasImage ? 'image' : 'text',
           body: hasImage
             ? chatImageUrl!
@@ -162,18 +211,29 @@ export async function seedSocialChatLive(prisma: PrismaClient, ctx: SeedContext)
   const sessions: { id: string; shopId: string }[] = [];
   for (let i = 0; i < COUNTS.liveSessions; i += 1) {
     const shop = pick(ctx.shops, i);
-    const pinnedOffer = ctx.offers.find((offer) => offer.shopId === shop.id) ?? null;
-    const status = [LiveSessionStatus.SCHEDULED, LiveSessionStatus.LIVE, LiveSessionStatus.ENDED, LiveSessionStatus.CANCELLED][i % 4];
+    const pinnedOffer =
+      ctx.offers.find((offer) => offer.shopId === shop.id) ?? null;
+    const status = [
+      LiveSessionStatus.SCHEDULED,
+      LiveSessionStatus.LIVE,
+      LiveSessionStatus.ENDED,
+      LiveSessionStatus.CANCELLED,
+    ][i % 4];
     const sessionId = id();
     const session = await prisma.liveCommerceSession.create({
       data: {
         id: sessionId,
         shopId: shop.id,
         title: `Livestream kiểm hàng chính hãng #${i + 1}`,
-        description: 'Giới thiệu sản phẩm có tem QR, hướng dẫn kiểm tra nguồn gốc và ưu đãi live.',
+        description:
+          'Giới thiệu sản phẩm có tem QR, hướng dẫn kiểm tra nguồn gốc và ưu đãi live.',
         coverUrl: imageUrl(`live-${i}`, 1200, 675),
-        pinnedOfferId: status === LiveSessionStatus.LIVE ? pinnedOffer?.id ?? null : null,
-        startAt: status === LiveSessionStatus.SCHEDULED ? recentDate(-3 - i) : recentDate(8 - i),
+        pinnedOfferId:
+          status === LiveSessionStatus.LIVE ? (pinnedOffer?.id ?? null) : null,
+        startAt:
+          status === LiveSessionStatus.SCHEDULED
+            ? recentDate(-3 - i)
+            : recentDate(8 - i),
         status,
         playbackUrl: null,
         streamProvider: 'AGORA_RTC',
@@ -182,8 +242,16 @@ export async function seedSocialChatLive(prisma: PrismaClient, ctx: SeedContext)
         streamLatencyTargetMs: 1000,
         providerStatus:
           status === LiveSessionStatus.LIVE ? 'CONNECTED' : 'READY',
-        actualStartedAt: status === LiveSessionStatus.SCHEDULED || status === LiveSessionStatus.CANCELLED ? null : recentDate(7 - i),
-        actualEndedAt: status === LiveSessionStatus.ENDED || status === LiveSessionStatus.CANCELLED ? recentDate(2) : null,
+        actualStartedAt:
+          status === LiveSessionStatus.SCHEDULED ||
+          status === LiveSessionStatus.CANCELLED
+            ? null
+            : recentDate(7 - i),
+        actualEndedAt:
+          status === LiveSessionStatus.ENDED ||
+          status === LiveSessionStatus.CANCELLED
+            ? recentDate(2)
+            : null,
         recordingUrl: null,
         recordingRetentionDays: null,
       },
@@ -193,17 +261,36 @@ export async function seedSocialChatLive(prisma: PrismaClient, ctx: SeedContext)
 
   for (let i = 0; i < COUNTS.liveSessionOffers; i += 1) {
     await prisma.liveSessionOffer.upsert({
-      where: { sessionId_offerId: { sessionId: pick(sessions, i).id, offerId: pick(ctx.offers, i).id } },
+      where: {
+        sessionId_offerId: {
+          sessionId: pick(sessions, i).id,
+          offerId: pick(ctx.offers, i).id,
+        },
+      },
       update: {},
-      create: { id: id(), sessionId: pick(sessions, i).id, offerId: pick(ctx.offers, i).id, sortOrder: i % 5 },
+      create: {
+        id: id(),
+        sessionId: pick(sessions, i).id,
+        offerId: pick(ctx.offers, i).id,
+        sortOrder: i % 5,
+      },
     });
   }
 
   for (let i = 0; i < COUNTS.liveSessionReminders; i += 1) {
     await prisma.liveSessionReminder.upsert({
-      where: { sessionId_userId: { sessionId: pick(sessions, i).id, userId: pick(ctx.users, i).id } },
+      where: {
+        sessionId_userId: {
+          sessionId: pick(sessions, i).id,
+          userId: pick(ctx.users, i).id,
+        },
+      },
       update: {},
-      create: { id: id(), sessionId: pick(sessions, i).id, userId: pick(ctx.users, i).id },
+      create: {
+        id: id(),
+        sessionId: pick(sessions, i).id,
+        userId: pick(ctx.users, i).id,
+      },
     });
   }
 

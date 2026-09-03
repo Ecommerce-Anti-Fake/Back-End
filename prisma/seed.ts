@@ -1,7 +1,18 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
-import { clearSeedData, COUNTS, createSeedContext } from './seeds/00-utils';
+import {
+  assertUatDatabaseTarget,
+  assertUatPublicUrl,
+  requiredUatSecret,
+} from '../scripts/uat/uat-safety';
+import {
+  assertSeedEncryptionKey,
+  clearSeedData,
+  COUNTS,
+  createSeedContext,
+  uatQrCode,
+} from './seeds/00-utils';
 import { seedMasterData } from './seeds/01-master-data.seed';
 import { seedUsersAndKyc } from './seeds/02-users-kyc.seed';
 import { seedShops } from './seeds/03-shops.seed';
@@ -15,15 +26,13 @@ import { seedSocialChatLive } from './seeds/10-social-chat-live.seed';
 import { seedNotificationsModeration } from './seeds/11-notifications-moderation.seed';
 import { seedWalletsAndVouchers } from './seeds/12-wallets-vouchers.seed';
 
-const connectionString = process.env.DATABASE_URL;
-
-if (!connectionString) {
-  throw new Error('DATABASE_URL is not set');
-}
-
-if (/(neon\.tech|supabase\.co|render\.com|amazonaws\.com)/i.test(connectionString) && process.env.SEED_ALLOW_HOSTED_DB !== 'true') {
-  throw new Error('Refusing destructive seed against a hosted database. Set SEED_ALLOW_HOSTED_DB=true only for an explicitly approved UAT database.');
-}
+const databaseTarget = assertUatDatabaseTarget();
+const connectionString = requiredUatSecret('DATABASE_URL');
+assertUatPublicUrl(requiredUatSecret('UAT_FRONTEND_PUBLIC_URL'));
+requiredUatSecret('UAT_TEST_PASSWORD');
+uatQrCode();
+requiredUatSecret('PAYOUT_ACCOUNT_ENCRYPTION_KEY');
+assertSeedEncryptionKey();
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString }),
@@ -32,8 +41,10 @@ const prisma = new PrismaClient({
 async function main() {
   const ctx = createSeedContext();
 
-  console.log('AntiFake UAT seed started.');
-  console.log('Clearing existing seed/dev data...');
+  console.log(
+    `AntiFake UAT seed started for ${databaseTarget.target}/${databaseTarget.databaseName}.`,
+  );
+  console.log('Clearing existing disposable UAT fixture data...');
   await clearSeedData(prisma);
 
   console.log('Phase 1: master data, users, KYC, shops, catalog, offers...');
@@ -75,8 +86,6 @@ async function main() {
     wallets: COUNTS.userWallets + COUNTS.shopWallets + 1,
     vouchers: COUNTS.vouchers,
   });
-  console.log('Seed password for all seeded users: antifake@2026');
-  console.log('Admin account: admin@antifake.io.vn');
 }
 
 main()

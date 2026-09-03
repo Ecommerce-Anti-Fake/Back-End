@@ -3,10 +3,16 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { configureHttpBodyParser, configureHttpCors, configureRootSwaggerRedirect } from './bootstrap-http';
+import {
+  configureHttpBodyParser,
+  configureHttpCors,
+  configureRootSwaggerRedirect,
+} from './bootstrap-http';
 import { ChatRealtimeService } from './modules/realtime/chat-realtime.service';
+import { assertUatRuntimeDatabaseTarget } from '../../../scripts/uat/uat-safety';
 
 async function bootstrap() {
+  assertUatRuntimeDatabaseTarget();
   const app = await NestFactory.create(AppModule, { bodyParser: false });
   const configService = app.get(ConfigService);
 
@@ -77,7 +83,9 @@ async function bootstrap() {
 
   await app.init();
 
-  const httpServer = app.getHttpServer();
+  const httpServer = app.getHttpServer() as {
+    listen: (port: number, host: string, callback: () => void) => void;
+  };
 
   await app.get(ChatRealtimeService).bind(httpServer);
 
@@ -86,4 +94,7 @@ async function bootstrap() {
   });
 }
 
-bootstrap();
+void bootstrap().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

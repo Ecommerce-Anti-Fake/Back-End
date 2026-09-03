@@ -1,4 +1,11 @@
-import { createCipheriv, createHash, createHmac, pbkdf2Sync, randomBytes, randomUUID } from 'crypto';
+import {
+  createCipheriv,
+  createHash,
+  createHmac,
+  pbkdf2Sync,
+  randomBytes,
+  randomUUID,
+} from 'crypto';
 import {
   AffiliateAccount,
   AffiliateCode,
@@ -8,6 +15,8 @@ import {
   Category,
   DistributionNetwork,
   DistributionNode,
+  MediaAssetType,
+  MediaResourceType,
   Offer,
   Order,
   OrderItem,
@@ -21,6 +30,10 @@ import {
   User,
   VerificationRequirement,
 } from '@prisma/client';
+import {
+  assertUatPublicUrl,
+  requiredUatSecret,
+} from '../../scripts/uat/uat-safety';
 
 export type SeedContext = {
   users: User[];
@@ -171,13 +184,36 @@ export function sha256(input: string) {
   return createHash('sha256').update(input).digest('hex');
 }
 
+export function uatQrCode() {
+  const code = requiredUatSecret('UAT_QR_CODE').trim().toUpperCase();
+  if (!/^UAT[-_][A-Z0-9_-]+$/.test(code)) {
+    throw new Error('UAT_QR_CODE must use the synthetic UAT namespace');
+  }
+  return code;
+}
+
+export function uatFrontendUrl(path = '/') {
+  const baseUrl = assertUatPublicUrl(
+    requiredUatSecret('UAT_FRONTEND_PUBLIC_URL'),
+  );
+  return new URL(path, baseUrl).toString();
+}
+
 export function encryptSeedAccountNumber(value: string) {
   const key = seedEncryptionKey();
   const iv = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', key, iv);
-  const ciphertext = Buffer.concat([cipher.update(value.replace(/\s+/g, '').trim(), 'utf8'), cipher.final()]);
+  const ciphertext = Buffer.concat([
+    cipher.update(value.replace(/\s+/g, '').trim(), 'utf8'),
+    cipher.final(),
+  ]);
   const tag = cipher.getAuthTag();
-  return ['v1', iv.toString('base64url'), tag.toString('base64url'), ciphertext.toString('base64url')].join(':');
+  return [
+    'v1',
+    iv.toString('base64url'),
+    tag.toString('base64url'),
+    ciphertext.toString('base64url'),
+  ].join(':');
 }
 
 export function hashSeedAccountNumber(bankBin: string, value: string) {
@@ -188,12 +224,20 @@ export function hashSeedAccountNumber(bankBin: string, value: string) {
 
 function seedEncryptionKey() {
   const configured = process.env.PAYOUT_ACCOUNT_ENCRYPTION_KEY?.trim();
-  if (!configured) throw new Error('PAYOUT_ACCOUNT_ENCRYPTION_KEY is required to seed payout accounts');
+  if (!configured)
+    throw new Error(
+      'PAYOUT_ACCOUNT_ENCRYPTION_KEY is required to seed payout accounts',
+    );
   const key = /^[0-9a-f]{64}$/i.test(configured)
     ? Buffer.from(configured, 'hex')
     : Buffer.from(configured, 'base64');
-  if (key.length !== 32) throw new Error('PAYOUT_ACCOUNT_ENCRYPTION_KEY must be 32 bytes');
+  if (key.length !== 32)
+    throw new Error('PAYOUT_ACCOUNT_ENCRYPTION_KEY must be 32 bytes');
   return key;
+}
+
+export function assertSeedEncryptionKey() {
+  seedEncryptionKey();
 }
 
 export function money(value: number): Prisma.Decimal {
@@ -232,27 +276,27 @@ export function documentUrl(seed: string) {
 }
 
 export function phone(index: number) {
-  return `09${String(10000000 + index).slice(0, 8)}`;
+  return `09000000${String(index).padStart(2, '0')}`;
 }
 
 export function taxCode(index: number) {
-  return String(3000000000 + index).slice(0, 10);
+  return String(9990000000 + index);
 }
 
 export function gtin(index: number) {
-  return String(8930000000000 + index);
+  return String(8900000000000 + index);
 }
 
 export async function createMediaAsset(
   prisma: PrismaClient,
   input: {
     ownerUserId: string;
-    resourceType: any;
+    resourceType: MediaResourceType;
     secureUrl: string;
     publicId: string;
     mimeType?: string;
     folder?: string;
-    assetType?: any;
+    assetType?: MediaAssetType;
   },
 ) {
   return prisma.mediaAsset.create({
@@ -271,99 +315,102 @@ export async function createMediaAsset(
 }
 
 export async function clearSeedData(prisma: PrismaClient) {
-  await prisma.$transaction([
-    prisma.liveSessionVoucher.deleteMany(),
-    prisma.orderRefundShopGroup.deleteMany(),
-    prisma.orderRefund.deleteMany(),
-    prisma.orderVoucherAllocation.deleteMany(),
-    prisma.voucherRedemption.deleteMany(),
-    prisma.codShopSettlement.deleteMany(),
-    prisma.withdrawalAuthorization.deleteMany(),
-    prisma.walletLedgerEntry.deleteMany(),
-    prisma.walletWithdrawal.deleteMany(),
-    prisma.walletTopUp.deleteMany(),
-    prisma.walletTransaction.deleteMany(),
-    prisma.payoutAccount.deleteMany(),
-    prisma.bankAccountVerification.deleteMany(),
-    prisma.wallet.deleteMany(),
-    prisma.affiliateCommissionLedger.deleteMany(),
-    prisma.affiliatePayout.deleteMany(),
-    prisma.affiliateConversion.deleteMany(),
-    prisma.affiliateCode.deleteMany(),
-    prisma.affiliateAccount.deleteMany(),
-    prisma.affiliateProgram.deleteMany(),
-    prisma.liveSessionComment.deleteMany(),
-    prisma.liveSessionReminder.deleteMany(),
-    prisma.liveSessionOffer.deleteMany(),
-    prisma.liveCommerceSession.deleteMany(),
-    prisma.socialShare.deleteMany(),
-    prisma.socialReaction.deleteMany(),
-    prisma.socialCommentLike.deleteMany(),
-    prisma.socialComment.deleteMany(),
-    prisma.socialPostMedia.deleteMany(),
-    prisma.socialPost.deleteMany(),
-    prisma.notificationDeliveryAttempt.deleteMany(),
-    prisma.notificationFcmToken.deleteMany(),
-    prisma.notification.deleteMany(),
-    prisma.chatMessageAttachment.deleteMany(),
-    prisma.chatMessage.deleteMany(),
-    prisma.chatThread.deleteMany(),
-    prisma.reviewMedia.deleteMany(),
-    prisma.review.deleteMany(),
-    prisma.disputeEvidence.deleteMany(),
-    prisma.dispute.deleteMany(),
-    prisma.paymentIntent.deleteMany(),
-    prisma.escrow.deleteMany(),
-    prisma.orderItemBatchAllocation.deleteMany(),
-    prisma.orderItemOptionValue.deleteMany(),
-    prisma.orderItem.deleteMany(),
-    prisma.orderShopGroup.deleteMany(),
-    prisma.order.deleteMany(),
-    prisma.cartItem.deleteMany(),
-    prisma.cart.deleteMany(),
-    prisma.userFavoriteOffer.deleteMany(),
-    prisma.voucher.deleteMany(),
-    prisma.distributionShipmentItem.deleteMany(),
-    prisma.distributionShipment.deleteMany(),
-    prisma.distributionPricingPolicy.deleteMany(),
-    prisma.provenanceEvent.deleteMany(),
-    prisma.verificationLabel.deleteMany(),
-    prisma.offerBatchLink.deleteMany(),
-    prisma.batchDocument.deleteMany(),
-    prisma.supplyBatch.deleteMany(),
-    prisma.offerDocument.deleteMany(),
-    prisma.offerMedia.deleteMany(),
-    prisma.offer.deleteMany(),
-    prisma.distributionNode.deleteMany(),
-    prisma.distributionNetwork.deleteMany(),
-    prisma.brandAuthorization.deleteMany(),
-    prisma.shopDocumentFile.deleteMany(),
-    prisma.shopDocument.deleteMany(),
-    prisma.shopBusinessCategory.deleteMany(),
-    prisma.shop.deleteMany(),
-    prisma.userKycSubmissionDocument.deleteMany(),
-    prisma.userKycSubmission.deleteMany(),
-    prisma.userKycDocument.deleteMany(),
-    prisma.userKyc.deleteMany(),
-    prisma.authSession.deleteMany(),
-    prisma.authLinkIntent.deleteMany(),
-    prisma.authIdentity.deleteMany(),
-    prisma.registrationChallenge.deleteMany(),
-    prisma.registrationSession.deleteMany(),
-    prisma.pendingRegistration.deleteMany(),
-    prisma.passwordResetToken.deleteMany(),
-    prisma.userAddress.deleteMany(),
-    prisma.riskScore.deleteMany(),
-    prisma.report.deleteMany(),
-    prisma.moderationCase.deleteMany(),
-    prisma.auditLog.deleteMany(),
-    prisma.mediaAsset.deleteMany(),
-    prisma.shippingCarrier.deleteMany(),
-    prisma.shopTypeRequirement.deleteMany(),
-    prisma.verificationRequirement.deleteMany(),
-    prisma.shopType.deleteMany(),
-    prisma.category.deleteMany(),
-    prisma.brand.deleteMany(),
-    prisma.user.deleteMany(),
-  ], { maxWait: 30_000, timeout: 120_000 });
+  await prisma.$transaction(
+    [
+      prisma.liveSessionVoucher.deleteMany(),
+      prisma.orderRefundShopGroup.deleteMany(),
+      prisma.orderRefund.deleteMany(),
+      prisma.orderVoucherAllocation.deleteMany(),
+      prisma.voucherRedemption.deleteMany(),
+      prisma.codShopSettlement.deleteMany(),
+      prisma.withdrawalAuthorization.deleteMany(),
+      prisma.walletLedgerEntry.deleteMany(),
+      prisma.walletWithdrawal.deleteMany(),
+      prisma.walletTopUp.deleteMany(),
+      prisma.walletTransaction.deleteMany(),
+      prisma.payoutAccount.deleteMany(),
+      prisma.bankAccountVerification.deleteMany(),
+      prisma.wallet.deleteMany(),
+      prisma.affiliateCommissionLedger.deleteMany(),
+      prisma.affiliatePayout.deleteMany(),
+      prisma.affiliateConversion.deleteMany(),
+      prisma.affiliateCode.deleteMany(),
+      prisma.affiliateAccount.deleteMany(),
+      prisma.affiliateProgram.deleteMany(),
+      prisma.liveSessionComment.deleteMany(),
+      prisma.liveSessionReminder.deleteMany(),
+      prisma.liveSessionOffer.deleteMany(),
+      prisma.liveCommerceSession.deleteMany(),
+      prisma.socialShare.deleteMany(),
+      prisma.socialReaction.deleteMany(),
+      prisma.socialCommentLike.deleteMany(),
+      prisma.socialComment.deleteMany(),
+      prisma.socialPostMedia.deleteMany(),
+      prisma.socialPost.deleteMany(),
+      prisma.notificationDeliveryAttempt.deleteMany(),
+      prisma.notificationFcmToken.deleteMany(),
+      prisma.notification.deleteMany(),
+      prisma.chatMessageAttachment.deleteMany(),
+      prisma.chatMessage.deleteMany(),
+      prisma.chatThread.deleteMany(),
+      prisma.reviewMedia.deleteMany(),
+      prisma.review.deleteMany(),
+      prisma.disputeEvidence.deleteMany(),
+      prisma.dispute.deleteMany(),
+      prisma.paymentIntent.deleteMany(),
+      prisma.escrow.deleteMany(),
+      prisma.orderItemBatchAllocation.deleteMany(),
+      prisma.orderItemOptionValue.deleteMany(),
+      prisma.orderItem.deleteMany(),
+      prisma.orderShopGroup.deleteMany(),
+      prisma.order.deleteMany(),
+      prisma.cartItem.deleteMany(),
+      prisma.cart.deleteMany(),
+      prisma.userFavoriteOffer.deleteMany(),
+      prisma.voucher.deleteMany(),
+      prisma.distributionShipmentItem.deleteMany(),
+      prisma.distributionShipment.deleteMany(),
+      prisma.distributionPricingPolicy.deleteMany(),
+      prisma.provenanceEvent.deleteMany(),
+      prisma.verificationLabel.deleteMany(),
+      prisma.offerBatchLink.deleteMany(),
+      prisma.batchDocument.deleteMany(),
+      prisma.supplyBatch.deleteMany(),
+      prisma.offerDocument.deleteMany(),
+      prisma.offerMedia.deleteMany(),
+      prisma.offer.deleteMany(),
+      prisma.distributionNode.deleteMany(),
+      prisma.distributionNetwork.deleteMany(),
+      prisma.brandAuthorization.deleteMany(),
+      prisma.shopDocumentFile.deleteMany(),
+      prisma.shopDocument.deleteMany(),
+      prisma.shopBusinessCategory.deleteMany(),
+      prisma.shop.deleteMany(),
+      prisma.userKycSubmissionDocument.deleteMany(),
+      prisma.userKycSubmission.deleteMany(),
+      prisma.userKycDocument.deleteMany(),
+      prisma.userKyc.deleteMany(),
+      prisma.authSession.deleteMany(),
+      prisma.authLinkIntent.deleteMany(),
+      prisma.authIdentity.deleteMany(),
+      prisma.registrationChallenge.deleteMany(),
+      prisma.registrationSession.deleteMany(),
+      prisma.pendingRegistration.deleteMany(),
+      prisma.passwordResetToken.deleteMany(),
+      prisma.userAddress.deleteMany(),
+      prisma.riskScore.deleteMany(),
+      prisma.report.deleteMany(),
+      prisma.moderationCase.deleteMany(),
+      prisma.auditLog.deleteMany(),
+      prisma.mediaAsset.deleteMany(),
+      prisma.shippingCarrier.deleteMany(),
+      prisma.shopTypeRequirement.deleteMany(),
+      prisma.verificationRequirement.deleteMany(),
+      prisma.shopType.deleteMany(),
+      prisma.category.deleteMany(),
+      prisma.brand.deleteMany(),
+      prisma.user.deleteMany(),
+    ],
+    { maxWait: 30_000, timeout: 120_000 },
+  );
 }

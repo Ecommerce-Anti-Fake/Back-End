@@ -1,50 +1,37 @@
 # AntiFake compact UAT seed
 
-This seed recreates a disposable UAT database with a compact set of realistic relationships across
-catalog, shops, variants, inventory, distribution, carts, orders, reviews,
-disputes, affiliate, social, chat, live commerce, notifications, moderation,
-wallets, vouchers, and COD settlement.
+This seed recreates a disposable, isolated UAT database with a compact set of
+synthetic relationships across catalog, shops, variants, inventory,
+distribution, carts, orders, reviews, disputes, affiliate, social, chat, live
+commerce, notifications, moderation, wallets, vouchers and COD settlement.
 
-Run from `back-end`:
-
-```powershell
-npm.cmd run db:seed
-```
-
-The seed is destructive: it clears application data before inserting fixtures.
-It refuses hosted database URLs by default. For an explicitly approved hosted
-UAT database only:
+Run the guarded workflow from `back-end`:
 
 ```powershell
-$env:SEED_ALLOW_HOSTED_DB = 'true'
-npm.cmd run db:seed
+npm.cmd run uat:reset
+npm.cmd run uat:verify
 ```
 
-Never use that override for production data.
+The workflow requires an injected UAT environment, an isolated PostgreSQL
+target and secure values for `UAT_TEST_PASSWORD`, `UAT_QR_CODE` and
+`PAYOUT_ACCOUNT_ENCRYPTION_KEY`. It migrates, clears, seeds and verifies the
+target. It does not accept a production database or a hosted-database bypass.
 
-The default profile is intentionally small: 8 users, 6 shops, 18 offers, 24
-orders, and the supporting records needed to exercise the application flows.
+The default profile is intentionally small: 8 synthetic users, 6 synthetic
+shops, 18 synthetic offers, 24 orders and the supporting records needed to
+exercise the application flows.
 
-To update product images in an existing UAT database without resetting other
-data:
+## Synthetic accounts
 
-```powershell
-npm.cmd run db:update-offer-media
-```
+The reusable aliases are `BUYER_UAT`, `SELLER_UAT`, `AFFILIATE_UAT` and
+`ADMIN_UAT`. Their email values and password are supplied by the secure UAT
+environment and are intentionally not recorded in source or documentation.
 
-## Seed accounts
+All names, addresses, phone numbers, business identifiers, products, media
+metadata, messages and posts are disposable UAT values. Seeded media uses safe
+placeholder URLs and does not claim a Cloudinary upload. Wallet, payment,
+withdrawal and affiliate ledger rows are non-payable documentation fixtures.
 
-All seeded accounts use:
-
-```txt
-Password: antifake@2026
-```
-
-Admin:
-
-```txt
-admin@antifake.io.vn
-```
-
-Regular users are `seed.user01@antifake.local` through
-`seed.user07@antifake.local`.
+Do not run standalone data-update scripts against a target unless they have
+passed the same UAT guard and the change is explicitly approved. The reset
+workflow is the supported reproducible path.

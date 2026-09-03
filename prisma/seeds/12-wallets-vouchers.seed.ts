@@ -22,24 +22,30 @@ import {
   sha256,
 } from './00-utils';
 
-export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedContext) {
+export async function seedWalletsAndVouchers(
+  prisma: PrismaClient,
+  ctx: SeedContext,
+) {
   const platformWallet = await prisma.wallet.create({
     data: {
       id: id(),
-      walletCode: 'WALLET-PLATFORM-VND',
+      walletCode: 'UAT-WALLET-PLATFORM-VND',
       platformCode: 'PLATFORM-VND',
       ownerType: 'PLATFORM',
       availableBalance: money(500000000),
     },
   });
 
-  const userWallets = new Map<string, { id: string; availableBalance: number }>();
+  const userWallets = new Map<
+    string,
+    { id: string; availableBalance: number }
+  >();
   for (const [index, user] of ctx.users.entries()) {
     const availableBalance = 1500000 + index * 250000;
     const wallet = await prisma.wallet.create({
       data: {
         id: id(),
-        walletCode: `WALLET-USER-${String(index + 1).padStart(3, '0')}`,
+        walletCode: `UAT-WALLET-USER-${String(index + 1).padStart(3, '0')}`,
         ownerType: 'USER',
         userId: user.id,
         availableBalance: money(availableBalance),
@@ -53,7 +59,7 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
     const wallet = await prisma.wallet.create({
       data: {
         id: id(),
-        walletCode: `WALLET-SHOP-${String(index + 1).padStart(3, '0')}`,
+        walletCode: `UAT-WALLET-SHOP-${String(index + 1).padStart(3, '0')}`,
         ownerType: 'SHOP',
         shopId: shop.id,
         availableBalance: money(40000000 + index * 1500000),
@@ -65,10 +71,17 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
   await seedInitialWalletLedgers(prisma, [
     { id: platformWallet.id, availableBalance: 500000000 },
     ...Array.from(userWallets.values()),
-    ...Array.from(shopWallets.values()).map((walletId) => ({ id: walletId, availableBalance: 40000000 })),
+    ...Array.from(shopWallets.values()).map((walletId) => ({
+      id: walletId,
+      availableBalance: 40000000,
+    })),
   ]);
 
-  const payoutAccounts: { id: string; shopId: string; accountNumber: string }[] = [];
+  const payoutAccounts: {
+    id: string;
+    shopId: string;
+    accountNumber: string;
+  }[] = [];
   for (let i = 0; i < COUNTS.payoutAccounts; i += 1) {
     const shop = pick(ctx.shops, i);
     const accountNumber = `1900${String(100000 + i).padStart(6, '0')}`;
@@ -86,14 +99,22 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
         accountNumberLength: accountNumber.length,
         declaredAccountHolder: shop.shopName,
         resolvedAccountHolder: i % 5 === 0 ? null : shop.shopName.toUpperCase(),
-        verificationStatus: i % 5 === 0 ? PayoutAccountVerificationStatus.PENDING : PayoutAccountVerificationStatus.VERIFIED,
-        verificationMethod: i % 5 === 0 ? null : PayoutAccountVerificationMethod.MANUAL_BANK_APP,
+        verificationStatus:
+          i % 5 === 0
+            ? PayoutAccountVerificationStatus.PENDING
+            : PayoutAccountVerificationStatus.VERIFIED,
+        verificationMethod:
+          i % 5 === 0 ? null : PayoutAccountVerificationMethod.MANUAL_BANK_APP,
         verifiedByUserId: i % 5 === 0 ? null : ctx.admins[0]?.id,
         verifiedAt: i % 5 === 0 ? null : recentDate(10),
         availableAfter: recentDate(0),
       },
     });
-    payoutAccounts.push({ id: payoutAccount.id, shopId: shop.id, accountNumber });
+    payoutAccounts.push({
+      id: payoutAccount.id,
+      shopId: shop.id,
+      accountNumber,
+    });
   }
 
   const userPayoutAccounts: { id: string; userId: string }[] = [];
@@ -101,7 +122,10 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
     const user = ctx.users[i];
     const accountNumber = `1900${String(500000 + i).padStart(6, '0')}`;
     const accountHolder =
-      user.displayName?.trim() || user.email?.trim() || user.phone?.trim() || `Seed User ${i + 1}`;
+      user.displayName?.trim() ||
+      user.email?.trim() ||
+      user.phone?.trim() ||
+      `Nguoi dung Demo UAT ${i + 1}`;
     const payoutAccount = await prisma.payoutAccount.create({
       data: {
         id: id(),
@@ -143,7 +167,7 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
         accountNumberLast4: accountNumber.slice(-4),
         accountNumberLength: accountNumber.length,
         accountHolder: shop.shopName.toUpperCase(),
-        provider: 'SEED_PROVIDER',
+        provider: 'UAT_FIXTURE_PROVIDER',
         expiresAt: recentDate(-1),
         consumedAt: i % 2 === 0 ? recentDate(1) : null,
       },
@@ -158,37 +182,51 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
       data: {
         id: id(),
         walletId: wallet.id,
-        idempotencyKey: `SEED-TOPUP-${i + 1}`,
-        orderCode: `SEEDTOPUP${String(i + 1).padStart(6, '0')}`,
-        paymentLinkId: `seed-payment-link-${i + 1}`,
+        idempotencyKey: `UAT-TOPUP-${i + 1}`,
+        orderCode: `UATTOPUP${String(i + 1).padStart(6, '0')}`,
+        paymentLinkId: `uat-payment-link-${i + 1}`,
         amount: money(500000 + i * 100000),
-        checkoutUrl: `https://payos.example/seed/${i + 1}`,
-        status: i % 5 === 0 ? WalletTopUpStatus.PENDING : WalletTopUpStatus.PAID,
+        checkoutUrl: `https://payos.example/uat-fixture/${i + 1}`,
+        status:
+          i % 5 === 0 ? WalletTopUpStatus.PENDING : WalletTopUpStatus.PAID,
         paidAt: i % 5 === 0 ? null : recentDate(i % 10),
       },
     });
   }
 
-  for (let i = 0; i < Math.min(COUNTS.walletTransactions, ctx.orders.length); i += 1) {
+  for (
+    let i = 0;
+    i < Math.min(COUNTS.walletTransactions, ctx.orders.length);
+    i += 1
+  ) {
     const order = ctx.orders[i];
     const userWallet = userWallets.get(order.buyerUserId ?? '');
-    const paymentIntent = await prisma.paymentIntent.findUnique({ where: { orderId: order.id } });
+    const paymentIntent = await prisma.paymentIntent.findUnique({
+      where: { orderId: order.id },
+    });
     if (!userWallet || !paymentIntent) continue;
     const amount = Number(order.totalAmount);
     const transaction = await prisma.walletTransaction.create({
       data: {
         id: id(),
-        transactionCode: `WALLET-TX-${String(i + 1).padStart(6, '0')}`,
-        transactionType: i % 3 === 0 ? WalletTransactionType.PAYMENT : WalletTransactionType.ESCROW_HOLD,
-        status: order.orderStatus === 'pending' ? WalletTransactionStatus.PENDING : WalletTransactionStatus.COMPLETED,
+        transactionCode: `UAT-WALLET-TX-${String(i + 1).padStart(6, '0')}`,
+        transactionType:
+          i % 3 === 0
+            ? WalletTransactionType.PAYMENT
+            : WalletTransactionType.ESCROW_HOLD,
+        status:
+          order.orderStatus === 'pending'
+            ? WalletTransactionStatus.PENDING
+            : WalletTransactionStatus.COMPLETED,
         amount: money(amount),
-        idempotencyKey: `SEED-WALLET-TX-${i + 1}`,
+        idempotencyKey: `UAT-WALLET-TX-${i + 1}`,
         referenceType: 'ORDER',
         referenceId: order.id,
         orderId: order.id,
         paymentIntentId: paymentIntent.id,
-        description: 'Seed wallet transaction for UAT flow.',
-        completedAt: order.orderStatus === 'pending' ? null : recentDate(i % 10),
+        description: 'UAT fixture wallet transaction for documentation flow.',
+        completedAt:
+          order.orderStatus === 'pending' ? null : recentDate(i % 10),
       },
     });
     await prisma.walletLedgerEntry.create({
@@ -200,7 +238,13 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
         balanceType: WalletBalanceType.AVAILABLE,
         amount: money(Math.min(amount, userWallet.availableBalance)),
         balanceBefore: money(userWallet.availableBalance),
-        balanceAfter: money(Math.max(0, userWallet.availableBalance - Math.min(amount, userWallet.availableBalance))),
+        balanceAfter: money(
+          Math.max(
+            0,
+            userWallet.availableBalance -
+              Math.min(amount, userWallet.availableBalance),
+          ),
+        ),
       },
     });
   }
@@ -210,29 +254,50 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
     const walletId = shopWallets.get(payout.shopId);
     const shop = ctx.shops.find((item) => item.id === payout.shopId);
     if (!walletId || !shop) continue;
-    const status = [WithdrawalStatus.PENDING, WithdrawalStatus.PROCESSING, WithdrawalStatus.COMPLETED, WithdrawalStatus.REJECTED][i % 4];
+    const status = [
+      WithdrawalStatus.PENDING,
+      WithdrawalStatus.PROCESSING,
+      WithdrawalStatus.COMPLETED,
+      WithdrawalStatus.REJECTED,
+    ][i % 4];
     await prisma.walletWithdrawal.create({
       data: {
         id: id(),
         walletId,
         payoutAccountId: payout.id,
         requestedByUserId: shop.ownerUserId,
-        processedByUserId: status === WithdrawalStatus.PENDING ? null : ctx.admins[0]?.id,
-        idempotencyKey: `SEED-WITHDRAWAL-${i + 1}`,
+        processedByUserId:
+          status === WithdrawalStatus.PENDING ? null : ctx.admins[0]?.id,
+        idempotencyKey: `UAT-WITHDRAWAL-${i + 1}`,
         amount: money(100000 + i * 50000),
         bankBin: '970436',
         bankCode: 'VCB',
         bankName: 'Vietcombank',
-        accountNumberEncryptedSnapshot: encryptSeedAccountNumber(payout.accountNumber),
+        accountNumberEncryptedSnapshot: encryptSeedAccountNumber(
+          payout.accountNumber,
+        ),
         accountNumberLast4: '0001',
         accountNumberLength: 10,
         accountHolder: shop.shopName.toUpperCase(),
         status,
-        transferReference: status === WithdrawalStatus.COMPLETED ? `SEED-BANK-${i + 1}` : null,
-        rejectionReason: status === WithdrawalStatus.REJECTED ? 'Seed rejected withdrawal for admin UAT.' : null,
-        approvedAt: status === WithdrawalStatus.PENDING || status === WithdrawalStatus.REJECTED ? null : recentDate(4),
-        completedAt: status === WithdrawalStatus.COMPLETED ? recentDate(2) : null,
-        processedAt: status === WithdrawalStatus.COMPLETED || status === WithdrawalStatus.REJECTED ? recentDate(2) : null,
+        transferReference:
+          status === WithdrawalStatus.COMPLETED ? `UAT-BANK-${i + 1}` : null,
+        rejectionReason:
+          status === WithdrawalStatus.REJECTED
+            ? 'UAT fixture rejected withdrawal for Admin read view.'
+            : null,
+        approvedAt:
+          status === WithdrawalStatus.PENDING ||
+          status === WithdrawalStatus.REJECTED
+            ? null
+            : recentDate(4),
+        completedAt:
+          status === WithdrawalStatus.COMPLETED ? recentDate(2) : null,
+        processedAt:
+          status === WithdrawalStatus.COMPLETED ||
+          status === WithdrawalStatus.REJECTED
+            ? recentDate(2)
+            : null,
       },
     });
   }
@@ -250,8 +315,8 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
         payoutAccountId: payout?.id ?? null,
         operation: 'CREATE_WITHDRAWAL',
         channel: i % 2 === 0 ? 'PHONE' : 'EMAIL',
-        operationDigest: sha256(`seed-withdrawal-operation-${i}`),
-        authorizationTokenHash: sha256(`seed-authorization-token-${i}`),
+        operationDigest: sha256(`uat-withdrawal-operation-${i}`),
+        authorizationTokenHash: sha256(`uat-authorization-token-${i}`),
         verifiedAt: i % 2 === 0 ? recentDate(1) : null,
         expiresAt: recentDate(-1),
         consumedAt: i % 2 === 0 ? recentDate(1) : null,
@@ -259,7 +324,11 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
     });
   }
 
-  const vouchers: { id: string; shopId: string | null; ownerType: 'SYSTEM' | 'SHOP' }[] = [];
+  const vouchers: {
+    id: string;
+    shopId: string | null;
+    ownerType: 'SYSTEM' | 'SHOP';
+  }[] = [];
   for (let i = 0; i < COUNTS.vouchers; i += 1) {
     const isSystem = i < 3;
     const shop = isSystem ? null : pick(ctx.shops, i);
@@ -270,8 +339,15 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
         fundingSource: isSystem ? 'PLATFORM' : 'SHOP',
         shopId: shop?.id ?? null,
         code: `UAT${isSystem ? 'SYS' : 'SHOP'}${String(i + 1).padStart(4, '0')}`,
-        name: isSystem ? 'UAT Platform Voucher' : `UAT ${shop?.shopName} Voucher`,
-        discountType: i % 3 === 0 ? 'PERCENTAGE' : i % 3 === 1 ? 'FIXED_AMOUNT' : 'FREE_SHIPPING',
+        name: isSystem
+          ? 'UAT Platform Voucher'
+          : `UAT ${shop?.shopName} Voucher`,
+        discountType:
+          i % 3 === 0
+            ? 'PERCENTAGE'
+            : i % 3 === 1
+              ? 'FIXED_AMOUNT'
+              : 'FREE_SHIPPING',
         percentage: i % 3 === 0 ? money(10 + (i % 4) * 5) : null,
         fixedAmount: i % 3 === 1 ? money(30000 + i * 5000) : null,
         maxDiscountAmount: i % 3 === 0 ? money(100000) : null,
@@ -284,12 +360,22 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
         status: 'ACTIVE',
       },
     });
-    vouchers.push({ id: voucher.id, shopId: shop?.id ?? null, ownerType: isSystem ? 'SYSTEM' : 'SHOP' });
+    vouchers.push({
+      id: voucher.id,
+      shopId: shop?.id ?? null,
+      ownerType: isSystem ? 'SYSTEM' : 'SHOP',
+    });
   }
 
-  const systemVoucher = vouchers.find((voucher) => voucher.ownerType === 'SYSTEM');
+  const systemVoucher = vouchers.find(
+    (voucher) => voucher.ownerType === 'SYSTEM',
+  );
   if (systemVoucher) {
-    for (let i = 0; i < Math.min(COUNTS.voucherRedemptions, ctx.orders.length); i += 1) {
+    for (
+      let i = 0;
+      i < Math.min(COUNTS.voucherRedemptions, ctx.orders.length);
+      i += 1
+    ) {
       const order = ctx.orders[i];
       await prisma.voucherRedemption.create({
         data: {
@@ -298,7 +384,7 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
           userId: order.buyerUserId!,
           orderId: order.id,
           status: i % 5 === 0 ? 'RESERVED' : i % 7 === 0 ? 'RELEASED' : 'USED',
-          idempotencyKey: `SEED-REDEMPTION-${i + 1}`,
+          idempotencyKey: `UAT-REDEMPTION-${i + 1}`,
           redeemedAt: recentDate(i % 10),
           releasedAt: i % 7 === 0 ? recentDate(1) : null,
         },
@@ -321,13 +407,26 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
     }
   }
 
-  const sessions = await prisma.liveCommerceSession.findMany({ select: { id: true } });
+  const sessions = await prisma.liveCommerceSession.findMany({
+    select: { id: true },
+  });
   for (let i = 0; i < Math.min(sessions.length, 3); i += 1) {
     const voucher = vouchers[i % vouchers.length];
-    await prisma.liveSessionVoucher.create({ data: { id: id(), sessionId: sessions[i].id, voucherId: voucher.id, sortOrder: i } });
+    await prisma.liveSessionVoucher.create({
+      data: {
+        id: id(),
+        sessionId: sessions[i].id,
+        voucherId: voucher.id,
+        sortOrder: i,
+      },
+    });
   }
 
-  for (let i = 0; i < Math.min(COUNTS.codSettlements, ctx.orderGroups.length); i += 1) {
+  for (
+    let i = 0;
+    i < Math.min(COUNTS.codSettlements, ctx.orderGroups.length);
+    i += 1
+  ) {
     const group = ctx.orderGroups[i];
     const shopWalletId = shopWallets.get(group.shopId);
     if (!shopWalletId) continue;
@@ -343,8 +442,16 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
         platformFeeAmount: group.platformFeeAmount,
         affiliateAmount: money(i % 4 === 0 ? 5000 : 0),
         obligationAmount: money(Number(group.sellerReceivableAmount)),
-        settledAmount: order.orderStatus === 'completed' ? group.sellerReceivableAmount : money(0),
-        status: order.orderStatus === 'completed' ? 'SETTLED' : order.orderStatus === 'cancelled' ? 'REVERSED' : 'OUTSTANDING',
+        settledAmount:
+          order.orderStatus === 'completed'
+            ? group.sellerReceivableAmount
+            : money(0),
+        status:
+          order.orderStatus === 'completed'
+            ? 'SETTLED'
+            : order.orderStatus === 'cancelled'
+              ? 'REVERSED'
+              : 'OUTSTANDING',
         dueAt: recentDate(-3),
         settledAt: order.orderStatus === 'completed' ? recentDate(2) : null,
         reversedAt: order.orderStatus === 'cancelled' ? recentDate(1) : null,
@@ -353,18 +460,21 @@ export async function seedWalletsAndVouchers(prisma: PrismaClient, ctx: SeedCont
   }
 }
 
-async function seedInitialWalletLedgers(prisma: PrismaClient, wallets: Array<{ id: string; availableBalance?: number }>) {
+async function seedInitialWalletLedgers(
+  prisma: PrismaClient,
+  wallets: Array<{ id: string; availableBalance?: number }>,
+) {
   for (let i = 0; i < wallets.length; i += 1) {
     const amount = wallets[i].availableBalance ?? 0;
     const transaction = await prisma.walletTransaction.create({
       data: {
         id: id(),
-        transactionCode: `WALLET-INIT-${String(i + 1).padStart(4, '0')}`,
+        transactionCode: `UAT-WALLET-INIT-${String(i + 1).padStart(4, '0')}`,
         transactionType: WalletTransactionType.ADJUSTMENT,
         status: WalletTransactionStatus.COMPLETED,
         amount: money(amount),
-        idempotencyKey: `SEED-WALLET-INIT-${i + 1}`,
-        referenceType: 'SEED',
+        idempotencyKey: `UAT-WALLET-INIT-${i + 1}`,
+        referenceType: 'UAT_FIXTURE',
         referenceId: wallets[i].id,
         description: 'Initial UAT wallet balance.',
         completedAt: recentDate(30),

@@ -1,23 +1,20 @@
 import { PrismaClient, ShopRegistrationType } from '@prisma/client';
-import { COUNTS, avatarUrl, createMediaAsset, documentUrl, id, imageUrl, pick, recentDate, SeedContext, taxCode } from './00-utils';
+import {
+  COUNTS,
+  avatarUrl,
+  createMediaAsset,
+  documentUrl,
+  id,
+  imageUrl,
+  pick,
+  recentDate,
+  SeedContext,
+  taxCode,
+} from './00-utils';
 
-const shopNames = [
-  'Vinamilk Official Store',
-  'TH True Milk Flagship',
-  'Nutifood Chính Hãng',
-  'Masan Consumer Store',
-  'Acecook Việt Nam',
-  'Cocoon Việt Nam',
-  'Thorakao Official',
-  'Lix Home Care',
-  'Sunhouse Mall',
-  'LocknLock Việt Nam',
-  "Biti's Official",
-  'Canifa Store',
-  'Trung Nguyên Legend',
-  'Lavie Official',
-  'An Phước Fashion',
-];
+function shopName(index: number) {
+  return `Cua hang Demo UAT ${String(index + 1).padStart(2, '0')}`;
+}
 
 function registrationForIndex(index: number): ShopRegistrationType {
   if (index < 4) return ShopRegistrationType.MANUFACTURER;
@@ -31,38 +28,41 @@ export async function seedShops(prisma: PrismaClient, ctx: SeedContext) {
     const registrationType = registrationForIndex(i);
     const owner = pick(ctx.shopOwners.length ? ctx.shopOwners : ctx.users, i);
     const shopType = ctx.shopTypes[registrationType];
-    const status = i % 9 === 0 ? 'pending_verification' : 'verified';
+    const status = i === 0 ? 'pending_verification' : 'verified';
     let shop = await prisma.shop.create({
       data: {
         id: id(),
         ownerUserId: owner.id,
         shopTypeId: shopType?.id,
-        shopName: shopNames[i],
+        shopName: shopName(i),
         registrationType,
-        businessType: registrationType === ShopRegistrationType.NORMAL ? 'HOUSEHOLD' : 'COMPANY',
+        businessType:
+          registrationType === ShopRegistrationType.NORMAL
+            ? 'HOUSEHOLD'
+            : 'COMPANY',
         taxCode: taxCode(i + 1),
         shopStatus: status,
-        warehouseAddress: `${18 + i} Nguyen Trai, Quan 1, TP.HCM`,
-        warehouseProvinceCode: 'VN-P202',
-        warehouseProvinceName: 'TP Ho Chi Minh',
-        warehouseWardCode: `VN-P202-D1442-W${String(20101 + (i % 5))}`,
-        warehouseWardName: `Phuong ${1 + (i % 5)}`,
+        warehouseAddress: `Kho kiem thu UAT ${String(i + 1).padStart(2, '0')}`,
+        warehouseProvinceCode: 'UAT-PROVINCE',
+        warehouseProvinceName: 'Tinh kiem thu UAT',
+        warehouseWardCode: `UAT-WARD-${String((i % 5) + 1).padStart(2, '0')}`,
+        warehouseWardName: `Phuong kiem thu UAT ${String((i % 5) + 1).padStart(2, '0')}`,
         createdAt: recentDate(90 - i),
       },
     });
     const avatar = await createMediaAsset(prisma, {
       ownerUserId: owner.id,
       resourceType: 'SHOP_AVATAR',
-      secureUrl: avatarUrl(`shop-${shop.id}`),
-      publicId: `seed/shops/${shop.id}/avatar`,
-      folder: 'seed/shops/avatars',
+      secureUrl: avatarUrl(`uat-shop-${i + 1}`),
+      publicId: `uat/shops/${i + 1}/avatar`,
+      folder: 'uat/shops/avatars',
     });
     const banner = await createMediaAsset(prisma, {
       ownerUserId: owner.id,
       resourceType: 'SHOP_BANNER',
-      secureUrl: imageUrl(`shop-banner-${shop.id}`, 1440, 480),
-      publicId: `seed/shops/${shop.id}/banner`,
-      folder: 'seed/shops/banners',
+      secureUrl: imageUrl(`uat-shop-banner-${i + 1}`, 1440, 480),
+      publicId: `uat/shops/${i + 1}/banner`,
+      folder: 'uat/shops/banners',
     });
     shop = await prisma.shop.update({
       where: { id: shop.id },
@@ -72,15 +72,19 @@ export async function seedShops(prisma: PrismaClient, ctx: SeedContext) {
       },
     });
     ctx.shops.push(shop);
-    if (registrationType === ShopRegistrationType.MANUFACTURER) ctx.manufacturerShops.push(shop);
-    if (registrationType === ShopRegistrationType.DISTRIBUTOR) ctx.distributorShops.push(shop);
+    if (registrationType === ShopRegistrationType.MANUFACTURER)
+      ctx.manufacturerShops.push(shop);
+    if (registrationType === ShopRegistrationType.DISTRIBUTOR)
+      ctx.distributorShops.push(shop);
   }
 
   for (let i = 0; i < COUNTS.shopBusinessCategories; i += 1) {
     const shop = pick(ctx.shops, i);
     const category = pick(ctx.categories, i + Math.floor(i / 2));
     await prisma.shopBusinessCategory.upsert({
-      where: { shopId_categoryId: { shopId: shop.id, categoryId: category.id } },
+      where: {
+        shopId_categoryId: { shopId: shop.id, categoryId: category.id },
+      },
       update: {},
       create: {
         id: id(),
@@ -97,27 +101,30 @@ export async function seedShops(prisma: PrismaClient, ctx: SeedContext) {
   for (let i = 0; i < COUNTS.shopDocuments; i += 1) {
     const shop = pick(ctx.shops, i);
     const requirementKeys = Object.keys(ctx.requirements);
-    const requirement = ctx.requirements[requirementKeys[i % requirementKeys.length]];
+    const requirement =
+      ctx.requirements[requirementKeys[i % requirementKeys.length]];
+    const isPending = i % 6 === 0;
     const doc = await prisma.shopDocument.create({
       data: {
         id: id(),
         shopId: shop.id,
         requirementId: requirement.id,
         docType: requirement.code,
-        reviewStatus: i % 6 === 0 ? 'pending' : 'approved',
-        reviewNote: i % 6 === 0 ? 'Cần kiểm tra lại ngày hiệu lực.' : null,
-        reviewedAt: i % 6 === 0 ? null : recentDate(30 - (i % 20)),
+        reviewStatus: isPending ? 'pending' : 'approved',
+        reviewNote: isPending ? 'Dang cho Admin kiem tra tai lieu UAT.' : null,
+        reviewedAt: isPending ? null : recentDate(30 - (i % 20)),
         uploadedAt: recentDate(70 - (i % 40)),
       },
     });
 
-    const fileCount = i < COUNTS.shopDocumentFiles - COUNTS.shopDocuments ? 2 : 1;
+    const fileCount =
+      i < COUNTS.shopDocumentFiles - COUNTS.shopDocuments ? 2 : 1;
     for (let j = 0; j < fileCount; j += 1) {
       const media = await createMediaAsset(prisma, {
         ownerUserId: shop.ownerUserId,
         resourceType: 'SHOP_DOCUMENT',
-        secureUrl: documentUrl(`shop-doc-${shop.id}-${i}-${j}`),
-        publicId: `seed/shop-documents/${shop.id}/${i}-${j}`,
+        secureUrl: documentUrl(`uat-shop-doc-${i + 1}-${j + 1}`),
+        publicId: `uat/shop-documents/${i + 1}/${j + 1}`,
         mimeType: 'application/pdf',
         assetType: 'RAW',
       });
@@ -139,11 +146,12 @@ export async function seedShops(prisma: PrismaClient, ctx: SeedContext) {
     const media = await createMediaAsset(prisma, {
       ownerUserId: shop.ownerUserId,
       resourceType: 'SHOP_DOCUMENT',
-      secureUrl: documentUrl(`brand-auth-${shop.id}-${brand.id}`),
-      publicId: `seed/brand-authorizations/${shop.id}/${brand.id}`,
+      secureUrl: documentUrl(`uat-brand-auth-${i + 1}`),
+      publicId: `uat/brand-authorizations/${i + 1}`,
       mimeType: 'application/pdf',
       assetType: 'RAW',
     });
+    const isPending = i % 7 === 0;
     await prisma.brandAuthorization.upsert({
       where: { shopId_brandId: { shopId: shop.id, brandId: brand.id } },
       update: {},
@@ -154,9 +162,9 @@ export async function seedShops(prisma: PrismaClient, ctx: SeedContext) {
         mediaAssetId: media.id,
         authorizationType: i % 2 === 0 ? 'OWNER' : 'AUTHORIZED_DISTRIBUTOR',
         fileUrl: media.secureUrl,
-        verificationStatus: i % 7 === 0 ? 'pending' : 'approved',
-        reviewNote: i % 7 === 0 ? 'Đang chờ xác nhận từ thương hiệu.' : null,
-        verifiedAt: i % 7 === 0 ? null : recentDate(35 - (i % 20)),
+        verificationStatus: isPending ? 'pending' : 'approved',
+        reviewNote: isPending ? 'Dang cho xac nhan thuong hieu UAT.' : null,
+        verifiedAt: isPending ? null : recentDate(35 - (i % 20)),
       },
     });
   }

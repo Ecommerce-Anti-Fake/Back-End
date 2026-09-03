@@ -27,6 +27,7 @@ import {
   HttpServerLike,
   listenHttpServer,
 } from './passenger-runtime';
+import { assertUatRuntimeDatabaseTarget } from '../../../scripts/uat/uat-safety';
 
 const localHost = '127.0.0.1';
 
@@ -41,6 +42,7 @@ export async function bootstrapEmbeddedDeployment(options: {
   httpHost?: string;
   servicePorts: EmbeddedServicePorts;
 }): Promise<EmbeddedDeployment> {
+  assertUatRuntimeDatabaseTarget();
   configureLocalServiceEnvironment(options.servicePorts);
   const microservices: INestMicroservice[] = [];
   let gateway: INestApplication | undefined;

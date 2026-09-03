@@ -1,13 +1,21 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
+import { loadUatEnv } from '../../scripts/uat/load-uat-env';
+import {
+  assertUatDatabaseTarget,
+  requiredUatSecret,
+} from '../../scripts/uat/uat-safety';
 import { productImageUrl } from '../seeds/04-offers.seed';
 import { offerTemplateIndexForText } from '../seeds/offer-option-specs';
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) throw new Error('DATABASE_URL is not set');
+loadUatEnv();
+assertUatDatabaseTarget();
+const connectionString = requiredUatSecret('DATABASE_URL');
 
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString }),
+});
 
 async function main() {
   const offers = await prisma.offer.findMany({
@@ -22,19 +30,30 @@ async function main() {
       select: { id: true, mediaAssetId: true },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
-    const templateIndex = offerTemplateIndexForText(offer.modelName, offer.title);
+    const templateIndex = offerTemplateIndexForText(
+      offer.modelName,
+      offer.title,
+    );
 
     for (const [mediaIndex, media] of mediaItems.entries()) {
       const secureUrl = productImageUrl(templateIndex, offerIndex, mediaIndex);
-      await prisma.offerMedia.update({ where: { id: media.id }, data: { fileUrl: secureUrl } });
+      await prisma.offerMedia.update({
+        where: { id: media.id },
+        data: { fileUrl: secureUrl },
+      });
       if (media.mediaAssetId) {
-        await prisma.mediaAsset.update({ where: { id: media.mediaAssetId }, data: { secureUrl } });
+        await prisma.mediaAsset.update({
+          where: { id: media.mediaAssetId },
+          data: { secureUrl },
+        });
       }
       updated += 1;
     }
   }
 
-  console.log(`Updated ${updated} offer media records with category-matched image URLs.`);
+  console.log(
+    `Updated ${updated} offer media records with category-matched image URLs.`,
+  );
 }
 
 main()

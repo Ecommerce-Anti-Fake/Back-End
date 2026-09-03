@@ -2,47 +2,62 @@ import { PrismaClient } from '@prisma/client';
 import { COUNTS, id, imageUrl, SeedContext } from './00-utils';
 
 const categoryNames = [
-  ['Thực phẩm', 'medium'],
-  ['Đồ uống', 'medium'],
-  ['Mỹ phẩm', 'high'],
-  ['Chăm sóc cá nhân', 'high'],
-  ['Thực phẩm chức năng', 'high'],
-  ['Mẹ và bé', 'high'],
-  ['Đồ gia dụng', 'low'],
-  ['Điện tử', 'medium'],
-  ['Điện gia dụng', 'medium'],
-  ['Thời trang nam', 'low'],
-  ['Thời trang nữ', 'low'],
-  ['Phụ kiện', 'low'],
-  ['Nông sản', 'medium'],
-  ['Thú cưng', 'medium'],
-  ['Sách & Văn phòng phẩm', 'low'],
+  ['Danh muc Demo UAT 01', 'medium'],
+  ['Danh muc Demo UAT 02', 'medium'],
+  ['Danh muc Demo UAT 03', 'high'],
+  ['Danh muc Demo UAT 04', 'high'],
+  ['Danh muc Demo UAT 05', 'high'],
+  ['Danh muc Demo UAT 06', 'low'],
+  ['Danh muc Demo UAT 07', 'low'],
+  ['Danh muc Demo UAT 08', 'medium'],
+  ['Danh muc Demo UAT 09', 'medium'],
+  ['Danh muc Demo UAT 10', 'low'],
+  ['Danh muc Demo UAT 11', 'low'],
+  ['Danh muc Demo UAT 12', 'low'],
+  ['Danh muc Demo UAT 13', 'medium'],
+  ['Danh muc Demo UAT 14', 'medium'],
+  ['Danh muc Demo UAT 15', 'low'],
 ] as const;
 
 const brandNames = [
-  'Vinamilk',
-  'TH True Milk',
-  'Nutifood',
-  'Masan',
-  'Acecook',
-  'Cocoon',
-  'Thorakao',
-  'Lix',
-  'Sunhouse',
-  'LocknLock',
-  "Biti's",
-  'Canifa',
-  'Trung Nguyên',
-  'Lavie',
-  'An Phước',
+  'Thuong hieu Demo UAT 01',
+  'Thuong hieu Demo UAT 02',
+  'Thuong hieu Demo UAT 03',
+  'Thuong hieu Demo UAT 04',
+  'Thuong hieu Demo UAT 05',
+  'Thuong hieu Demo UAT 06',
+  'Thuong hieu Demo UAT 07',
+  'Thuong hieu Demo UAT 08',
+  'Thuong hieu Demo UAT 09',
+  'Thuong hieu Demo UAT 10',
+  'Thuong hieu Demo UAT 11',
+  'Thuong hieu Demo UAT 12',
+  'Thuong hieu Demo UAT 13',
+  'Thuong hieu Demo UAT 14',
+  'Thuong hieu Demo UAT 15',
 ];
 
 export async function seedMasterData(prisma: PrismaClient, ctx: SeedContext) {
   const shopTypes = [
-    ['NORMAL', 'Shop thường', 'Bán lẻ thông thường trên sàn.', 10],
-    ['HANDMADE', 'Shop thủ công', 'Bán sản phẩm tự làm hoặc sản phẩm thủ công.', 20],
-    ['MANUFACTURER', 'Nhà sản xuất', 'Sản xuất, bán sỉ/lẻ và có thể mở kênh phân phối.', 30],
-    ['DISTRIBUTOR', 'Đại lý phân phối', 'Mua sỉ, phân phối hoặc bán lại hàng hóa được ủy quyền.', 40],
+    ['NORMAL', 'Shop thuong', 'Ban le thong thuong tren san.', 10],
+    [
+      'HANDMADE',
+      'Shop thu cong',
+      'Ban san pham tu lam hoac san pham thu cong.',
+      20,
+    ],
+    [
+      'MANUFACTURER',
+      'Nha san xuat',
+      'San xuat, ban si/le va mo kenh phan phoi.',
+      30,
+    ],
+    [
+      'DISTRIBUTOR',
+      'Dai ly phan phoi',
+      'Mua si, phan phoi hoac ban lai hang hoa.',
+      40,
+    ],
   ] as const;
 
   for (const [code, name, description, sortOrder] of shopTypes) {
@@ -53,16 +68,43 @@ export async function seedMasterData(prisma: PrismaClient, ctx: SeedContext) {
   }
 
   const requirements = [
-    ['BUSINESS_LICENSE', 'Giấy phép kinh doanh', 'Ảnh hoặc bản scan giấy phép kinh doanh/hộ kinh doanh còn hiệu lực.'],
-    ['TAX_REGISTRATION', 'Giấy đăng ký thuế', 'Tài liệu chứng minh mã số thuế hoặc thông tin đăng ký thuế.'],
-    ['MANUFACTURING_CERTIFICATE', 'Giấy chứng minh cơ sở sản xuất', 'Giấy chứng nhận đủ điều kiện sản xuất, ảnh cơ sở hoặc tài liệu tương đương.'],
-    ['DISTRIBUTION_LICENSE', 'Giấy phép phân phối', 'Giấy ủy quyền, hợp đồng phân phối hoặc tài liệu chứng minh quyền phân phối.'],
-    ['HANDMADE_PROOF', 'Bằng chứng sản phẩm thủ công', 'Ảnh quy trình sản xuất, cam kết sản phẩm thủ công hoặc tài liệu liên quan.'],
+    [
+      'BUSINESS_LICENSE',
+      'Giay phep kinh doanh',
+      'Tai lieu kiem thu cho ho so shop.',
+    ],
+    [
+      'TAX_REGISTRATION',
+      'Dang ky thue',
+      'Tai lieu kiem thu cho thong tin thue.',
+    ],
+    [
+      'MANUFACTURING_CERTIFICATE',
+      'Chung minh co so san xuat',
+      'Tai lieu kiem thu cho co so san xuat.',
+    ],
+    [
+      'DISTRIBUTION_LICENSE',
+      'Giay phep phan phoi',
+      'Tai lieu kiem thu cho quyen phan phoi.',
+    ],
+    [
+      'HANDMADE_PROOF',
+      'Bang chung san pham thu cong',
+      'Tai lieu kiem thu cho san pham thu cong.',
+    ],
   ] as const;
 
   for (const [code, name, description] of requirements) {
     const item = await prisma.verificationRequirement.create({
-      data: { id: id(), code, name, description, multipleFilesAllowed: true, isActive: true },
+      data: {
+        id: id(),
+        code,
+        name,
+        description,
+        multipleFilesAllowed: true,
+        isActive: true,
+      },
     });
     ctx.requirements[code] = item;
   }
@@ -93,17 +135,34 @@ export async function seedMasterData(prisma: PrismaClient, ctx: SeedContext) {
   }
 
   const carriers = [
-    ['SELF_DELIVERY', 'Tự vận chuyển', 'Seller tự giao hoặc tự sắp xếp vận chuyển.', 0],
-    ['GHN', 'Giao Hàng Nhanh', 'Carrier tích hợp dự kiến qua API GHN.', 10],
-    ['GHTK', 'Giao Hàng Tiết Kiệm', 'Carrier tích hợp dự kiến qua API GHTK.', 20],
-    ['VIETTEL_POST', 'Viettel Post', 'Carrier tích hợp dự kiến qua API Viettel Post.', 30],
-    ['JNT', 'J&T Express', 'Carrier tích hợp dự kiến qua API J&T Express.', 40],
+    [
+      'SELF_DELIVERY',
+      'Tu van chuyen',
+      'Seller tu giao hoac tu sap xep van chuyen.',
+      0,
+    ],
+    ['GHN', 'Giao Hang Nhanh', 'Carrier tich hop qua API GHN.', 10],
+    ['GHTK', 'Giao Hang Tiet Kiem', 'Carrier mo phong chua bat trong UAT.', 20],
+    [
+      'VIETTEL_POST',
+      'Viettel Post',
+      'Carrier mo phong chua bat trong UAT.',
+      30,
+    ],
+    ['JNT', 'J&T Express', 'Carrier mo phong chua bat trong UAT.', 40],
   ] as const;
 
   for (const [code, name, description, sortOrder] of carriers) {
     ctx.carriers.push(
       await prisma.shippingCarrier.create({
-        data: { id: id(), code, name, description, isActive: code === 'GHN', sortOrder },
+        data: {
+          id: id(),
+          code,
+          name,
+          description,
+          isActive: code === 'GHN',
+          sortOrder,
+        },
       }),
     );
   }
@@ -116,7 +175,7 @@ export async function seedMasterData(prisma: PrismaClient, ctx: SeedContext) {
           id: id(),
           name,
           riskTier,
-          imageUrl: imageUrl(`category-${i}`, 640, 640),
+          imageUrl: imageUrl(`uat-category-${i + 1}`, 640, 640),
         },
       }),
     );
@@ -125,7 +184,11 @@ export async function seedMasterData(prisma: PrismaClient, ctx: SeedContext) {
   for (let i = 0; i < COUNTS.brands; i += 1) {
     ctx.brands.push(
       await prisma.brand.create({
-        data: { id: id(), name: brandNames[i], registryStatus: i % 7 === 0 ? 'reviewing' : 'approved' },
+        data: {
+          id: id(),
+          name: brandNames[i],
+          registryStatus: i === 0 ? 'reviewing' : 'approved',
+        },
       }),
     );
   }

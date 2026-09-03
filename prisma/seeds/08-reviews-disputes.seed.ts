@@ -1,5 +1,13 @@
 import { PrismaClient } from '@prisma/client';
-import { COUNTS, createMediaAsset, id, imageUrl, pick, recentDate, SeedContext } from './00-utils';
+import {
+  COUNTS,
+  createMediaAsset,
+  id,
+  imageUrl,
+  pick,
+  recentDate,
+  SeedContext,
+} from './00-utils';
 
 const comments = [
   'Sản phẩm đúng mô tả, đóng gói kỹ và có tem xác thực rõ ràng.',
@@ -10,15 +18,23 @@ const comments = [
   'Cần cải thiện đóng gói bên ngoài.',
 ];
 
-export async function seedReviewsDisputes(prisma: PrismaClient, ctx: SeedContext) {
-  const completedOrders = ctx.orders.filter((order) => order.orderStatus === 'completed');
+export async function seedReviewsDisputes(
+  prisma: PrismaClient,
+  ctx: SeedContext,
+) {
+  const completedOrders = ctx.orders.filter(
+    (order) => order.orderStatus === 'completed',
+  );
   const usedOrderItemIds = new Set<string>();
   for (let i = 0; i < COUNTS.reviews; i += 1) {
     const order = pick(completedOrders, i);
-    const orderItem = ctx.orderItems.find((item) => item.orderId === order.id && !usedOrderItemIds.has(item.id));
+    const orderItem = ctx.orderItems.find(
+      (item) => item.orderId === order.id && !usedOrderItemIds.has(item.id),
+    );
     if (!orderItem) continue;
     usedOrderItemIds.add(orderItem.id);
-    const shop = ctx.shops.find((item) => item.id === order.shopId) ?? pick(ctx.shops, i);
+    const shop =
+      ctx.shops.find((item) => item.id === order.shopId) ?? pick(ctx.shops, i);
     const rating = i < 65 ? 5 : i < 85 ? 4 : i < 93 ? 3 : i < 97 ? 2 : 1;
     const review = await prisma.review.create({
       data: {
@@ -38,7 +54,7 @@ export async function seedReviewsDisputes(prisma: PrismaClient, ctx: SeedContext
         ownerUserId: order.buyerUserId ?? pick(ctx.buyers, i).id,
         resourceType: 'REVIEW_IMAGE',
         secureUrl: imageUrl(`review-${review.id}`, 900, 900),
-        publicId: `seed/reviews/${review.id}`,
+        publicId: `uat/reviews/${review.id}`,
       });
       await prisma.reviewMedia.create({
         data: {
@@ -54,13 +70,19 @@ export async function seedReviewsDisputes(prisma: PrismaClient, ctx: SeedContext
   }
 
   for (let i = 0; i < COUNTS.disputes; i += 1) {
-    const order = pick(ctx.orders.filter((item) => item.orderStatus !== 'pending'), i);
+    const order = pick(
+      ctx.orders.filter((item) => item.orderStatus !== 'pending'),
+      i,
+    );
     const dispute = await prisma.dispute.create({
       data: {
         id: id(),
         orderId: order.id,
         openedByUserId: order.buyerUserId ?? pick(ctx.buyers, i).id,
-        reason: i % 2 === 0 ? 'Sản phẩm nhận được không giống mô tả' : 'Nghi ngờ mã QR bị sử dụng lại',
+        reason:
+          i % 2 === 0
+            ? 'Sản phẩm nhận được không giống mô tả'
+            : 'Nghi ngờ mã QR bị sử dụng lại',
         disputeStatus: i < 3 ? 'open' : i < 7 ? 'reviewing' : 'resolved',
         openedAt: recentDate(15 - i),
         resolvedAt: i >= 7 ? recentDate(5 - (i % 3)) : null,
@@ -72,7 +94,7 @@ export async function seedReviewsDisputes(prisma: PrismaClient, ctx: SeedContext
         ownerUserId: order.buyerUserId ?? pick(ctx.buyers, i).id,
         resourceType: 'DISPUTE_EVIDENCE',
         secureUrl: imageUrl(`dispute-${dispute.id}-${j}`, 900, 900),
-        publicId: `seed/disputes/${dispute.id}/${j}`,
+        publicId: `uat/disputes/${dispute.id}/${j}`,
       });
       await prisma.disputeEvidence.create({
         data: {

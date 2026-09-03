@@ -1,25 +1,35 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
+import { loadUatEnv } from '../../scripts/uat/load-uat-env';
+import {
+  assertUatDatabaseTarget,
+  requiredUatSecret,
+} from '../../scripts/uat/uat-safety';
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) throw new Error('DATABASE_URL is not set');
+loadUatEnv();
+assertUatDatabaseTarget();
+const connectionString = requiredUatSecret('DATABASE_URL');
 
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString }),
+});
 
 async function main() {
   const verifiedAt = new Date();
   const result = await prisma.user.updateMany({
     where: {
       OR: [
-        { email: 'seed.user01@antifake.local' },
-        { email: 'seed.user02@antifake.local' },
-        { email: 'admin@antifake.io.vn' },
+        { email: 'buyer-uat@antifake.local' },
+        { email: 'seller-uat@antifake.local' },
+        { email: 'admin-uat@antifake.local' },
       ],
     },
     data: { emailVerifiedAt: verifiedAt, phoneVerifiedAt: verifiedAt },
   });
-  console.log(`Marked ${result.count} seeded accounts as email/phone verified for UAT login.`);
+  console.log(
+    `Marked ${result.count} seeded accounts as email/phone verified for UAT login.`,
+  );
 }
 
 main()

@@ -1,17 +1,26 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
-import { encryptSeedAccountNumber, id, money, recentDate } from '../seeds/00-utils';
+import { loadUatEnv } from '../../scripts/uat/load-uat-env';
+import {
+  assertUatDatabaseTarget,
+  requiredUatSecret,
+} from '../../scripts/uat/uat-safety';
+import {
+  encryptSeedAccountNumber,
+  id,
+  money,
+  recentDate,
+} from '../seeds/00-utils';
 
-const connectionString = process.env.DATABASE_URL;
-const SEED_WITHDRAWAL_PREFIX = 'SEED-WITHDRAWAL-';
+loadUatEnv();
+assertUatDatabaseTarget();
+const connectionString = requiredUatSecret('DATABASE_URL');
+const SEED_WITHDRAWAL_PREFIX = 'UAT-WITHDRAWAL-';
 
-if (!connectionString) throw new Error('DATABASE_URL is not set');
-if (/(neon\.tech|supabase\.co|render\.com|amazonaws\.com)/i.test(connectionString) && process.env.SEED_ALLOW_HOSTED_DB !== 'true') {
-  throw new Error('Refusing withdrawal seed against a hosted database. Set SEED_ALLOW_HOSTED_DB=true only for an explicitly approved UAT database.');
-}
-
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString }),
+});
 
 function productionBankBin(bankCode: string, bankBin: string) {
   return bankCode === 'VCB' && bankBin === '970415' ? '970436' : bankBin;
@@ -19,9 +28,13 @@ function productionBankBin(bankCode: string, bankBin: string) {
 
 function productionSnapshot(accountNumberEncrypted: string) {
   if (accountNumberEncrypted.startsWith('v1:')) return accountNumberEncrypted;
-  const legacySeedAccount = /^seed-encrypted-(\d{6,19})$/.exec(accountNumberEncrypted);
+  const legacySeedAccount = /^seed-encrypted-(\d{6,19})$/.exec(
+    accountNumberEncrypted,
+  );
   if (legacySeedAccount) return encryptSeedAccountNumber(legacySeedAccount[1]);
-  throw new Error('Payout account does not contain a supported encrypted account number');
+  throw new Error(
+    'Payout account does not contain a supported encrypted account number',
+  );
 }
 
 async function removeSeedWithdrawals() {
@@ -34,17 +47,31 @@ async function removeSeedWithdrawals() {
     if (!withdrawalIds.length) return;
 
     const transactions = await tx.walletTransaction.findMany({
-      where: { referenceType: 'WALLET_WITHDRAWAL', referenceId: { in: withdrawalIds } },
+      where: {
+        referenceType: 'WALLET_WITHDRAWAL',
+        referenceId: { in: withdrawalIds },
+      },
       select: { id: true },
     });
     const transactionIds = transactions.map((item) => item.id);
 
-    await tx.auditLog.deleteMany({ where: { targetType: 'WALLET_WITHDRAWAL', targetId: { in: withdrawalIds } } });
+    await tx.auditLog.deleteMany({
+      where: {
+        targetType: 'WALLET_WITHDRAWAL',
+        targetId: { in: withdrawalIds },
+      },
+    });
     if (transactionIds.length) {
-      await tx.walletLedgerEntry.deleteMany({ where: { transactionId: { in: transactionIds } } });
-      await tx.walletTransaction.deleteMany({ where: { id: { in: transactionIds } } });
+      await tx.walletLedgerEntry.deleteMany({
+        where: { transactionId: { in: transactionIds } },
+      });
+      await tx.walletTransaction.deleteMany({
+        where: { id: { in: transactionIds } },
+      });
     }
-    await tx.walletWithdrawal.deleteMany({ where: { id: { in: withdrawalIds } } });
+    await tx.walletWithdrawal.deleteMany({
+      where: { id: { in: withdrawalIds } },
+    });
   });
 }
 
@@ -52,10 +79,10 @@ async function main() {
   await removeSeedWithdrawals();
 
   const admin = await prisma.user.findFirst({
-    where: { email: 'admin@antifake.io.vn' },
+    where: { email: 'admin-uat@antifake.local' },
     select: { id: true },
   });
-  if (!admin) throw new Error('Seed admin admin@antifake.io.vn was not found');
+  if (!admin) throw new Error('UAT admin alias was not found');
 
   const payoutAccounts = await prisma.payoutAccount.findMany({
     where: { ownerType: 'SHOP', disabledAt: null },
@@ -75,11 +102,17 @@ async function main() {
     },
   });
   if (payoutAccounts.length < 4 || payoutAccounts.some((item) => !item.shop)) {
-    throw new Error('At least four active shop payout accounts are required before seeding withdrawals');
+    throw new Error(
+      'At least four active shop payout accounts are required before seeding withdrawals',
+    );
   }
 
   const wallets = await prisma.wallet.findMany({
-    where: { ownerType: 'SHOP', currency: 'VND', shopId: { in: payoutAccounts.map((item) => item.shop!.id) } },
+    where: {
+      ownerType: 'SHOP',
+      currency: 'VND',
+      shopId: { in: payoutAccounts.map((item) => item.shop!.id) },
+    },
     select: { id: true, shopId: true },
   });
   const walletByShopId = new Map(wallets.map((item) => [item.shopId, item.id]));
@@ -95,9 +128,24 @@ async function main() {
   };
   const fixtures: WithdrawalFixture[] = [
     { amount: 250000, status: 'PENDING' as const },
-    { amount: 200000, status: 'PROCESSING' as const, approvedAt: recentDate(2) },
-    { amount: 150000, status: 'COMPLETED' as const, approvedAt: recentDate(4), completedAt: recentDate(2), transferReference: 'SEED-BANK-3' },
-    { amount: 100000, status: 'REJECTED' as const, rejectionReason: 'Seed rejected withdrawal for admin UAT.', processedAt: recentDate(2) },
+    {
+      amount: 200000,
+      status: 'PROCESSING' as const,
+      approvedAt: recentDate(2),
+    },
+    {
+      amount: 150000,
+      status: 'COMPLETED' as const,
+      approvedAt: recentDate(4),
+      completedAt: recentDate(2),
+      transferReference: 'UAT-BANK-3',
+    },
+    {
+      amount: 100000,
+      status: 'REJECTED' as const,
+      rejectionReason: 'UAT fixture rejected withdrawal for Admin read view.',
+      processedAt: recentDate(2),
+    },
   ];
 
   for (const [index, fixture] of fixtures.entries()) {
@@ -107,7 +155,12 @@ async function main() {
     if (!walletId) throw new Error(`Shop wallet was not found for ${shop.id}`);
 
     const bankBin = productionBankBin(payout.bankCode, payout.bankBin);
-    const processedAt = fixture.status === 'COMPLETED' ? fixture.completedAt : fixture.status === 'REJECTED' ? fixture.processedAt : null;
+    const processedAt =
+      fixture.status === 'COMPLETED'
+        ? fixture.completedAt
+        : fixture.status === 'REJECTED'
+          ? fixture.processedAt
+          : null;
     await prisma.walletWithdrawal.create({
       data: {
         id: id(),
@@ -115,26 +168,35 @@ async function main() {
         payoutAccountId: payout.id,
         requestedByUserId: shop.ownerUserId,
         processedByUserId: fixture.status === 'PENDING' ? null : admin.id,
-        idempotencyKey: `${SEED_WITHDRAWAL_PREFIX}PRODUCTION-${index + 1}`,
+        idempotencyKey: `${SEED_WITHDRAWAL_PREFIX}${index + 1}`,
         amount: money(fixture.amount),
         bankBin,
         bankCode: payout.bankCode,
         bankName: payout.bankName,
-        accountNumberEncryptedSnapshot: productionSnapshot(payout.accountNumberEncrypted),
+        accountNumberEncryptedSnapshot: productionSnapshot(
+          payout.accountNumberEncrypted,
+        ),
         accountNumberLast4: payout.accountNumberLast4,
         accountNumberLength: payout.accountNumberLength,
-        accountHolder: (payout.resolvedAccountHolder || payout.declaredAccountHolder || shop.shopName).toUpperCase(),
+        accountHolder: (
+          payout.resolvedAccountHolder ||
+          payout.declaredAccountHolder ||
+          shop.shopName
+        ).toUpperCase(),
         status: fixture.status,
-        transferReference: fixture.status === 'COMPLETED' ? fixture.transferReference : null,
-        rejectionReason: fixture.status === 'REJECTED' ? fixture.rejectionReason : null,
+        transferReference:
+          fixture.status === 'COMPLETED' ? fixture.transferReference : null,
+        rejectionReason:
+          fixture.status === 'REJECTED' ? fixture.rejectionReason : null,
         approvedAt: fixture.approvedAt ?? null,
-        completedAt: fixture.status === 'COMPLETED' ? fixture.completedAt : null,
+        completedAt:
+          fixture.status === 'COMPLETED' ? fixture.completedAt : null,
         processedAt,
       },
     });
   }
 
-  console.log('Seed withdrawal requests replaced: 4 production-shaped records.');
+  console.log('UAT withdrawal fixtures replaced: 4 synthetic records.');
 }
 
 main()
