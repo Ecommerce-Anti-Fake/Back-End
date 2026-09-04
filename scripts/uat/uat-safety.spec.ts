@@ -1,5 +1,8 @@
 import {
   assertUatDatabaseTarget,
+  assertUatDemoDatabaseTarget,
+  assertUatDemoPublicUrl,
+  assertUatDemoRuntimeDatabaseTarget,
   assertUatPublicUrl,
   assertUatRuntimeDatabaseTarget,
   requiredUatSecret,
@@ -14,6 +17,17 @@ const safeEnvironment = {
   UAT_DATABASE_HOST_ALLOWLIST: '',
   UAT_ISOLATION_CONFIRMED: 'true',
   UAT_PRODUCTION_DATABASE_TARGET: 'antifake-production-postgres',
+};
+
+const safeDemoEnvironment = {
+  ANTIFAKE_CURRENT_ENVIRONMENT: 'UAT_DEMO',
+  UAT_DEMO_MUTATION_APPROVED: 'true',
+  DATABASE_URL: 'postgresql://demo_user@demo-db.internal:5432/antifake_demo',
+  UAT_DEMO_DATABASE_TARGET: 'antifake-demo-database',
+  UAT_DEMO_DATABASE_NAME: 'antifake_demo',
+  UAT_DEMO_DATABASE_HOST_ALLOWLIST: 'demo-db.internal',
+  UAT_DEMO_PRODUCTION_DATABASE_TARGET: 'antifake-customer-database',
+  UAT_APPROVED_PUBLIC_HOSTS: 'antifake.io.vn,www.antifake.io.vn',
 };
 
 describe('UAT safety guards', () => {
@@ -56,6 +70,33 @@ describe('UAT safety guards', () => {
         UAT_DATABASE_HOST_ALLOWLIST: 'uat-db.internal',
       }).hostname,
     ).toBe('uat-db.internal');
+  });
+
+  it('accepts the explicitly classified existing UAT demo database', () => {
+    expect(assertUatDemoDatabaseTarget(safeDemoEnvironment)).toMatchObject({
+      databaseName: 'antifake_demo',
+      hostname: 'demo-db.internal',
+      target: 'antifake-demo-database',
+      isolationMethod: 'explicit-demo-target-and-database-name',
+    });
+  });
+
+  it('protects an explicitly classified UAT demo runtime without enabling writes', () => {
+    const runtimeEnvironment = {
+      ...safeDemoEnvironment,
+      UAT_DEMO_MUTATION_APPROVED: 'false',
+    };
+    expect(
+      assertUatDemoRuntimeDatabaseTarget(runtimeEnvironment),
+    ).toMatchObject({
+      target: 'antifake-demo-database',
+    });
+    expect(
+      assertUatRuntimeDatabaseTarget({
+        ...runtimeEnvironment,
+        NODE_ENV: 'production',
+      }),
+    ).toMatchObject({ target: 'antifake-demo-database' });
   });
 
   it.each([
@@ -112,6 +153,42 @@ describe('UAT safety guards', () => {
     expect(() => assertUatPublicUrl('https://api.antifake.io.vn')).toThrow(
       /production/i,
     );
+  });
+
+  it('allows the owner-approved demo hosts only with explicit UAT_DEMO classification', () => {
+    expect(
+      assertUatDemoPublicUrl('https://antifake.io.vn', safeDemoEnvironment),
+    ).toBe('https://antifake.io.vn');
+    expect(() => assertUatDemoPublicUrl('https://antifake.io.vn')).toThrow(
+      /UAT_DEMO/i,
+    );
+    expect(() =>
+      assertUatDemoPublicUrl('https://api.antifake.io.vn', safeDemoEnvironment),
+    ).toThrow(/approved|host/i);
+  });
+
+  it.each([
+    [
+      'missing environment classification',
+      { ANTIFAKE_CURRENT_ENVIRONMENT: '' },
+    ],
+    ['missing mutation approval', { UAT_DEMO_MUTATION_APPROVED: 'false' }],
+    ['database name mismatch', { UAT_DEMO_DATABASE_NAME: 'other_demo' }],
+    [
+      'unallowlisted demo database host',
+      {
+        DATABASE_URL:
+          'postgresql://demo_user@other-db.internal:5432/antifake_demo',
+      },
+    ],
+    [
+      'production-looking demo target',
+      { UAT_DEMO_DATABASE_TARGET: 'antifake-production-database' },
+    ],
+  ])('rejects demo target with %s', (_caseName, overrides) => {
+    expect(() =>
+      assertUatDemoDatabaseTarget({ ...safeDemoEnvironment, ...overrides }),
+    ).toThrow(/UAT|demo|production|database|allowlist/i);
   });
 
   it('rejects placeholder UAT passwords', () => {

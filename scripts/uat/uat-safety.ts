@@ -5,7 +5,9 @@ export type UatDatabaseTarget = {
   hostname: string;
   target: string;
   productionTarget: string;
-  isolationMethod: 'explicit-target-and-database-name';
+  isolationMethod:
+    | 'explicit-target-and-database-name'
+    | 'explicit-demo-target-and-database-name';
 };
 
 const PRODUCTION_HOSTS = new Set([
@@ -27,7 +29,7 @@ function isProductionHost(hostname: string) {
 function requiredValue(environment: UatEnvironment, name: string) {
   const value = environment[name]?.trim();
   if (!value) {
-    throw new Error(`${name} is required for a destructive UAT operation`);
+    throw new Error(`${name} is required for a UAT fixture operation`);
   }
   return value;
 }
@@ -62,6 +64,13 @@ function parseDatabaseUrl(databaseUrl: string) {
     databaseName,
     hostname: parsed.hostname.toLowerCase(),
   };
+}
+
+function allowlistedHosts(environment: UatEnvironment, name: string) {
+  return (environment[name] ?? '')
+    .split(',')
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 export function assertUatDatabaseTarget(
@@ -132,12 +141,9 @@ export function assertUatDatabaseTarget(
   }
 
   if (!LOCAL_HOSTS.has(hostname)) {
-    const allowlistedHosts = (environment.UAT_DATABASE_HOST_ALLOWLIST ?? '')
-      .split(',')
-      .map((item) => item.trim().toLowerCase())
-      .filter(Boolean);
+    const hosts = allowlistedHosts(environment, 'UAT_DATABASE_HOST_ALLOWLIST');
 
-    if (!allowlistedHosts.includes(hostname)) {
+    if (!hosts.includes(hostname)) {
       throw new Error(
         'Remote UAT database host must be in UAT_DATABASE_HOST_ALLOWLIST',
       );
@@ -154,6 +160,112 @@ export function assertUatDatabaseTarget(
 }
 
 /**
+ * Allow additive fixture writes to the owner's explicitly classified current
+ * demo deployment. This is intentionally separate from the destructive
+ * isolated-database guard above: the demo path must prove its classification,
+ * target identity and host allowlist, but must never expose the reset command.
+ */
+function assertUatDemoDatabaseBoundary(
+  environment: UatEnvironment,
+  requireMutationApproval: boolean,
+): UatDatabaseTarget {
+  if (environment.ANTIFAKE_CURRENT_ENVIRONMENT?.trim() !== 'UAT_DEMO') {
+    throw new Error(
+      'ANTIFAKE_CURRENT_ENVIRONMENT=UAT_DEMO is required for the demo runtime',
+    );
+  }
+
+  if (
+    requireMutationApproval &&
+    environment.UAT_DEMO_MUTATION_APPROVED?.trim().toLowerCase() !== 'true'
+  ) {
+    throw new Error(
+      'UAT_DEMO_MUTATION_APPROVED=true is required for demo fixture writes',
+    );
+  }
+
+  const databaseUrl = requiredValue(environment, 'DATABASE_URL');
+  const target = requiredValue(environment, 'UAT_DEMO_DATABASE_TARGET');
+  const expectedDatabaseName = requiredValue(
+    environment,
+    'UAT_DEMO_DATABASE_NAME',
+  );
+  const productionTarget = requiredValue(
+    environment,
+    'UAT_DEMO_PRODUCTION_DATABASE_TARGET',
+  );
+  const { databaseName, hostname } = parseDatabaseUrl(databaseUrl);
+
+  if (
+    !/(uat|demo|staging|test|local)/i.test(target) ||
+    isProductionLooking(target)
+  ) {
+    throw new Error(
+      'UAT_DEMO_DATABASE_TARGET must identify a non-production demo target',
+    );
+  }
+
+  if (isProductionLooking(expectedDatabaseName)) {
+    throw new Error(
+      'UAT_DEMO_DATABASE_NAME must not identify a production database',
+    );
+  }
+
+  if (databaseName !== expectedDatabaseName) {
+    throw new Error(
+      'DATABASE_URL database name does not match UAT_DEMO_DATABASE_NAME',
+    );
+  }
+
+  if (target.toLowerCase() === productionTarget.toLowerCase()) {
+    throw new Error(
+      'UAT_DEMO_DATABASE_TARGET must differ from UAT_DEMO_PRODUCTION_DATABASE_TARGET',
+    );
+  }
+
+  if (isProductionHost(hostname)) {
+    throw new Error('Production database host is not allowed for UAT demo');
+  }
+
+  if (!LOCAL_HOSTS.has(hostname)) {
+    const hosts = allowlistedHosts(
+      environment,
+      'UAT_DEMO_DATABASE_HOST_ALLOWLIST',
+    );
+    if (!hosts.includes(hostname)) {
+      throw new Error(
+        'Remote demo database host must be in UAT_DEMO_DATABASE_HOST_ALLOWLIST',
+      );
+    }
+  }
+
+  return {
+    databaseName,
+    hostname,
+    target,
+    productionTarget,
+    isolationMethod: 'explicit-demo-target-and-database-name',
+  };
+}
+
+export function assertUatDemoDatabaseTarget(
+  environment: UatEnvironment = process.env,
+): UatDatabaseTarget {
+  return assertUatDemoDatabaseBoundary(environment, true);
+}
+
+/**
+ * Validate the current UAT/demo database before the application boots. This
+ * deliberately does not require mutation approval: the runtime must prove its
+ * boundary even when fixture writes are disabled.
+ */
+export function assertUatDemoRuntimeDatabaseTarget(
+  environment: UatEnvironment = process.env,
+): UatDatabaseTarget {
+  return assertUatDemoDatabaseBoundary(environment, false);
+}
+
+/**
  * Keep normal production startup unchanged while making any explicitly UAT
  * process prove its database boundary before the application boots.
  */
@@ -163,6 +275,10 @@ export function assertUatRuntimeDatabaseTarget(
   const uatMode = environment.UAT_ENVIRONMENT?.trim().toLowerCase() === 'true';
   const namedUatNodeEnvironment =
     environment.NODE_ENV?.trim().toLowerCase() === 'uat';
+  const demoMode =
+    environment.ANTIFAKE_CURRENT_ENVIRONMENT?.trim() === 'UAT_DEMO';
+
+  if (demoMode) return assertUatDemoRuntimeDatabaseTarget(environment);
 
   if (!uatMode && !namedUatNodeEnvironment) {
     return undefined;
@@ -200,6 +316,61 @@ export function assertUatPublicUrl(value: string) {
   if (!LOCAL_HOSTS.has(hostname) && !/(uat|staging|test)/i.test(hostname)) {
     throw new Error(
       'UAT public URL must use a local or explicitly non-production hostname',
+    );
+  }
+
+  return value;
+}
+
+/**
+ * Validate a public URL for the owner's current UAT/demo deployment. The
+ * production-looking AntiFake hosts are accepted only when the exact host is
+ * explicitly allowlisted under the UAT_DEMO classification.
+ */
+export function assertUatDemoPublicUrl(
+  value: string,
+  environment: UatEnvironment = process.env,
+) {
+  let parsed: URL;
+
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new Error('UAT demo public URL must be a valid URL');
+  }
+
+  if (
+    !['http:', 'https:'].includes(parsed.protocol) ||
+    parsed.username ||
+    parsed.password
+  ) {
+    throw new Error(
+      'UAT demo public URL must be an HTTP(S) URL without credentials',
+    );
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  const approvedDemoHosts = allowlistedHosts(
+    environment,
+    'UAT_APPROVED_PUBLIC_HOSTS',
+  );
+  const isApprovedDemoHost =
+    environment.ANTIFAKE_CURRENT_ENVIRONMENT?.trim() === 'UAT_DEMO' &&
+    approvedDemoHosts.includes(hostname);
+
+  if (isProductionHost(hostname) && !isApprovedDemoHost) {
+    throw new Error(
+      'Production public URL requires an explicitly approved UAT_DEMO host',
+    );
+  }
+
+  if (
+    !LOCAL_HOSTS.has(hostname) &&
+    !/(uat|staging|test)/i.test(hostname) &&
+    !isApprovedDemoHost
+  ) {
+    throw new Error(
+      'UAT demo public URL must use a local, explicitly non-production or approved demo hostname',
     );
   }
 
