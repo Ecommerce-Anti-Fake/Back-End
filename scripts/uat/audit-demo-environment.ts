@@ -1,5 +1,6 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
+import { Client } from 'pg';
 import {
   assertUatDemoPublicUrl,
   assertUatDemoRuntimeDatabaseTarget,
@@ -26,6 +27,19 @@ type AccountRecord = {
   emailVerifiedAt: Date | null;
   phoneVerifiedAt: Date | null;
 } | null;
+
+type DatabaseIdentityRow = {
+  name: string;
+};
+
+type SchemaRow = {
+  schema_name: string;
+};
+
+type TableCountRow = {
+  schema_name: string;
+  count: number;
+};
 
 function accountSnapshot(user: AccountRecord) {
   return {
@@ -80,6 +94,45 @@ export function classifySyntheticSignals(
   };
 }
 
+async function inspectDatabaseStructure(connectionString: string) {
+  const client = new Client({ connectionString });
+  await client.connect();
+
+  try {
+    await client.query('BEGIN TRANSACTION READ ONLY');
+    const identity = await client.query<DatabaseIdentityRow>(
+      'select current_database() as name',
+    );
+    const schemas = await client.query<SchemaRow>(
+      'select schema_name from information_schema.schemata order by schema_name',
+    );
+    const tableCounts = await client.query<TableCountRow>(
+      'select table_schema as schema_name, count(1)::int as count from information_schema.tables group by table_schema order by table_schema',
+    );
+    await client.query('ROLLBACK');
+
+    return {
+      databaseName: identity.rows[0]?.name ?? 'unknown',
+      applicationSchemas: schemas.rows
+        .map((row) => row.schema_name)
+        .filter(
+          (name) =>
+            name !== 'pg_catalog' &&
+            name !== 'information_schema' &&
+            name !== 'pg_toast' &&
+            !name.startsWith('pg_temp_'),
+        ),
+      tableCountsBySchema: tableCounts.rows.map((row) => ({
+        schema: row.schema_name,
+        count: Number(row.count),
+      })),
+      readOnlyTransaction: true,
+    };
+  } finally {
+    await client.end();
+  }
+}
+
 async function main() {
   loadUatEnv();
   const databaseTarget = assertUatDemoRuntimeDatabaseTarget();
@@ -87,6 +140,7 @@ async function main() {
     requiredUatSecret('UAT_FRONTEND_PUBLIC_URL'),
   );
   const connectionString = requiredUatSecret('DATABASE_URL');
+  const databaseStructure = await inspectDatabaseStructure(connectionString);
   const prisma = new PrismaClient({
     adapter: new PrismaPg({ connectionString }),
   });
@@ -173,6 +227,7 @@ async function main() {
             target: databaseTarget.target,
             hostname: 'withheld',
             isolationMethod: databaseTarget.isolationMethod,
+            structure: databaseStructure,
           },
           approvedAccounts,
           existingState,
