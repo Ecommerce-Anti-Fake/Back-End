@@ -255,6 +255,24 @@ export function assertUatDemoDatabaseTarget(
 }
 
 /**
+ * Keep fixture writes closed after a data audit finds possible non-synthetic
+ * records. This is deliberately separate from mutation approval so an
+ * operator cannot bypass a safety hold by setting one generic write flag.
+ */
+export function assertUatDemoSyntheticDataConfirmed(
+  environment: UatEnvironment = process.env,
+) {
+  if (
+    environment.UAT_DEMO_SYNTHETIC_DATA_CONFIRMED?.trim().toLowerCase() !==
+    'true'
+  ) {
+    throw new Error(
+      'UAT_DEMO_SYNTHETIC_DATA_CONFIRMED=true is required after the demo data audit',
+    );
+  }
+}
+
+/**
  * Validate the current UAT/demo database before the application boots. This
  * deliberately does not require mutation approval: the runtime must prove its
  * boundary even when fixture writes are disabled.

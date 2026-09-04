@@ -3,6 +3,7 @@ import {
   assertUatDemoDatabaseTarget,
   assertUatDemoPublicUrl,
   assertUatDemoRuntimeDatabaseTarget,
+  assertUatDemoSyntheticDataConfirmed,
   assertUatPublicUrl,
   assertUatRuntimeDatabaseTarget,
   requiredUatSecret,
@@ -22,6 +23,7 @@ const safeEnvironment = {
 const safeDemoEnvironment = {
   ANTIFAKE_CURRENT_ENVIRONMENT: 'UAT_DEMO',
   UAT_DEMO_MUTATION_APPROVED: 'true',
+  UAT_DEMO_SYNTHETIC_DATA_CONFIRMED: 'true',
   DATABASE_URL: 'postgresql://demo_user@demo-db.internal:5432/antifake_demo',
   UAT_DEMO_DATABASE_TARGET: 'antifake-demo-database',
   UAT_DEMO_DATABASE_NAME: 'antifake_demo',
@@ -79,6 +81,15 @@ describe('UAT safety guards', () => {
       target: 'antifake-demo-database',
       isolationMethod: 'explicit-demo-target-and-database-name',
     });
+  });
+
+  it('requires separate synthetic-data confirmation before fixture writes', () => {
+    expect(() =>
+      assertUatDemoSyntheticDataConfirmed({
+        ...safeDemoEnvironment,
+        UAT_DEMO_SYNTHETIC_DATA_CONFIRMED: 'false',
+      }),
+    ).toThrow(/SYNTHETIC_DATA_CONFIRMED|data audit/i);
   });
 
   it('protects an explicitly classified UAT demo runtime without enabling writes', () => {

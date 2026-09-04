@@ -1,6 +1,10 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
-import { assertUatDemoDatabaseTarget, requiredUatSecret } from './uat-safety';
+import {
+  assertUatDemoDatabaseTarget,
+  assertUatDemoSyntheticDataConfirmed,
+  requiredUatSecret,
+} from './uat-safety';
 import { loadUatEnv } from './load-uat-env';
 import { DEMO_FIXTURE_IDS, DEMO_FIXTURE_NAMES } from './demo-fixture-contract';
 
@@ -27,6 +31,7 @@ async function main() {
   loadUatEnv();
   requireCleanupApproval();
   const databaseTarget = assertUatDemoDatabaseTarget();
+  assertUatDemoSyntheticDataConfirmed();
   const connectionString = requiredUatSecret('DATABASE_URL');
   const prisma = new PrismaClient({
     adapter: new PrismaPg({ connectionString }),

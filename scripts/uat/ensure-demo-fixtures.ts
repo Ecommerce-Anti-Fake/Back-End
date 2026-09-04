@@ -30,6 +30,7 @@ import { createHash } from 'node:crypto';
 import {
   assertUatDemoDatabaseTarget,
   assertUatDemoPublicUrl,
+  assertUatDemoSyntheticDataConfirmed,
   requiredUatSecret,
 } from './uat-safety';
 import { loadUatEnv } from './load-uat-env';
@@ -1701,6 +1702,7 @@ async function ensureAdminReviewSet(
 async function main() {
   loadUatEnv();
   const databaseTarget = assertUatDemoDatabaseTarget();
+  assertUatDemoSyntheticDataConfirmed();
   const frontendUrl = assertUatDemoPublicUrl(
     requiredUatSecret('UAT_FRONTEND_PUBLIC_URL'),
   );
