@@ -86,7 +86,15 @@ export async function buildDemoFixtureSnapshot(
           sku: DEMO_FIXTURE_NAMES.variantSku,
           isActive: true,
         },
-        select: { id: true },
+        select: {
+          id: true,
+          values: {
+            select: {
+              optionValueId: true,
+              optionValue: { select: { optionGroupId: true } },
+            },
+          },
+        },
       })
     : null;
   const [cart, voucher, batch] = await Promise.all([
@@ -298,6 +306,16 @@ export async function buildDemoFixtureSnapshot(
       'approved synthetic shop': Boolean(shop),
       'active synthetic offer': Boolean(offer),
       'active variant/inventory': Boolean(variant),
+      'valid variant option mapping': Boolean(
+        variant &&
+        variant.values.some(
+          ({ optionValueId }) =>
+            optionValueId === DEMO_FIXTURE_IDS.optionValuePrimary,
+        ) &&
+        new Set(
+          variant.values.map(({ optionValue }) => optionValue.optionGroupId),
+        ).size === variant.values.length,
+      ),
       'buyer address/cart': Boolean(cart),
       'eligible active voucher': Boolean(voucher),
       'linked QR batch': Boolean(batch),

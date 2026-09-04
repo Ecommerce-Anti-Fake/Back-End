@@ -547,25 +547,54 @@ async function ensureOffer(
       isActive: true,
     },
   });
-  for (const value of values) {
-    await prisma.offerVariantValue.upsert({
-      where: {
-        variantId_optionValueId: {
-          variantId: variant.id,
-          optionValueId: value.id,
-        },
-      },
-      update: {},
-      create: {
-        id:
-          value.id === DEMO_FIXTURE_IDS.optionValuePrimary
-            ? DEMO_FIXTURE_IDS.variantValuePrimary
-            : DEMO_FIXTURE_IDS.variantValueSecondary,
-        variantId: variant.id,
-        optionValueId: value.id,
-      },
-    });
+  const [primaryValue, secondaryValue] = values;
+  if (!primaryValue || !secondaryValue) {
+    throw new Error('Reserved DOCS_UAT option values are incomplete');
   }
+
+  const reservedVariantValueRows = await prisma.offerVariantValue.findMany({
+    where: {
+      id: {
+        in: [
+          DEMO_FIXTURE_IDS.variantValuePrimary,
+          DEMO_FIXTURE_IDS.variantValueSecondary,
+        ],
+      },
+    },
+    select: { id: true, variantId: true, optionValueId: true },
+  });
+  for (const row of reservedVariantValueRows) {
+    if (
+      row.variantId !== variant.id ||
+      ![primaryValue.id, secondaryValue.id].includes(row.optionValueId)
+    ) {
+      throw new Error('Reserved DOCS_UAT variant-value row is occupied');
+    }
+  }
+
+  // Keep one valid value for the single option group. The original fixture
+  // linked both values from that group to one variant, so the public product
+  // UI could never resolve a selection and kept cart actions disabled.
+  await prisma.offerVariantValue.deleteMany({
+    where: {
+      variantId: variant.id,
+      optionValueId: secondaryValue.id,
+    },
+  });
+  await prisma.offerVariantValue.upsert({
+    where: {
+      variantId_optionValueId: {
+        variantId: variant.id,
+        optionValueId: primaryValue.id,
+      },
+    },
+    update: {},
+    create: {
+      id: DEMO_FIXTURE_IDS.variantValuePrimary,
+      variantId: variant.id,
+      optionValueId: primaryValue.id,
+    },
+  });
 
   return { offer, variant };
 }
