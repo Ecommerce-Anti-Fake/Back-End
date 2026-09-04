@@ -366,6 +366,22 @@ export function assertUatRuntimeDatabaseTarget(
   return assertUatDatabaseTarget(environment);
 }
 
+/**
+ * Select the matching public-host guard for the runtime mode. The current
+ * owner-approved demo deployment uses production-looking hostnames, but only
+ * the explicit UAT_DEMO classification and host allowlist may authorize them.
+ */
+export function assertUatRuntimePublicUrl(
+  value: string,
+  environment: UatEnvironment = process.env,
+) {
+  if (environment.ANTIFAKE_CURRENT_ENVIRONMENT?.trim() === 'UAT_DEMO') {
+    return assertUatDemoPublicUrl(value, environment);
+  }
+
+  return assertUatPublicUrl(value);
+}
+
 export function assertUatPublicUrl(value: string) {
   let parsed: URL;
 

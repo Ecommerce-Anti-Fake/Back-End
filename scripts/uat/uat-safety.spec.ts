@@ -7,6 +7,7 @@ import {
   assertUatDemoRuntimeDatabaseTarget,
   assertUatPublicUrl,
   assertUatRuntimeDatabaseTarget,
+  assertUatRuntimePublicUrl,
   requiredUatSecret,
 } from './uat-safety';
 
@@ -202,6 +203,18 @@ describe('UAT safety guards', () => {
     expect(() =>
       assertUatDemoPublicUrl('https://api.antifake.io.vn', safeDemoEnvironment),
     ).toThrow(/approved|host/i);
+  });
+
+  it('uses the demo host guard when starting the approved UAT demo runtime', () => {
+    expect(
+      assertUatRuntimePublicUrl('https://antifake.io.vn', safeDemoEnvironment),
+    ).toBe('https://antifake.io.vn');
+    expect(() =>
+      assertUatRuntimePublicUrl('https://antifake.io.vn', {
+        ...safeDemoEnvironment,
+        ANTIFAKE_CURRENT_ENVIRONMENT: 'UAT_DEMO_UNCONFIRMED',
+      }),
+    ).toThrow(/production|UAT/i);
   });
 
   it.each([

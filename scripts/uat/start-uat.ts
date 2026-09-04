@@ -1,13 +1,13 @@
 import {
-  assertUatDatabaseTarget,
-  assertUatPublicUrl,
+  assertUatRuntimeDatabaseTarget,
+  assertUatRuntimePublicUrl,
   requiredUatSecret,
 } from './uat-safety';
 import { loadUatEnv } from './load-uat-env';
 
 loadUatEnv();
-assertUatDatabaseTarget();
-assertUatPublicUrl(requiredUatSecret('UAT_FRONTEND_PUBLIC_URL'));
+assertUatRuntimeDatabaseTarget();
+assertUatRuntimePublicUrl(requiredUatSecret('UAT_FRONTEND_PUBLIC_URL'));
 
 import('../../dist/apps/api-gateway/apps/api-gateway/src/main.js').catch(
   (error) => {
