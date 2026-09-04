@@ -168,6 +168,7 @@ export async function buildDemoFixtureSnapshot(
     communitySecondary,
     affiliate,
     wallet,
+    liveSession,
     reviewUser,
     reviewShop,
     reviewOffer,
@@ -205,6 +206,20 @@ export async function buildDemoFixtureSnapshot(
         id: true,
         availableBalance: true,
         _count: { select: { ledgerEntries: true } },
+      },
+    }),
+    prisma.liveCommerceSession.findUnique({
+      where: { id: DEMO_FIXTURE_IDS.liveSession },
+      select: {
+        id: true,
+        shopId: true,
+        title: true,
+        status: true,
+        startAt: true,
+        pinnedOfferId: true,
+        offers: { select: { offerId: true } },
+        vouchers: { select: { voucherId: true } },
+        comments: { select: { id: true, body: true, visibility: true } },
       },
     }),
     prisma.user.findUnique({
@@ -301,6 +316,23 @@ export async function buildDemoFixtureSnapshot(
       ),
       'non-payable shop wallet ledger': Boolean(
         wallet && wallet._count.ledgerEntries > 0,
+      ),
+      'scheduled live session shell': Boolean(
+        liveSession &&
+        liveSession.shopId === shop?.id &&
+        liveSession.title === DEMO_FIXTURE_NAMES.liveTitle &&
+        liveSession.status === 'SCHEDULED' &&
+        liveSession.startAt >= new Date() &&
+        liveSession.pinnedOfferId === offer?.id &&
+        liveSession.offers.some(({ offerId }) => offerId === offer?.id) &&
+        liveSession.vouchers.some(
+          ({ voucherId }) => voucherId === voucher?.id,
+        ) &&
+        liveSession.comments.some(
+          (comment) =>
+            comment.body === DEMO_FIXTURE_NAMES.liveComment &&
+            comment.visibility === 'PUBLIC',
+        ),
       ),
       'Admin KYC review row': Boolean(pendingKyc),
       'Admin shop review row': Boolean(pendingShopDocument),

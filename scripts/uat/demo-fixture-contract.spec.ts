@@ -29,7 +29,11 @@ describe('UAT demo fixture contract', () => {
   it('reports incomplete runtime fixture relationships', () => {
     const result = validateDemoFixtureSnapshot({
       aliases: { buyer: true, seller: true, admin: false },
-      entities: { shop: true, chat: false },
+      entities: {
+        shop: true,
+        chat: false,
+        'scheduled live session shell': false,
+      },
       positiveQr: false,
       orderStatuses: { pending: 1, confirmed: 0, shipping: 1, completed: 1 },
     });
@@ -39,6 +43,7 @@ describe('UAT demo fixture contract', () => {
       missing: [
         'approved account: admin',
         'chat',
+        'scheduled live session shell',
         'positive QR/provenance verification',
         'order lifecycle: confirmed',
       ],

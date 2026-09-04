@@ -50,6 +50,7 @@ async function main() {
       program,
       code,
       wallet,
+      liveSession,
       reviewUser,
       reviewShop,
       reviewOffer,
@@ -89,6 +90,10 @@ async function main() {
       prisma.wallet.findUnique({
         where: { id: DEMO_FIXTURE_IDS.wallet },
         select: { walletCode: true },
+      }),
+      prisma.liveCommerceSession.findUnique({
+        where: { id: DEMO_FIXTURE_IDS.liveSession },
+        select: { title: true },
       }),
       prisma.user.findUnique({
         where: { id: DEMO_FIXTURE_IDS.reviewUser },
@@ -138,6 +143,11 @@ async function main() {
     );
     assertReservedText(wallet?.walletCode, 'DOCS-UAT-WALLET-SHOP', 'wallet');
     assertReservedText(
+      liveSession?.title,
+      DEMO_FIXTURE_NAMES.liveTitle,
+      'live session',
+    );
+    assertReservedText(
       reviewUser?.email,
       DEMO_FIXTURE_NAMES.reviewUserEmail,
       'review user',
@@ -161,6 +171,31 @@ async function main() {
       ) => {
         counts[model] = (await operation).count;
       };
+
+      await remove(
+        'liveSessionComments',
+        tx.liveSessionComment.deleteMany({
+          where: { id: DEMO_FIXTURE_IDS.liveSessionComment },
+        }),
+      );
+      await remove(
+        'liveSessionVouchers',
+        tx.liveSessionVoucher.deleteMany({
+          where: { id: DEMO_FIXTURE_IDS.liveSessionVoucher },
+        }),
+      );
+      await remove(
+        'liveSessionOffers',
+        tx.liveSessionOffer.deleteMany({
+          where: { id: DEMO_FIXTURE_IDS.liveSessionOffer },
+        }),
+      );
+      await remove(
+        'liveSessions',
+        tx.liveCommerceSession.deleteMany({
+          where: { id: DEMO_FIXTURE_IDS.liveSession },
+        }),
+      );
 
       await remove(
         'affiliateCommission',

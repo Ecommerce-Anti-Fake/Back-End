@@ -1247,6 +1247,145 @@ async function ensureCommunity(
   return { post, comment };
 }
 
+async function ensureLiveSession(
+  prisma: PrismaClient,
+  author: { id: string },
+  shop: { id: string },
+  offer: { id: string },
+  voucher: { id: string },
+) {
+  const existing = await prisma.liveCommerceSession.findUnique({
+    where: { id: DEMO_FIXTURE_IDS.liveSession },
+    select: { shopId: true, title: true },
+  });
+  if (
+    existing &&
+    (existing.shopId !== shop.id ||
+      existing.title !== DEMO_FIXTURE_NAMES.liveTitle)
+  ) {
+    throw new Error('Reserved DOCS_UAT live session ID is already occupied');
+  }
+
+  const session = await prisma.liveCommerceSession.upsert({
+    where: { id: DEMO_FIXTURE_IDS.liveSession },
+    update: {
+      shopId: shop.id,
+      title: DEMO_FIXTURE_NAMES.liveTitle,
+      description: DEMO_FIXTURE_NAMES.liveDescription,
+      coverUrl: 'https://picsum.photos/seed/docs-uat-antifake-live/1200/675',
+      pinnedOfferId: offer.id,
+      startAt: daysFromNow(7),
+      status: 'SCHEDULED',
+      playbackUrl: null,
+      streamProvider: null,
+      streamProviderSessionId: null,
+      streamIngestUrl: null,
+      streamLatencyTargetMs: null,
+      providerStatus: null,
+      providerEventAt: null,
+      providerEventType: null,
+      providerErrorCode: null,
+      providerErrorMessage: null,
+      actualStartedAt: null,
+      actualEndedAt: null,
+      recordingUrl: null,
+      recordingRetentionDays: null,
+    },
+    create: {
+      id: DEMO_FIXTURE_IDS.liveSession,
+      shopId: shop.id,
+      title: DEMO_FIXTURE_NAMES.liveTitle,
+      description: DEMO_FIXTURE_NAMES.liveDescription,
+      coverUrl: 'https://picsum.photos/seed/docs-uat-antifake-live/1200/675',
+      pinnedOfferId: offer.id,
+      startAt: daysFromNow(7),
+      status: 'SCHEDULED',
+    },
+  });
+
+  const existingOfferLink = await prisma.liveSessionOffer.findUnique({
+    where: { id: DEMO_FIXTURE_IDS.liveSessionOffer },
+    select: { sessionId: true, offerId: true },
+  });
+  if (
+    existingOfferLink &&
+    (existingOfferLink.sessionId !== session.id ||
+      existingOfferLink.offerId !== offer.id)
+  ) {
+    throw new Error('Reserved DOCS_UAT live offer link ID is already occupied');
+  }
+  await prisma.liveSessionOffer.upsert({
+    where: { id: DEMO_FIXTURE_IDS.liveSessionOffer },
+    update: { sessionId: session.id, offerId: offer.id, sortOrder: 0 },
+    create: {
+      id: DEMO_FIXTURE_IDS.liveSessionOffer,
+      sessionId: session.id,
+      offerId: offer.id,
+      sortOrder: 0,
+    },
+  });
+
+  const existingVoucherLink = await prisma.liveSessionVoucher.findUnique({
+    where: { id: DEMO_FIXTURE_IDS.liveSessionVoucher },
+    select: { sessionId: true, voucherId: true },
+  });
+  if (
+    existingVoucherLink &&
+    (existingVoucherLink.sessionId !== session.id ||
+      existingVoucherLink.voucherId !== voucher.id)
+  ) {
+    throw new Error(
+      'Reserved DOCS_UAT live voucher link ID is already occupied',
+    );
+  }
+  await prisma.liveSessionVoucher.upsert({
+    where: { id: DEMO_FIXTURE_IDS.liveSessionVoucher },
+    update: { sessionId: session.id, voucherId: voucher.id, sortOrder: 0 },
+    create: {
+      id: DEMO_FIXTURE_IDS.liveSessionVoucher,
+      sessionId: session.id,
+      voucherId: voucher.id,
+      sortOrder: 0,
+    },
+  });
+
+  const existingComment = await prisma.liveSessionComment.findUnique({
+    where: { id: DEMO_FIXTURE_IDS.liveSessionComment },
+    select: { sessionId: true, authorUserId: true },
+  });
+  if (
+    existingComment &&
+    (existingComment.sessionId !== session.id ||
+      existingComment.authorUserId !== author.id)
+  ) {
+    throw new Error('Reserved DOCS_UAT live comment ID is already occupied');
+  }
+  await prisma.liveSessionComment.upsert({
+    where: { id: DEMO_FIXTURE_IDS.liveSessionComment },
+    update: {
+      sessionId: session.id,
+      authorUserId: author.id,
+      body: DEMO_FIXTURE_NAMES.liveComment,
+      visibility: SocialPostVisibility.PUBLIC,
+      clientMessageId: 'DOCS_UAT_LIVE_COMMENT_01',
+      hiddenAt: null,
+      hiddenByUserId: null,
+      createdAt: daysAgo(1),
+    },
+    create: {
+      id: DEMO_FIXTURE_IDS.liveSessionComment,
+      sessionId: session.id,
+      authorUserId: author.id,
+      body: DEMO_FIXTURE_NAMES.liveComment,
+      visibility: SocialPostVisibility.PUBLIC,
+      clientMessageId: 'DOCS_UAT_LIVE_COMMENT_01',
+      createdAt: daysAgo(1),
+    },
+  });
+
+  return session;
+}
+
 async function ensureAffiliate(
   prisma: PrismaClient,
   buyer: FixtureAccounts['buyer'],
@@ -1818,6 +1957,13 @@ async function main() {
       shop,
       catalog.offer,
     );
+    const liveSession = await ensureLiveSession(
+      prisma,
+      reviewSet.reviewUser,
+      shop,
+      catalog.offer,
+      buyerState.voucher,
+    );
     const completedOrder = await prisma.order.findUniqueOrThrow({
       where: { id: DEMO_FIXTURE_IDS.orders.completed },
       select: { id: true, totalAmount: true },
@@ -1861,6 +2007,7 @@ async function main() {
             })),
             chat: chat.id,
             community: community.post.id,
+            liveSession: liveSession.id,
             affiliate: affiliate.program.id,
             wallet: wallet.id,
             adminReview: {

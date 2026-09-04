@@ -45,6 +45,10 @@ export const DEMO_FIXTURE_IDS = {
   chatThread: fixtureId(50),
   chatMessageBuyer: fixtureId(51),
   chatMessageSeller: fixtureId(52),
+  liveSession: fixtureId(55),
+  liveSessionOffer: fixtureId(56),
+  liveSessionVoucher: fixtureId(57),
+  liveSessionComment: fixtureId(58),
   communityPost: fixtureId(60),
   communityMedia: fixtureId(61),
   communityComment: fixtureId(62),
@@ -104,6 +108,10 @@ export const DEMO_FIXTURE_NAMES = {
   voucherCode: 'DOCS-UAT-10OFF',
   batchNumber: 'DOCS-UAT-BATCH-01',
   chatKey: 'DOCS_UAT_CHAT_BUYER_SELLER',
+  liveTitle: 'DOCS_UAT Livestream kiem thu theo lich',
+  liveDescription:
+    'DOCS_UAT: Phien live demo dang cho bat dau, khong ket noi nha cung cap phat.',
+  liveComment: 'DOCS_UAT: Binh luan lich phat demo an toan.',
   communityBody:
     'DOCS_UAT: Bai dang demo phuc vu huong dan kiem tra nguon goc.',
   affiliateSlug: 'docs-uat-affiliate',
