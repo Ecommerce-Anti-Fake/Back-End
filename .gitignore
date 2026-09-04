@@ -41,6 +41,7 @@ lerna-debug.log*
 !.env.example
 !.env.passenger.example
 !.env.uat.example
+!.env.uat-demo.example
 
 # Service account credentials
 *firebase-adminsdk*.json

@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import {
   DEMO_ACCOUNT_ALIASES,
+  DEMO_FIXTURE_IDS,
   DEMO_FIXTURE_NAMES,
   validateDemoFixtureSnapshot,
   type DemoFixtureSnapshot,
@@ -18,7 +19,7 @@ function sha256(value: string) {
   return createHash('sha256').update(value).digest('hex');
 }
 
-async function buildSnapshot(
+export async function buildDemoFixtureSnapshot(
   prisma: PrismaClient,
   qrCode: string,
 ): Promise<DemoFixtureSnapshot> {
@@ -140,30 +141,31 @@ async function buildSnapshot(
       )
     : false;
 
-  const orderStatuses = Object.fromEntries(
+  const orderStatuses: Record<string, number> = Object.fromEntries(
     await Promise.all(
-      [
-        ['pending', 'pending'],
-        ['confirmed', 'paid'],
-        ['shipping', 'shipping'],
-        ['completed', 'completed'],
-      ].map(async ([key, orderStatus]) => [
-        key,
-        await prisma.order.count({
-          where: {
-            buyerUserId: buyer.id,
-            shopId: shop?.id,
-            orderStatus,
-            shippingAddress: `DOCS_UAT Dia chi don hang ${key}`,
-          },
-        }),
-      ]),
+      (['pending', 'confirmed', 'shipping', 'completed'] as const).map(
+        async (key) => {
+          const orderStatus = key === 'confirmed' ? 'paid' : key;
+          return [
+            key,
+            await prisma.order.count({
+              where: {
+                buyerUserId: buyer.id,
+                shopId: shop?.id,
+                orderStatus,
+                shippingAddress: `DOCS_UAT Dia chi don hang ${key}`,
+              },
+            }),
+          ] as const;
+        },
+      ),
     ),
   );
 
   const [
     chat,
     community,
+    communitySecondary,
     affiliate,
     wallet,
     reviewUser,
@@ -178,9 +180,13 @@ async function buildSnapshot(
       where: {
         body: DEMO_FIXTURE_NAMES.communityBody,
         visibility: 'PUBLIC',
-        authorUserId: seller.id,
+        authorUserId: DEMO_FIXTURE_IDS.reviewUser,
       },
       select: { id: true },
+    }),
+    prisma.socialPost.findUnique({
+      where: { id: DEMO_FIXTURE_IDS.communityPostSecondary },
+      select: { id: true, visibility: true },
     }),
     prisma.affiliateProgram.findUnique({
       where: { slug: DEMO_FIXTURE_NAMES.affiliateSlug },
@@ -281,7 +287,11 @@ async function buildSnapshot(
       'eligible active voucher': Boolean(voucher),
       'linked QR batch': Boolean(batch),
       'chat history': Boolean(chat && chat.messages.length >= 2),
-      'public community post': Boolean(community),
+      'public community post': Boolean(
+        community &&
+        communitySecondary &&
+        communitySecondary.visibility === 'PUBLIC',
+      ),
       'affiliate link/conversion/commission': Boolean(
         affiliate &&
         affiliate.accounts.length > 0 &&
@@ -312,7 +322,7 @@ async function main() {
   });
 
   try {
-    const snapshot = await buildSnapshot(prisma, qrCode);
+    const snapshot = await buildDemoFixtureSnapshot(prisma, qrCode);
     const result = validateDemoFixtureSnapshot(snapshot);
     console.log(
       JSON.stringify(
@@ -322,7 +332,7 @@ async function main() {
           databaseTarget: {
             target: databaseTarget.target,
             databaseName: databaseTarget.databaseName,
-            hostname: databaseTarget.hostname,
+            hostname: 'withheld',
           },
           snapshot,
           missing: result.missing,
@@ -337,11 +347,13 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(
-    error instanceof Error
-      ? error.message
-      : 'UAT demo fixture verification failed',
-  );
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(
+      error instanceof Error
+        ? error.message
+        : 'UAT demo fixture verification failed',
+    );
+    process.exitCode = 1;
+  });
+}

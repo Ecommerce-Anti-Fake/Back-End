@@ -255,21 +255,82 @@ export function assertUatDemoDatabaseTarget(
 }
 
 /**
- * Keep fixture writes closed after a data audit finds possible non-synthetic
- * records. This is deliberately separate from mutation approval so an
- * operator cannot bypass a safety hold by setting one generic write flag.
+ * Confirm the owner's classification of all pre-existing rows. This does not
+ * make legacy rows writable: the audit still reports them and fixture tooling
+ * only owns rows in the explicit DOCS_UAT namespace.
+ */
+export function assertUatDemoDataClassificationConfirmed(
+  environment: UatEnvironment = process.env,
+) {
+  if (
+    environment.UAT_DEMO_LEGACY_DATA_ACKNOWLEDGED?.trim().toLowerCase() !==
+    'true'
+  ) {
+    throw new Error(
+      'UAT_DEMO_LEGACY_DATA_ACKNOWLEDGED=true is required after the owner data-classification decision',
+    );
+  }
+
+  const cutoff = environment.UAT_DEMO_LEGACY_DATA_CUTOFF?.trim();
+  if (!cutoff || !Number.isFinite(Date.parse(cutoff))) {
+    throw new Error(
+      'UAT_DEMO_LEGACY_DATA_CUTOFF must be a valid ISO timestamp for the owner-classified legacy baseline',
+    );
+  }
+
+  return new Date(cutoff);
+}
+
+/**
+ * Require an explicit additive-only fixture policy before any documentation
+ * fixture write or managed cleanup. These flags make the safety boundary
+ * machine-checkable and fail closed when a caller omits a policy decision.
+ */
+export function assertUatDemoFixturePolicy(
+  environment: UatEnvironment = process.env,
+) {
+  const requiredExactValues: ReadonlyArray<[string, string]> = [
+    ['UAT_DEMO_FIXTURE_NAMESPACE', 'DOCS_UAT'],
+    ['UAT_DEMO_FIXTURE_MODE', 'ADDITIVE_IDEMPOTENT'],
+    ['UAT_DEMO_DESTRUCTIVE_RESET_ALLOWED', 'false'],
+    ['UAT_DEMO_LEGACY_MUTATION_ALLOWED', 'false'],
+    ['UAT_DEMO_REAL_PAYMENT_ALLOWED', 'false'],
+    ['UAT_DEMO_REAL_PAYOUT_ALLOWED', 'false'],
+    ['UAT_DEMO_REAL_SHIPMENT_ALLOWED', 'false'],
+    ['UAT_DEMO_REAL_EXTERNAL_KYC_ALLOWED', 'false'],
+    ['UAT_DEMO_REAL_LIVESTREAM_ALLOWED', 'false'],
+  ];
+
+  for (const [name, expected] of requiredExactValues) {
+    if (environment[name]?.trim().toLowerCase() !== expected.toLowerCase()) {
+      throw new Error(
+        `${name}=${expected} is required for DOCS_UAT operations`,
+      );
+    }
+  }
+
+  return {
+    namespace: 'DOCS_UAT' as const,
+    mode: 'ADDITIVE_IDEMPOTENT' as const,
+    destructiveResetAllowed: false as const,
+    legacyMutationAllowed: false as const,
+    realPaymentAllowed: false as const,
+    realPayoutAllowed: false as const,
+    realShipmentAllowed: false as const,
+    realExternalKycAllowed: false as const,
+    realLivestreamAllowed: false as const,
+  };
+}
+
+/**
+ * Backward-compatible function name for older local scripts. The old
+ * synthetic-data flag is intentionally not accepted; callers must provide the
+ * explicit owner classification flag above.
  */
 export function assertUatDemoSyntheticDataConfirmed(
   environment: UatEnvironment = process.env,
 ) {
-  if (
-    environment.UAT_DEMO_SYNTHETIC_DATA_CONFIRMED?.trim().toLowerCase() !==
-    'true'
-  ) {
-    throw new Error(
-      'UAT_DEMO_SYNTHETIC_DATA_CONFIRMED=true is required after the demo data audit',
-    );
-  }
+  return assertUatDemoDataClassificationConfirmed(environment);
 }
 
 /**

@@ -45,4 +45,42 @@ describe('demo environment audit', () => {
       'shops without synthetic markers',
     ]);
   });
+
+  it('reports acknowledged legacy rows without blocking new namespaced rows', () => {
+    const result = classifySyntheticSignals(
+      [
+        {
+          email: 'legacy@example.invalid',
+          displayName: 'Legacy Demo Account',
+          createdAt: new Date('2026-09-03T23:59:00.000Z'),
+        },
+        {
+          email: 'docs-uat@antifake.local',
+          displayName: 'Nguoi dung DOCS_UAT Review',
+          createdAt: new Date('2026-09-04T00:01:00.000Z'),
+        },
+      ],
+      [
+        {
+          shopName: 'Historical Demo Shop',
+          createdAt: new Date('2026-09-03T23:59:00.000Z'),
+        },
+        {
+          shopName: 'Cua hang DOCS_UAT',
+          createdAt: new Date('2026-09-04T00:01:00.000Z'),
+        },
+      ],
+      new Date('2026-09-04T00:00:00.000Z'),
+    );
+
+    expect(result).toMatchObject({
+      legacyDataPresent: true,
+      legacyUserCount: 1,
+      legacyShopCount: 1,
+      legacyExternalEmailCount: 1,
+      unclassifiedNewData: false,
+      safeForMutation: true,
+      reasons: [],
+    });
+  });
 });

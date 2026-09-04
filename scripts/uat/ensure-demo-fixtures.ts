@@ -29,8 +29,9 @@ import {
 import { createHash } from 'node:crypto';
 import {
   assertUatDemoDatabaseTarget,
+  assertUatDemoDataClassificationConfirmed,
+  assertUatDemoFixturePolicy,
   assertUatDemoPublicUrl,
-  assertUatDemoSyntheticDataConfirmed,
   requiredUatSecret,
 } from './uat-safety';
 import { loadUatEnv } from './load-uat-env';
@@ -271,7 +272,7 @@ async function ensureReviewUser(prisma: PrismaClient) {
     throw new Error('Reserved DOCS_UAT review email is already occupied');
   }
 
-  return prisma.user.upsert({
+  const user = await prisma.user.upsert({
     where: { id },
     update: {
       email,
@@ -292,6 +293,19 @@ async function ensureReviewUser(prisma: PrismaClient) {
       role: 'user',
       accountStatus: 'active',
     },
+  });
+
+  const avatar = await ensureMedia(prisma, {
+    id: DEMO_FIXTURE_IDS.communityAuthorMedia,
+    ownerUserId: user.id,
+    resourceType: MediaResourceType.USER_AVATAR,
+    secureUrl: UAT_IMAGE_URL,
+    publicId: 'docs-uat/community/author-avatar',
+  });
+
+  return prisma.user.update({
+    where: { id: user.id },
+    data: { avatarMediaId: avatar.id },
   });
 }
 
@@ -1108,6 +1122,7 @@ async function ensureCommunity(
   prisma: PrismaClient,
   buyer: FixtureAccounts['buyer'],
   seller: FixtureAccounts['seller'],
+  author: { id: string },
   shop: { id: string },
   offer: { id: string },
 ) {
@@ -1121,7 +1136,7 @@ async function ensureCommunity(
   const post = await prisma.socialPost.upsert({
     where: { id: DEMO_FIXTURE_IDS.communityPost },
     update: {
-      authorUserId: seller.id,
+      authorUserId: author.id,
       authorShopId: shop.id,
       offerId: offer.id,
       postType: SocialPostType.PRODUCT_SHARE,
@@ -1132,7 +1147,7 @@ async function ensureCommunity(
     },
     create: {
       id: DEMO_FIXTURE_IDS.communityPost,
-      authorUserId: seller.id,
+      authorUserId: author.id,
       authorShopId: shop.id,
       offerId: offer.id,
       postType: SocialPostType.PRODUCT_SHARE,
@@ -1156,7 +1171,7 @@ async function ensureCommunity(
     where: { id: DEMO_FIXTURE_IDS.communityComment },
     update: {
       postId: post.id,
-      authorUserId: buyer.id,
+      authorUserId: author.id,
       body: 'Binh luan demo phuc vu huong dan tuong tac cong dong.',
       visibility: SocialPostVisibility.PUBLIC,
     },
@@ -1183,6 +1198,52 @@ async function ensureCommunity(
       reactionType: SocialReactionType.LIKE,
     },
   });
+
+  const secondaryMedia = await ensureMedia(prisma, {
+    id: DEMO_FIXTURE_IDS.communityMediaSecondary,
+    ownerUserId: author.id,
+    resourceType: MediaResourceType.SOCIAL_POST,
+    secureUrl: UAT_BANNER_URL,
+    publicId: 'docs-uat/community/secondary',
+  });
+  const secondaryPost = await prisma.socialPost.upsert({
+    where: { id: DEMO_FIXTURE_IDS.communityPostSecondary },
+    update: {
+      authorUserId: author.id,
+      authorShopId: shop.id,
+      offerId: offer.id,
+      postType: SocialPostType.PRODUCT_SHARE,
+      body: 'DOCS_UAT: Noi dung mau thu hai cho feed cong dong an toan.',
+      visibility: SocialPostVisibility.PUBLIC,
+      hiddenAt: null,
+      hiddenByUserId: null,
+    },
+    create: {
+      id: DEMO_FIXTURE_IDS.communityPostSecondary,
+      authorUserId: author.id,
+      authorShopId: shop.id,
+      offerId: offer.id,
+      postType: SocialPostType.PRODUCT_SHARE,
+      body: 'DOCS_UAT: Noi dung mau thu hai cho feed cong dong an toan.',
+      visibility: SocialPostVisibility.PUBLIC,
+    },
+  });
+  await prisma.socialPostMedia.upsert({
+    where: {
+      postId_mediaAssetId: {
+        postId: secondaryPost.id,
+        mediaAssetId: secondaryMedia.id,
+      },
+    },
+    update: { sortOrder: 0 },
+    create: {
+      id: DEMO_FIXTURE_IDS.communityMediaSecondary,
+      postId: secondaryPost.id,
+      mediaAssetId: secondaryMedia.id,
+      sortOrder: 0,
+    },
+  });
+
   return { post, comment };
 }
 
@@ -1702,7 +1763,8 @@ async function ensureAdminReviewSet(
 async function main() {
   loadUatEnv();
   const databaseTarget = assertUatDemoDatabaseTarget();
-  assertUatDemoSyntheticDataConfirmed();
+  assertUatDemoDataClassificationConfirmed();
+  assertUatDemoFixturePolicy();
   const frontendUrl = assertUatDemoPublicUrl(
     requiredUatSecret('UAT_FRONTEND_PUBLIC_URL'),
   );
@@ -1752,6 +1814,7 @@ async function main() {
       prisma,
       buyer,
       seller,
+      reviewSet.reviewUser,
       shop,
       catalog.offer,
     );
@@ -1776,7 +1839,7 @@ async function main() {
           databaseTarget: {
             target: databaseTarget.target,
             databaseName: databaseTarget.databaseName,
-            hostname: databaseTarget.hostname,
+            hostname: 'withheld',
           },
           frontendUrl,
           accounts: {

@@ -18,7 +18,17 @@ jobs:
     env:
       ANTIFAKE_CURRENT_ENVIRONMENT: UAT_DEMO
       UAT_DEMO_MUTATION_APPROVED: 'true'
-      UAT_DEMO_SYNTHETIC_DATA_CONFIRMED: ${{ vars.UAT_DEMO_SYNTHETIC_DATA_CONFIRMED }}
+      UAT_DEMO_LEGACY_DATA_ACKNOWLEDGED: ${{ vars.UAT_DEMO_LEGACY_DATA_ACKNOWLEDGED }}
+      UAT_DEMO_LEGACY_DATA_CUTOFF: ${{ vars.UAT_DEMO_LEGACY_DATA_CUTOFF }}
+      UAT_DEMO_FIXTURE_NAMESPACE: DOCS_UAT
+      UAT_DEMO_FIXTURE_MODE: ADDITIVE_IDEMPOTENT
+      UAT_DEMO_DESTRUCTIVE_RESET_ALLOWED: 'false'
+      UAT_DEMO_LEGACY_MUTATION_ALLOWED: 'false'
+      UAT_DEMO_REAL_PAYMENT_ALLOWED: 'false'
+      UAT_DEMO_REAL_PAYOUT_ALLOWED: 'false'
+      UAT_DEMO_REAL_SHIPMENT_ALLOWED: 'false'
+      UAT_DEMO_REAL_EXTERNAL_KYC_ALLOWED: 'false'
+      UAT_DEMO_REAL_LIVESTREAM_ALLOWED: 'false'
       DATABASE_URL: ${{ secrets.UAT_DEMO_DATABASE_URL }}
       UAT_DEMO_DATABASE_TARGET: ${{ vars.UAT_DEMO_DATABASE_TARGET }}
       UAT_DEMO_DATABASE_NAME: ${{ vars.UAT_DEMO_DATABASE_NAME }}
@@ -39,5 +49,6 @@ jobs:
         run: npm ci
       - name: Ensure additive fixtures and verify
         run: |
+          npm run uat:audit-demo
           npm run uat:ensure
           npm run uat:verify-demo

@@ -1,9 +1,10 @@
 import {
   assertUatDatabaseTarget,
   assertUatDemoDatabaseTarget,
+  assertUatDemoDataClassificationConfirmed,
+  assertUatDemoFixturePolicy,
   assertUatDemoPublicUrl,
   assertUatDemoRuntimeDatabaseTarget,
-  assertUatDemoSyntheticDataConfirmed,
   assertUatPublicUrl,
   assertUatRuntimeDatabaseTarget,
   requiredUatSecret,
@@ -23,7 +24,17 @@ const safeEnvironment = {
 const safeDemoEnvironment = {
   ANTIFAKE_CURRENT_ENVIRONMENT: 'UAT_DEMO',
   UAT_DEMO_MUTATION_APPROVED: 'true',
-  UAT_DEMO_SYNTHETIC_DATA_CONFIRMED: 'true',
+  UAT_DEMO_LEGACY_DATA_ACKNOWLEDGED: 'true',
+  UAT_DEMO_LEGACY_DATA_CUTOFF: '2026-09-04T00:00:00.000Z',
+  UAT_DEMO_FIXTURE_NAMESPACE: 'DOCS_UAT',
+  UAT_DEMO_FIXTURE_MODE: 'ADDITIVE_IDEMPOTENT',
+  UAT_DEMO_DESTRUCTIVE_RESET_ALLOWED: 'false',
+  UAT_DEMO_LEGACY_MUTATION_ALLOWED: 'false',
+  UAT_DEMO_REAL_PAYMENT_ALLOWED: 'false',
+  UAT_DEMO_REAL_PAYOUT_ALLOWED: 'false',
+  UAT_DEMO_REAL_SHIPMENT_ALLOWED: 'false',
+  UAT_DEMO_REAL_EXTERNAL_KYC_ALLOWED: 'false',
+  UAT_DEMO_REAL_LIVESTREAM_ALLOWED: 'false',
   DATABASE_URL: 'postgresql://demo_user@demo-db.internal:5432/antifake_demo',
   UAT_DEMO_DATABASE_TARGET: 'antifake-demo-database',
   UAT_DEMO_DATABASE_NAME: 'antifake_demo',
@@ -83,13 +94,28 @@ describe('UAT safety guards', () => {
     });
   });
 
-  it('requires separate synthetic-data confirmation before fixture writes', () => {
+  it('requires explicit owner classification before fixture writes', () => {
     expect(() =>
-      assertUatDemoSyntheticDataConfirmed({
+      assertUatDemoDataClassificationConfirmed({
         ...safeDemoEnvironment,
-        UAT_DEMO_SYNTHETIC_DATA_CONFIRMED: 'false',
+        UAT_DEMO_LEGACY_DATA_ACKNOWLEDGED: 'false',
       }),
-    ).toThrow(/SYNTHETIC_DATA_CONFIRMED|data audit/i);
+    ).toThrow(/LEGACY_DATA_ACKNOWLEDGED|classification/i);
+  });
+
+  it('requires the additive DOCS_UAT safety policy', () => {
+    expect(assertUatDemoFixturePolicy(safeDemoEnvironment)).toMatchObject({
+      namespace: 'DOCS_UAT',
+      mode: 'ADDITIVE_IDEMPOTENT',
+      destructiveResetAllowed: false,
+      legacyMutationAllowed: false,
+    });
+    expect(() =>
+      assertUatDemoFixturePolicy({
+        ...safeDemoEnvironment,
+        UAT_DEMO_LEGACY_MUTATION_ALLOWED: 'true',
+      }),
+    ).toThrow(/LEGACY_MUTATION_ALLOWED/i);
   });
 
   it('protects an explicitly classified UAT demo runtime without enabling writes', () => {
