@@ -21,6 +21,7 @@
     "uat:reset": "ts-node scripts/uat/reset-and-seed.ts",
     "uat:verify": "ts-node scripts/uat/verify-fixtures.ts",
     "uat:ensure": "ts-node scripts/uat/ensure-demo-fixtures.ts",
+    "uat:audit-demo": "ts-node scripts/uat/audit-demo-environment.ts",
     "uat:verify-demo": "ts-node scripts/uat/verify-demo-fixtures.ts",
     "uat:cleanup": "ts-node scripts/uat/cleanup-demo-fixtures.ts",
     "uat:start": "ts-node scripts/uat/start-uat.ts",
