@@ -92,6 +92,8 @@ export interface WalletTopUpWebhookMessage {
 }
 
 export interface WalletTopUpReconciliationMessage {
+  shopId?: string;
+  requesterRole?: string;
   userId: string;
   paymentLinkId: string;
 }

@@ -221,6 +221,7 @@ enum WalletTransactionStatus {
 }
 
 enum WalletTopUpStatus {
+  CANCELLED
   PENDING
   PAID
   FAILED

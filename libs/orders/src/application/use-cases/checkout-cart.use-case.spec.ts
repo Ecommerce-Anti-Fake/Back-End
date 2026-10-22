@@ -6,7 +6,7 @@ describe('CheckoutCartUseCase', () => {
   const ordersRepository = {
     getOrCreateActiveCart: jest.fn(),
     removeCartItems: jest.fn(),
-    updatePaymentProviderRef: jest.fn(),
+    savePayOSPaymentAttempt: jest.fn(),
     markOrderPaymentFailed: jest.fn(),
     findCurrentOfferForCart: jest.fn(),
     findOfferVariantForCart: jest.fn(),
@@ -130,14 +130,14 @@ describe('CheckoutCartUseCase', () => {
       shippingOptionCode: 'GHN_1',
     });
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       orderId: 'order-1',
       orderCode: 1776240000123,
       paymentLinkId: 'link-1',
       checkoutUrl: 'https://pay.payos.vn/web/link-1',
     });
     expect(orderPlacementService.createAggregateOrder).toHaveBeenCalledTimes(1);
-    expect(ordersRepository.updatePaymentProviderRef).toHaveBeenCalledWith('order-1', 'PAYOS:link-1');
+    expect(ordersRepository.savePayOSPaymentAttempt).toHaveBeenCalledWith('order-1', expect.objectContaining({ paymentLinkId: 'link-1' }));
     expect(ordersRepository.removeCartItems).not.toHaveBeenCalled();
   });
 

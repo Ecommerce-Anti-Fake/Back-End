@@ -74,7 +74,7 @@ export class PaymentController {
   @ApiOperation({ summary: 'Buyer tao lai link thanh toan payOS cho don pending bi fail' })
   @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, ActiveUserGuard)
-  @Post(':id/retry-payos-payment')
+  @Post([':id/retry-payos-payment', ':id/payos-payment'])
   async retryPayOSPayment(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
     const result = await this.ordersRpcService.retryPayOSPayment({
       id,
@@ -83,6 +83,20 @@ export class PaymentController {
     this.dashboardSseBrokerService.notifyOrderChanged(result, requesterUserId);
 
     return result;
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Get(':id/payos-payment')
+  resumePayOSPayment(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
+    return this.ordersRpcService.resumePayOSPayment({ id, requesterUserId });
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, ActiveUserGuard)
+  @Post(':id/payos-payment/cancel')
+  cancelPayOSPayment(@Param('id') id: string, @CurrentUserId() requesterUserId: string) {
+    return this.ordersRpcService.cancelPayOSPayment({ id, requesterUserId });
   }
 
   @ApiOperation({ summary: 'Webhook public nhan ket qua thanh toan tu payOS' })

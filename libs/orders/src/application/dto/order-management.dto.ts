@@ -366,6 +366,12 @@ export class OrderResponseDto {
   @ApiPropertyOptional({ example: 1776240000123, nullable: true })
   payOSOrderCode?: number | null;
 
+  @ApiPropertyOptional({ example: '2026-10-22T05:15:00.000Z' })
+  expiresAt?: string;
+
+  @ApiPropertyOptional({ example: 'official PayOS QR payload' })
+  payOSQrCode?: string | null;
+
   @ApiPropertyOptional({ example: 'PENDING', nullable: true })
   escrowStatus!: string | null;
 
@@ -2084,6 +2090,12 @@ export class CheckoutCartPayOSResponseDto {
 
   @ApiProperty({ example: 'https://pay.payos.vn/web/payment-link-id' })
   checkoutUrl!: string;
+
+  @ApiProperty({ example: '2026-10-22T05:15:00.000Z' })
+  expiresAt!: string;
+
+  @ApiPropertyOptional({ nullable: true })
+  qrCode?: string | null;
 }
 
 export class QuoteCartItemShippingOptionsDto {

@@ -12,13 +12,32 @@ describe('RetryPayOSPaymentUseCase', () => {
   const payOSPaymentServiceMock = {
     createPaymentLink: jest.fn(),
   };
+  const lifecycle = { resume: jest.fn() };
+  const tx = {
+    $queryRaw: jest.fn(),
+    order: { findUniqueOrThrow: jest.fn() },
+    paymentIntent: { findUniqueOrThrow: jest.fn(), update: jest.fn() },
+    orderPayOSPaymentAttempt: { create: jest.fn() },
+  };
+  const prisma = { $transaction: jest.fn(), auditLog: { create: jest.fn() } };
   let useCase: RetryPayOSPaymentUseCase;
 
   beforeEach(() => {
     jest.resetAllMocks();
+    tx.order.findUniqueOrThrow.mockResolvedValue({ orderStatus: 'pending' });
+    lifecycle.resume.mockResolvedValue({ status: 'EXPIRED' });
+    prisma.$transaction.mockImplementation(
+      (fn: (client: typeof tx) => Promise<unknown>) => fn(tx),
+    );
+    tx.paymentIntent.findUniqueOrThrow.mockResolvedValue({
+      paymentStatus: 'EXPIRED',
+      amount: new Prisma.Decimal(200),
+    });
     useCase = new RetryPayOSPaymentUseCase(
       ordersRepositoryMock as unknown as OrdersRepository,
       payOSPaymentServiceMock as unknown as PayOSPaymentService,
+      lifecycle as never,
+      prisma as never,
     );
   });
 
@@ -35,7 +54,7 @@ describe('RetryPayOSPaymentUseCase', () => {
       checkoutUrl: 'https://pay.payos.vn/web/new-link',
       qrCode: 'qr-code',
     });
-    ordersRepositoryMock.updatePaymentProviderRefAndStatus.mockResolvedValueOnce(resetOrder);
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(resetOrder);
 
     const result = await useCase.execute({
       id: 'order-1',
@@ -51,13 +70,11 @@ describe('RetryPayOSPaymentUseCase', () => {
       itemName: 'Offer 1',
       quantity: 2,
     });
-    expect(ordersRepositoryMock.updatePaymentProviderRefAndStatus).toHaveBeenCalledWith({
-      orderId: 'order-1',
-      actorUserId: 'buyer-user-1',
-      providerRef: 'PAYOS:new-link',
-      paymentStatus: 'PENDING',
-      note: 'Buyer retried payOS payment; waiting for provider confirmation',
-    });
+    expect(tx.orderPayOSPaymentAttempt.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ paymentLinkId: 'new-link' }) as unknown,
+      }),
+    );
     expect(result).toMatchObject({
       id: 'order-1',
       paymentStatus: 'PENDING',
@@ -69,8 +86,38 @@ describe('RetryPayOSPaymentUseCase', () => {
     });
   });
 
+  it('does not create a link when cancellation wins before the retry lock', async () => {
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(
+      createOrderRecord({ paymentStatus: 'EXPIRED' }),
+    );
+    tx.order.findUniqueOrThrow.mockResolvedValue({ orderStatus: 'cancelled' });
+    await expect(
+      useCase.execute({ id: 'order-1', requesterUserId: 'buyer-user-1' }),
+    ).rejects.toThrow('no longer pending');
+    expect(payOSPaymentServiceMock.createPaymentLink).not.toHaveBeenCalled();
+  });
+
+  it('recovers a failed link creation with no exposed provider reference', async () => {
+    const order = createOrderRecord({ paymentStatus: 'FAILED' });
+    ordersRepositoryMock.findOrderById.mockResolvedValue({
+      ...order,
+      paymentIntent: { ...order.paymentIntent, providerRef: null },
+    });
+    payOSPaymentServiceMock.createPaymentLink.mockResolvedValue({
+      orderCode: 123,
+      paymentLinkId: 'fresh',
+      checkoutUrl: 'https://pay.payos.vn/web/fresh',
+      expiresAt: new Date(Date.now() + 900000).toISOString(),
+    });
+    await useCase.execute({ id: 'order-1', requesterUserId: 'buyer-user-1' });
+    expect(lifecycle.resume).not.toHaveBeenCalled();
+    expect(payOSPaymentServiceMock.createPaymentLink).toHaveBeenCalledTimes(1);
+  });
+
   it('rejects retry from seller owner', async () => {
-    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord({ paymentStatus: 'FAILED' }));
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(
+      createOrderRecord({ paymentStatus: 'FAILED' }),
+    );
 
     await expect(
       useCase.execute({
@@ -81,7 +128,9 @@ describe('RetryPayOSPaymentUseCase', () => {
   });
 
   it('requires failed payOS payment on a pending order', async () => {
-    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord({ paymentStatus: 'PAID', orderStatus: 'paid' }));
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce(
+      createOrderRecord({ paymentStatus: 'PAID', orderStatus: 'paid' }),
+    );
 
     await expect(
       useCase.execute({
@@ -92,7 +141,11 @@ describe('RetryPayOSPaymentUseCase', () => {
   });
 });
 
-function createOrderRecord(overrides?: { orderStatus?: string; paymentStatus?: string; providerRef?: string }) {
+function createOrderRecord(overrides?: {
+  orderStatus?: string;
+  paymentStatus?: string;
+  providerRef?: string;
+}) {
   return {
     id: 'order-1',
     orderStatus: overrides?.orderStatus ?? 'pending',

@@ -1,12 +1,17 @@
-import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHmac, timingSafeEqual } from 'crypto';
+import { createHmac, timingSafeEqual, randomInt } from 'crypto';
 
 export type PayOSPaymentLink = {
   orderCode: number;
   paymentLinkId: string;
   checkoutUrl: string;
   qrCode?: string;
+  expiresAt: string;
 };
 
 type PayOSCreatePaymentResponse = {
@@ -21,8 +26,6 @@ type PayOSCreatePaymentResponse = {
 
 @Injectable()
 export class PayOSPaymentService {
-  private lastOrderCode = 0;
-
   constructor(private readonly configService: ConfigService) {}
 
   async createPaymentLink(input: {
@@ -39,13 +42,23 @@ export class PayOSPaymentService {
     const credentials = this.getCredentials();
     const amount = Math.round(input.amount);
     if (!Number.isInteger(amount) || amount <= 0) {
-      throw new BadRequestException('payOS requires a positive integer VND amount');
+      throw new BadRequestException(
+        'payOS requires a positive integer VND amount',
+      );
     }
 
     const orderCode = this.createOrderCode();
+    const expiredAt = Math.floor(Date.now() / 1000) + 15 * 60;
     const returnUrl = this.resolvePayOSReturnUrl(input.returnUrl);
-    const cancelUrl = this.resolveUrl(input.cancelUrl, 'PAYOS_CANCEL_URL', '/payment-failed');
-    const description = this.normalizeDescription(input.description, input.orderId);
+    const cancelUrl = this.resolveUrl(
+      input.cancelUrl,
+      'PAYOS_CANCEL_URL',
+      '/payment-failed',
+    );
+    const description = this.normalizeDescription(
+      input.description,
+      input.orderId,
+    );
     const signaturePayload = {
       amount,
       cancelUrl,
@@ -55,6 +68,7 @@ export class PayOSPaymentService {
     };
     const body = {
       ...signaturePayload,
+      expiredAt,
       buyerName: input.buyerName?.trim() || undefined,
       buyerPhone: input.buyerPhone?.trim() || undefined,
       items: [
@@ -75,11 +89,21 @@ export class PayOSPaymentService {
         'x-api-key': credentials.apiKey,
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(15000),
     });
 
-    const payload = (await response.json().catch(() => null)) as PayOSCreatePaymentResponse | null;
-    if (!response.ok || payload?.code !== '00' || !payload.data?.paymentLinkId || !payload.data.checkoutUrl) {
-      throw new ServiceUnavailableException(payload?.desc || 'Could not create payOS payment link');
+    const payload = (await response
+      .json()
+      .catch(() => null)) as PayOSCreatePaymentResponse | null;
+    if (
+      !response.ok ||
+      payload?.code !== '00' ||
+      !payload.data?.paymentLinkId ||
+      !payload.data.checkoutUrl
+    ) {
+      throw new ServiceUnavailableException(
+        payload?.desc || 'Could not create payOS payment link',
+      );
     }
 
     return {
@@ -87,6 +111,7 @@ export class PayOSPaymentService {
       paymentLinkId: payload.data.paymentLinkId,
       checkoutUrl: payload.data.checkoutUrl,
       qrCode: payload.data.qrCode,
+      expiresAt: new Date(expiredAt * 1000).toISOString(),
     };
   }
 
@@ -95,7 +120,10 @@ export class PayOSPaymentService {
     const expected = this.signObject(input.data, credentials.checksumKey);
     const expectedBuffer = Buffer.from(expected);
     const actualBuffer = Buffer.from(input.signature || '');
-    return expectedBuffer.length === actualBuffer.length && timingSafeEqual(expectedBuffer, actualBuffer);
+    return (
+      expectedBuffer.length === actualBuffer.length &&
+      timingSafeEqual(expectedBuffer, actualBuffer)
+    );
   }
 
   private getCredentials() {
@@ -104,16 +132,24 @@ export class PayOSPaymentService {
     const checksumKey =
       this.configService.get<string>('PAYOS_CHECK_SUM_KEY')?.trim() ||
       this.configService.get<string>('PAYOS_CHECKSUM_KEY')?.trim();
-    const baseUrl = this.configService.get<string>('PAYOS_API_BASE_URL')?.trim() || 'https://api-merchant.payos.vn';
+    const baseUrl =
+      this.configService.get<string>('PAYOS_API_BASE_URL')?.trim() ||
+      'https://api-merchant.payos.vn';
 
     if (!clientId || !apiKey || !checksumKey) {
-      throw new ServiceUnavailableException('payOS credentials are not configured');
+      throw new ServiceUnavailableException(
+        'payOS credentials are not configured',
+      );
     }
 
     return { clientId, apiKey, checksumKey, baseUrl };
   }
 
-  private resolveUrl(explicitUrl: string | null | undefined, envName: string, fallbackPath: string) {
+  private resolveUrl(
+    explicitUrl: string | null | undefined,
+    envName: string,
+    fallbackPath: string,
+  ) {
     const explicit = explicitUrl?.trim();
     if (explicit) {
       return explicit;
@@ -124,7 +160,9 @@ export class PayOSPaymentService {
       return configured;
     }
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL')?.trim() || 'http://localhost:5173';
+    const frontendUrl =
+      this.configService.get<string>('FRONTEND_URL')?.trim() ||
+      'http://localhost:5173';
     return `${frontendUrl.replace(/\/$/, '')}${fallbackPath}`;
   }
 
@@ -134,7 +172,9 @@ export class PayOSPaymentService {
       return explicit;
     }
 
-    const configured = this.configService.get<string>('PAYOS_RETURN_URL')?.trim();
+    const configured = this.configService
+      .get<string>('PAYOS_RETURN_URL')
+      ?.trim();
     if (configured) {
       return configured;
     }
@@ -163,17 +203,76 @@ export class PayOSPaymentService {
       .replace(/[^a-zA-Z0-9 ]/g, '')
       .trim();
 
-    return (normalized || `DH${orderId.replace(/-/g, '').slice(0, 7)}`).slice(0, 9);
+    return (normalized || `DH${orderId.replace(/-/g, '').slice(0, 7)}`).slice(
+      0,
+      9,
+    );
   }
 
   private createOrderCode() {
-    const timestampCode = Date.now() % 1_000_000;
-    const nextCode = timestampCode === this.lastOrderCode
-      ? (timestampCode + 1) % 1_000_000
-      : timestampCode;
+    // Safe integer supported by PayOS; random across processes and deployments.
+    return randomInt(1, 281474976710655);
+  }
 
-    this.lastOrderCode = nextCode || 1;
-    return this.lastOrderCode;
+  async getPaymentLink(paymentLinkId: string) {
+    return this.requestPaymentLink(paymentLinkId);
+  }
+  async cancelPaymentLink(paymentLinkId: string) {
+    return this.requestPaymentLink(paymentLinkId, true);
+  }
+
+  private async requestPaymentLink(
+    paymentLinkId: string,
+    cancel = false,
+  ): Promise<{ status: string; amount: number; amountPaid: number }> {
+    const credentials = this.getCredentials();
+    const response = await fetch(
+      credentials.baseUrl +
+        '/v2/payment-requests/' +
+        encodeURIComponent(paymentLinkId) +
+        (cancel ? '/cancel' : ''),
+      {
+        method: cancel ? 'POST' : 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-client-id': credentials.clientId,
+          'x-api-key': credentials.apiKey,
+        },
+        ...(cancel
+          ? {
+              body: JSON.stringify({
+                cancellationReason: 'Payment request closed',
+              }),
+            }
+          : {}),
+        signal: AbortSignal.timeout(15000),
+      },
+    );
+    const payload = (await response.json()) as {
+      code?: string;
+      data?: {
+        id?: string;
+        status?: string;
+        amount?: number;
+        amountPaid?: number;
+      };
+    };
+    if (
+      !response.ok ||
+      payload.code !== '00' ||
+      !payload.data?.status ||
+      payload.data.id !== paymentLinkId ||
+      !Number.isFinite(Number(payload.data.amount))
+    ) {
+      throw new ServiceUnavailableException(
+        'Could not reconcile payOS payment link',
+      );
+    }
+    return {
+      status: payload.data.status.toUpperCase(),
+      amount: Number(payload.data.amount),
+      amountPaid: Number(payload.data.amountPaid ?? 0),
+    };
   }
 
   private signObject(data: Record<string, unknown>, checksumKey: string) {
@@ -183,7 +282,11 @@ export class PayOSPaymentService {
       .map((key) => {
         let value = data[key];
         if (Array.isArray(value)) {
-          value = JSON.stringify(value.map((item) => this.sortObject(item as Record<string, unknown>)));
+          value = JSON.stringify(
+            value.map((item) =>
+              this.sortObject(item as Record<string, unknown>),
+            ),
+          );
         }
         if (value === null || value === 'null' || value === 'undefined') {
           value = '';

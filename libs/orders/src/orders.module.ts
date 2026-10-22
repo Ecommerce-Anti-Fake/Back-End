@@ -1,3 +1,4 @@
+import { PayOSPaymentLifecycleService } from './application/services/payos-payment-lifecycle.service';
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -142,6 +143,7 @@ import { VoucherService } from './application/vouchers/voucher.service';
     OrderPlacementService,
     OrderReversalService,
     PayOSPaymentService,
+    PayOSPaymentLifecycleService,
     CheckoutShippingService,
     ShippingCarrierAdapterService,
     LocalWholesalePricingAdapter,

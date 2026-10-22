@@ -292,6 +292,9 @@ export class OrdersRpcService {
     return this.send(ORDERS_MESSAGE_PATTERNS.markPaid, payload);
   }
 
+  resumePayOSPayment(payload: RetryPayOSPaymentMessage) { return this.send(ORDERS_MESSAGE_PATTERNS.resumePayOSPayment, payload); }
+  cancelPayOSPayment(payload: RetryPayOSPaymentMessage) { return this.send(ORDERS_MESSAGE_PATTERNS.cancelPayOSPayment, payload); }
+
   retryPayOSPayment(payload: RetryPayOSPaymentMessage) {
     return this.send(ORDERS_MESSAGE_PATTERNS.retryPayOSPayment, payload);
   }

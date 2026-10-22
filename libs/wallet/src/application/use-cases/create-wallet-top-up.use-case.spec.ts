@@ -3,11 +3,11 @@ import { CreateWalletTopUpUseCase } from './create-wallet-top-up.use-case';
 
 describe('CreateWalletTopUpUseCase', () => {
   it('returns the existing top-up for a retried idempotency key', async () => {
-    const existing = { id: 'top-up-1', paymentLinkId: 'link-1', checkoutUrl: 'https://pay', amount: new Prisma.Decimal(100000), currency: 'VND', status: 'PENDING' };
-    const prisma = { walletTopUp: { findUnique: jest.fn().mockResolvedValue(existing) } };
+    const existing = { id: 'top-up-1', paymentLinkId: 'link-1', checkoutUrl: 'https://pay', expiresAt: new Date(Date.now() + 600000), amount: new Prisma.Decimal(100000), currency: 'VND', status: 'PENDING' };
+    const prisma = { walletTopUp: { findUnique: jest.fn().mockResolvedValue(existing) }, wallet: { findUnique: jest.fn().mockResolvedValue({ userId: 'user-1', shopId: null }) } };
     const useCase = new CreateWalletTopUpUseCase(prisma as never, {} as never, {} as never);
 
-    await expect(useCase.execute({ userId: 'user-1', amount: '100000', idempotencyKey: 'idem-1' })).resolves.toEqual({ topUpId: 'top-up-1', paymentLinkId: 'link-1', checkoutUrl: 'https://pay', amount: '100000.00', currency: 'VND', status: 'PENDING' });
+    await expect(useCase.execute({ userId: 'user-1', amount: '100000', idempotencyKey: 'idem-1' })).resolves.toMatchObject({ topUpId: 'top-up-1', paymentLinkId: 'link-1', checkoutUrl: 'https://pay', amount: '100000.00', currency: 'VND', status: 'PENDING' });
   });
 
   it('rejects non-integer or non-positive VND amounts before provider calls', async () => {
@@ -71,5 +71,11 @@ describe('CreateWalletTopUpUseCase', () => {
         idempotencyKey: 'SHOP_TOP_UP:shop-1:idem-1',
       }),
     });
+  });
+  it('rejects an existing idempotency record belonging to another wallet', async () => {
+    const prisma = { walletTopUp: { findUnique: jest.fn().mockResolvedValue({ walletId: 'other-wallet' }) }, wallet: { findUnique: jest.fn().mockResolvedValue({ userId: 'other', shopId: null }) } };
+    const payOS = { createPaymentLink: jest.fn() };
+    await expect(new CreateWalletTopUpUseCase(prisma as never, {} as never, payOS as never).execute({ userId: 'attacker', amount: '10000', idempotencyKey: 'stolen' })).rejects.toThrow('ownership mismatch');
+    expect(payOS.createPaymentLink).not.toHaveBeenCalled();
   });
 });

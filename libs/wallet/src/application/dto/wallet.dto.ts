@@ -40,6 +40,9 @@ export class CreateWalletTopUpDto {
 }
 
 export class WalletTopUpResponseDto {
+  @ApiPropertyOptional({ nullable: true }) qrCode?: string | null;
+  @ApiPropertyOptional({ nullable: true }) expiresAt?: string | null;
+  @ApiProperty() serverTime!: string;
   @ApiProperty() topUpId!: string;
   @ApiProperty() paymentLinkId!: string;
   @ApiProperty() checkoutUrl!: string;

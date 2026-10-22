@@ -1,0 +1,71 @@
+name: PayOS lifecycle checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  payos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      REDIS_ENABLED: 'false'
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run prisma:generate
+      - run: npx eslint libs/orders/src/application/services/payos-payment-lifecycle.service.ts libs/orders/src/application/services/payos-payment-lifecycle.service.spec.ts libs/wallet/src/application/use-cases/wallet-top-up-lifecycle.service.ts libs/wallet/src/application/use-cases/wallet-top-up-lifecycle.service.spec.ts scripts/audit-payos-payments.ts scripts/test-payos-concurrency.ts
+      - run: npm run test:payos
+      - run: npx tsc --project apps/api-gateway/tsconfig.app.json --noEmit
+      - run: npm run build:deploy
+  postgres-concurrency:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: payos_ci
+          POSTGRES_PASSWORD: ${{ github.run_id }}
+          POSTGRES_DB: payos_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U payos_ci -d payos_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://payos_ci:${{ github.run_id }}@127.0.0.1:5432/payos_ci
+      PAYOS_INTEGRATION_DATABASE_URL: postgresql://payos_ci:${{ github.run_id }}@127.0.0.1:5432/payos_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run prisma:generate
+      - name: Verify additive migrations in isolated disposable database
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          git show "$BASE_SHA:prisma/schema.prisma" > /tmp/payos-base.prisma
+          npx prisma db push --schema /tmp/payos-base.prisma
+          git diff --name-only --diff-filter=A "$BASE_SHA" HEAD -- 'prisma/migrations/*/migration.sql' |
+            while IFS= read -r migration; do
+              npx prisma db execute --file "$migration"
+            done
+          npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+      - name: Verify actual PostgreSQL financial races
+        run: npm run test:payos:concurrency

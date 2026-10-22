@@ -36,12 +36,16 @@ model WalletTopUp {
   amount         Decimal          @db.Decimal(18, 2)
   currency       String           @default("VND")
   checkoutUrl    String           @map("checkout_url")
+  qrCode         String?          @map("qr_code")
+  expiresAt      DateTime?        @map("expires_at")
+  lastReconciledAt DateTime?      @map("last_reconciled_at")
   status         WalletTopUpStatus @default(PENDING)
   createdAt      DateTime         @default(now()) @map("created_at")
   paidAt         DateTime?        @map("paid_at")
 
   wallet         Wallet           @relation(fields: [walletId], references: [id])
 
+  @@index([status, lastReconciledAt])
   @@index([walletId, createdAt])
   @@map("wallet_top_up")
 }

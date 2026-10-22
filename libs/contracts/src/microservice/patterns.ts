@@ -246,6 +246,8 @@ export const ORDERS_MESSAGE_PATTERNS = {
   markPaid: 'orders.mark-paid',
   handlePayOSWebhook: 'orders.handle-payos-webhook',
   retryPayOSPayment: 'orders.retry-payos-payment',
+  resumePayOSPayment: 'orders.resume-payos-payment',
+  cancelPayOSPayment: 'orders.cancel-payos-payment',
   receiveWholesaleInventory: 'orders.receive-wholesale-inventory',
   bookShipping: 'orders.book-shipping',
   syncShippingStatus: 'orders.sync-shipping-status',
