@@ -45,6 +45,7 @@ export class PayOSPaymentLifecycleService
     return this.response(
       attempt,
       current.paymentIntent?.paymentStatus === 'PAID' ? 'PAID' : status,
+      current.orderStatus === 'pending',
     );
   }
 
@@ -68,7 +69,12 @@ export class PayOSPaymentLifecycleService
         status = 'PAID';
       }
     }
-    return this.response(attempt, status);
+    const current = await this.ownedOrder(input);
+    return this.response(
+      attempt,
+      current.paymentIntent?.paymentStatus === 'PAID' ? 'PAID' : status,
+      current.orderStatus === 'pending',
+    );
   }
 
   async reconcilePending() {
@@ -217,18 +223,27 @@ export class PayOSPaymentLifecycleService
       );
     return attempt;
   }
-  private response(attempt: OrderPayOSPaymentAttempt, status: string) {
+  private response(
+    attempt: OrderPayOSPaymentAttempt,
+    status: string,
+    payable: boolean,
+  ) {
+    const canResume =
+      payable &&
+      status === 'PENDING' &&
+      attempt.expiresAt.getTime() > Date.now();
     return {
       orderId: attempt.orderId,
       paymentLinkId: attempt.paymentLinkId,
       orderCode: Number(attempt.orderCode),
       amount: Number(attempt.amount),
       status,
-      canRetry: status === 'EXPIRED' || status === 'FAILED',
+      canResume,
+      canRetry: payable && (status === 'EXPIRED' || status === 'FAILED'),
       expiresAt: attempt.expiresAt.toISOString(),
       serverTime: new Date().toISOString(),
-      checkoutUrl: status === 'PENDING' ? attempt.checkoutUrl : null,
-      qrCode: status === 'PENDING' ? attempt.qrCode : null,
+      checkoutUrl: canResume ? attempt.checkoutUrl : null,
+      qrCode: canResume ? attempt.qrCode : null,
     };
   }
 }

@@ -89,6 +89,26 @@ describe('PayOSPaymentService', () => {
     expect(second).not.toBe(first);
   });
 
+  it('rejects provider status returned for a different payment link', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          code: '00',
+          data: {
+            id: 'another-link',
+            status: 'PAID',
+            amount: 100,
+            amountPaid: 100,
+          },
+        }),
+    });
+    await expect(service.getPaymentLink('link-1')).rejects.toThrow('reconcile');
+    await expect(service.cancelPaymentLink('link-1')).rejects.toThrow(
+      'reconcile',
+    );
+  });
+
   it('rejects a production return URL when only the legacy Render URL exists', async () => {
     service = new PayOSPaymentService(
       new ConfigService({

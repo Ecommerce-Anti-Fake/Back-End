@@ -250,12 +250,18 @@ export class PayOSPaymentService {
     );
     const payload = (await response.json()) as {
       code?: string;
-      data?: { status?: string; amount?: number; amountPaid?: number };
+      data?: {
+        id?: string;
+        status?: string;
+        amount?: number;
+        amountPaid?: number;
+      };
     };
     if (
       !response.ok ||
       payload.code !== '00' ||
       !payload.data?.status ||
+      payload.data.id !== paymentLinkId ||
       !Number.isFinite(Number(payload.data.amount))
     ) {
       throw new ServiceUnavailableException(

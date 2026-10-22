@@ -176,6 +176,27 @@ describe('order PayOS lifecycle', () => {
       await service.resume({ id: 'order', requesterUserId: 'buyer' }),
     ).toMatchObject({ status: 'CANCELLED', checkoutUrl: null, qrCode: null });
   });
+  it('hides checkout when domain cancellation is final but provider cancellation is not confirmed', async () => {
+    orders.findOrderById.mockResolvedValue({
+      buyerUserId: 'buyer',
+      orderStatus: 'cancelled',
+      paymentIntent: { paymentMethod: 'PAYOS', paymentStatus: 'CANCELLED' },
+    });
+    prisma.order.findUnique.mockResolvedValue({ orderStatus: 'cancelled' });
+    provider.cancelPaymentLink.mockResolvedValue({
+      status: 'PENDING',
+      amount: 100,
+    });
+    expect(
+      await service.resume({ id: 'order', requesterUserId: 'buyer' }),
+    ).toMatchObject({
+      status: 'PENDING',
+      canResume: false,
+      canRetry: false,
+      checkoutUrl: null,
+      qrCode: null,
+    });
+  });
   it('runs existing order cancellation rules only after provider confirms cancellation', async () => {
     provider.cancelPaymentLink.mockResolvedValue({
       status: 'CANCELLED',
