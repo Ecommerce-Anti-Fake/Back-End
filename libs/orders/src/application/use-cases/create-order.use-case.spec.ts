@@ -16,7 +16,7 @@ describe('CreateOrderUseCase', () => {
     findActiveShippingCarriers: jest.fn(),
     countOfferVariants: jest.fn(),
     findOfferVariantForOrdering: jest.fn(),
-    updatePaymentProviderRef: jest.fn(),
+    savePayOSPaymentAttempt: jest.fn(),
     upsertCartItem: jest.fn(),
     removeCartItem: jest.fn(),
     removeCartItems: jest.fn(),

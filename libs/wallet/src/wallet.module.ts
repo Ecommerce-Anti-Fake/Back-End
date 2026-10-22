@@ -1,3 +1,4 @@
+import { WalletTopUpLifecycleService } from './application/use-cases/wallet-top-up-lifecycle.service';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { FirebaseTokenVerifierService } from '@auth';
@@ -63,6 +64,7 @@ import { VietQrBankAccountLookupService } from './infrastructure/vietqr-bank-acc
     CreateWalletTopUpUseCase,
     HandleWalletTopUpWebhookUseCase,
     PayOSTopUpService,
+    WalletTopUpLifecycleService,
     ListAdminWalletWithdrawalsUseCase,
     GetPlatformWalletsUseCase,
     { provide: WalletRepositoryPort, useExisting: WalletRepository },

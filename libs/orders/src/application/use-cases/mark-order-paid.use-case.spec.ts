@@ -24,6 +24,13 @@ describe('MarkOrderPaidUseCase', () => {
     useCase = module.get<MarkOrderPaidUseCase>(MarkOrderPaidUseCase);
   });
 
+  it('rejects frontend confirmation for a PayOS order', async () => {
+    const order = createOrderRecord();
+    ordersRepositoryMock.findOrderById.mockResolvedValueOnce({ ...order, paymentIntent: { ...order.paymentIntent, paymentMethod: 'PAYOS' } });
+    await expect(useCase.execute({ id: 'order-1', requesterUserId: 'buyer-user-1' })).rejects.toThrow('verified provider confirmation');
+    expect(ordersRepositoryMock.markOrderPaid).not.toHaveBeenCalled();
+  });
+
   it('should allow buyer to mark pending order as paid', async () => {
     ordersRepositoryMock.findOrderById.mockResolvedValueOnce(createOrderRecord());
     ordersRepositoryMock.markOrderPaid.mockResolvedValueOnce(

@@ -1,3 +1,4 @@
+import { PayOSPaymentLifecycleService } from '../../application/services/payos-payment-lifecycle.service';
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { ORDERS_MESSAGE_PATTERNS } from '@contracts';
@@ -160,6 +161,7 @@ export class OrdersRpcController {
     private readonly markOrderPaidUseCase: MarkOrderPaidUseCase,
     private readonly handlePayOSWebhookUseCase: HandlePayOSWebhookUseCase,
     private readonly receiveWholesaleOrderInventoryUseCase: ReceiveWholesaleOrderInventoryUseCase,
+    private readonly payOSLifecycle: PayOSPaymentLifecycleService,
     private readonly retryPayOSPaymentUseCase: RetryPayOSPaymentUseCase,
     private readonly completeOrderUseCase: CompleteOrderUseCase,
     private readonly cancelOrderUseCase: CancelOrderUseCase,
@@ -527,6 +529,15 @@ export class OrdersRpcController {
     } catch (error) {
       throwRpcException(error);
     }
+  }
+
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.resumePayOSPayment)
+  async resumePayOSPayment(@Payload() payload: RetryPayOSPaymentMessage) {
+    try { return await this.payOSLifecycle.resume(payload); } catch (error) { throwRpcException(error); }
+  }
+  @MessagePattern(ORDERS_MESSAGE_PATTERNS.cancelPayOSPayment)
+  async cancelPayOSPayment(@Payload() payload: RetryPayOSPaymentMessage) {
+    try { return await this.payOSLifecycle.cancel(payload); } catch (error) { throwRpcException(error); }
   }
 
   @MessagePattern(ORDERS_MESSAGE_PATTERNS.retryPayOSPayment)

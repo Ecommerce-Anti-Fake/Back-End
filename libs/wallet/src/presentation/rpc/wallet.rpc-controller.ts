@@ -1,3 +1,4 @@
+import { WalletTopUpLifecycleService } from '../../application/use-cases/wallet-top-up-lifecycle.service';
 import { Controller } from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { throwRpcException } from '@common';
@@ -45,6 +46,7 @@ import { BankAccountVerificationService, PayoutAccountService, WithdrawalAuthori
 @Controller()
 export class WalletRpcController {
   constructor(
+    private readonly topUpLifecycle: WalletTopUpLifecycleService,
     private readonly getMyWalletUseCase: GetMyWalletUseCase,
     private readonly getMyWalletTransactionsUseCase: GetMyWalletTransactionsUseCase,
     private readonly getShopWalletUseCase: GetShopWalletUseCase,
@@ -217,6 +219,19 @@ export class WalletRpcController {
   @MessagePattern(WALLET_MESSAGE_PATTERNS.handleWalletTopUpWebhook)
   async handleWalletTopUpWebhook(@Payload() payload: WalletTopUpWebhookMessage) {
     return this.run(() => this.handleWalletTopUpWebhookUseCase.execute(payload));
+  }
+
+  @MessagePattern('wallet.list-top-ups')
+  async listTopUps(@Payload() payload: { userId: string; shopId?: string; requesterRole?: string }) {
+    return this.run(() => this.topUpLifecycle.list(payload));
+  }
+  @MessagePattern('wallet.resume-top-up')
+  async resumeTopUp(@Payload() payload: { userId: string; paymentLinkId: string; shopId?: string; requesterRole?: string }) {
+    return this.run(() => this.topUpLifecycle.resume(payload));
+  }
+  @MessagePattern('wallet.cancel-top-up')
+  async cancelTopUp(@Payload() payload: { userId: string; paymentLinkId: string; shopId?: string; requesterRole?: string }) {
+    return this.run(() => this.topUpLifecycle.resume(payload, true));
   }
 
   @MessagePattern(WALLET_MESSAGE_PATTERNS.reconcileWalletTopUp)

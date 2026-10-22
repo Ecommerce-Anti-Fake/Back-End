@@ -5,6 +5,15 @@ describe('PayOSPaymentService', () => {
   const fetchMock = jest.fn();
   const originalFetch = global.fetch;
   let service: PayOSPaymentService;
+  const requestBody = (index: number) =>
+    JSON.parse(
+      (fetchMock.mock.calls as [unknown, { body: string }][])[index][1].body,
+    ) as {
+      orderCode: number;
+      expiredAt: number;
+      returnUrl: string;
+      cancelUrl: string;
+    };
 
   beforeEach(() => {
     jest.useFakeTimers().setSystemTime(Date.parse('2026-07-10T00:00:00.000Z'));
@@ -51,12 +60,12 @@ describe('PayOSPaymentService', () => {
       quantity: 1,
     });
 
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const body = requestBody(0);
     expect(body.returnUrl).toBe('https://antifake.io.vn/payment');
     expect(body.cancelUrl).toBe('https://antifake.io.vn/payment-failed');
   });
 
-  it('uses a compact PayOS order code for the embedded checkout', async () => {
+  it('uses collision-resistant safe integer provider codes and a 15 minute absolute expiry', async () => {
     await service.createPaymentLink({
       orderId: 'order-1',
       amount: 100000,
@@ -72,11 +81,12 @@ describe('PayOSPaymentService', () => {
       quantity: 1,
     });
 
-    const first = JSON.parse(fetchMock.mock.calls[0][1].body).orderCode;
-    const second = JSON.parse(fetchMock.mock.calls[1][1].body).orderCode;
+    const first = requestBody(0).orderCode;
+    const second = requestBody(1).orderCode;
     expect(first).toBeGreaterThan(0);
-    expect(first).toBeLessThan(1_000_000);
-    expect(second).toBe(first + 1);
+    expect(Number.isSafeInteger(first)).toBe(true);
+    expect(requestBody(0).expiredAt).toBe(Math.floor(Date.now() / 1000) + 900);
+    expect(second).not.toBe(first);
   });
 
   it('rejects a production return URL when only the legacy Render URL exists', async () => {

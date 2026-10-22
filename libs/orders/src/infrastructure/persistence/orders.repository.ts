@@ -1318,6 +1318,9 @@ export class OrdersRepository {
     });
     const fromStatus = paymentIntent?.paymentStatus ?? 'PENDING';
 
+    if (input.paymentStatus === 'CANCELLED' && paymentIntent?.paymentMethod === 'PAYOS' && fromStatus === 'PAID') {
+      throw new BadRequestException('Paid PayOS payment cannot be cancelled');
+    }
     await tx.paymentIntent.update({
       where: { orderId: input.orderId },
       data: {
@@ -3141,11 +3144,16 @@ export class OrdersRepository {
         });
       }
 
+      const cancelledPayOSOrder = paymentIntent?.paymentMethod === 'PAYOS' &&
+        (await tx.order.findUnique({ where: { id: input.id }, select: { orderStatus: true } }))?.orderStatus === 'cancelled';
       return tx.order.update({
         where: { id: input.id },
         data: {
-          orderStatus: 'paid',
-          ...(paymentIntent?.paymentMethod === 'COD' ? {} : { fulfillmentStatus: 'PENDING' }),
+          // Preserve restored inventory and cancelled fulfillment on late receipts.
+          ...(cancelledPayOSOrder ? {} : {
+            orderStatus: 'paid',
+            ...(paymentIntent?.paymentMethod === 'COD' ? {} : { fulfillmentStatus: 'PENDING' }),
+          }),
         },
         ...orderWithRelationsArgs,
       });
@@ -3169,7 +3177,7 @@ export class OrdersRepository {
       const fromStatus = paymentIntent?.paymentStatus ?? 'PENDING';
 
       const paymentUpdate = await tx.paymentIntent.updateMany({
-        where: { orderId: input.id, paymentStatus: { notIn: ['PAID', 'FAILED'] } },
+        where: { orderId: input.id, paymentStatus: { notIn: ['PAID', 'FAILED', 'CANCELLED', 'EXPIRED'] }, ...(input.providerRef?.startsWith('PAYOS:') ? { providerRef: { startsWith: input.providerRef.split(':').slice(0, 2).join(':') } } : {}) },
         data: {
           paymentStatus: 'FAILED',
           providerRef: input.providerRef,
@@ -3205,6 +3213,19 @@ export class OrdersRepository {
         ...orderWithRelationsArgs,
       });
     });
+  }
+
+  async savePayOSPaymentAttempt(orderId: string, link: { paymentLinkId: string; orderCode: number; checkoutUrl: string; qrCode?: string; expiresAt: string }) {
+    await this.prisma.$transaction(async (tx) => {
+      const intent = await tx.paymentIntent.findUniqueOrThrow({ where: { orderId } });
+      if (intent.paymentStatus === 'PAID') throw new BadRequestException('Order is already paid');
+      await tx.orderPayOSPaymentAttempt.create({ data: {
+        orderId, paymentLinkId: link.paymentLinkId, orderCode: BigInt(link.orderCode),
+        amount: intent.amount, checkoutUrl: link.checkoutUrl, qrCode: link.qrCode,
+        expiresAt: new Date(link.expiresAt),
+      } });
+      await tx.paymentIntent.update({ where: { orderId }, data: { providerRef: 'PAYOS:' + link.paymentLinkId, paymentStatus: 'PENDING' } });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
   }
 
   updatePaymentProviderRef(orderId: string, providerRef: string): Promise<unknown> {

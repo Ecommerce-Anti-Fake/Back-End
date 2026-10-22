@@ -18,6 +18,10 @@ export class MarkOrderPaidUseCase {
       throw new ForbiddenException('Only the buyer can mark the order as paid');
     }
 
+    if (order.paymentIntent?.paymentMethod === 'PAYOS') {
+      throw new BadRequestException('PayOS payments require verified provider confirmation');
+    }
+
     if (order.orderStatus !== 'pending') {
       throw new BadRequestException('Only pending orders can be marked as paid');
     }

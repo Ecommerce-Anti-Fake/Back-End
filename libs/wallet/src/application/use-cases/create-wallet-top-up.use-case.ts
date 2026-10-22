@@ -28,9 +28,13 @@ export class CreateWalletTopUpUseCase {
     const clientKey = input.idempotencyKey?.trim();
     const idempotencyKey = input.shopId
       ? `SHOP_TOP_UP:${input.shopId}:${clientKey || Date.now()}`
-      : clientKey || `WALLET_TOP_UP:${input.userId}:${Date.now()}`;
+      : `WALLET_TOP_UP:${input.userId}:${clientKey || Date.now()}`;
     const existing = await this.prisma.walletTopUp.findUnique({ where: { idempotencyKey } });
-    if (existing) return this.toResponse(existing);
+    if (existing) {
+      const owner = await this.prisma.wallet.findUnique({ where: { id: existing.walletId } });
+      if (!owner || (input.shopId ? owner.shopId !== input.shopId : owner.userId !== input.userId || owner.shopId !== null)) throw new ForbiddenException('Top-up ownership mismatch');
+      return this.toResponse(existing);
+    }
 
     const amount = new Prisma.Decimal(input.amount);
     if (amount.lte(0) || !amount.eq(amount.toDecimalPlaces(0))) {
@@ -45,7 +49,7 @@ export class CreateWalletTopUpUseCase {
       ...(input.shopId ? { destination: 'SHOP' as const } : {}),
     });
     try {
-      const topUp = await this.prisma.walletTopUp.create({ data: { walletId: wallet.id, idempotencyKey, orderCode: payment.orderCode, paymentLinkId: payment.paymentLinkId, amount, currency: 'VND', checkoutUrl: payment.checkoutUrl } });
+      const topUp = await this.prisma.walletTopUp.create({ data: { walletId: wallet.id, idempotencyKey, orderCode: payment.orderCode, paymentLinkId: payment.paymentLinkId, amount, currency: 'VND', checkoutUrl: payment.checkoutUrl, qrCode: payment.qrCode, expiresAt: payment.expiresAt } });
       return this.toResponse(topUp);
     } catch (error) {
       const raced = await this.prisma.walletTopUp.findUnique({ where: { idempotencyKey } });
@@ -54,7 +58,8 @@ export class CreateWalletTopUpUseCase {
     }
   }
 
-  private toResponse(topUp: { id: string; paymentLinkId: string; checkoutUrl: string; amount: Prisma.Decimal; currency: string; status: string }) {
-    return { topUpId: topUp.id, paymentLinkId: topUp.paymentLinkId, checkoutUrl: topUp.checkoutUrl, amount: topUp.amount.toFixed(2), currency: topUp.currency, status: topUp.status };
+  private toResponse(topUp: { id: string; paymentLinkId: string; checkoutUrl: string; amount: Prisma.Decimal; currency: string; status: string; qrCode?: string | null; expiresAt?: Date | null }) {
+    const active = topUp.status === 'PENDING' && !!topUp.expiresAt && topUp.expiresAt.getTime() > Date.now();
+    return { canResume: active, qrCode: active ? topUp.qrCode ?? null : null, expiresAt: topUp.expiresAt?.toISOString() ?? null, serverTime: new Date().toISOString(), topUpId: topUp.id, paymentLinkId: topUp.paymentLinkId, checkoutUrl: active ? topUp.checkoutUrl : null, amount: topUp.amount.toFixed(2), currency: topUp.currency, status: topUp.status };
   }
 }

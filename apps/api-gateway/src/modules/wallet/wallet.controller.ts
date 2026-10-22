@@ -34,6 +34,21 @@ import { RateLimit } from '../../observability';
 export class WalletController {
   constructor(private readonly walletRpcService: WalletRpcService) {}
 
+  @Get('wallet/me/top-ups')
+  listMyTopUps(@CurrentUserId() userId: string) { return this.walletRpcService.listTopUps({ userId }); }
+  @Post('wallet/me/top-ups/:paymentLinkId/resume')
+  resumeMyTopUp(@CurrentUserId() userId: string, @Param('paymentLinkId') paymentLinkId: string) { return this.walletRpcService.resumeTopUp({ userId, paymentLinkId }); }
+  @Post('wallet/me/top-ups/:paymentLinkId/cancel')
+  cancelMyTopUp(@CurrentUserId() userId: string, @Param('paymentLinkId') paymentLinkId: string) { return this.walletRpcService.cancelTopUp({ userId, paymentLinkId }); }
+  @Get('shops/:shopId/wallet/top-ups')
+  listShopTopUps(@CurrentUserId() userId: string, @Param('shopId') shopId: string, @CurrentUser() user?: AuthenticatedUser) { return this.walletRpcService.listTopUps({ userId, shopId, requesterRole: user?.role ?? 'user' }); }
+  @Post('shops/:shopId/wallet/top-ups/:paymentLinkId/resume')
+  resumeShopTopUp(@CurrentUserId() userId: string, @Param('shopId') shopId: string, @Param('paymentLinkId') paymentLinkId: string, @CurrentUser() user?: AuthenticatedUser) { return this.walletRpcService.resumeTopUp({ userId, shopId, paymentLinkId, requesterRole: user?.role ?? 'user' }); }
+  @Post('shops/:shopId/wallet/top-ups/:paymentLinkId/cancel')
+  cancelShopTopUp(@CurrentUserId() userId: string, @Param('shopId') shopId: string, @Param('paymentLinkId') paymentLinkId: string, @CurrentUser() user?: AuthenticatedUser) { return this.walletRpcService.cancelTopUp({ userId, shopId, paymentLinkId, requesterRole: user?.role ?? 'user' }); }
+  @Post('shops/:shopId/wallet/top-ups/:paymentLinkId/reconcile')
+  reconcileShopTopUp(@CurrentUserId() userId: string, @Param('shopId') shopId: string, @Param('paymentLinkId') paymentLinkId: string, @CurrentUser() user?: AuthenticatedUser) { return this.walletRpcService.reconcileWalletTopUp({ userId, shopId, paymentLinkId, requesterRole: user?.role ?? 'user' }); }
+
   @ApiOperation({ summary: 'Lấy danh sách ngân hàng hỗ trợ tra cứu tài khoản' })
   @Get('wallet/banks')
   listBanks() {

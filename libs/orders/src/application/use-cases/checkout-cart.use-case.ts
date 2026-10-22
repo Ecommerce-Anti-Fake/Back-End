@@ -159,13 +159,18 @@ export class CheckoutCartUseCase {
       });
       throw error;
     }
-    await this.ordersRepository.updatePaymentProviderRef(order.id, `PAYOS:${paymentLink.paymentLinkId}`);
+    await this.ordersRepository.savePayOSPaymentAttempt(order.id, paymentLink);
 
     return {
       orderId: order.id,
       orderCode: paymentLink.orderCode,
       paymentLinkId: paymentLink.paymentLinkId,
       checkoutUrl: paymentLink.checkoutUrl,
+      qrCode: paymentLink.qrCode ?? null,
+      expiresAt: paymentLink.expiresAt,
+      serverTime: new Date().toISOString(),
+      status: 'PENDING',
+      amount: buyerPayableAmount,
     };
   }
 

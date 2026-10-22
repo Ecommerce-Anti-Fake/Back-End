@@ -1,0 +1,17 @@
+// Durable identities preserve late callbacks across retries.
+model OrderPayOSPaymentAttempt {
+  paymentLinkId String @id @map("payment_link_id")
+  orderId String @map("order_id")
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  orderCode BigInt @unique @map("order_code")
+  amount Decimal @db.Decimal(18, 2)
+  checkoutUrl String @map("checkout_url")
+  qrCode String? @map("qr_code")
+  expiresAt DateTime @map("expires_at")
+  status String @default("PENDING")
+  createdAt DateTime @default(now()) @map("created_at")
+  lastCheckedAt DateTime? @map("last_checked_at")
+  @@index([orderId, createdAt])
+  @@index([status, lastCheckedAt])
+  @@map("order_payos_payment_attempt")
+}

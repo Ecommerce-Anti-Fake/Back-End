@@ -1,4 +1,5 @@
 model Order {
+  payOSPaymentAttempts OrderPayOSPaymentAttempt[]
   id                      String               @id @default(uuid())
   buyerUserId             String?              @map("buyer_user_id")
   buyerShopId             String?              @map("buyer_shop_id")

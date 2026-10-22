@@ -211,7 +211,9 @@ export class CreateOrderUseCase {
     }
     if (paymentMethod !== 'PAYOS' || input.skipPayOSPaymentLink) return response;
 
-    const paymentLink = await this.payOSPaymentService.createPaymentLink({
+    let paymentLink: Awaited<ReturnType<PayOSPaymentService['createPaymentLink']>>;
+    try {
+      paymentLink = await this.payOSPaymentService.createPaymentLink({
       orderId: order.id,
       amount: buyerPayableAmount,
       description: `DH${order.id.replace(/-/g, '').slice(0, 7)}`,
@@ -220,7 +222,11 @@ export class CreateOrderUseCase {
       itemName: offer.title,
       quantity: input.quantity,
     });
-    await this.ordersRepository.updatePaymentProviderRef(order.id, `PAYOS:${paymentLink.paymentLinkId}`);
+    } catch (error) {
+      await this.ordersRepository.markOrderPaymentFailed({ id: order.id, actorUserId: input.buyerUserId, providerRef: null, reason: 'Unable to create PayOS checkout link' });
+      throw error;
+    }
+    await this.ordersRepository.savePayOSPaymentAttempt(order.id, paymentLink);
     return {
       ...response,
       paymentProviderRef: `PAYOS:${paymentLink.paymentLinkId}`,
@@ -228,6 +234,10 @@ export class CreateOrderUseCase {
       payOSPaymentLinkId: paymentLink.paymentLinkId,
       payOSCheckoutUrl: paymentLink.checkoutUrl,
       payOSQrCode: paymentLink.qrCode ?? null,
+      expiresAt: paymentLink.expiresAt,
+      serverTime: new Date().toISOString(),
+      status: 'PENDING',
+      amount: buyerPayableAmount,
     };
   }
 

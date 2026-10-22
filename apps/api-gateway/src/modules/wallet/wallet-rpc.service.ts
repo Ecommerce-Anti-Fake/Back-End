@@ -96,7 +96,10 @@ export class WalletRpcService {
   handleWalletTopUpWebhook(payload: { code: string; desc: string; success: boolean; signature: string; data: Record<string, unknown> }) {
     return this.send(WALLET_MESSAGE_PATTERNS.handleWalletTopUpWebhook, payload);
   }
-  reconcileWalletTopUp(payload: { userId: string; paymentLinkId: string }) {
+  listTopUps(payload: { userId: string; shopId?: string; requesterRole?: string }) { return this.send('wallet.list-top-ups', payload); }
+  resumeTopUp(payload: { userId: string; paymentLinkId: string; shopId?: string; requesterRole?: string }) { return this.send('wallet.resume-top-up', payload); }
+  cancelTopUp(payload: { userId: string; paymentLinkId: string; shopId?: string; requesterRole?: string }) { return this.send('wallet.cancel-top-up', payload); }
+  reconcileWalletTopUp(payload: { userId: string; paymentLinkId: string; shopId?: string; requesterRole?: string }) {
     return this.send(WALLET_MESSAGE_PATTERNS.reconcileWalletTopUp, payload);
   }
   getPlatformWallets() { return this.send(WALLET_MESSAGE_PATTERNS.getPlatformWallets, {}); }

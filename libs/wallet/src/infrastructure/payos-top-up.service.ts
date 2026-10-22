@@ -1,12 +1,14 @@
 import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createHmac, timingSafeEqual } from 'crypto';
+import { createHmac, randomInt, timingSafeEqual } from 'crypto';
 import { Prisma } from '@prisma/client';
 
 export type WalletTopUpPaymentLink = {
   orderCode: string;
   paymentLinkId: string;
   checkoutUrl: string;
+  qrCode: string | null;
+  expiresAt: Date;
 };
 
 export type PayOSPaymentLinkStatus = {
@@ -18,7 +20,6 @@ export type PayOSPaymentLinkStatus = {
 
 @Injectable()
 export class PayOSTopUpService {
-  private lastOrderCode = 0;
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -48,7 +49,9 @@ export class PayOSTopUpService {
     );
     const description = `Nap vi ${input.idempotencyKey.replace(/[^a-zA-Z0-9]/g, '').slice(-4) || 'user'}`.slice(0, 9);
     const signaturePayload = { amount, cancelUrl, description, orderCode: Number(orderCode), returnUrl };
+    const expiredAt = Math.floor(Date.now() / 1000) + 15 * 60;
     const body = {
+      expiredAt,
       ...signaturePayload,
       items: [{ name: 'Nap tien vi AntiFake', quantity: 1, price: amount }],
       signature: this.signObject(signaturePayload, credentials.checksumKey),
@@ -57,14 +60,15 @@ export class PayOSTopUpService {
 
     const response = await fetch(`${credentials.baseUrl}/v2/payment-requests`, {
       method: 'POST',
+      signal: AbortSignal.timeout(10_000),
       headers: { 'Content-Type': 'application/json', 'x-client-id': credentials.clientId, 'x-api-key': credentials.apiKey },
       body: JSON.stringify(body),
     });
-    const payload = (await response.json().catch(() => null)) as { code?: string; desc?: string; data?: { paymentLinkId?: string; checkoutUrl?: string } } | null;
+    const payload = (await response.json().catch(() => null)) as { code?: string; desc?: string; data?: { paymentLinkId?: string; checkoutUrl?: string; qrCode?: string; expiredAt?: number } } | null;
     if (!response.ok || payload?.code !== '00' || !payload.data?.paymentLinkId || !payload.data.checkoutUrl) {
       throw new ServiceUnavailableException(payload?.desc || 'Không thể tạo link nạp tiền PayOS.');
     }
-    return { orderCode, paymentLinkId: payload.data.paymentLinkId, checkoutUrl: payload.data.checkoutUrl };
+    return { orderCode, paymentLinkId: payload.data.paymentLinkId, checkoutUrl: payload.data.checkoutUrl, qrCode: payload.data.qrCode ?? null, expiresAt: new Date((payload.data.expiredAt ?? expiredAt) * 1000) };
   }
 
   async getPaymentLink(paymentLinkId: string): Promise<PayOSPaymentLinkStatus> {
@@ -78,6 +82,7 @@ export class PayOSTopUpService {
       `${credentials.baseUrl}/v2/payment-requests/${encodeURIComponent(normalizedPaymentLinkId)}`,
       {
         method: 'GET',
+        signal: AbortSignal.timeout(10_000),
         headers: {
           Accept: 'application/json',
           'x-client-id': credentials.clientId,
@@ -118,6 +123,22 @@ export class PayOSTopUpService {
       amount: payload.data.amount,
       amountPaid: typeof payload.data.amountPaid === 'number' ? payload.data.amountPaid : 0,
     };
+  }
+
+  async cancelPaymentLink(paymentLinkId: string): Promise<PayOSPaymentLinkStatus> {
+    const credentials = this.getCredentials();
+    const response = await fetch(credentials.baseUrl + '/v2/payment-requests/' + encodeURIComponent(paymentLinkId) + '/cancel', {
+      method: 'POST',
+      signal: AbortSignal.timeout(10_000),
+      headers: { 'Content-Type': 'application/json', 'x-client-id': credentials.clientId, 'x-api-key': credentials.apiKey },
+      body: JSON.stringify({ cancellationReason: 'User confirmed payment cancellation' }),
+    });
+    const payload = await response.json().catch(() => null) as { code?: string } | null;
+    const actual = await this.getPaymentLink(paymentLinkId);
+    if ((!response.ok || payload?.code !== '00') && !['PAID', 'CANCELLED', 'EXPIRED'].includes(actual.status)) {
+      throw new ServiceUnavailableException('PayOS has not confirmed cancellation');
+    }
+    return actual;
   }
 
   verifyWebhook(data: Record<string, unknown>, signature: string) {
@@ -169,13 +190,8 @@ export class PayOSTopUpService {
   }
 
   private createOrderCode() {
-    const timestampCode = Date.now() % 1_000_000;
-    const nextCode = timestampCode === this.lastOrderCode
-      ? (timestampCode + 1) % 1_000_000
-      : timestampCode;
-
-    this.lastOrderCode = nextCode || 1;
-    return this.lastOrderCode;
+    // Cross-instance random codes avoid the previous six-digit timestamp collision.
+    return randomInt(1, 2 ** 48);
   }
 
   private signObject(data: Record<string, unknown>, checksumKey: string) {

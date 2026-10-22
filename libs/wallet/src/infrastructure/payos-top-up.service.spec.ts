@@ -80,7 +80,7 @@ describe('PayOSTopUpService', () => {
     );
   });
 
-  it('uses a compact PayOS order code for the embedded checkout', async () => {
+  it('uses a safe cross-instance PayOS order code', async () => {
     const fetchMock = jest.fn().mockResolvedValue({
       ok: true,
       json: jest.fn().mockResolvedValue({
@@ -100,8 +100,9 @@ describe('PayOSTopUpService', () => {
     });
 
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.expiredAt).toBe(Math.floor(Date.now() / 1000) + 900);
     expect(body.orderCode).toBeGreaterThan(0);
-    expect(body.orderCode).toBeLessThan(1_000_000);
+    expect(body.orderCode).toBeLessThan(2 ** 48);
   });
 
   it('marks the shop-wallet cancel URL so a cancelled PayOS top-up is visible', async () => {
@@ -153,5 +154,22 @@ describe('PayOSTopUpService', () => {
       'https://payos.test/v2/payment-requests/link-paid',
       expect.objectContaining({ method: 'GET' }),
     );
+  });
+  it('persists the exact requested expiry and official QR payload', async () => {
+    const expiredAt = Math.floor(Date.now() / 1000) + 900;
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: jest.fn().mockResolvedValue({ code: '00', data: { paymentLinkId: 'link-qr', checkoutUrl: 'https://pay.payos.vn/web/link-qr', qrCode: 'official-emv', expiredAt } }) }) as never;
+    await expect(new PayOSTopUpService(config).createPaymentLink({ amount: 10000, idempotencyKey: 'qr-1' })).resolves.toMatchObject({ qrCode: 'official-emv', expiresAt: new Date(expiredAt * 1000) });
+  });
+
+  it('does not report cancellation when PayOS rejects it and still returns PENDING', async () => {
+    const provider = { id: 'link-1', status: 'PENDING', amount: 10000, amountPaid: 0 };
+    const fetchMock = jest.fn().mockResolvedValueOnce({ ok: false, json: async () => ({ code: '01' }) }).mockResolvedValueOnce({ ok: true, json: async () => ({ code: '00', data: provider }) });
+    global.fetch = fetchMock as never;
+    await expect(new PayOSTopUpService(config).cancelPaymentLink('link-1')).rejects.toThrow('not confirmed');
+  });
+
+  it('reads back a paid link after a cancel conflict', async () => {
+    global.fetch = jest.fn().mockResolvedValueOnce({ ok: false, json: async () => ({ code: '01' }) }).mockResolvedValueOnce({ ok: true, json: async () => ({ code: '00', data: { id: 'link-1', status: 'PAID', amount: 10000, amountPaid: 10000 } }) }) as never;
+    await expect(new PayOSTopUpService(config).cancelPaymentLink('link-1')).resolves.toMatchObject({ status: 'PAID' });
   });
 });
